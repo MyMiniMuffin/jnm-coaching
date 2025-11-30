@@ -8,7 +8,7 @@ exports.handler = async (event) => {
 
   try {
     // Koble til databasen
-    const sql = neon(process.env.DATABASE_URL);
+    const sql = neon(process.env.NETLIFY_DATABASE_URL);
     
     // Hent dataene appen sendte
     const { username, password } = JSON.parse(event.body);
