@@ -130,140 +130,67 @@
         appleIcon.href = "https://cdn-icons-png.flaticon.com/512/2964/2964514.png";
         document.head.appendChild(appleIcon);
 
-        // --- DATA MANAGEMENT HELPERS (LocalStorage Fallback) ---
-        const getStoredUsers = () => {
-            const users = localStorage.getItem('jnm_users');
-            return users ? JSON.parse(users) : [
-                { id: 'coach_admin', username: 'coach', password: 'jnm2024', name: 'Coach', role: 'coach' }
-            ];
-        };
-
-        const saveUser = (newUser) => {
-            const users = getStoredUsers();
-            users.push(newUser);
-            localStorage.setItem('jnm_users', JSON.stringify(users));
-            return users;
-        };
-
-        const deleteUser = (userId) => {
-            const users = getStoredUsers();
-            const updatedUsers = users.filter(u => u.id !== userId);
-            localStorage.setItem('jnm_users', JSON.stringify(updatedUsers));
-            localStorage.removeItem(`jnm_data_${userId}`);
-            return updatedUsers;
-        };
-
-        const getUserData = (userId) => {
-            const key = `jnm_data_${userId}`;
-            const data = localStorage.getItem(key);
-            return data ? JSON.parse(data) : {
-                dietPlan: '## Frokost\n- Havregrøt\n- Proteinshake\n\n## Lunsj\n- Kylling og ris',
-                workoutPlan: '## Dag 1: Bein\n- Knebøy 3x8\n- Utfall 3x10',
-                stepGoal: 10000, 
-                checkins: []
-            };
-        };
-
-        const saveUserData = (userId, data) => {
-            const key = `jnm_data_${userId}`;
-            localStorage.setItem(key, JSON.stringify(data));
-            return data;
-        };
-
-        // --- API LAYER (HYBRID: NETLIFY + FALLBACK) ---
+        // --- API LAYER (PURE NETLIFY / NEON) ---
+        // Ingen LocalStorage fallback for data. Kun fetch.
         const api = {
             getUsers: async () => {
-                try {
-                    const res = await fetch('/.netlify/functions/users');
-                    if (!res.ok) throw new Error('API unavailable');
-                    return await res.json();
-                } catch (e) {
-                    console.warn("Offline/Demo mode: Using LocalStorage");
-                    return getStoredUsers();
-                }
+                const res = await fetch('/.netlify/functions/users');
+                if (!res.ok) throw new Error('Kunne ikke hente brukere (Server Error)');
+                return await res.json();
             },
 
             createUser: async (newUser) => {
-                try {
-                    const res = await fetch('/.netlify/functions/users', {
-                        method: 'POST',
-                        body: JSON.stringify(newUser)
-                    });
-                    if (!res.ok) throw new Error('API unavailable');
-                    return await res.json();
-                } catch (e) {
-                    return saveUser(newUser);
-                }
+                const res = await fetch('/.netlify/functions/users', {
+                    method: 'POST',
+                    body: JSON.stringify(newUser)
+                });
+                if (!res.ok) throw new Error('Kunne ikke opprette bruker');
+                return await res.json();
             },
 
             deleteUser: async (userId) => {
-                try {
-                    const res = await fetch('/.netlify/functions/users', {
-                        method: 'DELETE',
-                        body: JSON.stringify({ id: userId })
-                    });
-                    if (!res.ok) throw new Error('API unavailable');
-                    return await res.json();
-                } catch (e) {
-                    return deleteUser(userId);
-                }
+                const res = await fetch('/.netlify/functions/users', {
+                    method: 'DELETE',
+                    body: JSON.stringify({ id: userId })
+                });
+                if (!res.ok) throw new Error('Kunne ikke slette bruker');
+                return await res.json();
             },
 
             getUserData: async (userId) => {
-                try {
-                    const res = await fetch(`/.netlify/functions/data?id=${userId}`);
-                    if (!res.ok) throw new Error('API unavailable');
-                    return await res.json();
-                } catch (e) {
-                    return getUserData(userId);
-                }
+                const res = await fetch(`/.netlify/functions/data?id=${userId}`);
+                if (!res.ok) throw new Error('Kunne ikke hente brukerdata');
+                return await res.json();
             },
 
             saveUserData: async (userId, data) => {
-                try {
-                    const res = await fetch('/.netlify/functions/data', {
-                        method: 'POST',
-                        body: JSON.stringify({ userId, type: 'plan_update', data })
-                    });
-                    if (!res.ok) throw new Error('API unavailable');
-                    return data;
-                } catch (e) {
-                    return saveUserData(userId, data);
-                }
+                const res = await fetch('/.netlify/functions/data', {
+                    method: 'POST',
+                    body: JSON.stringify({ userId, type: 'plan_update', data })
+                });
+                if (!res.ok) throw new Error('Kunne ikke lagre data');
+                return data;
             },
             
             submitCheckin: async (userId, entry) => {
-                try {
-                     const res = await fetch('/.netlify/functions/data', {
-                        method: 'POST',
-                        body: JSON.stringify({ userId, type: 'new_checkin', data: entry })
-                    });
-                    if (!res.ok) throw new Error('API unavailable');
-                } catch (e) {
-                    // Fallback: Manually update local storage data for persistence in demo mode
-                    const currentData = getUserData(userId);
-                    const updatedData = { 
-                        ...currentData, 
-                        checkins: [...(currentData.checkins || []), entry] 
-                    };
-                    saveUserData(userId, updatedData);
-                }
+                 const res = await fetch('/.netlify/functions/data', {
+                    method: 'POST',
+                    body: JSON.stringify({ userId, type: 'new_checkin', data: entry })
+                });
+                if (!res.ok) throw new Error('Kunne ikke sende innsjekk');
             },
 
             login: async (username, password) => {
-                try {
-                    const res = await fetch('/.netlify/functions/auth', {
-                        method: 'POST',
-                        body: JSON.stringify({ username, password })
-                    });
-                    if (!res.ok) throw new Error('API unavailable');
-                    return await res.json();
-                } catch (e) {
-                    // Fallback login check
-                    const users = getStoredUsers();
-                    const user = users.find(u => u.username.toLowerCase() === username.toLowerCase() && u.password === password);
-                    return user || null;
-                }
+                const res = await fetch('/.netlify/functions/auth', {
+                    method: 'POST',
+                    body: JSON.stringify({ username, password })
+                });
+                
+                // 401 betyr feil passord, det er ikke en systemfeil
+                if (res.status === 401) return null; 
+                
+                if (!res.ok) throw new Error('Innlogging feilet (Server Error)');
+                return await res.json();
             }
         };
 
@@ -288,8 +215,8 @@
                         setError('Feil brukernavn eller passord');
                     }
                 } catch (err) {
-                    // Should be caught by api layer fallback, but just in case
-                    setError('Feil ved innlogging.');
+                    console.error(err);
+                    setError('Kunne ikke koble til serveren. Prøv igjen senere.');
                 } finally {
                     setIsLoading(false);
                 }
@@ -341,15 +268,10 @@
                                 disabled={isLoading}
                                 className="w-full py-3 rounded-xl font-bold text-white shadow-lg bg-blue-600 hover:bg-blue-700 shadow-blue-200 flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
                             >
-                                {isLoading ? 'Laster...' : <><span className="mr-1">Logg inn</span> <ArrowRight size={20} /></>}
+                                {isLoading ? 'Kobler til...' : <><span className="mr-1">Logg inn</span> <ArrowRight size={20} /></>}
                             </button>
                         </form>
                     </div>
-                    
-                    <p className="mt-8 text-xs text-slate-400 text-center max-w-xs">
-                        Demo Login:<br/>
-                        Coach: coach / jnm2024
-                    </p>
                 </div>
             );
         };
@@ -427,13 +349,20 @@
         const CreateUserModal = ({ onClose, onCreated }) => {
             const [newUser, setNewUser] = useState({ name: '', username: '', password: '' });
             const [isSubmitting, setIsSubmitting] = useState(false);
+            const [error, setError] = useState('');
             
             const handleSubmit = async (e) => {
                 e.preventDefault();
                 setIsSubmitting(true);
-                const user = { id: Date.now().toString(), role: 'athlete', ...newUser };
-                await onCreated(user);
-                setIsSubmitting(false);
+                setError('');
+                try {
+                    const user = { id: Date.now().toString(), role: 'athlete', ...newUser };
+                    await onCreated(user);
+                    // Modal closes via parent callback
+                } catch(e) {
+                    setError('Kunne ikke opprette bruker');
+                    setIsSubmitting(false);
+                }
             };
             return (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-fade-in">
@@ -444,6 +373,7 @@
                             <input required type="text" placeholder="Fullt Navn" className="w-full p-2 border rounded-lg" value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})} />
                             <input required type="text" placeholder="Brukernavn" className="w-full p-2 border rounded-lg" value={newUser.username} onChange={e => setNewUser({...newUser, username: e.target.value})} />
                             <input required type="text" placeholder="Passord" className="w-full p-2 border rounded-lg" value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})} />
+                            {error && <p className="text-red-500 text-sm">{error}</p>}
                             <button disabled={isSubmitting} type="submit" className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl disabled:opacity-50">
                                 {isSubmitting ? 'Lagrer...' : 'Opprett'}
                             </button>
@@ -470,7 +400,7 @@
                         </button>
                     </div>
                     <div className="space-y-3">
-                        {clients.length === 0 ? <div className="text-center py-10 text-slate-400 bg-white rounded-2xl border border-dashed">Ingen utøvere.</div> : clients.map(client => (
+                        {clients.length === 0 ? <div className="text-center py-10 text-slate-400 bg-white rounded-2xl border border-dashed">Ingen utøvere funnet.</div> : clients.map(client => (
                             <div key={client.id} className="w-full bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between gap-3 hover:border-blue-300 transition-all">
                                 <button onClick={() => onSelectClient(client)} className="flex-1 flex items-center gap-3 text-left">
                                     <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center font-bold">{client.name.charAt(0)}</div>
