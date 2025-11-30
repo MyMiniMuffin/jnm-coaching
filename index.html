@@ -540,8 +540,8 @@
                             <span className="font-bold text-brand bg-brand-pastel px-2 py-1 rounded-lg">{lastCheckin.accuracy}/10</span>
                         </div>
                         <div className="flex justify-between items-center text-sm mb-3 pb-3 border-b border-slate-50">
-                            <span className="text-slate-500 font-medium">Styrkeøkter</span>
-                            <span className="font-bold text-slate-800">{lastCheckin.strengthSessions} stk</span>
+                            <span className="text-slate-500 font-medium">Trening (S/C)</span>
+                            <span className="font-bold text-slate-800">{lastCheckin.strengthSessions} + {lastCheckin.cardioSessions || 0} økter</span>
                         </div>
                         <div className="flex justify-between items-center text-sm">
                             <span className="text-slate-500 font-medium">Skrittmål</span>
@@ -603,6 +603,7 @@
             energy: 5,
             accuracy: 10,
             strengthSessions: 0,
+            cardioSessions: 0,
             stepsReached: false,
             takenSupplements: false,
             comment: '',
@@ -632,7 +633,7 @@
               setStep('form');
               setFormData({ 
                   weight: '', sleep: 5, energy: 5, accuracy: 10, 
-                  strengthSessions: 0, stepsReached: false, takenSupplements: false, 
+                  strengthSessions: 0, cardioSessions: 0, stepsReached: false, takenSupplements: false, 
                   comment: '', image: null 
               });
             }, 3000);
@@ -696,6 +697,21 @@
                       <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Antall styrkeøkter</label>
                         <select value={formData.strengthSessions} onChange={(e) => setFormData({...formData, strengthSessions: e.target.value})} className="w-full px-4 py-4 bg-slate-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-brand font-medium">
+                            <option value="0">0 økter</option>
+                            <option value="1">1 økt</option>
+                            <option value="2">2 økter</option>
+                            <option value="3">3 økter</option>
+                            <option value="4">4 økter</option>
+                            <option value="5">5 økter</option>
+                            <option value="6">6 økter</option>
+                            <option value="7">7+ økter</option>
+                        </select>
+                      </div>
+
+                      {/* NY: Cardioøkter (Select 0-7) */}
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Antall cardioøkter</label>
+                        <select value={formData.cardioSessions} onChange={(e) => setFormData({...formData, cardioSessions: e.target.value})} className="w-full px-4 py-4 bg-slate-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-brand font-medium">
                             <option value="0">0 økter</option>
                             <option value="1">1 økt</option>
                             <option value="2">2 økter</option>
@@ -788,8 +804,8 @@
                                     <div className="font-bold text-slate-700">{entry.accuracy}/10</div>
                                 </div>
                                 <div className="bg-orange-50 p-2 rounded-xl text-center">
-                                    <div className="text-[9px] uppercase text-orange-400 font-bold">Styrke</div>
-                                    <div className="font-bold text-slate-700">{entry.strengthSessions} økter</div>
+                                    <div className="text-[9px] uppercase text-orange-400 font-bold">Trening (S+C)</div>
+                                    <div className="font-bold text-slate-700">{entry.strengthSessions} + {entry.cardioSessions || 0}</div>
                                 </div>
                                 <div className="bg-purple-50 p-2 rounded-xl text-center">
                                     <div className="text-[9px] uppercase text-purple-400 font-bold">Energi/Søvn</div>
