@@ -108,7 +108,7 @@
         import React, { useState, useEffect } from 'react';
         import { createRoot } from 'react-dom/client';
         import { 
-          Home, Utensils, Dumbbell, ClipboardCheck, Camera, Save, ChevronRight, 
+          Home, Utensils, Dumbbell, ClipboardCheck, Camera, Save, ChevronRight, ChevronLeft,
           TrendingUp, User, Briefcase, LogOut, Lock, ArrowRight, Plus, 
           X, Trash2, Footprints, Edit2, Check, Moon, Zap, Scale, Maximize2, Loader2, AlertTriangle
         } from 'lucide-react';
@@ -120,7 +120,7 @@
             window.marked.setOptions({ breaks: true, gfm: true });
         }
 
-        // --- IMAGE COMPRESSION HELPER (Aggressive) ---
+        // --- IMAGE COMPRESSION HELPER ---
         const compressImage = (file) => {
             return new Promise((resolve) => {
                 const reader = new FileReader();
@@ -130,7 +130,6 @@
                     img.src = event.target.result;
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        // Reduced max dimensions for smaller file size
                         const MAX_WIDTH = 800; 
                         const MAX_HEIGHT = 800;
                         let width = img.width;
@@ -151,7 +150,6 @@
                         canvas.height = height;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
-                        // Compress to JPEG with 0.5 quality (Good balance for mobile photos)
                         resolve(canvas.toDataURL('image/jpeg', 0.5));
                     };
                 };
@@ -186,13 +184,10 @@
                 return data;
             },
             submitCheckin: async (userId, entry) => {
-                 // Check payload size BEFORE sending
                  const payload = JSON.stringify({ userId, type: 'new_checkin', data: entry });
-                 // Limit is approx 6MB for Netlify Functions, we set safety at 5.5MB
                  if (new TextEncoder().encode(payload).length > 5500000) {
                      throw new Error('TOO_LARGE');
                  }
-
                  const res = await fetch('/.netlify/functions/data', { method: 'POST', body: payload });
                 if (!res.ok) {
                     const errorText = await res.text();
@@ -217,22 +212,84 @@
         // --- Components ---
 
         // LIGHTBOX COMPONENT
-        const ImageModal = ({ src, onClose }) => {
-            if (!src) return null;
+        const ImageModal = ({ images, initialIndex, onClose }) => {
+            const [index, setIndex] = useState(initialIndex || 0);
+
+            useEffect(() => {
+                document.body.style.overflow = 'hidden';
+                return () => {
+                    document.body.style.overflow = 'unset';
+                };
+            }, []);
+
+            if (!images || images.length === 0) return null;
+
+            const currentImage = images[index];
+            const hasNext = index < images.length - 1;
+            const hasPrev = index > 0;
+
+            const handleNext = (e) => {
+                e.stopPropagation();
+                if (hasNext) setIndex(index + 1);
+            };
+
+            const handlePrev = (e) => {
+                e.stopPropagation();
+                if (hasPrev) setIndex(index - 1);
+            };
+
+            // Keyboard navigation
+            useEffect(() => {
+                const handleKeyDown = (e) => {
+                    if (e.key === 'ArrowRight' && hasNext) setIndex(i => i + 1);
+                    if (e.key === 'ArrowLeft' && hasPrev) setIndex(i => i - 1);
+                    if (e.key === 'Escape') onClose();
+                };
+                window.addEventListener('keydown', handleKeyDown);
+                return () => window.removeEventListener('keydown', handleKeyDown);
+            }, [hasNext, hasPrev, onClose]);
+
             return (
                 <div 
-                    className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 animate-zoom-in cursor-pointer"
+                    className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-sm flex items-center justify-center p-0 animate-zoom-in touch-none"
                     onClick={onClose}
                 >
-                    <button className="absolute top-6 right-6 text-white bg-white/20 p-2 rounded-full hover:bg-white/40 transition-colors">
-                        <X size={24} />
+                    <button className="absolute top-6 right-6 text-white/80 hover:text-white bg-black/20 p-2 rounded-full z-[110] transition-colors">
+                        <X size={32} />
                     </button>
-                    <img 
-                        src={src} 
-                        className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl" 
-                        alt="Fullskjerm"
-                        onClick={(e) => e.stopPropagation()} 
-                    />
+                    
+                    <div className="relative w-full h-full flex items-center justify-center">
+                        <img 
+                            src={currentImage} 
+                            className="max-w-full max-h-[90vh] object-contain shadow-2xl select-none" 
+                            alt="Fullskjerm"
+                            onClick={(e) => e.stopPropagation()} 
+                        />
+                        
+                        {hasPrev && (
+                            <button 
+                                onClick={handlePrev}
+                                className="absolute left-4 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md transition-all z-[110]"
+                            >
+                                <ChevronLeft size={36} />
+                            </button>
+                        )}
+                        
+                        {hasNext && (
+                            <button 
+                                onClick={handleNext}
+                                className="absolute right-4 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md transition-all z-[110]"
+                            >
+                                <ChevronRight size={36} />
+                            </button>
+                        )}
+
+                        {images.length > 1 && (
+                            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 text-white/80 font-medium bg-black/40 px-4 py-1.5 rounded-full text-sm backdrop-blur-sm border border-white/10">
+                                {index + 1} / {images.length}
+                            </div>
+                        )}
+                    </div>
                 </div>
             );
         };
@@ -312,7 +369,7 @@
         };
 
         const Header = ({ title, user, viewingClient, onLogout, onClearClient }) => (
-          <div className="bg-brand-pastel/50 backdrop-blur-md px-6 py-4 sticky top-0 z-40 flex justify-between items-center border-b border-white/40">
+          <div className="bg-brand-pastel/90 backdrop-blur-xl px-6 py-4 sticky top-0 z-40 flex justify-between items-center border-b border-white/50 shadow-sm">
             <div className="flex flex-col">
                 <h1 className="text-xl font-extrabold text-slate-800 tracking-tight">{title}</h1>
                 <div className="flex items-center gap-2">
@@ -368,6 +425,37 @@
                   <span className="text-slate-800 font-extrabold text-2xl">{lastCheckin ? `${formatWeight(lastCheckin.weight)} kg` : '--'}</span>
                 </Card>
               </div>
+
+              {/* Siste innsjekk mini-summary */}
+              {lastCheckin && (
+                  <div className="px-2">
+                    <h3 className="text-lg font-bold text-slate-800 mb-3 ml-1">Siste rapport</h3>
+                    <Card className="!p-6">
+                        <div className="flex justify-between items-center text-sm mb-3 pb-3 border-b border-slate-50">
+                            <span className="text-slate-500 font-medium">Plan Nøyaktighet</span>
+                            <span className="font-bold text-brand bg-brand-pastel px-2 py-1 rounded-lg">{lastCheckin.accuracy}/10</span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm mb-3 pb-3 border-b border-slate-50">
+                            <span className="text-slate-500 font-medium">Trening (S/C)</span>
+                            <span className="font-bold text-slate-800">{lastCheckin.strengthSessions} + {lastCheckin.cardioSessions || 0} økter</span>
+                        </div>
+                        {/* NY: Viser også energi og søvn her */}
+                        <div className="flex justify-between items-center text-sm mb-3 pb-3 border-b border-slate-50">
+                            <span className="text-slate-500 font-medium">Energi / Søvn</span>
+                            <span className="font-bold text-slate-800 flex items-center gap-2">
+                                <span className="flex items-center gap-1 text-xs bg-yellow-50 px-1.5 py-0.5 rounded text-yellow-700"><Zap size={10} /> {lastCheckin.energy}</span>
+                                <span className="flex items-center gap-1 text-xs bg-indigo-50 px-1.5 py-0.5 rounded text-indigo-700"><Moon size={10} /> {lastCheckin.sleep}</span>
+                            </span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                            <span className="text-slate-500 font-medium">Skrittmål</span>
+                            <span className={`font-bold px-2 py-1 rounded-lg ${lastCheckin.stepsReached ? 'text-brand-mintdark bg-brand-mint/20' : 'text-slate-400 bg-slate-100'}`}>
+                                {lastCheckin.stepsReached ? 'Oppnådd' : 'Ikke oppnådd'}
+                            </span>
+                        </div>
+                    </Card>
+                  </div>
+              )}
             </div>
           );
         };
@@ -401,7 +489,9 @@
 
         const CheckInView = ({ checkins, onNewCheckin, onDelete, isReadOnly, stepGoal }) => {
           const [step, setStep] = useState('form');
-          const [selectedImage, setSelectedImage] = useState(null); 
+          
+          const [lightbox, setLightbox] = useState({ isOpen: false, images: [], index: 0 });
+
           const [isCompressing, setIsCompressing] = useState(false);
           const [errorMessage, setErrorMessage] = useState('');
           const [isSubmitting, setIsSubmitting] = useState(false);
@@ -420,7 +510,6 @@
             
             setIsCompressing(true);
             try {
-                // Compress all images in parallel
                 const compressedImages = await Promise.all(files.map(file => compressImage(file)));
                 setFormData(prev => ({
                     ...prev,
@@ -439,6 +528,10 @@
                   ...prev,
                   images: prev.images.filter((_, index) => index !== indexToRemove)
               }));
+          };
+
+          const openLightbox = (images, index = 0) => {
+              setLightbox({ isOpen: true, images, index });
           };
 
           const handleSubmit = async (e) => {
@@ -487,7 +580,13 @@
 
           return (
             <div className="space-y-6 pb-24 animate-fade-in">
-              <ImageModal src={selectedImage} onClose={() => setSelectedImage(null)} />
+              {lightbox.isOpen && (
+                  <ImageModal 
+                      images={lightbox.images} 
+                      initialIndex={lightbox.index} 
+                      onClose={() => setLightbox({ ...lightbox, isOpen: false })} 
+                  />
+              )}
 
               {!isReadOnly && (
                   <form onSubmit={handleSubmit} className="space-y-6">
@@ -536,7 +635,7 @@
                     {/* IMAGE UPLOAD SECTION */}
                     <Card className="border-dashed border-2 border-brand-mint/50 bg-brand-mint/5">
                         <div className="space-y-4">
-                            {/* Grid of selected images */}
+                            {/* Grid of selected images (Preview for new checkin) */}
                             {formData.images.length > 0 && (
                                 <div className="grid grid-cols-3 gap-2">
                                     {formData.images.map((img, idx) => (
@@ -545,7 +644,7 @@
                                                 src={img} 
                                                 className="w-full h-full object-cover rounded-xl shadow-sm cursor-pointer border border-white" 
                                                 alt="Preview" 
-                                                onClick={() => setSelectedImage(img)}
+                                                onClick={() => openLightbox(formData.images, idx)}
                                             />
                                             <button 
                                                 type="button"
@@ -616,8 +715,17 @@
                                 
                                 <div className="grid grid-cols-3 gap-2 mb-4 text-center text-xs">
                                     <div className="bg-brand-pastel/50 p-2 rounded-xl"><b>Plan</b><br/>{entry.accuracy}/10</div>
-                                    <div className="bg-orange-50 p-2 rounded-xl"><b>Trening</b><br/>{entry.strengthSessions} + {entry.cardioSessions}</div>
-                                    <div className="bg-purple-50 p-2 rounded-xl"><b>Rest</b><br/>{entry.energy} / {entry.sleep}</div>
+                                    <div className="bg-orange-50 p-2 rounded-xl"><b>Trening</b><br/>{entry.strengthSessions} + {entry.cardioSessions || 0}</div>
+                                    
+                                    {/* OPPDATERT: Energi / Søvn Visning */}
+                                    <div className="bg-purple-50 p-2 rounded-xl flex flex-col items-center justify-center">
+                                        <div className="text-[9px] uppercase text-purple-400 font-bold mb-1">Energi / Søvn</div>
+                                        <div className="flex items-center gap-1 font-bold text-slate-700">
+                                            <span className="flex items-center gap-0.5"><Zap size={10} className="text-yellow-500" /> {entry.energy}</span>
+                                            <span className="text-slate-300">|</span>
+                                            <span className="flex items-center gap-0.5"><Moon size={10} className="text-indigo-400" /> {entry.sleep}</span>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 {entry.comment && <div className="bg-slate-50 p-3 rounded-2xl text-sm text-slate-600 mb-3 italic">"{entry.comment}"</div>}
@@ -626,7 +734,7 @@
                                 {displayImages.length > 0 && (
                                     <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar snap-x">
                                         {displayImages.map((img, idx) => (
-                                            <div key={idx} className="flex-none w-24 h-24 snap-start cursor-pointer" onClick={() => setSelectedImage(img)}>
+                                            <div key={idx} className="flex-none w-24 h-24 snap-start cursor-pointer" onClick={() => openLightbox(displayImages, idx)}>
                                                 <img src={img} className="w-full h-full object-cover rounded-xl border border-slate-100 shadow-sm hover:opacity-90 transition-opacity" alt="Checkin" />
                                             </div>
                                         ))}
