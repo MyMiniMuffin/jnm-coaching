@@ -110,7 +110,7 @@
         import { 
           Home, Utensils, Dumbbell, ClipboardCheck, Camera, Save, ChevronRight, ChevronLeft,
           TrendingUp, User, Briefcase, LogOut, Lock, ArrowRight, Plus, 
-          X, Trash2, Footprints, Edit2, Check, Moon, Zap, Scale, Maximize2, Loader2, AlertTriangle
+          X, Trash2, Footprints, Edit2, Check, Moon, Zap, Scale, Maximize2, Loader2, AlertTriangle, Calendar
         } from 'lucide-react';
 
         // --- GLOBAL CONFIG ---
@@ -130,8 +130,8 @@
                     img.src = event.target.result;
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 800; 
-                        const MAX_HEIGHT = 800;
+                        const MAX_WIDTH = 1500; 
+                        const MAX_HEIGHT = 1500;
                         let width = img.width;
                         let height = img.height;
 
@@ -150,7 +150,7 @@
                         canvas.height = height;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
-                        resolve(canvas.toDataURL('image/jpeg', 0.5));
+                        resolve(canvas.toDataURL('image/jpeg', 0.8));
                     };
                 };
             });
@@ -185,7 +185,7 @@
             },
             submitCheckin: async (userId, entry) => {
                  const payload = JSON.stringify({ userId, type: 'new_checkin', data: entry });
-                 if (new TextEncoder().encode(payload).length > 5500000) {
+                 if (new TextEncoder().encode(payload).length > 5800000) {
                      throw new Error('TOO_LARGE');
                  }
                  const res = await fetch('/.netlify/functions/data', { method: 'POST', body: payload });
@@ -399,15 +399,44 @@
 
         const DashboardView = ({ userData, isCoach, onUpdateGoal }) => {
           const lastCheckin = userData.checkins?.length > 0 ? userData.checkins[userData.checkins.length - 1] : null;
+
           const handleEditGoal = async () => {
               const input = prompt("Sett nytt skrittmål:", userData.stepGoal || 10000);
               if (input && !isNaN(parseInt(input))) await onUpdateGoal('stepGoal', parseInt(input));
+          };
+
+          // NY FUNKSJON: Coach endrer uke
+          const handleEditWeeks = async () => {
+              if (!isCoach) return;
+              
+              const newCurrent = prompt("Hvilken uke er vi i?", userData.currentWeek || 1);
+              if (newCurrent === null) return;
+
+              const newTotal = prompt("Totalt antall uker i planen?", userData.totalWeeks || 12);
+              if (newTotal === null) return;
+
+              await onUpdateGoal('currentWeek', parseInt(newCurrent));
+              await onUpdateGoal('totalWeeks', parseInt(newTotal));
           };
 
           return (
             <div className="space-y-6 pb-24 animate-fade-in">
               <div className="bg-gradient-to-br from-brand via-[#66a3ff] to-brand-mint rounded-3xl p-6 text-white shadow-xl shadow-brand/20 relative overflow-hidden">
                 <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-brand-mint rounded-full mix-blend-overlay filter blur-xl opacity-50"></div>
+                
+                {/* NY: Uke-badge */}
+                <div className="flex justify-between items-start relative z-10 mb-2">
+                    <button 
+                        onClick={handleEditWeeks}
+                        disabled={!isCoach}
+                        className={`flex items-center gap-1.5 bg-white/20 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-bold border border-white/20 transition-transform ${isCoach ? 'hover:scale-105 active:scale-95 cursor-pointer' : 'cursor-default'}`}
+                    >
+                        <Calendar size={12} />
+                        Uke {userData.currentWeek || 1} av {userData.totalWeeks || 12}
+                        {isCoach && <Edit2 size={10} className="ml-1 opacity-70" />}
+                    </button>
+                </div>
+
                 <h2 className="text-2xl font-extrabold mb-1 relative z-10">Status</h2>
                 <p className="text-white opacity-90 relative z-10 font-medium">Din progresjon.</p>
               </div>
@@ -439,12 +468,12 @@
                             <span className="text-slate-500 font-medium">Trening (S/C)</span>
                             <span className="font-bold text-slate-800">{lastCheckin.strengthSessions} + {lastCheckin.cardioSessions || 0} økter</span>
                         </div>
-                        {/* NY: Viser også energi og søvn her */}
                         <div className="flex justify-between items-center text-sm mb-3 pb-3 border-b border-slate-50">
                             <span className="text-slate-500 font-medium">Energi / Søvn</span>
                             <span className="font-bold text-slate-800 flex items-center gap-2">
-                                <span className="flex items-center gap-1 text-xs bg-yellow-50 px-1.5 py-0.5 rounded text-yellow-700"><Zap size={10} /> {lastCheckin.energy}</span>
-                                <span className="flex items-center gap-1 text-xs bg-indigo-50 px-1.5 py-0.5 rounded text-indigo-700"><Moon size={10} /> {lastCheckin.sleep}</span>
+                                <span className="flex items-center gap-1 text-sm bg-yellow-50 px-2 py-1 rounded text-yellow-700 font-extrabold"><Zap size={14} /> {lastCheckin.energy}</span>
+                                <span className="text-slate-300 text-sm">|</span>
+                                <span className="flex items-center gap-1 text-sm bg-indigo-50 px-2 py-1 rounded text-indigo-700 font-extrabold"><Moon size={14} /> {lastCheckin.sleep}</span>
                             </span>
                         </div>
                         <div className="flex justify-between items-center text-sm">
@@ -717,13 +746,13 @@
                                     <div className="bg-brand-pastel/50 p-2 rounded-xl"><b>Plan</b><br/>{entry.accuracy}/10</div>
                                     <div className="bg-orange-50 p-2 rounded-xl"><b>Trening</b><br/>{entry.strengthSessions} + {entry.cardioSessions || 0}</div>
                                     
-                                    {/* OPPDATERT: Energi / Søvn Visning */}
+                                    {/* OPPDATERT: Energi / Søvn Visning - STØRRE OG TYDELIGERE */}
                                     <div className="bg-purple-50 p-2 rounded-xl flex flex-col items-center justify-center">
                                         <div className="text-[9px] uppercase text-purple-400 font-bold mb-1">Energi / Søvn</div>
-                                        <div className="flex items-center gap-1 font-bold text-slate-700">
-                                            <span className="flex items-center gap-0.5"><Zap size={10} className="text-yellow-500" /> {entry.energy}</span>
-                                            <span className="text-slate-300">|</span>
-                                            <span className="flex items-center gap-0.5"><Moon size={10} className="text-indigo-400" /> {entry.sleep}</span>
+                                        <div className="flex items-center gap-2 font-bold text-slate-700 text-base">
+                                            <span className="flex items-center gap-1"><Zap size={14} className="text-yellow-500" /> {entry.energy}</span>
+                                            <span className="text-slate-300 text-sm">|</span>
+                                            <span className="flex items-center gap-1"><Moon size={14} className="text-indigo-400" /> {entry.sleep}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -807,7 +836,14 @@
           const [activeTab, setActiveTab] = useState('dashboard');
           const [allUsers, setAllUsers] = useState([]);
           const [viewingClient, setViewingClient] = useState(null);
-          const [currentData, setCurrentData] = useState({ dietPlan: '', workoutPlan: '', stepGoal: 10000, checkins: [] });
+          const [currentData, setCurrentData] = useState({ 
+              dietPlan: '', 
+              workoutPlan: '', 
+              stepGoal: 10000, 
+              currentWeek: 1,  // NY
+              totalWeeks: 12,  // NY
+              checkins: [] 
+          });
           const [isLoading, setIsLoading] = useState(true);
 
           useEffect(() => {
@@ -847,7 +883,14 @@
 
           useEffect(() => {
             if (viewingClient) {
-                api.getUserData(viewingClient.id).then(setCurrentData).catch(() => setCurrentData({ dietPlan: '', workoutPlan: '', stepGoal: 10000, checkins: [] }));
+                api.getUserData(viewingClient.id).then(setCurrentData).catch(() => setCurrentData({ 
+                    dietPlan: '', 
+                    workoutPlan: '', 
+                    stepGoal: 10000, 
+                    currentWeek: 1, 
+                    totalWeeks: 12,
+                    checkins: [] 
+                }));
             }
           }, [viewingClient]);
 
@@ -868,6 +911,13 @@
                 if (!viewingClient) return;
                 await api.submitCheckin(viewingClient.id, entry);
                 setCurrentData(prev => ({ ...prev, checkins: [...prev.checkins, entry] }));
+          };
+          
+          const onUpdateGoal = async (field, value) => {
+              if (!viewingClient) return;
+              const newData = { ...currentData, [field]: value };
+              setCurrentData(newData);
+              await api.saveUserData(viewingClient.id, newData);
           };
 
           const handleDeleteCheckin = async (checkinId) => {
@@ -891,7 +941,7 @@
             <div className="max-w-md mx-auto min-h-screen bg-brand-pastel relative shadow-2xl overflow-hidden">
               <Header title={activeTab === 'dashboard' ? 'Dashbord' : activeTab === 'diet' ? 'Kosthold' : activeTab === 'workout' ? 'Trening' : 'Innsjekk'} user={currentUser} viewingClient={isCoach ? viewingClient : null} onLogout={handleLogout} onClearClient={() => { setViewingClient(null); setActiveTab('dashboard'); }} />
               <main className="p-4 pb-32 relative z-10">
-                {activeTab === 'dashboard' ? <DashboardView userData={currentData} isCoach={isCoach} onUpdateGoal={(f, v) => { setCurrentData(d=>({...d, [f]: v})); api.saveUserData(viewingClient.id, {...currentData, [f]: v}); }} /> :
+                {activeTab === 'dashboard' ? <DashboardView userData={currentData} isCoach={isCoach} onUpdateGoal={onUpdateGoal} /> :
                  activeTab === 'diet' ? <PlanSection type="diet" content={currentData.dietPlan} onSave={(val) => { setCurrentData(d=>({...d, dietPlan: val})); api.saveUserData(viewingClient.id, {...currentData, dietPlan: val}); }} isReadOnly={!isCoach} /> :
                  activeTab === 'workout' ? <PlanSection type="workout" content={currentData.workoutPlan} onSave={(val) => { setCurrentData(d=>({...d, workoutPlan: val})); api.saveUserData(viewingClient.id, {...currentData, workoutPlan: val}); }} isReadOnly={!isCoach} /> :
                  <CheckInView checkins={currentData.checkins} onNewCheckin={handleNewCheckin} onDelete={handleDeleteCheckin} isReadOnly={isCoach} stepGoal={currentData.stepGoal} />}
