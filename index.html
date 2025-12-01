@@ -25,7 +25,8 @@
                             dark: '#0056b3',    // Mørkere blå
                             pastel: '#E6E6FA',  // Digital Lavender (Bakgrunn)
                             mint: '#98FF98',    // Neo Mint
-                            mintdark: '#66cc66' // Mørkere mint
+                            mintdark: '#66cc66', // Mørkere mint
+                            warning: '#FFC107', // Gul for pause
                         }
                     },
                     fontFamily: {
@@ -110,7 +111,8 @@
         import { 
           Home, Utensils, Dumbbell, ClipboardCheck, Camera, Save, ChevronRight, ChevronLeft,
           TrendingUp, User, Briefcase, LogOut, Lock, ArrowRight, Plus, 
-          X, Trash2, Footprints, Edit2, Check, Moon, Zap, Scale, Maximize2, Loader2, AlertTriangle, Calendar, Activity
+          X, Trash2, Footprints, Edit2, Check, Moon, Zap, Scale, Maximize2, Loader2, AlertTriangle, 
+          Calendar, Activity, Play, Pause, Clock
         } from 'lucide-react';
 
         // --- GLOBAL CONFIG ---
@@ -238,7 +240,6 @@
                 if (hasPrev) setIndex(index - 1);
             };
 
-            // Keyboard navigation
             useEffect(() => {
                 const handleKeyDown = (e) => {
                     if (e.key === 'ArrowRight' && hasNext) setIndex(i => i + 1);
@@ -400,55 +401,95 @@
         const DashboardView = ({ userData, isCoach, onUpdateData }) => {
           const lastCheckin = userData.checkins?.length > 0 ? userData.checkins[userData.checkins.length - 1] : null;
 
+          // BEREGNING AV UKENUMMER
+          const calculateWeek = () => {
+              if (!userData.startDate) return 1;
+              
+              const start = new Date(userData.startDate);
+              // Hvis pauset, bruk pausetidspunkt som "nå", ellers bruk faktisk nåtid
+              const end = userData.isPaused && userData.pausedAt 
+                  ? new Date(userData.pausedAt) 
+                  : new Date();
+              
+              const diffTime = Math.max(0, end - start);
+              const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+              
+              // Uke 1 starter på dag 0
+              return Math.floor(diffDays / 7) + 1;
+          };
+
+          const currentWeek = calculateWeek();
+
           const handleEditGoal = async () => {
               const input = prompt("Sett nytt skrittmål:", userData.stepGoal || 10000);
               if (input && !isNaN(parseInt(input))) await onUpdateData('stepGoal', parseInt(input));
           };
 
-          // NY FUNKSJON: Coach endrer uke - FIX: Oppdaterer begge samtidig
-          const handleEditWeeks = async () => {
+          // HÅNDTERING AV STARTDATO OG PAUSE (Coach Only)
+          const handlePlanSettings = async () => {
               if (!isCoach) return;
               
-              const currentInput = prompt("Hvilken uke er vi i?", userData.currentWeek || 1);
-              if (currentInput === null) return;
-              const newCurrent = parseInt(currentInput);
+              // Meny for valg
+              const choice = prompt(
+                  `Styring av plan:\n\n1. Sett Startdato (Nullstiller uker)\n2. Endre totalt antall uker\n3. ${userData.isPaused ? 'Fortsett plan (Avslutt pause)' : 'Sett på pause'}\n\nSkriv 1, 2 eller 3:`
+              );
 
-              const totalInput = prompt("Totalt antall uker i planen?", userData.totalWeeks || 12);
-              if (totalInput === null) return;
-              const newTotal = parseInt(totalInput);
-
-              if (isNaN(newCurrent) || isNaN(newTotal)) {
-                  alert("Vennligst oppgi gyldige tall.");
-                  return;
+              if (choice === '1') {
+                  // Sett dato
+                  const dateStr = prompt("Startdato (YYYY-MM-DD):", new Date().toISOString().split('T')[0]);
+                  if (dateStr) {
+                      await onUpdateData({ startDate: new Date(dateStr).toISOString() });
+                  }
+              } else if (choice === '2') {
+                  // Endre total uker
+                  const weeks = prompt("Totalt antall uker:", userData.totalWeeks || 12);
+                  if (weeks && !isNaN(parseInt(weeks))) {
+                      await onUpdateData('totalWeeks', parseInt(weeks));
+                  }
+              } else if (choice === '3') {
+                  // Toggle pause
+                  if (userData.isPaused) {
+                      if(confirm("Er du sikker på at du vil starte planen igjen? Startdatoen vil bli justert automatisk.")) {
+                          await onUpdateData({ action: 'resume' });
+                      }
+                  } else {
+                      if(confirm("Vil du pause planen? Ukenummeret vil stoppe opp til du starter igjen.")) {
+                          await onUpdateData({ action: 'pause' });
+                      }
+                  }
               }
-
-              // Sender et objekt med begge verdiene for å unngå race-conditions
-              await onUpdateData({
-                  currentWeek: newCurrent,
-                  totalWeeks: newTotal
-              });
           };
 
           return (
             <div className="space-y-6 pb-24 animate-fade-in">
-              <div className="bg-gradient-to-br from-brand via-[#66a3ff] to-brand-mint rounded-3xl p-6 text-white shadow-xl shadow-brand/20 relative overflow-hidden">
-                <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-brand-mint rounded-full mix-blend-overlay filter blur-xl opacity-50"></div>
+              {/* HEADER CARD */}
+              <div className={`rounded-3xl p-6 text-white shadow-xl shadow-brand/20 relative overflow-hidden transition-colors duration-500 ${userData.isPaused ? 'bg-gradient-to-br from-gray-500 to-gray-700' : 'bg-gradient-to-br from-brand via-[#66a3ff] to-brand-mint'}`}>
+                <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-white/10 rounded-full mix-blend-overlay filter blur-xl opacity-50"></div>
                 
-                {/* NY: Uke-badge */}
+                {/* UKE BADGE & CONTROLS */}
                 <div className="flex justify-between items-start relative z-10 mb-2">
                     <button 
-                        onClick={handleEditWeeks}
+                        onClick={handlePlanSettings}
                         disabled={!isCoach}
-                        className={`flex items-center gap-1.5 bg-white/20 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-bold border border-white/20 transition-transform ${isCoach ? 'hover:scale-105 active:scale-95 cursor-pointer' : 'cursor-default'}`}
+                        className={`flex items-center gap-1.5 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-bold border transition-transform ${isCoach ? 'hover:scale-105 active:scale-95 cursor-pointer' : 'cursor-default'} ${userData.isPaused ? 'bg-brand-warning/20 border-brand-warning/50 text-brand-warning' : 'bg-white/20 border-white/20 text-white'}`}
                     >
-                        <Calendar size={12} />
-                        Uke {userData.currentWeek || 1} av {userData.totalWeeks || 12}
+                        {userData.isPaused ? <Pause size={12} /> : <Calendar size={12} />}
+                        {userData.isPaused ? 'PAUSET' : `Uke ${currentWeek} av ${userData.totalWeeks || 12}`}
                         {isCoach && <Edit2 size={10} className="ml-1 opacity-70" />}
                     </button>
+                    
+                    {/* START-DATO VISNING (Kun for Coach) */}
+                    {isCoach && userData.startDate && (
+                        <div className="text-[10px] text-white/60 font-medium">
+                            Start: {new Date(userData.startDate).toLocaleDateString()}
+                        </div>
+                    )}
                 </div>
 
-                <h2 className="text-2xl font-extrabold mb-1 relative z-10">Status</h2>
-                <p className="text-white opacity-90 relative z-10 font-medium">Din progresjon.</p>
+                <h2 className="text-2xl font-extrabold mb-1 relative z-10">{userData.isPaused ? 'Plan Pauset' : 'Status'}</h2>
+                <p className="text-white opacity-90 relative z-10 font-medium">
+                    {userData.isPaused ? 'Ingen uker telles.' : 'Din progresjon.'}
+                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -762,9 +803,9 @@
                                         </div>
                                     </div>
 
-                                    {/* TRENING (S/C) */}
+                                    {/* TRENING (S/C) -> Nå Styrke / Cardio */}
                                     <div className="bg-orange-50 p-2 rounded-xl flex flex-col items-center justify-center">
-                                        <div className="text-[9px] uppercase text-orange-400 font-bold mb-1">Trening</div>
+                                        <div className="text-[9px] uppercase text-orange-400 font-bold mb-1">Styrke / Cardio</div>
                                         <div className="flex items-center gap-2 font-bold text-slate-700 text-base">
                                             <span className="flex items-center gap-1" title="Styrke"><Dumbbell size={14} className="text-orange-500" /> {entry.strengthSessions}</span>
                                             <span className="text-slate-300 text-sm">|</span>
@@ -866,8 +907,10 @@
               dietPlan: '', 
               workoutPlan: '', 
               stepGoal: 10000, 
-              currentWeek: 1, 
               totalWeeks: 12,
+              startDate: null,
+              isPaused: false,
+              pausedAt: null,
               checkins: [] 
           });
           const [isLoading, setIsLoading] = useState(true);
@@ -913,8 +956,10 @@
                     dietPlan: '', 
                     workoutPlan: '', 
                     stepGoal: 10000, 
-                    currentWeek: 1, 
                     totalWeeks: 12,
+                    startDate: null,
+                    isPaused: false,
+                    pausedAt: null,
                     checkins: [] 
                 }));
             }

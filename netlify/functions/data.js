@@ -9,9 +9,8 @@ exports.handler = async (event) => {
       const userId = event.queryStringParameters.id;
       if (!userId) return { statusCode: 400, body: 'Missing user ID' };
 
-      // OPPDATERT: Henter nå også current_week og total_weeks
       const userResult = await sql`
-        SELECT diet_plan, workout_plan, step_goal, current_week, total_weeks 
+        SELECT diet_plan, workout_plan, step_goal, total_weeks, start_date, is_paused, paused_at 
         FROM users 
         WHERE id = ${userId}
       `;
@@ -32,14 +31,8 @@ exports.handler = async (event) => {
       const formattedCheckins = checkins.map(c => {
         let imageList = [];
         if (c.images) {
-          try {
-            imageList = JSON.parse(c.images);
-          } catch (e) {
-            console.error("Feil ved parsing av bilder", e);
-          }
-        } else if (c.image_url) {
-          imageList = [c.image_url];
-        }
+          try { imageList = JSON.parse(c.images); } catch (e) { console.error("Feil ved parsing av bilder", e); }
+        } else if (c.image_url) { imageList = [c.image_url]; }
 
         return {
           ...c,
@@ -54,8 +47,10 @@ exports.handler = async (event) => {
           dietPlan: user.diet_plan || '',
           workoutPlan: user.workout_plan || '',
           stepGoal: user.step_goal || 10000,
-          currentWeek: user.current_week || 1, // Default uke 1
-          totalWeeks: user.total_weeks || 12,   // Default 12 uker
+          totalWeeks: user.total_weeks || 12,
+          startDate: user.start_date,
+          isPaused: user.is_paused || false,
+          pausedAt: user.paused_at,
           checkins: formattedCheckins
         })
       };
@@ -66,19 +61,49 @@ exports.handler = async (event) => {
       const { userId, type, data } = JSON.parse(event.body);
 
       if (type === 'plan_update') {
+        // Enkle oppdateringer
         if (data.dietPlan !== undefined) await sql`UPDATE users SET diet_plan = ${data.dietPlan} WHERE id = ${userId}`;
         if (data.workoutPlan !== undefined) await sql`UPDATE users SET workout_plan = ${data.workoutPlan} WHERE id = ${userId}`;
         if (data.stepGoal !== undefined) await sql`UPDATE users SET step_goal = ${data.stepGoal} WHERE id = ${userId}`;
-        
-        // OPPDATERT: Lagring av uker
-        if (data.currentWeek !== undefined) await sql`UPDATE users SET current_week = ${data.currentWeek} WHERE id = ${userId}`;
         if (data.totalWeeks !== undefined) await sql`UPDATE users SET total_weeks = ${data.totalWeeks} WHERE id = ${userId}`;
+        
+        // Startdato oppdatering
+        if (data.startDate !== undefined) {
+           await sql`UPDATE users SET start_date = ${data.startDate}, is_paused = false, paused_at = NULL WHERE id = ${userId}`;
+        }
+
+        // PAUSE LOGIKK
+        if (data.action === 'pause') {
+            const now = new Date().toISOString();
+            await sql`UPDATE users SET is_paused = true, paused_at = ${now} WHERE id = ${userId}`;
+        }
+        
+        // RESUME LOGIKK (Flytt startdato frem)
+        if (data.action === 'resume') {
+            // Hent nåværende data for å regne ut diff
+            const userRes = await sql`SELECT start_date, paused_at FROM users WHERE id = ${userId}`;
+            const u = userRes[0];
+            
+            if (u && u.paused_at && u.start_date) {
+                const pauseStart = new Date(u.paused_at);
+                const now = new Date();
+                const diffTime = now - pauseStart; // Tid brukt i pause (ms)
+                
+                // Flytt startdato frem med like mye tid som vi var i pause
+                const oldStart = new Date(u.start_date);
+                const newStart = new Date(oldStart.getTime() + diffTime).toISOString();
+                
+                await sql`UPDATE users SET start_date = ${newStart}, is_paused = false, paused_at = NULL WHERE id = ${userId}`;
+            } else {
+                // Fallback hvis data mangler: bare skru av pause
+                await sql`UPDATE users SET is_paused = false WHERE id = ${userId}`;
+            }
+        }
       } 
       
       else if (type === 'new_checkin') {
         const cardio = data.cardioSessions || 0;
         const imagesJson = JSON.stringify(data.images || []);
-
         await sql`
           INSERT INTO checkins (
             user_id, date, weight, sleep, energy, accuracy, 
