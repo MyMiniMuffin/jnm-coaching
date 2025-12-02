@@ -392,8 +392,9 @@
           </div>
         );
 
-        const Card = ({ children, className = "" }) => (
-          <div className={`bg-white rounded-3xl p-5 shadow-sm border border-slate-100 ${className}`}>{children}</div>
+        // FIX: La til ...props for å tillate onClick og andre props
+        const Card = ({ children, className = "", ...props }) => (
+          <div className={`bg-white rounded-3xl p-5 shadow-sm border border-slate-100 ${className}`} {...props}>{children}</div>
         );
 
         // --- Views ---
