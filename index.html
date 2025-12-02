@@ -110,7 +110,7 @@
         import { createRoot } from 'react-dom/client';
         import { 
           Home, Utensils, Dumbbell, ClipboardCheck, Camera, Save, ChevronRight, ChevronLeft,
-          TrendingUp, User, Briefcase, LogOut, Lock, ArrowRight, Plus, 
+          TrendingUp, TrendingDown, Minus, User, Briefcase, LogOut, Lock, ArrowRight, Plus, 
           X, Trash2, Footprints, Edit2, Check, Moon, Zap, Scale, Maximize2, Loader2, AlertTriangle, 
           Calendar, Activity, Play, Pause, Clock
         } from 'lucide-react';
@@ -398,7 +398,130 @@
 
         // --- Views ---
 
-        const DashboardView = ({ userData, isCoach, onUpdateData }) => {
+        // NY VIEW: Vektprogresjon
+        const WeightProgressView = ({ checkins, onBack }) => {
+            // Filtrer ut checkins som faktisk har vekt registrert og sorter stigende (eldst først) for graf
+            const validCheckins = checkins
+                .filter(c => c.weight && parseFloat(c.weight) > 0)
+                .sort((a, b) => a.timestamp - b.timestamp);
+
+            if (validCheckins.length === 0) return (
+                <div className="flex flex-col items-center justify-center h-[50vh] animate-fade-in">
+                    <p className="text-slate-400 font-bold mb-4">Ingen vektdata enda.</p>
+                    <button onClick={onBack} className="bg-brand text-white font-bold py-3 px-6 rounded-2xl shadow-lg">Tilbake</button>
+                </div>
+            );
+
+            const first = validCheckins[0];
+            const last = validCheckins[validCheckins.length - 1];
+            const totalChange = (parseFloat(last.weight) - parseFloat(first.weight)).toFixed(1);
+            const isDown = parseFloat(totalChange) < 0;
+            const isSame = parseFloat(totalChange) === 0;
+
+            // --- Enkel SVG Graf Logikk ---
+            const width = 300;
+            const height = 150;
+            const padding = 10;
+            
+            const weights = validCheckins.map(c => parseFloat(c.weight));
+            const minW = Math.min(...weights);
+            const maxW = Math.max(...weights);
+            const timestamps = validCheckins.map(c => c.timestamp);
+            const minT = Math.min(...timestamps);
+            const maxT = Math.max(...timestamps);
+
+            // Generer punkter for polylinjen
+            const points = validCheckins.map(c => {
+                // X-akse: Tid (Hvis bare ett punkt, sett i midten)
+                const x = minT === maxT ? width / 2 : ((c.timestamp - minT) / (maxT - minT)) * (width - 2 * padding) + padding;
+                // Y-akse: Vekt (Høyere vekt = lavere Y-verdi fordi SVG Y går nedover)
+                const y = minW === maxW ? height / 2 : height - padding - ((parseFloat(c.weight) - minW) / (maxW - minW)) * (height - 2 * padding);
+                return `${x},${y}`;
+            }).join(' ');
+
+            return (
+                <div className="space-y-6 animate-fade-in pb-24">
+                    {/* Header */}
+                    <div className="flex items-center gap-4 mb-2">
+                         <button onClick={onBack} className="p-2 bg-white rounded-full shadow-sm text-slate-600 hover:text-brand transition-colors"><ChevronLeft size={24}/></button>
+                         <h2 className="text-xl font-extrabold text-slate-800">Vektprogresjon</h2>
+                    </div>
+
+                    {/* Summary Card */}
+                    <div className={`bg-gradient-to-br ${isDown ? 'from-brand-mintdark to-emerald-600' : isSame ? 'from-slate-500 to-slate-700' : 'from-brand to-brand-dark'} text-white p-6 rounded-3xl shadow-xl shadow-brand/20 relative overflow-hidden`}>
+                        <div className="flex justify-between items-end relative z-10">
+                            <div>
+                                <p className="text-white/80 text-xs font-bold uppercase mb-1">Total endring</p>
+                                <div className="text-4xl font-extrabold flex items-center gap-2">
+                                     {totalChange > 0 ? '+' : ''}{totalChange.replace('.', ',')} kg
+                                     {isDown ? <TrendingDown className="opacity-80" size={32} /> : isSame ? <Minus className="opacity-80" size={32} /> : <TrendingUp className="opacity-80" size={32} />}
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-white/80 text-xs font-bold uppercase">Start / Nå</p>
+                                <p className="font-bold text-lg">{formatWeight(first.weight)} / {formatWeight(last.weight)}</p>
+                            </div>
+                        </div>
+                        {/* Bakgrunnsdekor */}
+                         <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-white/10 rounded-full mix-blend-overlay filter blur-xl opacity-50"></div>
+                    </div>
+
+                    {/* Graf */}
+                    {validCheckins.length > 1 && (
+                        <Card className="!p-0 overflow-hidden relative h-48 flex items-center justify-center bg-white border-none shadow-md">
+                             <div className="absolute top-4 left-4 text-xs font-bold text-slate-400">GRAF</div>
+                            <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full px-2 py-4">
+                                 <polyline 
+                                    fill="none" 
+                                    stroke={isDown ? '#66cc66' : '#007BFF'} 
+                                    strokeWidth="3" 
+                                    points={points} 
+                                    strokeLinecap="round" 
+                                    strokeLinejoin="round"
+                                 />
+                                 {/* Dots på hvert punkt */}
+                                 {validCheckins.map((c, i) => {
+                                     const x = minT === maxT ? width / 2 : ((c.timestamp - minT) / (maxT - minT)) * (width - 2 * padding) + padding;
+                                     const y = minW === maxW ? height / 2 : height - padding - ((parseFloat(c.weight) - minW) / (maxW - minW)) * (height - 2 * padding);
+                                     return <circle key={i} cx={x} cy={y} r="3" fill="white" stroke={isDown ? '#66cc66' : '#007BFF'} strokeWidth="2" />
+                                 })}
+                            </svg>
+                        </Card>
+                    )}
+
+                    {/* Historikk Liste */}
+                    <div className="space-y-3">
+                        <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider px-2">Logg</h3>
+                         {[...validCheckins].reverse().map((entry, i) => {
+                             // Siden vi reverserte listen, er "forrige" (eldre) element nå på index i + 1
+                             const prev = [...validCheckins].reverse()[i+1];
+                             const change = prev ? (parseFloat(entry.weight) - parseFloat(prev.weight)) : 0;
+                             const changeFormatted = change.toFixed(1).replace('.', ',');
+                             
+                             return (
+                                 <div key={entry.id} className="bg-white p-4 rounded-2xl flex justify-between items-center border border-slate-50 shadow-sm">
+                                     <div>
+                                         <div className="font-bold text-slate-800">{entry.date}</div>
+                                         <div className="text-xs text-slate-400">{new Date(entry.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                                     </div>
+                                     <div className="flex items-center gap-4">
+                                         {prev && (
+                                             <span className={`text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1 ${change < 0 ? 'bg-green-100 text-green-700' : change > 0 ? 'bg-red-50 text-red-600' : 'bg-slate-100 text-slate-500'}`}>
+                                                 {change < 0 ? <TrendingDown size={12}/> : change > 0 ? <TrendingUp size={12}/> : <Minus size={12}/>}
+                                                 {change > 0 ? '+' : ''}{changeFormatted}
+                                             </span>
+                                         )}
+                                         <span className="font-extrabold text-lg text-slate-700 min-w-[3rem] text-right">{formatWeight(entry.weight)}</span>
+                                     </div>
+                                 </div>
+                             )
+                         })}
+                    </div>
+                </div>
+            )
+        }
+
+        const DashboardView = ({ userData, isCoach, onUpdateData, onOpenWeightHistory }) => {
           const lastCheckin = userData.checkins?.length > 0 ? userData.checkins[userData.checkins.length - 1] : null;
 
           // BEREGNING AV UKENUMMER
@@ -499,7 +622,10 @@
                     <span className="text-slate-800 font-extrabold text-2xl">{userData.stepGoal?.toLocaleString() || '10 000'}</span>
                     {isCoach && <button onClick={handleEditGoal} className="absolute top-2 right-2 p-2 text-slate-300 hover:text-brand"><Edit2 size={16} /></button>}
                 </Card>
-                <Card className="flex flex-col items-center justify-center py-8 group">
+                
+                {/* KLIKKBART VEKT KORT */}
+                <Card className="flex flex-col items-center justify-center py-8 group cursor-pointer hover:shadow-md transition-shadow active:scale-95 relative" onClick={onOpenWeightHistory}>
+                  <div className="absolute top-2 right-2 text-slate-300"><ChevronRight size={16} /></div>
                   <div className="w-14 h-14 bg-brand-mint/20 rounded-2xl flex items-center justify-center text-brand-mintdark mb-3 group-hover:scale-110 transition-transform"><TrendingUp size={28} /></div>
                   <span className="text-slate-400 text-xs font-bold uppercase">Siste vekt</span>
                   <span className="text-slate-800 font-extrabold text-2xl">{lastCheckin ? `${formatWeight(lastCheckin.weight)} kg` : '--'}</span>
@@ -905,8 +1031,10 @@
           const [allUsers, setAllUsers] = useState([]);
           const [viewingClient, setViewingClient] = useState(null);
           
-          // NY STATE: Laster klient-data?
+          // STATE: Laster klient-data?
           const [isClientLoading, setIsClientLoading] = useState(false);
+          // STATE: Vis Vektprogresjon?
+          const [showWeightHistory, setShowWeightHistory] = useState(false);
 
           const [currentData, setCurrentData] = useState({ 
               dietPlan: '', 
@@ -951,8 +1079,6 @@
           // FIX: Forbedret data-henting med loading state
           useEffect(() => {
             if (viewingClient) {
-                // Vi setter ikke isClientLoading=true her, fordi vi gjør det i onSelectClient for å unngå "flash".
-                // Men vi sørger for at den blir false når vi er ferdige.
                 api.getUserData(viewingClient.id)
                     .then(setCurrentData)
                     .catch(() => setCurrentData({ 
@@ -1032,6 +1158,7 @@
                                   });
                                   setIsClientLoading(true);
                                   setViewingClient(client); 
+                                  setShowWeightHistory(false); // Reset view
                                   setActiveTab('dashboard'); 
                               }} 
                               onAddClient={async (u) => setAllUsers(await api.createUser({...u, id: Date.now().toString(), role:'athlete'}))} 
@@ -1054,14 +1181,28 @@
                     </div>
                 ) : (
                     <>
-                        {activeTab === 'dashboard' ? <DashboardView userData={currentData} isCoach={isCoach} onUpdateData={handleUpdateData} /> :
+                        {activeTab === 'dashboard' ? (
+                            showWeightHistory ? (
+                                <WeightProgressView 
+                                    checkins={currentData.checkins} 
+                                    onBack={() => setShowWeightHistory(false)} 
+                                />
+                            ) : (
+                                <DashboardView 
+                                    userData={currentData} 
+                                    isCoach={isCoach} 
+                                    onUpdateData={handleUpdateData} 
+                                    onOpenWeightHistory={() => setShowWeightHistory(true)} // Sender funksjon ned
+                                />
+                            )
+                        ) :
                         activeTab === 'diet' ? <PlanSection type="diet" content={currentData.dietPlan} onSave={(val) => handleUpdateData('dietPlan', val)} isReadOnly={!isCoach} /> :
                         activeTab === 'workout' ? <PlanSection type="workout" content={currentData.workoutPlan} onSave={(val) => handleUpdateData('workoutPlan', val)} isReadOnly={!isCoach} /> :
                         <CheckInView checkins={currentData.checkins} onNewCheckin={handleNewCheckin} onDelete={handleDeleteCheckin} isReadOnly={isCoach} stepGoal={currentData.stepGoal} />}
                     </>
                 )}
               </main>
-              <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
+              <Navigation activeTab={activeTab} setActiveTab={(tab) => { setActiveTab(tab); setShowWeightHistory(false); }} />
             </div>
           );
         };
