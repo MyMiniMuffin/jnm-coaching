@@ -786,7 +786,8 @@
                                 <div className="flex justify-between items-start mb-3">
                                     <div>
                                         <div className="font-bold text-slate-800 text-lg">{entry.date}</div>
-                                        <div className="text-xs text-slate-400 font-medium">{new Date(entry.id).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                                        {/* BUG FIX HERE: Changed entry.id to entry.timestamp for correct time display */}
+                                        <div className="text-xs text-slate-400 font-medium">{new Date(entry.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
                                     </div>
                                     <div className="bg-brand-pastel px-3 py-1 rounded-full text-sm font-bold text-brand-dark">{formatWeight(entry.weight)} kg</div>
                                 </div>
@@ -903,6 +904,10 @@
           const [activeTab, setActiveTab] = useState('dashboard');
           const [allUsers, setAllUsers] = useState([]);
           const [viewingClient, setViewingClient] = useState(null);
+          
+          // NY STATE: Laster klient-data?
+          const [isClientLoading, setIsClientLoading] = useState(false);
+
           const [currentData, setCurrentData] = useState({ 
               dietPlan: '', 
               workoutPlan: '', 
@@ -918,25 +923,18 @@
           useEffect(() => {
             const init = async () => {
                 try {
-                    // Hent alle brukere fra DB først
                     const users = await api.getUsers();
                     setAllUsers(users);
 
-                    // Sjekk om vi har en lagret sesjon
                     const savedSession = localStorage.getItem('jnm_session');
                     if (savedSession) {
                         const sessionUser = JSON.parse(savedSession);
-                        
-                        // VIKTIG: Sjekk om brukeren fra sesjonen faktisk finnes i DB-listen
                         const isValidUser = users.find(u => u.id === sessionUser.id);
                         
                         if (isValidUser) {
-                            // Brukeren finnes! Oppdater med ferske data fra DB
                             setCurrentUser(isValidUser);
                             if (isValidUser.role === 'athlete') setViewingClient(isValidUser);
                         } else {
-                            // Brukeren finnes IKKE i DB (slettet?). Logg ut.
-                            console.warn("Session user not found in DB, logging out.");
                             localStorage.removeItem('jnm_session');
                             setCurrentUser(null);
                         }
@@ -950,18 +948,24 @@
             init();
           }, []);
 
+          // FIX: Forbedret data-henting med loading state
           useEffect(() => {
             if (viewingClient) {
-                api.getUserData(viewingClient.id).then(setCurrentData).catch(() => setCurrentData({ 
-                    dietPlan: '', 
-                    workoutPlan: '', 
-                    stepGoal: 10000, 
-                    totalWeeks: 12,
-                    startDate: null,
-                    isPaused: false,
-                    pausedAt: null,
-                    checkins: [] 
-                }));
+                // Vi setter ikke isClientLoading=true her, fordi vi gjør det i onSelectClient for å unngå "flash".
+                // Men vi sørger for at den blir false når vi er ferdige.
+                api.getUserData(viewingClient.id)
+                    .then(setCurrentData)
+                    .catch(() => setCurrentData({ 
+                        dietPlan: '', 
+                        workoutPlan: '', 
+                        stepGoal: 10000, 
+                        totalWeeks: 12,
+                        startDate: null,
+                        isPaused: false,
+                        pausedAt: null,
+                        checkins: [] 
+                    }))
+                    .finally(() => setIsClientLoading(false));
             }
           }, [viewingClient]);
 
@@ -984,7 +988,6 @@
                 setCurrentData(prev => ({ ...prev, checkins: [...prev.checkins, entry] }));
           };
           
-          // FIX: Updated to handle multiple updates at once to prevent stale state issues
           const handleUpdateData = async (keyOrObj, value) => {
               if (!viewingClient) return;
               
@@ -1014,17 +1017,49 @@
           const isCoach = currentUser.role === 'coach';
 
           if (isCoach && !viewingClient) {
-              return <div className="max-w-md mx-auto min-h-screen bg-brand-pastel relative shadow-2xl overflow-hidden"><Header title="Utøvere" user={currentUser} onLogout={handleLogout} /><main className="p-4 relative z-10"><CoachDashboard user={currentUser} allUsers={allUsers} onSelectClient={(client) => { setViewingClient(client); setActiveTab('dashboard'); }} onAddClient={async (u) => setAllUsers(await api.createUser({...u, id: Date.now().toString(), role:'athlete'}))} onDeleteClient={async (id) => setAllUsers(await api.deleteUser(id))} /></main></div>;
+              return (
+                  <div className="max-w-md mx-auto min-h-screen bg-brand-pastel relative shadow-2xl overflow-hidden">
+                      <Header title="Utøvere" user={currentUser} onLogout={handleLogout} />
+                      <main className="p-4 relative z-10">
+                          <CoachDashboard 
+                              user={currentUser} 
+                              allUsers={allUsers} 
+                              onSelectClient={(client) => { 
+                                  // FIX: Tøm data og sett loading umiddelbart ved klikk
+                                  setCurrentData({ 
+                                      dietPlan: '', workoutPlan: '', stepGoal: 10000, 
+                                      totalWeeks: 12, startDate: null, isPaused: false, pausedAt: null, checkins: [] 
+                                  });
+                                  setIsClientLoading(true);
+                                  setViewingClient(client); 
+                                  setActiveTab('dashboard'); 
+                              }} 
+                              onAddClient={async (u) => setAllUsers(await api.createUser({...u, id: Date.now().toString(), role:'athlete'}))} 
+                              onDeleteClient={async (id) => setAllUsers(await api.deleteUser(id))} 
+                           />
+                      </main>
+                  </div>
+              );
           }
 
           return (
             <div className="max-w-md mx-auto min-h-screen bg-brand-pastel relative shadow-2xl overflow-hidden">
               <Header title={activeTab === 'dashboard' ? 'Dashbord' : activeTab === 'diet' ? 'Kosthold' : activeTab === 'workout' ? 'Trening' : 'Innsjekk'} user={currentUser} viewingClient={isCoach ? viewingClient : null} onLogout={handleLogout} onClearClient={() => { setViewingClient(null); setActiveTab('dashboard'); }} />
               <main className="p-4 pb-32 relative z-10">
-                {activeTab === 'dashboard' ? <DashboardView userData={currentData} isCoach={isCoach} onUpdateData={handleUpdateData} /> :
-                 activeTab === 'diet' ? <PlanSection type="diet" content={currentData.dietPlan} onSave={(val) => handleUpdateData('dietPlan', val)} isReadOnly={!isCoach} /> :
-                 activeTab === 'workout' ? <PlanSection type="workout" content={currentData.workoutPlan} onSave={(val) => handleUpdateData('workoutPlan', val)} isReadOnly={!isCoach} /> :
-                 <CheckInView checkins={currentData.checkins} onNewCheckin={handleNewCheckin} onDelete={handleDeleteCheckin} isReadOnly={isCoach} stepGoal={currentData.stepGoal} />}
+                {/* FIX: Vis Laste-indikator mens vi henter ny klient */}
+                {isClientLoading ? (
+                    <div className="flex flex-col items-center justify-center py-20 animate-pulse">
+                        <Loader2 size={48} className="text-brand animate-spin mb-4" />
+                        <p className="text-slate-400 font-bold">Laster utøver...</p>
+                    </div>
+                ) : (
+                    <>
+                        {activeTab === 'dashboard' ? <DashboardView userData={currentData} isCoach={isCoach} onUpdateData={handleUpdateData} /> :
+                        activeTab === 'diet' ? <PlanSection type="diet" content={currentData.dietPlan} onSave={(val) => handleUpdateData('dietPlan', val)} isReadOnly={!isCoach} /> :
+                        activeTab === 'workout' ? <PlanSection type="workout" content={currentData.workoutPlan} onSave={(val) => handleUpdateData('workoutPlan', val)} isReadOnly={!isCoach} /> :
+                        <CheckInView checkins={currentData.checkins} onNewCheckin={handleNewCheckin} onDelete={handleDeleteCheckin} isReadOnly={isCoach} stepGoal={currentData.stepGoal} />}
+                    </>
+                )}
               </main>
               <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
             </div>
