@@ -399,7 +399,7 @@
 
         // --- Views ---
 
-        // NY VIEW: Vektprogresjon med Forbedret Swipe
+        // NY VIEW: Vektprogresjon med Forbedret Swipe og Fikset Scroll
         const WeightProgressView = ({ checkins, onBack }) => {
             // SWIPE LOGIC START
             const [touchStart, setTouchStart] = useState(null);
@@ -496,7 +496,7 @@
 
             return (
                 <div 
-                    className="space-y-6 animate-fade-in pb-24 min-h-screen"
+                    className="space-y-6 animate-fade-in" 
                     onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
                 >
                     {/* Header */}
