@@ -643,9 +643,10 @@
             const files = Array.from(e.target.files);
             if (files.length === 0) return;
             
-            setIsCompressing(true); // Bruker denne staten for "laster opp"-visning
+            setIsCompressing(true);
             
             try {
+                // Cloudinary config
                 const cloudName = 'drg4fxboh'; 
                 const uploadPreset = 'jnm_upload'; 
 
