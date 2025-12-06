@@ -862,7 +862,7 @@
                                 
                                 {isReadOnly && <button onClick={(e) => { e.stopPropagation(); onDelete(entry.id); }} className="absolute top-4 right-4 text-slate-300 hover:text-red-500"><Trash2 size={16} /></button>}
                                 
-                                <div className="grid grid-cols-3 gap-2 mb-4 text-center text-xs">
+                                <div className="grid grid-cols-3 gap-2 mb-3 text-center text-xs">
                                     {/* NØYAKTIGHET */}
                                     <div className="bg-blue-50 p-2 rounded-xl flex flex-col items-center justify-center">
                                         <div className="text-[9px] uppercase text-blue-400 font-bold mb-1">Nøyaktighet</div>
@@ -890,6 +890,18 @@
                                             <span className="text-slate-300 text-sm">|</span>
                                             <span className="flex items-center gap-1"><Moon size={14} className="text-indigo-400" /> {entry.sleep}</span>
                                         </div>
+                                    </div>
+                                </div>
+
+                                {/* NYTT: Skrittmål og Kosttilskudd status rad */}
+                                <div className="grid grid-cols-2 gap-2 mb-4 text-xs font-bold text-slate-600">
+                                    <div className={`py-2 px-3 rounded-xl flex items-center justify-center gap-2 ${entry.stepsReached ? 'bg-brand-mint/20 text-brand-mintdark' : 'bg-slate-50 text-slate-400'}`}>
+                                        <Footprints size={14} /> 
+                                        <span>{entry.stepsReached ? 'Skrittmål nådd' : 'Ingen skrittmål'}</span>
+                                    </div>
+                                    <div className={`py-2 px-3 rounded-xl flex items-center justify-center gap-2 ${entry.takenSupplements ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400'}`}>
+                                        <span className="uppercase text-[10px]">Kosttilskudd</span>
+                                        {entry.takenSupplements ? <Check size={14} /> : <X size={14} />}
                                     </div>
                                 </div>
 
