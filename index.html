@@ -11,9 +11,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="JNM Coaching">
 
-    <!-- FAVICON (Nytt 2025-inspirert ikon: "Sunrise Arc") -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='160' fill='%23DA7756'/%3E%3Ccircle cx='352' cy='176' r='64' fill='%23F9F8F6'/%3E%3Cpath d='M112 368c0-88.4 71.6-160 160-160 22.5 0 43.9 4.6 63.3 13.1' stroke='%23F9F8F6' stroke-width='64' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='160' fill='%23DA7756'/%3E%3Ccircle cx='352' cy='176' r='64' fill='%23F9F8F6'/%3E%3Cpath d='M112 368c0-88.4 71.6-160 160-160 22.5 0 43.9 4.6 63.3 13.1' stroke='%23F9F8F6' stroke-width='64' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
+    <!-- FAVICON (Nytt ikon: "Nordstjerne" / Sparkle) -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='160' fill='%23DA7756'/%3E%3Cpath d='M256 96c0 88.4 71.6 160 160 160-88.4 0-160 71.6-160 160 0-88.4-71.6-160-160-160 88.4 0 160-71.6 160-160z' fill='%23F9F8F6'/%3E%3C/svg%3E">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='160' fill='%23DA7756'/%3E%3Cpath d='M256 96c0 88.4 71.6 160 160 160-88.4 0-160 71.6-160 160 0-88.4-71.6-160-160-160 88.4 0 160-71.6 160-160z' fill='%23F9F8F6'/%3E%3C/svg%3E">
 
     <!-- Tailwind CSS with Typography Plugin -->
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
@@ -138,15 +138,15 @@
         import { 
           Home, Utensils, Dumbbell, ClipboardCheck, Camera, Save, ChevronRight, ChevronLeft,
           TrendingUp, TrendingDown, Minus, User, Briefcase, LogOut, Lock, ArrowRight, Plus, 
-          X, Trash2, Footprints, Edit2, Check, Moon, Zap, Scale, Maximize2, Loader2, AlertTriangle, 
-          Calendar, Activity, Play, Pause, Clock, Leaf
+          X, Trash2, Footprints, Edit2, Check, Moon, Zap, Scale, Loader2, AlertTriangle, 
+          Calendar, Pause
         } from 'lucide-react';
         
         import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 
         // --- GLOBAL CONFIG ---
-        // Oppdatert Ikon (Sunrise Arc)
-        const APP_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='160' fill='%23DA7756'/%3E%3Ccircle cx='352' cy='176' r='64' fill='%23F9F8F6'/%3E%3Cpath d='M112 368c0-88.4 71.6-160 160-160 22.5 0 43.9 4.6 63.3 13.1' stroke='%23F9F8F6' stroke-width='64' stroke-linecap='round' fill='none'/%3E%3C/svg%3E";
+        // Oppdatert Ikon (North Star / Sparkle)
+        const APP_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='160' fill='%23DA7756'/%3E%3Cpath d='M256 96c0 88.4 71.6 160 160 160-88.4 0-160 71.6-160 160 0-88.4-71.6-160-160-160 88.4 0 160-71.6 160-160z' fill='%23F9F8F6'/%3E%3C/svg%3E";
 
         if (window.marked) {
             window.marked.setOptions({ breaks: true, gfm: true });
@@ -1011,11 +1011,22 @@
                 ) : (
                     <>
                         {activeTab === 'dashboard' ? (
-                            showWeightHistory ? <WeightProgressView checkins={currentData.checkins} onBack={() => setShowWeightHistory(false)} /> :
-                            <DashboardView userData={currentData} isCoach={isCoach} onUpdateData={handleUpdateData} onOpenWeightHistory={() => setShowWeightHistory(true)} />
+                            showWeightHistory ? (
+                                <WeightProgressView 
+                                    checkins={currentData.checkins} 
+                                    onBack={() => setShowWeightHistory(false)} 
+                                />
+                            ) : (
+                                <DashboardView 
+                                    userData={currentData} 
+                                    isCoach={isCoach} 
+                                    onUpdateData={handleUpdateData} 
+                                    onOpenWeightHistory={() => setShowWeightHistory(true)} 
+                                />
+                            )
                         ) :
                         activeTab === 'diet' ? <PlanSection type="diet" content={currentData.dietPlan} onSave={(val) => handleUpdateData('dietPlan', val)} isReadOnly={!isCoach} /> :
-                        activeTab === 'workout' ? <PlanSection type=\"workout\" content={currentData.workoutPlan} onSave={(val) => handleUpdateData('workoutPlan', val)} isReadOnly={!isCoach} /> :
+                        activeTab === 'workout' ? <PlanSection type="workout" content={currentData.workoutPlan} onSave={(val) => handleUpdateData('workoutPlan', val)} isReadOnly={!isCoach} /> :
                         <CheckInView checkins={currentData.checkins} onNewCheckin={handleNewCheckin} onDelete={handleDeleteCheckin} isReadOnly={isCoach} stepGoal={currentData.stepGoal} />}
                     </>
                 )}
