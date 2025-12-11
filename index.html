@@ -11,9 +11,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="JNM Coaching">
 
-    <!-- FAVICON (Varm oransje) -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='128' fill='%23DA7756'/%3E%3Ccircle cx='256' cy='256' r='100' fill='%23F9F8F6' opacity='0.9'/%3E%3C/svg%3E">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='128' fill='%23DA7756'/%3E%3Ccircle cx='256' cy='256' r='100' fill='%23F9F8F6' opacity='0.9'/%3E%3C/svg%3E">
+    <!-- FAVICON (Nytt 2025-inspirert ikon: "Sunrise Arc") -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='160' fill='%23DA7756'/%3E%3Ccircle cx='352' cy='176' r='64' fill='%23F9F8F6'/%3E%3Cpath d='M112 368c0-88.4 71.6-160 160-160 22.5 0 43.9 4.6 63.3 13.1' stroke='%23F9F8F6' stroke-width='64' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='160' fill='%23DA7756'/%3E%3Ccircle cx='352' cy='176' r='64' fill='%23F9F8F6'/%3E%3Cpath d='M112 368c0-88.4 71.6-160 160-160 22.5 0 43.9 4.6 63.3 13.1' stroke='%23F9F8F6' stroke-width='64' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
 
     <!-- Tailwind CSS with Typography Plugin -->
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
@@ -145,7 +145,8 @@
         import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 
         // --- GLOBAL CONFIG ---
-        const APP_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='128' fill='%23DA7756'/%3E%3Cpath d='M256 120c-75.1 0-136 60.9-136 136s60.9 136 136 136 136-60.9 136-136-60.9-136-136-136zm0 248c-61.9 0-112-50.1-112-112s50.1-112 112-112 112 50.1 112 112-50.1 112-112 112z' fill='%23F9F8F6' opacity='0.9'/%3E%3C/svg%3E";
+        // Oppdatert Ikon (Sunrise Arc)
+        const APP_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='160' fill='%23DA7756'/%3E%3Ccircle cx='352' cy='176' r='64' fill='%23F9F8F6'/%3E%3Cpath d='M112 368c0-88.4 71.6-160 160-160 22.5 0 43.9 4.6 63.3 13.1' stroke='%23F9F8F6' stroke-width='64' stroke-linecap='round' fill='none'/%3E%3C/svg%3E";
 
         if (window.marked) {
             window.marked.setOptions({ breaks: true, gfm: true });
@@ -545,11 +546,11 @@
                             <span className="font-bold text-brand bg-brand/10 px-3 py-1 rounded-full">{lastCheckin.accuracy}/10</span>
                         </div>
                         <div className="flex justify-between items-center text-sm pb-3 border-b border-brand-dark/5">
-                            <span className="text-brand-text/60 font-medium">Økter (Styrke/Cardio)</span>
+                            <span className="text-brand-text/60 font-medium">Styrke / Cardio</span>
                             <span className="font-bold text-brand-text">{lastCheckin.strengthSessions} + {lastCheckin.cardioSessions || 0}</span>
                         </div>
                         <div className="flex justify-between items-center text-sm pb-3 border-b border-brand-dark/5">
-                            <span className="text-brand-text/60 font-medium">Energi & Søvn</span>
+                            <span className="text-brand-text/60 font-medium">Energi / Søvn</span>
                             <span className="font-bold text-brand-text flex items-center gap-2">
                                 <span className="flex items-center gap-1 text-xs bg-brand-warning/10 px-2 py-1 rounded text-brand-warning font-extrabold"><Zap size={12} /> {lastCheckin.energy}</span>
                                 <span className="text-brand-text/20 text-sm">|</span>
@@ -785,19 +786,19 @@
                                 
                                 <div className="grid grid-cols-3 gap-3 mb-4 text-center text-xs">
                                     <div className="bg-blue-50/50 p-2 rounded-xl border border-blue-100/50">
-                                        <div className="text-[9px] uppercase text-blue-400 font-bold mb-1 tracking-wider">Plan</div>
+                                        <div className="text-[9px] uppercase text-blue-400 font-bold mb-1 tracking-wider">Nøyaktighet</div>
                                         <div className="flex items-center justify-center gap-1 font-bold text-brand-text text-base">
                                             {entry.accuracy}<span className="text-xs text-brand-text/30 font-normal">/10</span>
                                         </div>
                                     </div>
                                     <div className="bg-orange-50/50 p-2 rounded-xl border border-orange-100/50">
-                                        <div className="text-[9px] uppercase text-orange-400 font-bold mb-1 tracking-wider">Økter</div>
+                                        <div className="text-[9px] uppercase text-orange-400 font-bold mb-1 tracking-wider">Styrke / Cardio</div>
                                         <div className="flex items-center justify-center gap-1 font-bold text-brand-text text-base">
                                             {entry.strengthSessions} <span className="text-brand-text/20">|</span> {entry.cardioSessions || 0}
                                         </div>
                                     </div>
                                     <div className="bg-purple-50/50 p-2 rounded-xl border border-purple-100/50">
-                                        <div className="text-[9px] uppercase text-purple-400 font-bold mb-1 tracking-wider">Energi</div>
+                                        <div className="text-[9px] uppercase text-purple-400 font-bold mb-1 tracking-wider">Energi / Søvn</div>
                                         <div className="flex items-center justify-center gap-1 font-bold text-brand-text text-base">
                                             {entry.energy} <span className="text-brand-text/20">|</span> {entry.sleep}
                                         </div>
@@ -1014,7 +1015,7 @@
                             <DashboardView userData={currentData} isCoach={isCoach} onUpdateData={handleUpdateData} onOpenWeightHistory={() => setShowWeightHistory(true)} />
                         ) :
                         activeTab === 'diet' ? <PlanSection type="diet" content={currentData.dietPlan} onSave={(val) => handleUpdateData('dietPlan', val)} isReadOnly={!isCoach} /> :
-                        activeTab === 'workout' ? <PlanSection type="workout" content={currentData.workoutPlan} onSave={(val) => handleUpdateData('workoutPlan', val)} isReadOnly={!isCoach} /> :
+                        activeTab === 'workout' ? <PlanSection type=\"workout\" content={currentData.workoutPlan} onSave={(val) => handleUpdateData('workoutPlan', val)} isReadOnly={!isCoach} /> :
                         <CheckInView checkins={currentData.checkins} onNewCheckin={handleNewCheckin} onDelete={handleDeleteCheckin} isReadOnly={isCoach} stepGoal={currentData.stepGoal} />}
                     </>
                 )}
