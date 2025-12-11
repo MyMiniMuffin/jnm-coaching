@@ -646,7 +646,14 @@
             setIsSubmitting(true);
             setErrorMessage('');
             try {
-                const newEntry = { id: Date.now(), date: new Date().toLocaleDateString('no-NO'), timestamp: Date.now(), ...formData };
+                // VIKTIG OPPDATERING HER: ISO-format for dato (YYYY-MM-DD)
+                const newEntry = { 
+                    id: Date.now(), 
+                    date: new Date().toISOString().split('T')[0], 
+                    timestamp: Date.now(), 
+                    ...formData 
+                };
+                
                 await onNewCheckin(newEntry);
                 setStep('success');
                 setTimeout(() => {
