@@ -5,41 +5,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>JNM Coaching</title>
     
-    <!-- PWA: Meta Tags for Mobile -->
-    <meta name="theme-color" content="#E6E6FA">
+    <meta name="theme-color" content="#F9F8F6">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="JNM Coaching">
 
-    <!-- FAVICON & ICONS -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='128' fill='%23007BFF'/%3E%3Ccircle cx='140' cy='360' r='35' fill='%23E6E6FA' opacity='0.9'/%3E%3Ccircle cx='256' cy='256' r='55' fill='%2398FF98' opacity='0.95'/%3E%3Ccircle cx='380' cy='140' r='85' fill='%23FFFFFF'/%3E%3C/svg%3E">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='128' fill='%23007BFF'/%3E%3Ccircle cx='140' cy='360' r='35' fill='%23E6E6FA' opacity='0.9'/%3E%3Ccircle cx='256' cy='256' r='55' fill='%2398FF98' opacity='0.95'/%3E%3Ccircle cx='380' cy='140' r='85' fill='%23FFFFFF'/%3E%3C/svg%3E">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='128' fill='%23DA7756'/%3E%3Ccircle cx='256' cy='256' r='100' fill='%23F9F8F6' opacity='0.9'/%3E%3C/svg%3E">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='128' fill='%23DA7756'/%3E%3Ccircle cx='256' cy='256' r='100' fill='%23F9F8F6' opacity='0.9'/%3E%3C/svg%3E">
 
-    <!-- Tailwind CSS with Typography Plugin -->
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
     
-    <!-- Custom Tailwind Configuration -->
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    colors: {
-                        brand: {
-                            DEFAULT: '#007BFF', // Electric Blue
-                            dark: '#0056b3',    // Mørkere blå
-                            pastel: '#E6E6FA',  // Digital Lavender (Bakgrunn)
-                            mint: '#98FF98',    // Neo Mint
-                            mintdark: '#66cc66', // Mørkere mint
-                            warning: '#FFC107', // Gul for pause
-                        }
-                    },
                     fontFamily: {
                         sans: ['Inter', 'system-ui', 'sans-serif'],
+                        serif: ['Merriweather', 'Georgia', 'serif'], // La til Serif for "Claude"-looken
+                    },
+                    colors: {
+                        brand: {
+                            DEFAULT: '#DA7756', // Warm Clay / Terracotta
+                            dark: '#B05638',    // Darker Clay
+                            pastel: '#F9F8F6',  // Warm Paper/Sand (Bakgrunn)
+                            cream: '#F2EFE9',   // Slightly darker cream for cards
+                            mint: '#A8BCA1',    // Sage Green
+                            mintdark: '#5D7556',// Forest Green
+                            warning: '#E0A842', // Warm Ochre
+                            text: '#4A4543',    // Warm Charcoal
+                        }
                     },
                     animation: {
-                        'fade-in': 'fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                        'zoom-in': 'zoomIn 0.2s ease-out',
-                        'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                        'fade-in': 'fadeIn 0.4s ease-out',
+                        'zoom-in': 'zoomIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
                     },
                     keyframes: {
                         fadeIn: {
@@ -47,7 +45,7 @@
                             'to': { opacity: '1', transform: 'translateY(0)' }
                         },
                         zoomIn: {
-                            'from': { opacity: '0', transform: 'scale(0.95)' },
+                            'from': { opacity: '0', transform: 'scale(0.98)' },
                             'to': { opacity: '1', transform: 'scale(1)' }
                         }
                     }
@@ -56,13 +54,10 @@
         }
     </script>
 
-    <!-- Marked Library -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
-    <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- React Import Map med Zoom-bibliotek -->
     <script type="importmap">
         {
             "imports": {
@@ -75,39 +70,41 @@
     </script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Merriweather:wght@300;400;700;900&display=swap');
 
         body {
             -webkit-tap-highlight-color: transparent;
             overscroll-behavior-y: none;
             font-family: 'Inter', sans-serif;
-            background-color: #E6E6FA;
+            background-color: #F9F8F6; /* Warm Paper */
+            color: #4A4543;
         }
+
+        h1, h2, h3, .serif-font {
+            font-family: 'Merriweather', serif;
+        }
+
         .safe-area-pb { padding-bottom: env(safe-area-inset-bottom); }
         
         .custom-checkbox:checked {
-            background-color: #007BFF;
-            border-color: #007BFF;
+            background-color: #DA7756;
+            border-color: #DA7756;
         }
 
+        /* Mykere Glassmorphism som passer varme toner */
         .glass-panel {
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);
         }
         
-        /* Hide scrollbar for clean horizontal scrolling */
-        .hide-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .hide-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="text-slate-900 select-none">
+<body class="text-brand-text select-none">
     <div id="root"></div>
 
     <script type="text/babel" data-type="module">
@@ -117,14 +114,14 @@
           Home, Utensils, Dumbbell, ClipboardCheck, Camera, Save, ChevronRight, ChevronLeft,
           TrendingUp, TrendingDown, Minus, User, Briefcase, LogOut, Lock, ArrowRight, Plus, 
           X, Trash2, Footprints, Edit2, Check, Moon, Zap, Scale, Maximize2, Loader2, AlertTriangle, 
-          Calendar, Activity, Play, Pause, Clock
+          Calendar, Activity, Play, Pause, Clock, Leaf
         } from 'lucide-react';
         
-        // Import Zoom Library
         import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 
         // --- GLOBAL CONFIG ---
-        const APP_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='128' fill='%23007BFF'/%3E%3Ccircle cx='140' cy='360' r='35' fill='%23E6E6FA' opacity='0.9'/%3E%3Ccircle cx='256' cy='256' r='55' fill='%2398FF98' opacity='0.95'/%3E%3Ccircle cx='380' cy='140' r='85' fill='%23FFFFFF'/%3E%3C/svg%3E";
+        // Oppdatert ikon: Varm Terracotta sirkel
+        const APP_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='128' fill='%23DA7756'/%3E%3Cpath d='M256 120c-75.1 0-136 60.9-136 136s60.9 136 136 136 136-60.9 136-136-60.9-136-136-136zm0 248c-61.9 0-112-50.1-112-112s50.1-112 112-112 112 50.1 112 112-50.1 112-112 112z' fill='%23F9F8F6' opacity='0.9'/%3E%3C/svg%3E";
 
         if (window.marked) {
             window.marked.setOptions({ breaks: true, gfm: true });
@@ -180,7 +177,6 @@
         // --- Helpers ---
         const formatWeight = (val) => (!val ? '--' : parseFloat(val).toFixed(1).replace('.', ','));
         
-        // OPTIMIZATION: Cloudinary Image Resizing
         const getThumbnail = (url) => {
             if (!url || typeof url !== 'string') return url;
             if (!url.includes('cloudinary.com')) return url;
@@ -189,15 +185,12 @@
 
         // --- Components ---
 
-        // LIGHTBOX COMPONENT MED ZOOM
         const ImageModal = ({ images, initialIndex, onClose }) => {
             const [index, setIndex] = useState(initialIndex || 0);
 
             useEffect(() => {
                 document.body.style.overflow = 'hidden';
-                return () => {
-                    document.body.style.overflow = 'unset';
-                };
+                return () => { document.body.style.overflow = 'unset'; };
             }, []);
 
             if (!images || images.length === 0) return null;
@@ -206,15 +199,8 @@
             const hasNext = index < images.length - 1;
             const hasPrev = index > 0;
 
-            const handleNext = (e) => {
-                if(e) e.stopPropagation();
-                if (hasNext) setIndex(index + 1);
-            };
-
-            const handlePrev = (e) => {
-                if(e) e.stopPropagation();
-                if (hasPrev) setIndex(index - 1);
-            };
+            const handleNext = (e) => { if(e) e.stopPropagation(); if (hasNext) setIndex(index + 1); };
+            const handlePrev = (e) => { if(e) e.stopPropagation(); if (hasPrev) setIndex(index - 1); };
 
             useEffect(() => {
                 const handleKeyDown = (e) => {
@@ -227,66 +213,19 @@
             }, [hasNext, hasPrev, onClose]);
 
             return (
-                <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-sm flex items-center justify-center p-0 animate-zoom-in touch-none">
-                    {/* Close Button - Top Right */}
-                    <button 
-                        onClick={onClose}
-                        className="absolute top-6 right-6 text-white/80 hover:text-white bg-black/20 p-2 rounded-full z-[120] transition-colors"
-                    >
-                        <X size={32} />
-                    </button>
-                    
+                <div className="fixed inset-0 z-[100] bg-brand-text/95 backdrop-blur-sm flex items-center justify-center p-0 animate-zoom-in touch-none">
+                    <button onClick={onClose} className="absolute top-6 right-6 text-white/80 hover:text-white bg-white/10 p-2 rounded-full z-[120] transition-colors"><X size={32} /></button>
                     <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
-                        {/* Key={index} er viktig! Det tvinger komponenten til å nullstille zoom 
-                            når vi bytter til et nytt bilde.
-                        */}
-                        <TransformWrapper
-                            key={index}
-                            initialScale={1}
-                            minScale={0.5} 
-                            maxScale={4}   
-                            centerOnInit={true}
-                            wheel={{ step: 0.2 }}
-                        >
+                        <TransformWrapper key={index} initialScale={1} minScale={0.5} maxScale={4} centerOnInit={true} wheel={{ step: 0.2 }}>
                             {({ zoomIn, zoomOut, resetTransform }) => (
-                                <TransformComponent
-                                    wrapperStyle={{ width: "100%", height: "100%" }}
-                                    contentStyle={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}
-                                >
-                                    <img 
-                                        src={currentImage} 
-                                        className="max-w-full max-h-[90vh] object-contain shadow-2xl select-none" 
-                                        alt="Fullskjerm"
-                                        onClick={(e) => e.stopPropagation()} 
-                                    />
+                                <TransformComponent wrapperStyle={{ width: "100%", height: "100%" }} contentStyle={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                    <img src={currentImage} className="max-w-full max-h-[90vh] object-contain shadow-2xl select-none" alt="Fullskjerm" onClick={(e) => e.stopPropagation()} />
                                 </TransformComponent>
                             )}
                         </TransformWrapper>
-                        
-                        {/* Navigation Buttons */}
-                        {hasPrev && (
-                            <button 
-                                onClick={handlePrev}
-                                className="absolute left-4 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md transition-all z-[110]"
-                            >
-                                <ChevronLeft size={36} />
-                            </button>
-                        )}
-                        
-                        {hasNext && (
-                            <button 
-                                onClick={handleNext}
-                                className="absolute right-4 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md transition-all z-[110]"
-                            >
-                                <ChevronRight size={36} />
-                            </button>
-                        )}
-
-                        {images.length > 1 && (
-                            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 text-white/80 font-medium bg-black/40 px-4 py-1.5 rounded-full text-sm backdrop-blur-sm border border-white/10 z-[110]">
-                                {index + 1} / {images.length}
-                            </div>
-                        )}
+                        {hasPrev && (<button onClick={handlePrev} className="absolute left-4 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md transition-all z-[110]"><ChevronLeft size={36} /></button>)}
+                        {hasNext && (<button onClick={handleNext} className="absolute right-4 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md transition-all z-[110]"><ChevronRight size={36} /></button>)}
+                        {images.length > 1 && (<div className="absolute bottom-10 left-1/2 -translate-x-1/2 text-white/80 font-medium bg-black/40 px-4 py-1.5 rounded-full text-sm backdrop-blur-sm border border-white/10 z-[110] font-serif">{index + 1} / {images.length}</div>)}
                     </div>
                 </div>
             );
@@ -315,28 +254,30 @@
 
             return (
                 <div className="min-h-screen flex flex-col items-center justify-center p-6 animate-fade-in bg-brand-pastel relative overflow-hidden">
-                    <div className="text-center mb-8 relative z-10">
-                        <div className="w-28 h-28 bg-white/50 backdrop-blur-md rounded-3xl mx-auto flex items-center justify-center shadow-2xl shadow-brand/20 mb-6 p-2 ring-1 ring-white/60">
-                            <img src={APP_ICON} alt="Logo" className="w-full h-full object-contain drop-shadow-md rounded-2xl" />
+                    <div className="text-center mb-10 relative z-10">
+                        <div className="w-24 h-24 bg-white/60 backdrop-blur-md rounded-full mx-auto flex items-center justify-center shadow-xl shadow-brand/10 mb-6 p-1 ring-1 ring-brand-dark/10">
+                            <img src={APP_ICON} alt="Logo" className="w-full h-full object-contain drop-shadow-sm rounded-full opacity-90" />
                         </div>
-                        <h1 className="text-4xl font-extrabold text-slate-800 tracking-tight">JNM Coaching</h1>
+                        <h1 className="text-4xl font-black text-brand-dark tracking-tight serif-font">JNM Coaching</h1>
+                        <p className="text-brand-text/60 mt-2 font-medium">Logg inn for å starte reisen</p>
                     </div>
-                    <div className="w-full max-w-sm glass-panel p-8 rounded-3xl shadow-xl relative z-10">
+                    <div className="w-full max-w-sm glass-panel p-8 rounded-3xl relative z-10 border-white/50">
                         <form onSubmit={handleLogin} className="space-y-5">
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Brukernavn</label>
-                                <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full px-4 py-3 bg-white/80 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-brand outline-none" placeholder="Brukernavn" />
+                                <label className="block text-xs font-bold text-brand-text/50 uppercase mb-2 ml-1 tracking-widest">Brukernavn</label>
+                                <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full px-4 py-3 bg-brand-cream/50 border border-brand-dark/10 rounded-xl focus:ring-2 focus:ring-brand/50 focus:border-brand/50 outline-none transition-all" placeholder="Navn" />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Passord</label>
-                                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-4 py-3 bg-white/80 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-brand outline-none" placeholder="••••••••" />
+                                <label className="block text-xs font-bold text-brand-text/50 uppercase mb-2 ml-1 tracking-widest">Passord</label>
+                                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-4 py-3 bg-brand-cream/50 border border-brand-dark/10 rounded-xl focus:ring-2 focus:ring-brand/50 focus:border-brand/50 outline-none transition-all" placeholder="••••••••" />
                             </div>
-                            {error && <p className="text-red-500 text-sm text-center font-bold bg-red-100 py-2 rounded-xl">{error}</p>}
-                            <button type="submit" disabled={isLoading} className="w-full py-4 rounded-2xl font-bold text-white text-lg bg-brand hover:bg-brand-dark shadow-lg shadow-brand/30 flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50">
+                            {error && <p className="text-brand-dark text-sm text-center font-bold bg-red-50 py-3 rounded-xl border border-red-100">{error}</p>}
+                            <button type="submit" disabled={isLoading} className="w-full py-4 rounded-xl font-bold text-white text-lg bg-brand hover:bg-brand-dark shadow-lg shadow-brand/20 flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50">
                                 {isLoading ? 'Kobler til...' : <><span className="mr-1">Logg inn</span> <ArrowRight size={20} /></>}
                             </button>
                         </form>
                     </div>
+                    <div className="absolute bottom-6 text-brand-text/20 text-xs font-serif italic">Designed for balance</div>
                 </div>
             );
         };
@@ -344,20 +285,20 @@
         const Navigation = ({ activeTab, setActiveTab }) => {
           const navItems = [
             { id: 'dashboard', label: 'Hjem', icon: Home },
-            { id: 'diet', label: 'Kosthold', icon: Utensils },
+            { id: 'diet', label: 'Mat', icon: Utensils },
             { id: 'workout', label: 'Trening', icon: Dumbbell },
-            { id: 'checkin', label: 'Innsjekk', icon: ClipboardCheck },
+            { id: 'checkin', label: 'Status', icon: ClipboardCheck },
           ];
           return (
-            <div className="fixed bottom-6 left-4 right-4 glass-panel border border-white/50 safe-area-pb z-50 rounded-2xl shadow-xl">
+            <div className="fixed bottom-6 left-4 right-4 glass-panel z-50 rounded-2xl shadow-xl shadow-brand-dark/5 border border-white/60">
               <div className="flex justify-around items-center h-16 max-w-md mx-auto">
                 {navItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = activeTab === item.id;
                   return (
-                    <button key={item.id} onClick={() => setActiveTab(item.id)} className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-all duration-300 ${isActive ? 'text-brand scale-110' : 'text-slate-400 hover:text-slate-600'}`}>
-                      <div className={`p-1 rounded-xl transition-colors ${isActive ? 'bg-brand/10' : 'bg-transparent'}`}><Icon size={24} strokeWidth={isActive ? 2.5 : 2} /></div>
-                      <span className="text-[10px] font-bold">{item.label}</span>
+                    <button key={item.id} onClick={() => setActiveTab(item.id)} className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-all duration-300 ${isActive ? 'text-brand scale-105' : 'text-brand-text/40 hover:text-brand-text/60'}`}>
+                      <div className={`p-1.5 rounded-xl transition-colors ${isActive ? 'bg-brand/10' : 'bg-transparent'}`}><Icon size={22} strokeWidth={isActive ? 2.5 : 2} /></div>
+                      <span className={`text-[10px] font-bold tracking-wide ${isActive ? 'opacity-100' : 'opacity-0'}`}>{item.label}</span>
                     </button>
                   );
                 })}
@@ -367,43 +308,41 @@
         };
 
         const Header = ({ title, user, viewingClient, onLogout, onClearClient }) => (
-          <div className="bg-brand-pastel/90 backdrop-blur-xl px-6 py-4 sticky top-0 z-40 flex justify-between items-center border-b border-white/50 shadow-sm">
+          <div className="bg-brand-pastel/80 backdrop-blur-md px-6 py-4 sticky top-0 z-40 flex justify-between items-center border-b border-brand-dark/5">
             <div className="flex flex-col">
-                <h1 className="text-xl font-extrabold text-slate-800 tracking-tight">{title}</h1>
+                <h1 className="text-xl font-black text-brand-text tracking-tight serif-font">{title}</h1>
                 <div className="flex items-center gap-2">
-                    <span className={`text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${user.role === 'coach' ? 'text-brand-dark' : 'text-brand'}`}>
+                    <span className={`text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 opacity-60`}>
                         {user.role === 'coach' ? <Briefcase size={10} /> : <User size={10} />} {user.name}
                     </span>
                     {viewingClient && (
-                        <span className="text-[10px] bg-white px-2 py-0.5 rounded-full text-slate-500 font-medium flex items-center gap-1 shadow-sm">
+                        <span className="text-[10px] bg-brand/10 px-2 py-0.5 rounded-full text-brand-dark font-medium flex items-center gap-1">
                             <ChevronRight size={10} /> {viewingClient.name}
                         </span>
                     )}
                 </div>
             </div>
             {viewingClient ? (
-                <button onClick={onClearClient} className="text-sm font-bold text-slate-600 bg-white px-3 py-1.5 rounded-full hover:bg-slate-100 shadow-sm transition-transform active:scale-95">Lukk</button>
+                <button onClick={onClearClient} className="text-sm font-bold text-brand-text/70 bg-white px-3 py-1.5 rounded-full hover:bg-brand-cream shadow-sm transition-transform active:scale-95 border border-brand-dark/5">Lukk</button>
             ) : (
-                <button onClick={onLogout} className="text-slate-400 hover:text-red-500 p-2 rounded-full hover:bg-white/50 transition-colors"><LogOut size={20} /></button>
+                <button onClick={onLogout} className="text-brand-text/30 hover:text-brand-warning p-2 rounded-full hover:bg-brand-cream/50 transition-colors"><LogOut size={20} /></button>
             )}
           </div>
         );
 
         const Card = ({ children, className = "", ...props }) => (
-          <div className={`bg-white rounded-3xl p-5 shadow-sm border border-slate-100 ${className}`} {...props}>{children}</div>
+          <div className={`bg-white rounded-[2rem] p-5 shadow-sm border border-brand-dark/5 ${className}`} {...props}>{children}</div>
         );
 
         // --- Views ---
 
         const WeightProgressView = ({ checkins, onBack }) => {
-            const validCheckins = checkins
-                .filter(c => c.weight && parseFloat(c.weight) > 0)
-                .sort((a, b) => a.timestamp - b.timestamp);
+            const validCheckins = checkins.filter(c => c.weight && parseFloat(c.weight) > 0).sort((a, b) => a.timestamp - b.timestamp);
 
             if (validCheckins.length === 0) return (
-                <div className="flex flex-col items-center justify-center h-[50vh] animate-fade-in">
-                    <p className="text-slate-400 font-bold mb-4">Ingen vektdata enda.</p>
-                    <button onClick={onBack} className="bg-brand text-white font-bold py-3 px-6 rounded-2xl shadow-lg">Tilbake</button>
+                <div className="flex flex-col items-center justify-center h-[50vh] animate-fade-in text-brand-text/50">
+                    <p className="font-serif italic text-lg mb-4">Ingen data å vise enda.</p>
+                    <button onClick={onBack} className="bg-brand text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-brand-dark transition-colors">Tilbake</button>
                 </div>
             );
 
@@ -416,7 +355,6 @@
             const width = 300;
             const height = 150;
             const padding = 10;
-            
             const weights = validCheckins.map(c => parseFloat(c.weight));
             const minW = Math.min(...weights);
             const maxW = Math.max(...weights);
@@ -430,72 +368,68 @@
                 return `${x},${y}`;
             }).join(' ');
 
+            // Farger for grafen: Sage (Ned/Bra) eller Clay (Opp/Nøytral)
+            const strokeColor = isDown ? '#5D7556' : '#DA7756'; 
+
             return (
                 <div className="space-y-6 animate-fade-in pb-24">
                     <div className="flex items-center gap-4 mb-2">
-                         <button onClick={onBack} className="p-2 bg-white rounded-full shadow-sm text-slate-600 hover:text-brand transition-colors"><ChevronLeft size={24}/></button>
-                         <h2 className="text-xl font-extrabold text-slate-800">Vektprogresjon</h2>
+                         <button onClick={onBack} className="p-2 bg-white rounded-full shadow-sm text-brand-text/50 hover:text-brand transition-colors"><ChevronLeft size={24}/></button>
+                         <h2 className="text-2xl font-black text-brand-text serif-font">Vektutvikling</h2>
                     </div>
 
-                    <div className={`bg-gradient-to-br ${isDown ? 'from-brand-mintdark to-emerald-600' : isSame ? 'from-slate-500 to-slate-700' : 'from-brand to-brand-dark'} text-white p-6 rounded-3xl shadow-xl shadow-brand/20 relative overflow-hidden`}>
+                    <div className={`bg-gradient-to-br ${isDown ? 'from-brand-mint to-brand-mintdark' : 'from-brand to-brand-dark'} text-white p-6 rounded-[2rem] shadow-xl shadow-brand-dark/10 relative overflow-hidden`}>
                         <div className="flex justify-between items-end relative z-10">
                             <div>
-                                <p className="text-white/80 text-xs font-bold uppercase mb-1">Total endring</p>
-                                <div className="text-4xl font-extrabold flex items-center gap-2">
+                                <p className="text-white/70 text-xs font-bold uppercase mb-1 tracking-widest">Endring</p>
+                                <div className="text-4xl font-serif font-bold flex items-center gap-2">
                                      {totalChange > 0 ? '+' : ''}{totalChange.replace('.', ',')} kg
-                                     {isDown ? <TrendingDown className="opacity-80" size={32} /> : isSame ? <Minus className="opacity-80" size={32} /> : <TrendingUp className="opacity-80" size={32} />}
+                                     {isDown ? <TrendingDown className="opacity-80" size={28} /> : isSame ? <Minus className="opacity-80" size={28} /> : <TrendingUp className="opacity-80" size={28} />}
                                 </div>
                             </div>
                             <div className="text-right">
-                                <p className="text-white/80 text-xs font-bold uppercase">Start / Nå</p>
-                                <p className="font-bold text-lg">{formatWeight(first.weight)} / {formatWeight(last.weight)}</p>
+                                <p className="text-white/70 text-xs font-bold uppercase tracking-widest">Start / Nå</p>
+                                <p className="font-bold text-xl opacity-90">{formatWeight(first.weight)} / {formatWeight(last.weight)}</p>
                             </div>
                         </div>
-                         <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-white/10 rounded-full mix-blend-overlay filter blur-xl opacity-50"></div>
+                         <div className="absolute -bottom-10 -right-10 w-48 h-48 bg-white/10 rounded-full mix-blend-overlay filter blur-2xl opacity-40"></div>
                     </div>
 
                     {validCheckins.length > 1 && (
-                        <Card className="!p-0 overflow-hidden relative h-48 flex items-center justify-center bg-white border-none shadow-md">
-                             <div className="absolute top-4 left-4 text-xs font-bold text-slate-400">GRAF</div>
+                        <Card className="!p-0 overflow-hidden relative h-48 flex items-center justify-center bg-white border border-brand-dark/5 shadow-sm">
+                             <div className="absolute top-4 left-4 text-[10px] font-bold text-brand-text/30 uppercase tracking-widest">Trendlinje</div>
                             <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full px-2 py-4">
-                                 <polyline 
-                                    fill="none" 
-                                    stroke={isDown ? '#66cc66' : '#007BFF'} 
-                                    strokeWidth="3" 
-                                    points={points} 
-                                    strokeLinecap="round" 
-                                    strokeLinejoin="round"
-                                 />
+                                 <polyline fill="none" stroke={strokeColor} strokeWidth="3" points={points} strokeLinecap="round" strokeLinejoin="round" />
                                  {validCheckins.map((c, i) => {
                                      const x = minT === maxT ? width / 2 : ((c.timestamp - minT) / (maxT - minT)) * (width - 2 * padding) + padding;
                                      const y = minW === maxW ? height / 2 : height - padding - ((parseFloat(c.weight) - minW) / (maxW - minW)) * (height - 2 * padding);
-                                     return <circle key={i} cx={x} cy={y} r="3" fill="white" stroke={isDown ? '#66cc66' : '#007BFF'} strokeWidth="2" />
+                                     return <circle key={i} cx={x} cy={y} r="4" fill="#F9F8F6" stroke={strokeColor} strokeWidth="2.5" />
                                  })}
                             </svg>
                         </Card>
                     )}
 
                     <div className="space-y-3">
-                        <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider px-2">Logg</h3>
+                        <h3 className="text-xs font-bold text-brand-text/40 uppercase tracking-widest px-2">Historikk</h3>
                          {[...validCheckins].reverse().map((entry, i) => {
                              const prev = [...validCheckins].reverse()[i+1];
                              const change = prev ? (parseFloat(entry.weight) - parseFloat(prev.weight)) : 0;
                              const changeFormatted = change.toFixed(1).replace('.', ',');
                              
                              return (
-                                 <div key={entry.id} className="bg-white p-4 rounded-2xl flex justify-between items-center border border-slate-50 shadow-sm">
+                                 <div key={entry.id} className="bg-white p-4 rounded-2xl flex justify-between items-center border border-brand-dark/5 shadow-sm">
                                      <div>
-                                         <div className="font-bold text-slate-800">{entry.date}</div>
-                                         <div className="text-xs text-slate-400">{new Date(entry.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                                         <div className="font-bold text-brand-text font-serif">{entry.date}</div>
+                                         <div className="text-xs text-brand-text/40">{new Date(entry.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
                                      </div>
                                      <div className="flex items-center gap-4">
                                          {prev && (
-                                             <span className={`text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1 ${change < 0 ? 'bg-green-100 text-green-700' : change > 0 ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>
+                                             <span className={`text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1 ${change < 0 ? 'bg-brand-mint/20 text-brand-mintdark' : change > 0 ? 'bg-brand/10 text-brand-dark' : 'bg-brand-cream text-brand-text/50'}`}>
                                                  {change < 0 ? <TrendingDown size={12}/> : change > 0 ? <TrendingUp size={12}/> : <Minus size={12}/>}
                                                  {change > 0 ? '+' : ''}{changeFormatted}
                                              </span>
                                          )}
-                                         <span className="font-extrabold text-lg text-slate-700 min-w-[3rem] text-right">{formatWeight(entry.weight)}</span>
+                                         <span className="font-bold text-lg text-brand-text min-w-[3rem] text-right">{formatWeight(entry.weight)}</span>
                                      </div>
                                  </div>
                              )
@@ -526,102 +460,81 @@
 
           const handlePlanSettings = async () => {
               if (!isCoach) return;
-              const choice = prompt(
-                  `Styring av plan:\n\n1. Sett Startdato (Nullstiller uker)\n2. Endre totalt antall uker\n3. ${userData.isPaused ? 'Fortsett plan (Avslutt pause)' : 'Sett på pause'}\n\nSkriv 1, 2 eller 3:`
-              );
-
+              const choice = prompt(`Styring av plan:\n\n1. Sett Startdato\n2. Endre total uker\n3. ${userData.isPaused ? 'Fortsett plan' : 'Sett på pause'}`);
               if (choice === '1') {
                   const dateStr = prompt("Startdato (YYYY-MM-DD):", new Date().toISOString().split('T')[0]);
-                  if (dateStr) {
-                      await onUpdateData({ startDate: new Date(dateStr).toISOString() });
-                  }
+                  if (dateStr) await onUpdateData({ startDate: new Date(dateStr).toISOString() });
               } else if (choice === '2') {
                   const weeks = prompt("Totalt antall uker:", userData.totalWeeks || 12);
-                  if (weeks && !isNaN(parseInt(weeks))) {
-                      await onUpdateData('totalWeeks', parseInt(weeks));
-                  }
+                  if (weeks) await onUpdateData('totalWeeks', parseInt(weeks));
               } else if (choice === '3') {
                   if (userData.isPaused) {
-                      if(confirm("Er du sikker på at du vil starte planen igjen? Startdatoen vil bli justert automatisk.")) {
-                          await onUpdateData({ action: 'resume' });
-                      }
+                      if(confirm("Gjenoppta plan?")) await onUpdateData({ action: 'resume' });
                   } else {
-                      if(confirm("Vil du pause planen? Ukenummeret vil stoppe opp til du starter igjen.")) {
-                          await onUpdateData({ action: 'pause' });
-                      }
+                      if(confirm("Pause planen?")) await onUpdateData({ action: 'pause' });
                   }
               }
           };
 
           return (
             <div className="space-y-6 pb-24 animate-fade-in">
-              <div className={`rounded-3xl p-6 text-white shadow-xl shadow-brand/20 relative overflow-hidden transition-colors duration-500 ${userData.isPaused ? 'bg-gradient-to-br from-gray-500 to-gray-700' : 'bg-gradient-to-br from-brand via-[#66a3ff] to-brand-mint'}`}>
-                <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-white/10 rounded-full mix-blend-overlay filter blur-xl opacity-50"></div>
+              <div className={`rounded-[2rem] p-6 text-white shadow-xl shadow-brand/10 relative overflow-hidden transition-colors duration-500 ${userData.isPaused ? 'bg-gradient-to-br from-brand-text/70 to-brand-text/90' : 'bg-gradient-to-br from-brand to-[#E6B89C]'}`}>
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full mix-blend-overlay filter blur-3xl opacity-30 transform translate-x-10 -translate-y-10"></div>
                 
-                <div className="flex justify-between items-start relative z-10 mb-2">
-                    <button 
-                        onClick={handlePlanSettings}
-                        disabled={!isCoach}
-                        className={`flex items-center gap-1.5 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-bold border transition-transform ${isCoach ? 'hover:scale-105 active:scale-95 cursor-pointer' : 'cursor-default'} ${userData.isPaused ? 'bg-brand-warning/20 border-brand-warning/50 text-brand-warning' : 'bg-white/20 border-white/20 text-white'}`}
-                    >
+                <div className="flex justify-between items-start relative z-10 mb-4">
+                    <button onClick={handlePlanSettings} disabled={!isCoach} className={`flex items-center gap-2 backdrop-blur-md px-4 py-2 rounded-full text-xs font-bold border transition-transform ${isCoach ? 'hover:scale-105 active:scale-95 cursor-pointer' : 'cursor-default'} ${userData.isPaused ? 'bg-brand-warning/20 border-brand-warning/50 text-brand-warning' : 'bg-white/20 border-white/20 text-white shadow-sm'}`}>
                         {userData.isPaused ? <Pause size={12} /> : <Calendar size={12} />}
                         {userData.isPaused ? 'PAUSET' : `Uke ${currentWeek} av ${userData.totalWeeks || 12}`}
                         {isCoach && <Edit2 size={10} className="ml-1 opacity-70" />}
                     </button>
-                    
-                    {isCoach && userData.startDate && (
-                        <div className="text-[10px] text-white/60 font-medium">
-                            Start: {new Date(userData.startDate).toLocaleDateString()}
-                        </div>
-                    )}
                 </div>
 
-                <h2 className="text-2xl font-extrabold mb-1 relative z-10">{userData.isPaused ? 'Plan Pauset' : 'Status'}</h2>
-                <p className="text-white opacity-90 relative z-10 font-medium">
-                    {userData.isPaused ? 'Ingen uker telles.' : 'Din progresjon.'}
+                <h2 className="text-3xl font-black mb-1 relative z-10 serif-font tracking-tight">{userData.isPaused ? 'Pause' : 'Din Oversikt'}</h2>
+                <p className="text-white/90 relative z-10 font-medium text-sm tracking-wide opacity-80">
+                    {userData.isPaused ? 'Planen hviler.' : 'Konsistens skaper resultater.'}
                 </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <Card className="flex flex-col items-center justify-center py-8 relative group">
-                    <div className="w-14 h-14 bg-brand-pastel rounded-2xl flex items-center justify-center text-brand mb-3 group-hover:scale-110 transition-transform"><Footprints size={28} /></div>
-                    <span className="text-slate-400 text-xs font-bold uppercase">Skrittmål</span>
-                    <span className="text-slate-800 font-extrabold text-2xl">{userData.stepGoal?.toLocaleString() || '10 000'}</span>
-                    {isCoach && <button onClick={handleEditGoal} className="absolute top-2 right-2 p-2 text-slate-300 hover:text-brand"><Edit2 size={16} /></button>}
+                <Card className="flex flex-col items-center justify-center py-8 relative group border-brand-dark/5">
+                    <div className="w-12 h-12 bg-brand-cream rounded-full flex items-center justify-center text-brand mb-3 group-hover:scale-110 transition-transform"><Footprints size={24} /></div>
+                    <span className="text-brand-text/40 text-[10px] font-bold uppercase tracking-widest">Skrittmål</span>
+                    <span className="text-brand-text font-serif font-bold text-2xl">{userData.stepGoal?.toLocaleString() || '10 000'}</span>
+                    {isCoach && <button onClick={handleEditGoal} className="absolute top-3 right-3 p-2 text-brand-text/20 hover:text-brand"><Edit2 size={14} /></button>}
                 </Card>
                 
-                <Card className="flex flex-col items-center justify-center py-8 group cursor-pointer hover:shadow-md transition-shadow active:scale-95 relative" onClick={onOpenWeightHistory}>
-                  <div className="absolute top-2 right-2 text-slate-300"><ChevronRight size={16} /></div>
-                  <div className="w-14 h-14 bg-brand-mint/20 rounded-2xl flex items-center justify-center text-brand-mintdark mb-3 group-hover:scale-110 transition-transform"><TrendingUp size={28} /></div>
-                  <span className="text-slate-400 text-xs font-bold uppercase">Siste vekt</span>
-                  <span className="text-slate-800 font-extrabold text-2xl">{lastCheckin ? `${formatWeight(lastCheckin.weight)} kg` : '--'}</span>
+                <Card className="flex flex-col items-center justify-center py-8 group cursor-pointer hover:shadow-md transition-all active:scale-95 relative border-brand-dark/5" onClick={onOpenWeightHistory}>
+                  <div className="absolute top-3 right-3 text-brand-text/20"><ChevronRight size={16} /></div>
+                  <div className="w-12 h-12 bg-brand-mint/20 rounded-full flex items-center justify-center text-brand-mintdark mb-3 group-hover:scale-110 transition-transform"><TrendingUp size={24} /></div>
+                  <span className="text-brand-text/40 text-[10px] font-bold uppercase tracking-widest">Siste vekt</span>
+                  <span className="text-brand-text font-serif font-bold text-2xl">{lastCheckin ? `${formatWeight(lastCheckin.weight)}` : '--'} <span className="text-sm font-sans text-brand-text/50">kg</span></span>
                 </Card>
               </div>
 
               {lastCheckin && (
-                  <div className="px-2">
-                    <h3 className="text-lg font-bold text-slate-800 mb-3 ml-1">Siste rapport</h3>
-                    <Card className="!p-6">
-                        <div className="flex justify-between items-center text-sm mb-3 pb-3 border-b border-slate-50">
-                            <span className="text-slate-500 font-medium">Nøyaktighet</span>
-                            <span className="font-bold text-brand bg-brand-pastel px-2 py-1 rounded-lg">{lastCheckin.accuracy}/10</span>
+                  <div className="px-1">
+                    <h3 className="text-lg font-black text-brand-text mb-4 ml-1 serif-font">Siste rapport</h3>
+                    <Card className="!p-6 space-y-4">
+                        <div className="flex justify-between items-center text-sm pb-3 border-b border-brand-dark/5">
+                            <span className="text-brand-text/60 font-medium">Nøyaktighet</span>
+                            <span className="font-bold text-brand bg-brand/10 px-3 py-1 rounded-full">{lastCheckin.accuracy}/10</span>
                         </div>
-                        <div className="flex justify-between items-center text-sm mb-3 pb-3 border-b border-slate-50">
-                            <span className="text-slate-500 font-medium">Trening (S/C)</span>
-                            <span className="font-bold text-slate-800">{lastCheckin.strengthSessions} + {lastCheckin.cardioSessions || 0} økter</span>
+                        <div className="flex justify-between items-center text-sm pb-3 border-b border-brand-dark/5">
+                            <span className="text-brand-text/60 font-medium">Økter (Styrke/Cardio)</span>
+                            <span className="font-bold text-brand-text">{lastCheckin.strengthSessions} + {lastCheckin.cardioSessions || 0}</span>
                         </div>
-                        <div className="flex justify-between items-center text-sm mb-3 pb-3 border-b border-slate-50">
-                            <span className="text-slate-500 font-medium">Energi / Søvn</span>
-                            <span className="font-bold text-slate-800 flex items-center gap-2">
-                                <span className="flex items-center gap-1 text-sm bg-yellow-50 px-2 py-1 rounded text-yellow-700 font-extrabold"><Zap size={14} /> {lastCheckin.energy}</span>
-                                <span className="text-slate-300 text-sm">|</span>
-                                <span className="flex items-center gap-1 text-sm bg-indigo-50 px-2 py-1 rounded text-indigo-700 font-extrabold"><Moon size={14} /> {lastCheckin.sleep}</span>
+                        <div className="flex justify-between items-center text-sm pb-3 border-b border-brand-dark/5">
+                            <span className="text-brand-text/60 font-medium">Energi & Søvn</span>
+                            <span className="font-bold text-brand-text flex items-center gap-2">
+                                <span className="flex items-center gap-1 text-xs bg-brand-warning/10 px-2 py-1 rounded text-brand-warning font-extrabold"><Zap size={12} /> {lastCheckin.energy}</span>
+                                <span className="text-brand-text/20 text-sm">|</span>
+                                <span className="flex items-center gap-1 text-xs bg-indigo-50 px-2 py-1 rounded text-indigo-400 font-extrabold"><Moon size={12} /> {lastCheckin.sleep}</span>
                             </span>
                         </div>
                         <div className="flex justify-between items-center text-sm">
-                            <span className="text-slate-500 font-medium">Skrittmål</span>
-                            <span className={`font-bold px-2 py-1 rounded-lg ${lastCheckin.stepsReached ? 'text-brand-mintdark bg-brand-mint/20' : 'text-slate-400 bg-slate-100'}`}>
-                                {lastCheckin.stepsReached ? 'Oppnådd' : 'Ikke oppnådd'}
+                            <span className="text-brand-text/60 font-medium">Skritt</span>
+                            <span className={`font-bold px-3 py-1 rounded-full text-xs ${lastCheckin.stepsReached ? 'text-brand-mintdark bg-brand-mint/20' : 'text-brand-text/40 bg-brand-cream'}`}>
+                                {lastCheckin.stepsReached ? 'Oppnådd' : 'Under mål'}
                             </span>
                         </div>
                     </Card>
@@ -638,20 +551,20 @@
           
           return (
             <div className="space-y-4 pb-24 animate-fade-in">
-              <Card>
-                <div className="flex justify-between items-center mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-3 rounded-2xl ${type === 'diet' ? 'bg-brand-mint/20 text-brand-mintdark' : 'bg-brand-pastel text-brand'}`}>
-                      {type === 'diet' ? <Utensils size={24} /> : <Dumbbell size={24} />}
+              <Card className="min-h-[60vh]">
+                <div className="flex justify-between items-center mb-8">
+                  <div className="flex items-center gap-4">
+                    <div className={`p-4 rounded-2xl ${type === 'diet' ? 'bg-brand-mint/20 text-brand-mintdark' : 'bg-brand/10 text-brand'}`}>
+                      {type === 'diet' ? <Utensils size={28} /> : <Dumbbell size={28} />}
                     </div>
-                    <h2 className="font-bold text-xl text-slate-800">{type === 'diet' ? 'Kosthold' : 'Trening'}</h2>
+                    <h2 className="font-black text-2xl text-brand-text serif-font">{type === 'diet' ? 'Kostholdsplan' : 'Treningsplan'}</h2>
                   </div>
-                  {!isReadOnly && <button onClick={() => { if(isEditing) onSave(text); setIsEditing(!isEditing); }} className="text-xs font-bold text-white px-4 py-2 bg-slate-900 rounded-full shadow-lg">{isEditing ? 'Lagre' : 'Rediger'}</button>}
+                  {!isReadOnly && <button onClick={() => { if(isEditing) onSave(text); setIsEditing(!isEditing); }} className="text-xs font-bold text-white px-5 py-2.5 bg-brand-text rounded-full shadow-lg hover:bg-black transition-colors">{isEditing ? 'Lagre' : 'Rediger'}</button>}
                 </div>
                 {isEditing && !isReadOnly ? (
-                  <textarea value={text} onChange={(e) => setText(e.target.value)} className="w-full h-96 p-4 bg-slate-50 rounded-2xl focus:ring-2 focus:ring-brand outline-none text-slate-700 font-mono text-sm" />
+                  <textarea value={text} onChange={(e) => setText(e.target.value)} className="w-full h-[50vh] p-4 bg-brand-cream rounded-xl focus:ring-2 focus:ring-brand/30 outline-none text-brand-text font-mono text-sm leading-relaxed border border-brand-dark/5" />
                 ) : (
-                  <div className="prose prose-sm prose-slate max-w-none text-slate-600 font-medium" dangerouslySetInnerHTML={{ __html: text ? window.marked.parse(text) : '<em class="text-slate-400">Ingen plan.</em>' }} />
+                  <div className="prose prose-slate prose-lg max-w-none text-brand-text/80 font-medium leading-relaxed font-sans" dangerouslySetInnerHTML={{ __html: text ? window.marked.parse(text) : '<p class="text-brand-text/30 italic text-center mt-10">Ingen plan tilgjengelig enda.</p>' }} />
                 )}
               </Card>
             </div>
@@ -660,9 +573,7 @@
 
         const CheckInView = ({ checkins, onNewCheckin, onDelete, isReadOnly, stepGoal }) => {
           const [step, setStep] = useState('form');
-          
           const [lightbox, setLightbox] = useState({ isOpen: false, images: [], index: 0 });
-
           const [isCompressing, setIsCompressing] = useState(false);
           const [errorMessage, setErrorMessage] = useState('');
           const [isSubmitting, setIsSubmitting] = useState(false);
@@ -671,74 +582,45 @@
             weight: '', sleep: 5, energy: 5, accuracy: 10,
             strengthSessions: 0, cardioSessions: 0,
             stepsReached: false, takenSupplements: false,
-            comment: '', 
-            images: []
+            comment: '', images: []
           });
 
           const handleImageUpload = async (e) => {
             const files = Array.from(e.target.files);
             if (files.length === 0) return;
-            
             setIsCompressing(true);
-            
             try {
-                // Cloudinary config
                 const cloudName = 'drg4fxboh'; 
                 const uploadPreset = 'jnm_upload'; 
-
                 const uploadPromises = files.map(async (file) => {
-                    const formData = new FormData();
-                    formData.append('file', file);
-                    formData.append('upload_preset', uploadPreset); 
-                    
-                    const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-                        method: 'POST',
-                        body: formData
-                    });
-                    
+                    const fd = new FormData();
+                    fd.append('file', file);
+                    fd.append('upload_preset', uploadPreset); 
+                    const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: 'POST', body: fd });
                     if (!res.ok) throw new Error('Opplasting feilet');
-                    const data = await res.json();
-                    return data.secure_url;
+                    return (await res.json()).secure_url;
                 });
-
                 const uploadedUrls = await Promise.all(uploadPromises);
-
-                setFormData(prev => ({
-                    ...prev,
-                    images: [...prev.images, ...uploadedUrls]
-                }));
-
+                setFormData(prev => ({ ...prev, images: [...prev.images, ...uploadedUrls] }));
             } catch (err) {
                 console.error(err);
-                setErrorMessage("Kunne ikke laste opp bilde til skyen. Sjekk internett og innstillinger.");
+                setErrorMessage("Bildeopplasting feilet.");
             } finally {
                 setIsCompressing(false);
             }
           };
 
           const removeImage = (indexToRemove) => {
-              setFormData(prev => ({
-                  ...prev,
-                  images: prev.images.filter((_, index) => index !== indexToRemove)
-              }));
+              setFormData(prev => ({ ...prev, images: prev.images.filter((_, index) => index !== indexToRemove) }));
           };
-
-          const openLightbox = (images, index = 0) => {
-              setLightbox({ isOpen: true, images, index });
-          };
+          const openLightbox = (images, index = 0) => setLightbox({ isOpen: true, images, index });
 
           const handleSubmit = async (e) => {
             e.preventDefault();
             setIsSubmitting(true);
             setErrorMessage('');
-            
             try {
-                const newEntry = {
-                  id: Date.now(),
-                  date: new Date().toLocaleDateString('no-NO'),
-                  timestamp: Date.now(),
-                  ...formData
-                };
+                const newEntry = { id: Date.now(), date: new Date().toLocaleDateString('no-NO'), timestamp: Date.now(), ...formData };
                 await onNewCheckin(newEntry);
                 setStep('success');
                 setTimeout(() => {
@@ -746,8 +628,7 @@
                   setFormData({ weight: '', sleep: 5, energy: 5, accuracy: 10, strengthSessions: 0, cardioSessions: 0, stepsReached: false, takenSupplements: false, comment: '', images: [] });
                 }, 3000);
             } catch (error) {
-                console.error(error);
-                setErrorMessage('Feil ved innsending: ' + error.message);
+                setErrorMessage('Feil: ' + error.message);
             } finally {
                 setIsSubmitting(false);
             }
@@ -756,9 +637,10 @@
           if (step === 'success') {
             return (
               <div className="flex flex-col items-center justify-center h-[60vh] animate-fade-in text-center px-6">
-                <div className="w-24 h-24 bg-brand-mint/20 rounded-full flex items-center justify-center text-brand-mintdark mb-6 animate-bounce"><ClipboardCheck size={48} /></div>
-                <h2 className="text-2xl font-extrabold text-slate-800">Innsjekk mottatt!</h2>
-                <button onClick={() => setStep('form')} className="mt-8 text-brand font-bold bg-white px-6 py-3 rounded-full shadow-md">Tilbake</button>
+                <div className="w-24 h-24 bg-brand-mint/20 rounded-full flex items-center justify-center text-brand-mintdark mb-6 animate-pulse"><Check size={48} strokeWidth={3} /></div>
+                <h2 className="text-3xl font-black text-brand-text serif-font mb-2">Takk!</h2>
+                <p className="text-brand-text/60">Din oppdatering er lagret.</p>
+                <button onClick={() => setStep('form')} className="mt-8 text-brand-text font-bold bg-brand-cream border border-brand-dark/10 px-8 py-3 rounded-full hover:bg-white transition-colors">Tilbake</button>
               </div>
             );
           }
@@ -766,95 +648,77 @@
           return (
             <div className="space-y-6 pb-24 animate-fade-in">
               {lightbox.isOpen && (
-                  <ImageModal 
-                      images={lightbox.images} 
-                      initialIndex={lightbox.index} 
-                      onClose={() => setLightbox({ ...lightbox, isOpen: false })} 
-                  />
+                  <ImageModal images={lightbox.images} initialIndex={lightbox.index} onClose={() => setLightbox({ ...lightbox, isOpen: false })} />
               )}
 
               {!isReadOnly && (
                   <form onSubmit={handleSubmit} className="space-y-6">
-                    <Card className="space-y-6">
-                      <h3 className="font-bold text-slate-800 mb-4 border-b border-slate-50 pb-2 text-lg">Ny oppdatering</h3>
+                    <Card className="space-y-8">
+                      <h3 className="font-bold text-brand-text/80 mb-4 border-b border-brand-dark/5 pb-4 text-lg serif-font">Ny ukesrapport</h3>
                       <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Vekt (kg)</label>
+                        <label className="block text-xs font-bold text-brand-text/50 uppercase mb-3 ml-1 tracking-widest">Vekt (kg)</label>
                         <div className="relative">
-                            <Scale className="absolute left-4 top-4 text-brand" size={20} />
-                            <input type="number" step="0.1" required value={formData.weight} onChange={(e) => setFormData({...formData, weight: e.target.value})} className="w-full pl-12 pr-4 py-4 bg-slate-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-brand font-bold text-lg" placeholder="0.0" />
+                            <Scale className="absolute left-4 top-4 text-brand opacity-60" size={20} />
+                            <input type="number" step="0.1" required value={formData.weight} onChange={(e) => setFormData({...formData, weight: e.target.value})} className="w-full pl-12 pr-4 py-4 bg-brand-cream border-none rounded-xl outline-none focus:ring-2 focus:ring-brand/30 font-bold text-xl text-brand-text placeholder-brand-text/20" placeholder="0.0" />
                         </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
-                         <div><label className="block text-xs font-bold text-slate-500 uppercase mb-2">Energi</label><select value={formData.energy} onChange={(e) => setFormData({...formData, energy: e.target.value})} className="w-full p-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 focus:ring-brand font-bold">{[...Array(10)].map((_, i) => <option key={i+1} value={i+1}>{i+1}</option>)}</select></div>
-                         <div><label className="block text-xs font-bold text-slate-500 uppercase mb-2">Søvn</label><select value={formData.sleep} onChange={(e) => setFormData({...formData, sleep: e.target.value})} className="w-full p-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 focus:ring-brand font-bold">{[...Array(10)].map((_, i) => <option key={i+1} value={i+1}>{i+1}</option>)}</select></div>
+                         <div><label className="block text-xs font-bold text-brand-text/50 uppercase mb-2 tracking-widest">Energi</label><select value={formData.energy} onChange={(e) => setFormData({...formData, energy: e.target.value})} className="w-full p-4 bg-brand-cream rounded-xl outline-none focus:ring-2 focus:ring-brand/30 font-bold text-brand-text">{[...Array(10)].map((_, i) => <option key={i+1} value={i+1}>{i+1}</option>)}</select></div>
+                         <div><label className="block text-xs font-bold text-brand-text/50 uppercase mb-2 tracking-widest">Søvn</label><select value={formData.sleep} onChange={(e) => setFormData({...formData, sleep: e.target.value})} className="w-full p-4 bg-brand-cream rounded-xl outline-none focus:ring-2 focus:ring-brand/30 font-bold text-brand-text">{[...Array(10)].map((_, i) => <option key={i+1} value={i+1}>{i+1}</option>)}</select></div>
                       </div>
                       
                       <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Plan Nøyaktighet ({formData.accuracy}/10)</label>
-                        <select value={formData.accuracy} onChange={(e) => setFormData({...formData, accuracy: e.target.value})} className="w-full p-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 focus:ring-brand font-bold">{[...Array(10)].map((_, i) => <option key={i+1} value={i+1}>{i+1}</option>)}</select>
+                        <label className="block text-xs font-bold text-brand-text/50 uppercase mb-2 tracking-widest">Etterlevelse ({formData.accuracy}/10)</label>
+                        <select value={formData.accuracy} onChange={(e) => setFormData({...formData, accuracy: e.target.value})} className="w-full p-4 bg-brand-cream rounded-xl outline-none focus:ring-2 focus:ring-brand/30 font-bold text-brand-text">{[...Array(10)].map((_, i) => <option key={i+1} value={i+1}>{i+1}</option>)}</select>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
-                        <div><label className="block text-xs font-bold text-slate-500 uppercase mb-2">Styrkeøkter</label><select value={formData.strengthSessions} onChange={(e) => setFormData({...formData, strengthSessions: e.target.value})} className="w-full p-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 focus:ring-brand font-bold"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7+</option></select></div>
-                        <div><label className="block text-xs font-bold text-slate-500 uppercase mb-2">Cardioøkter</label><select value={formData.cardioSessions} onChange={(e) => setFormData({...formData, cardioSessions: e.target.value})} className="w-full p-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 focus:ring-brand font-bold"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7+</option></select></div>
+                        <div><label className="block text-xs font-bold text-brand-text/50 uppercase mb-2 tracking-widest">Styrkeøkter</label><select value={formData.strengthSessions} onChange={(e) => setFormData({...formData, strengthSessions: e.target.value})} className="w-full p-4 bg-brand-cream rounded-xl outline-none focus:ring-2 focus:ring-brand/30 font-bold text-brand-text"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7+</option></select></div>
+                        <div><label className="block text-xs font-bold text-brand-text/50 uppercase mb-2 tracking-widest">Cardio</label><select value={formData.cardioSessions} onChange={(e) => setFormData({...formData, cardioSessions: e.target.value})} className="w-full p-4 bg-brand-cream rounded-xl outline-none focus:ring-2 focus:ring-brand/30 font-bold text-brand-text"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7+</option></select></div>
                       </div>
 
                       <div className="space-y-3 pt-2">
-                          <label className={`flex items-center gap-4 p-4 rounded-2xl cursor-pointer border ${formData.stepsReached ? 'bg-brand-mint/10 border-brand-mint/50' : 'bg-slate-50 border-transparent'}`}>
+                          <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-colors ${formData.stepsReached ? 'bg-brand-mint/10 border-brand-mint/30' : 'bg-brand-cream border-transparent'}`}>
                               <input type="checkbox" checked={formData.stepsReached} onChange={(e) => setFormData({...formData, stepsReached: e.target.checked})} className="custom-checkbox w-6 h-6 rounded-lg text-brand focus:ring-brand" />
-                              <div><div className="font-bold text-slate-800">Skrittmål</div><div className="text-xs text-slate-500">Nådde {stepGoal} skritt</div></div>
+                              <div><div className="font-bold text-brand-text">Skrittmål</div><div className="text-xs text-brand-text/50">Gjennomført {stepGoal} skritt</div></div>
                           </label>
-                          <label className={`flex items-center gap-4 p-4 rounded-2xl cursor-pointer border ${formData.takenSupplements ? 'bg-brand-mint/10 border-brand-mint/50' : 'bg-slate-50 border-transparent'}`}>
+                          <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-colors ${formData.takenSupplements ? 'bg-brand-mint/10 border-brand-mint/30' : 'bg-brand-cream border-transparent'}`}>
                               <input type="checkbox" checked={formData.takenSupplements} onChange={(e) => setFormData({...formData, takenSupplements: e.target.checked})} className="custom-checkbox w-6 h-6 rounded-lg text-brand focus:ring-brand" />
-                              <div><div className="font-bold text-slate-800">Kosttilskudd</div><div className="text-xs text-slate-500">Tatt dagens tilskudd</div></div>
+                              <div><div className="font-bold text-brand-text">Kosttilskudd</div><div className="text-xs text-brand-text/50">Tatt for dagen</div></div>
                           </label>
                       </div>
 
                       <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Kommentar</label>
-                        <textarea value={formData.comment} onChange={(e) => setFormData({...formData, comment: e.target.value})} className="w-full px-4 py-4 bg-slate-50 border-none rounded-2xl h-24 outline-none resize-none focus:ring-2 focus:ring-brand" placeholder="Hvordan går det?" />
+                        <label className="block text-xs font-bold text-brand-text/50 uppercase mb-2 ml-1 tracking-widest">Kommentar</label>
+                        <textarea value={formData.comment} onChange={(e) => setFormData({...formData, comment: e.target.value})} className="w-full px-4 py-4 bg-brand-cream border-none rounded-xl h-28 outline-none resize-none focus:ring-2 focus:ring-brand/30 text-brand-text" placeholder="Hvordan har uken vært?" />
                       </div>
                     </Card>
 
-                    {/* IMAGE UPLOAD SECTION */}
-                    <Card className="border-dashed border-2 border-brand-mint/50 bg-brand-mint/5">
+                    <Card className="border-dashed border-2 border-brand/20 bg-brand/5 shadow-none">
                         <div className="space-y-4">
-                            {/* Grid of selected images (Preview for new checkin) */}
                             {formData.images.length > 0 && (
-                                <div className="grid grid-cols-3 gap-2">
+                                <div className="grid grid-cols-3 gap-3">
                                     {formData.images.map((img, idx) => (
                                         <div key={idx} className="relative aspect-square group">
-                                            <img 
-                                                src={getThumbnail(img)} 
-                                                className="w-full h-full object-cover rounded-xl shadow-sm cursor-pointer border border-white" 
-                                                alt="Preview" 
-                                                onClick={() => openLightbox(formData.images, idx)}
-                                            />
-                                            <button 
-                                                type="button"
-                                                onClick={() => removeImage(idx)} 
-                                                className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full shadow-md hover:scale-110 transition-transform"
-                                            >
-                                                <X size={12} />
-                                            </button>
+                                            <img src={getThumbnail(img)} className="w-full h-full object-cover rounded-xl shadow-sm cursor-pointer border border-white" alt="Preview" onClick={() => openLightbox(formData.images, idx)} />
+                                            <button type="button" onClick={() => removeImage(idx)} className="absolute -top-2 -right-2 bg-brand-text text-white p-1 rounded-full shadow-md hover:scale-110 transition-transform"><X size={12} /></button>
                                         </div>
                                     ))}
                                 </div>
                             )}
 
-                            {/* Upload Button */}
-                            <label className={`flex flex-col items-center justify-center p-6 cursor-pointer hover:bg-white/50 rounded-xl transition-colors ${isCompressing ? 'opacity-50 pointer-events-none' : ''}`}>
+                            <label className={`flex flex-col items-center justify-center p-8 cursor-pointer hover:bg-white/40 rounded-xl transition-all ${isCompressing ? 'opacity-50 pointer-events-none' : ''}`}>
                                 {isCompressing ? (
                                     <div className="flex flex-col items-center">
-                                        <div className="animate-spin text-brand mb-2"><Loader2 size={28} /></div>
-                                        <span className="text-xs font-bold text-brand">Laster opp til skyen...</span>
+                                        <div className="animate-spin text-brand mb-2"><Loader2 size={24} /></div>
+                                        <span className="text-xs font-bold text-brand">Laster opp...</span>
                                     </div>
                                 ) : (
                                     <>
-                                        <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center text-brand-mintdark mb-2 shadow-sm"><Camera size={28} /></div>
-                                        <span className="font-bold text-brand-mintdark text-sm">Legg til bilder</span>
-                                        <span className="text-xs text-slate-400">Du kan velge flere</span>
+                                        <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-brand mb-3 shadow-sm"><Camera size={24} /></div>
+                                        <span className="font-bold text-brand text-sm">Last opp bilder</span>
+                                        <span className="text-xs text-brand-text/40 mt-1">Trykk her for å velge</span>
                                         <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
                                     </>
                                 )}
@@ -863,97 +727,76 @@
                     </Card>
 
                     {errorMessage && (
-                        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-4 rounded-xl text-sm font-medium flex items-start gap-3">
+                        <div className="bg-red-50 border border-red-100 text-red-800 px-4 py-4 rounded-xl text-sm font-medium flex items-start gap-3">
                             <AlertTriangle className="shrink-0 mt-0.5" size={18} />
                             <span>{errorMessage}</span>
                         </div>
                     )}
 
-                    <button type="submit" disabled={isSubmitting || isCompressing} className="w-full bg-brand text-white font-bold py-4 rounded-2xl shadow-xl shadow-brand/30 hover:bg-brand-dark active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:scale-100">
+                    <button type="submit" disabled={isSubmitting || isCompressing} className="w-full bg-brand text-white font-bold py-4 rounded-xl shadow-xl shadow-brand/20 hover:bg-brand-dark active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:scale-100">
                         {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />} 
-                        {isSubmitting ? 'Sender inn...' : 'Send inn'}
+                        {isSubmitting ? 'Sender inn...' : 'Send Rapport'}
                     </button>
                   </form>
               )}
 
-              <div className={!isReadOnly ? "mt-8 border-t border-slate-200/50 pt-8" : ""}>
-                <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4 px-2">Historikk</h3>
-                {checkins.length === 0 ? <div className="text-center text-slate-400 py-10">Ingen innsjekker enda.</div> : (
+              <div className={!isReadOnly ? "mt-12 border-t border-brand-dark/5 pt-8" : ""}>
+                <h3 className="text-xs font-bold text-brand-text/40 uppercase tracking-widest mb-6 px-2">Tidligere Rapporter</h3>
+                {checkins.length === 0 ? <div className="text-center text-brand-text/30 py-10 font-serif italic">Ingen historikk enda.</div> : (
                     <div className="space-y-4">
                         {checkins.slice().sort((a,b) => b.timestamp - a.timestamp).map((entry) => {
-                            // Håndter både nytt array (images) og gammelt enkeltbilde (image)
-                            const displayImages = entry.images && entry.images.length > 0 
-                                ? entry.images 
-                                : (entry.image ? [entry.image] : []);
-
+                            const displayImages = entry.images && entry.images.length > 0 ? entry.images : (entry.image ? [entry.image] : []);
                             return (
-                            <div key={entry.id} className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm relative overflow-hidden">
-                                <div className="flex justify-between items-start mb-3">
+                            <div key={entry.id} className="bg-white p-6 rounded-[2rem] border border-brand-dark/5 shadow-sm relative overflow-hidden group">
+                                <div className="flex justify-between items-start mb-4">
                                     <div>
-                                        <div className="font-bold text-slate-800 text-lg">{entry.date}</div>
-                                        <div className="text-xs text-slate-400 font-medium">{new Date(entry.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                                        <div className="font-bold text-brand-text text-lg serif-font">{entry.date}</div>
+                                        <div className="text-xs text-brand-text/40 font-medium">{new Date(entry.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
                                     </div>
-                                    <div className="bg-brand-pastel px-3 py-1 rounded-full text-sm font-bold text-brand-dark">{formatWeight(entry.weight)} kg</div>
+                                    <div className="bg-brand-cream px-4 py-1.5 rounded-full text-sm font-bold text-brand-dark border border-brand-dark/5">{formatWeight(entry.weight)} kg</div>
                                 </div>
                                 
-                                {isReadOnly && <button onClick={(e) => { e.stopPropagation(); onDelete(entry.id); }} className="absolute top-4 right-4 text-slate-300 hover:text-red-500"><Trash2 size={16} /></button>}
+                                {isReadOnly && <button onClick={(e) => { e.stopPropagation(); onDelete(entry.id); }} className="absolute top-6 right-16 opacity-0 group-hover:opacity-100 transition-opacity text-brand-text/30 hover:text-red-500"><Trash2 size={18} /></button>}
                                 
-                                <div className="grid grid-cols-3 gap-2 mb-3 text-center text-xs">
-                                    {/* NØYAKTIGHET */}
-                                    <div className="bg-blue-50 p-2 rounded-xl flex flex-col items-center justify-center">
-                                        <div className="text-[9px] uppercase text-blue-400 font-bold mb-1">Nøyaktighet</div>
-                                        <div className="flex items-center gap-1 font-bold text-slate-700 text-base">
-                                            <ClipboardCheck size={14} className="text-blue-500" /> 
-                                            {entry.accuracy}<span className="text-xs text-slate-400 font-normal">/10</span>
+                                <div className="grid grid-cols-3 gap-3 mb-4 text-center text-xs">
+                                    <div className="bg-blue-50/50 p-2 rounded-xl border border-blue-100/50">
+                                        <div className="text-[9px] uppercase text-blue-400 font-bold mb-1 tracking-wider">Plan</div>
+                                        <div className="flex items-center justify-center gap-1 font-bold text-brand-text text-base">
+                                            {entry.accuracy}<span className="text-xs text-brand-text/30 font-normal">/10</span>
                                         </div>
                                     </div>
-
-                                    {/* TRENING (S/C) -> Nå Styrke / Cardio */}
-                                    <div className="bg-orange-50 p-2 rounded-xl flex flex-col items-center justify-center">
-                                        <div className="text-[9px] uppercase text-orange-400 font-bold mb-1">Styrke / Cardio</div>
-                                        <div className="flex items-center gap-2 font-bold text-slate-700 text-base">
-                                            <span className="flex items-center gap-1" title="Styrke"><Dumbbell size={14} className="text-orange-500" /> {entry.strengthSessions}</span>
-                                            <span className="text-slate-300 text-sm">|</span>
-                                            <span className="flex items-center gap-1" title="Cardio"><Activity size={14} className="text-red-400" /> {entry.cardioSessions || 0}</span>
+                                    <div className="bg-orange-50/50 p-2 rounded-xl border border-orange-100/50">
+                                        <div className="text-[9px] uppercase text-orange-400 font-bold mb-1 tracking-wider">Økter</div>
+                                        <div className="flex items-center justify-center gap-1 font-bold text-brand-text text-base">
+                                            {entry.strengthSessions} <span className="text-brand-text/20">|</span> {entry.cardioSessions || 0}
                                         </div>
                                     </div>
-                                    
-                                    {/* ENERGI / SØVN */}
-                                    <div className="bg-purple-50 p-2 rounded-xl flex flex-col items-center justify-center">
-                                        <div className="text-[9px] uppercase text-purple-400 font-bold mb-1">Energi / Søvn</div>
-                                        <div className="flex items-center gap-2 font-bold text-slate-700 text-base">
-                                            <span className="flex items-center gap-1"><Zap size={14} className="text-yellow-500" /> {entry.energy}</span>
-                                            <span className="text-slate-300 text-sm">|</span>
-                                            <span className="flex items-center gap-1"><Moon size={14} className="text-indigo-400" /> {entry.sleep}</span>
+                                    <div className="bg-purple-50/50 p-2 rounded-xl border border-purple-100/50">
+                                        <div className="text-[9px] uppercase text-purple-400 font-bold mb-1 tracking-wider">Energi</div>
+                                        <div className="flex items-center justify-center gap-1 font-bold text-brand-text text-base">
+                                            {entry.energy} <span className="text-brand-text/20">|</span> {entry.sleep}
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* NYTT: Skrittmål og Kosttilskudd status rad */}
-                                <div className="grid grid-cols-2 gap-2 mb-4 text-xs font-bold text-slate-600">
-                                    <div className={`py-2 px-3 rounded-xl flex items-center justify-center gap-2 ${entry.stepsReached ? 'bg-brand-mint/20 text-brand-mintdark' : 'bg-slate-50 text-slate-400'}`}>
+                                <div className="grid grid-cols-2 gap-2 mb-4 text-xs font-bold text-brand-text/70">
+                                    <div className={`py-2 px-3 rounded-xl flex items-center justify-center gap-2 ${entry.stepsReached ? 'bg-brand-mint/10 text-brand-mintdark' : 'bg-brand-cream text-brand-text/40'}`}>
                                         <Footprints size={14} /> 
-                                        <span>{entry.stepsReached ? 'Skrittmål nådd' : 'Skritt ikke oppnådd'}</span>
+                                        <span>{entry.stepsReached ? 'Skrittmål nådd' : 'Under skrittmål'}</span>
                                     </div>
-                                    <div className={`py-2 px-3 rounded-xl flex items-center justify-center gap-2 ${entry.takenSupplements ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400'}`}>
-                                        <span className="uppercase text-[10px]">Kosttilskudd</span>
+                                    <div className={`py-2 px-3 rounded-xl flex items-center justify-center gap-2 ${entry.takenSupplements ? 'bg-brand/10 text-brand' : 'bg-brand-cream text-brand-text/40'}`}>
+                                        <span className="uppercase text-[10px] tracking-wider">Tilskudd</span>
                                         {entry.takenSupplements ? <Check size={14} /> : <X size={14} />}
                                     </div>
                                 </div>
 
-                                {entry.comment && <div className="bg-slate-50 p-3 rounded-2xl text-sm text-slate-600 mb-3 italic">"{entry.comment}"</div>}
+                                {entry.comment && <div className="bg-brand-cream/50 p-4 rounded-xl text-sm text-brand-text/80 mb-4 italic font-serif">"{entry.comment}"</div>}
                                 
-                                {/* Image Gallery Scroll with Optimization (Lazy Load + Thumbnails) */}
                                 {displayImages.length > 0 && (
-                                    <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar snap-x">
+                                    <div className="flex gap-3 overflow-x-auto pb-2 hide-scrollbar snap-x">
                                         {displayImages.map((img, idx) => (
-                                            <div key={idx} className="flex-none w-24 h-24 snap-start cursor-pointer" onClick={() => openLightbox(displayImages, idx)}>
-                                                <img 
-                                                    src={getThumbnail(img)} 
-                                                    loading="lazy"
-                                                    className="w-full h-full object-cover rounded-xl border border-slate-100 shadow-sm hover:opacity-90 transition-opacity bg-slate-100" 
-                                                    alt="Checkin" 
-                                                />
+                                            <div key={idx} className="flex-none w-20 h-20 snap-start cursor-pointer group/img" onClick={() => openLightbox(displayImages, idx)}>
+                                                <img src={getThumbnail(img)} loading="lazy" className="w-full h-full object-cover rounded-xl border border-brand-dark/5 shadow-sm group-hover/img:scale-105 transition-transform bg-brand-cream" alt="Checkin" />
                                             </div>
                                         ))}
                                     </div>
@@ -973,45 +816,45 @@
             return (
                 <div className="space-y-6 pb-24 animate-fade-in">
                     {showModal && (
-                        <div className="fixed inset-0 bg-brand-pastel/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                        <div className="fixed inset-0 bg-brand-text/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                             <Card className="w-full max-w-sm relative !shadow-2xl">
-                                <button onClick={() => setShowModal(false)} className="absolute right-4 top-4 text-slate-400"><X size={20} /></button>
-                                <h2 className="text-xl font-bold text-slate-800 mb-4">Ny utøver</h2>
+                                <button onClick={() => setShowModal(false)} className="absolute right-4 top-4 text-brand-text/30 hover:text-brand-text"><X size={20} /></button>
+                                <h2 className="text-2xl font-black text-brand-text mb-6 serif-font">Ny utøver</h2>
                                 <form onSubmit={(e) => {
                                     e.preventDefault();
                                     const fd = new FormData(e.target);
                                     onAddClient(Object.fromEntries(fd));
                                     setShowModal(false);
                                 }} className="space-y-4">
-                                    <input required name="name" type="text" placeholder="Fullt Navn" className="w-full p-3 bg-slate-50 rounded-xl" />
-                                    <input required name="username" type="text" placeholder="Brukernavn" className="w-full p-3 bg-slate-50 rounded-xl" />
-                                    <input required name="password" type="text" placeholder="Passord" className="w-full p-3 bg-slate-50 rounded-xl" />
-                                    <button type="submit" className="w-full bg-brand text-white font-bold py-3 rounded-xl">Opprett</button>
+                                    <input required name="name" type="text" placeholder="Fullt Navn" className="w-full p-4 bg-brand-cream rounded-xl outline-none focus:ring-2 focus:ring-brand/30" />
+                                    <input required name="username" type="text" placeholder="Brukernavn" className="w-full p-4 bg-brand-cream rounded-xl outline-none focus:ring-2 focus:ring-brand/30" />
+                                    <input required name="password" type="text" placeholder="Passord" className="w-full p-4 bg-brand-cream rounded-xl outline-none focus:ring-2 focus:ring-brand/30" />
+                                    <button type="submit" className="w-full bg-brand text-white font-bold py-4 rounded-xl hover:bg-brand-dark transition-colors">Opprett</button>
                                 </form>
                             </Card>
                         </div>
                     )}
                     
-                    <div className="bg-gradient-to-r from-brand to-brand-mint rounded-3xl p-6 text-white shadow-xl shadow-brand/20 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full blur-2xl transform translate-x-10 -translate-y-10"></div>
-                        <h2 className="text-2xl font-extrabold mb-1 relative z-10">Hei Coach! 👋</h2>
-                        <p className="text-white opacity-90 relative z-10">{clients.length} aktive utøvere.</p>
+                    <div className="bg-gradient-to-r from-brand to-[#E6B89C] rounded-[2rem] p-8 text-white shadow-xl shadow-brand/20 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-3xl transform translate-x-10 -translate-y-10"></div>
+                        <h2 className="text-3xl font-black mb-2 relative z-10 serif-font">Hei Coach! 👋</h2>
+                        <p className="text-white/90 relative z-10 font-medium">Du følger opp {clients.length} utøvere.</p>
                     </div>
 
-                    <div className="px-2 flex justify-between items-center">
-                        <h3 className="text-lg font-bold text-slate-800">Dine utøvere</h3>
-                        <button onClick={() => setShowModal(true)} className="bg-brand text-white px-4 py-2 rounded-full text-sm font-bold flex items-center gap-1 shadow-md"><Plus size={16} /> Ny</button>
+                    <div className="px-2 flex justify-between items-center mt-8">
+                        <h3 className="text-lg font-bold text-brand-text serif-font">Dine utøvere</h3>
+                        <button onClick={() => setShowModal(true)} className="bg-brand-text text-white px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 shadow-md hover:bg-black transition-colors"><Plus size={16} /> Ny</button>
                     </div>
                     <div className="space-y-3">
                         {clients.map(client => (
-                            <div key={client.id} className="w-full bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between gap-3 hover:shadow-md cursor-pointer" onClick={() => onSelectClient(client)}>
+                            <div key={client.id} className="w-full bg-white p-4 rounded-2xl border border-brand-dark/5 shadow-sm flex items-center justify-between gap-3 hover:shadow-md cursor-pointer group transition-all" onClick={() => onSelectClient(client)}>
                                 <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-brand-pastel text-brand rounded-2xl flex items-center justify-center font-bold text-lg">{client.name.charAt(0)}</div>
-                                    <div><div className="font-bold text-slate-800">{client.name}</div><div className="text-xs text-slate-400">@{client.username}</div></div>
+                                    <div className="w-12 h-12 bg-brand-cream text-brand-dark rounded-full flex items-center justify-center font-black text-lg serif-font">{client.name.charAt(0)}</div>
+                                    <div><div className="font-bold text-brand-text text-lg">{client.name}</div><div className="text-xs text-brand-text/40">@{client.username}</div></div>
                                 </div>
-                                <div className="flex gap-1">
-                                    <button onClick={(e) => { e.stopPropagation(); if(confirm('Slett?')) onDeleteClient(client.id); }} className="p-3 text-slate-300 hover:text-red-500"><Trash2 size={20} /></button>
-                                    <div className="p-3 text-brand-mintdark"><ChevronRight size={20} /></div>
+                                <div className="flex gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+                                    <button onClick={(e) => { e.stopPropagation(); if(confirm('Slett?')) onDeleteClient(client.id); }} className="p-3 text-brand-text/20 hover:text-red-500"><Trash2 size={20} /></button>
+                                    <div className="p-3 text-brand"><ChevronRight size={20} /></div>
                                 </div>
                             </div>
                         ))}
@@ -1030,14 +873,8 @@
           const [showWeightHistory, setShowWeightHistory] = useState(false);
 
           const [currentData, setCurrentData] = useState({ 
-              dietPlan: '', 
-              workoutPlan: '', 
-              stepGoal: 10000, 
-              totalWeeks: 12,
-              startDate: null,
-              isPaused: false,
-              pausedAt: null,
-              checkins: [] 
+              dietPlan: '', workoutPlan: '', stepGoal: 10000, 
+              totalWeeks: 12, startDate: null, isPaused: false, pausedAt: null, checkins: [] 
           });
           const [isLoading, setIsLoading] = useState(true);
 
@@ -1046,12 +883,10 @@
                 try {
                     const users = await api.getUsers();
                     setAllUsers(users);
-
                     const savedSession = localStorage.getItem('jnm_session');
                     if (savedSession) {
                         const sessionUser = JSON.parse(savedSession);
                         const isValidUser = users.find(u => u.id === sessionUser.id);
-                        
                         if (isValidUser) {
                             setCurrentUser(isValidUser);
                             if (isValidUser.role === 'athlete') setViewingClient(isValidUser);
@@ -1060,11 +895,7 @@
                             setCurrentUser(null);
                         }
                     }
-                } catch(e) { 
-                    console.error("Feil under init:", e); 
-                } finally { 
-                    setIsLoading(false); 
-                }
+                } catch(e) { console.error(e); } finally { setIsLoading(false); }
             };
             init();
           }, []);
@@ -1073,16 +904,7 @@
             if (viewingClient) {
                 api.getUserData(viewingClient.id)
                     .then(setCurrentData)
-                    .catch(() => setCurrentData({ 
-                        dietPlan: '', 
-                        workoutPlan: '', 
-                        stepGoal: 10000, 
-                        totalWeeks: 12,
-                        startDate: null,
-                        isPaused: false,
-                        pausedAt: null,
-                        checkins: [] 
-                    }))
+                    .catch(() => setCurrentData({ dietPlan: '', workoutPlan: '', stepGoal: 10000, totalWeeks: 12, startDate: null, isPaused: false, pausedAt: null, checkins: [] }))
                     .finally(() => setIsClientLoading(false));
             }
           }, [viewingClient]);
@@ -1106,73 +928,38 @@
                 setCurrentData(prev => ({ ...prev, checkins: [...prev.checkins, entry] }));
           };
           
-          // OPTIMALISERING: Optimistic UI
           const handleUpdateData = async (keyOrObj, value) => {
               if (!viewingClient) return;
-              
-              let updates = {};
-              if (typeof keyOrObj === 'string') {
-                  updates = { [keyOrObj]: value };
-              } else if (typeof keyOrObj === 'object') {
-                  updates = keyOrObj;
-              }
-
-              // 1. Lagre backup
+              let updates = typeof keyOrObj === 'string' ? { [keyOrObj]: value } : keyOrObj;
               const previousData = { ...currentData };
-
-              // 2. Oppdater UI umiddelbart
               const newData = { ...currentData, ...updates };
               setCurrentData(newData);
-
-              // 3. Send til server (og rull tilbake ved feil)
-              try {
-                  await api.saveUserData(viewingClient.id, newData);
-              } catch (e) {
-                  alert('Kunne ikke lagre endringene. Sjekk nettet.');
-                  setCurrentData(previousData);
-              }
+              try { await api.saveUserData(viewingClient.id, newData); } 
+              catch (e) { alert('Lagring feilet'); setCurrentData(previousData); }
           };
 
-          // OPTIMALISERING: Optimistic UI for sletting
           const handleDeleteCheckin = async (checkinId) => {
-            if (!viewingClient) return;
-            if(!confirm('Slett denne innsjekken?')) return;
-
-            // 1. Lagre backup
+            if (!viewingClient || !confirm('Slett denne innsjekken?')) return;
             const previousData = { ...currentData };
-
-            // 2. Fjern fra UI umiddelbart
-            setCurrentData(prev => ({ 
-                ...prev, 
-                checkins: prev.checkins.filter(c => c.id !== checkinId) 
-            }));
-            
-            // 3. Send til server (og rull tilbake ved feil)
-            try {
-                await api.deleteCheckin(checkinId);
-            } catch (e) { 
-                alert('Kunne ikke slette innsjekk.');
-                setCurrentData(previousData);
-            }
+            setCurrentData(prev => ({ ...prev, checkins: prev.checkins.filter(c => c.id !== checkinId) }));
+            try { await api.deleteCheckin(checkinId); } 
+            catch (e) { alert('Kunne ikke slette.'); setCurrentData(previousData); }
           };
 
-          if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-brand-pastel text-brand font-bold animate-pulse">Laster...</div>;
+          if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-brand-pastel text-brand font-bold animate-pulse font-serif text-xl">Laster JNM Coaching...</div>;
           if (!currentUser) return <LoginScreen onLogin={handleLogin} />;
           const isCoach = currentUser.role === 'coach';
 
           if (isCoach && !viewingClient) {
               return (
-                  <div className="max-w-md mx-auto min-h-screen bg-brand-pastel relative shadow-2xl overflow-hidden">
-                      <Header title="Utøvere" user={currentUser} onLogout={handleLogout} />
+                  <div className="max-w-md mx-auto min-h-screen bg-brand-pastel relative shadow-2xl shadow-black/5 overflow-hidden">
+                      <Header title="Oversikt" user={currentUser} onLogout={handleLogout} />
                       <main className="p-4 relative z-10">
                           <CoachDashboard 
                               user={currentUser} 
                               allUsers={allUsers} 
                               onSelectClient={(client) => { 
-                                  setCurrentData({ 
-                                      dietPlan: '', workoutPlan: '', stepGoal: 10000, 
-                                      totalWeeks: 12, startDate: null, isPaused: false, pausedAt: null, checkins: [] 
-                                  });
+                                  setCurrentData({ dietPlan: '', workoutPlan: '', stepGoal: 10000, totalWeeks: 12, startDate: null, isPaused: false, pausedAt: null, checkins: [] });
                                   setIsClientLoading(true);
                                   setViewingClient(client); 
                                   setShowWeightHistory(false); 
@@ -1187,30 +974,19 @@
           }
 
           return (
-            <div className="max-w-md mx-auto min-h-screen bg-brand-pastel relative shadow-2xl overflow-hidden">
-              <Header title={activeTab === 'dashboard' ? 'Dashbord' : activeTab === 'diet' ? 'Kosthold' : activeTab === 'workout' ? 'Trening' : 'Innsjekk'} user={currentUser} viewingClient={isCoach ? viewingClient : null} onLogout={handleLogout} onClearClient={() => { setViewingClient(null); setActiveTab('dashboard'); }} />
+            <div className="max-w-md mx-auto min-h-screen bg-brand-pastel relative shadow-2xl shadow-black/5 overflow-hidden">
+              <Header title={activeTab === 'dashboard' ? 'Hjem' : activeTab === 'diet' ? 'Matplan' : activeTab === 'workout' ? 'Trening' : 'Status'} user={currentUser} viewingClient={isCoach ? viewingClient : null} onLogout={handleLogout} onClearClient={() => { setViewingClient(null); setActiveTab('dashboard'); }} />
               <main className="p-4 pb-32 relative z-10">
                 {isClientLoading ? (
-                    <div className="flex flex-col items-center justify-center py-20 animate-pulse">
-                        <Loader2 size={48} className="text-brand animate-spin mb-4" />
-                        <p className="text-slate-400 font-bold">Laster utøver...</p>
+                    <div className="flex flex-col items-center justify-center py-32 animate-pulse text-brand-text/50">
+                        <Loader2 size={40} className="text-brand animate-spin mb-4" />
+                        <p className="font-serif italic">Henter utøverdata...</p>
                     </div>
                 ) : (
                     <>
                         {activeTab === 'dashboard' ? (
-                            showWeightHistory ? (
-                                <WeightProgressView 
-                                    checkins={currentData.checkins} 
-                                    onBack={() => setShowWeightHistory(false)} 
-                                />
-                            ) : (
-                                <DashboardView 
-                                    userData={currentData} 
-                                    isCoach={isCoach} 
-                                    onUpdateData={handleUpdateData} 
-                                    onOpenWeightHistory={() => setShowWeightHistory(true)} 
-                                />
-                            )
+                            showWeightHistory ? <WeightProgressView checkins={currentData.checkins} onBack={() => setShowWeightHistory(false)} /> :
+                            <DashboardView userData={currentData} isCoach={isCoach} onUpdateData={handleUpdateData} onOpenWeightHistory={() => setShowWeightHistory(true)} />
                         ) :
                         activeTab === 'diet' ? <PlanSection type="diet" content={currentData.dietPlan} onSave={(val) => handleUpdateData('dietPlan', val)} isReadOnly={!isCoach} /> :
                         activeTab === 'workout' ? <PlanSection type="workout" content={currentData.workoutPlan} onSave={(val) => handleUpdateData('workoutPlan', val)} isReadOnly={!isCoach} /> :
