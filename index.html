@@ -5,23 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>JNM Coaching</title>
     
+    <!-- PWA: Meta Tags for Mobile -->
     <meta name="theme-color" content="#F9F8F6">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="JNM Coaching">
 
+    <!-- FAVICON (Varm oransje) -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='128' fill='%23DA7756'/%3E%3Ccircle cx='256' cy='256' r='100' fill='%23F9F8F6' opacity='0.9'/%3E%3C/svg%3E">
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='128' fill='%23DA7756'/%3E%3Ccircle cx='256' cy='256' r='100' fill='%23F9F8F6' opacity='0.9'/%3E%3C/svg%3E">
 
+    <!-- Tailwind CSS with Typography Plugin -->
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
     
+    <!-- Custom Tailwind Configuration -->
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     fontFamily: {
                         sans: ['Inter', 'system-ui', 'sans-serif'],
-                        serif: ['Merriweather', 'Georgia', 'serif'], // La til Serif for "Claude"-looken
+                        serif: ['Merriweather', 'Georgia', 'serif'],
                     },
                     colors: {
                         brand: {
@@ -41,23 +45,38 @@
                     },
                     keyframes: {
                         fadeIn: {
-                            'from': { opacity: '0', transform: 'translateY(10px)' },
+                            'from': { opacity: '0', transform: 'translateY(5px)' },
                             'to': { opacity: '1', transform: 'translateY(0)' }
                         },
                         zoomIn: {
                             'from': { opacity: '0', transform: 'scale(0.98)' },
                             'to': { opacity: '1', transform: 'scale(1)' }
                         }
-                    }
+                    },
+                    typography: (theme) => ({
+                        DEFAULT: {
+                            css: {
+                                color: theme('colors.brand.text'),
+                                a: { color: theme('colors.brand.DEFAULT'), '&:hover': { color: theme('colors.brand.dark') } },
+                                h1: { fontFamily: theme('fontFamily.serif'), color: theme('colors.brand.text') },
+                                h2: { fontFamily: theme('fontFamily.serif'), color: theme('colors.brand.text') },
+                                h3: { fontFamily: theme('fontFamily.serif'), color: theme('colors.brand.text') },
+                                strong: { color: theme('colors.brand.text') },
+                            },
+                        },
+                    }),
                 }
             }
         }
     </script>
 
+    <!-- Marked Library -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
+    <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
+    <!-- React Import Map -->
     <script type="importmap">
         {
             "imports": {
@@ -76,7 +95,7 @@
             -webkit-tap-highlight-color: transparent;
             overscroll-behavior-y: none;
             font-family: 'Inter', sans-serif;
-            background-color: #F9F8F6; /* Warm Paper */
+            background-color: #F9F8F6;
             color: #4A4543;
         }
 
@@ -91,17 +110,23 @@
             border-color: #DA7756;
         }
 
-        /* Mykere Glassmorphism som passer varme toner */
         .glass-panel {
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.95); /* Mer solid for bedre kontrast */
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.8);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.02);
         }
         
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Custom typography adjustments for markdown */
+        .prose p { margin-bottom: 0.75em; line-height: 1.6; }
+        .prose h1 { font-size: 1.5em; margin-top: 1em; margin-bottom: 0.5em; }
+        .prose h2 { font-size: 1.25em; margin-top: 1em; margin-bottom: 0.5em; }
+        .prose ul { list-style-type: disc; padding-left: 1.2em; }
+        .prose li { margin-bottom: 0.25em; }
     </style>
 </head>
 <body class="text-brand-text select-none">
@@ -120,7 +145,6 @@
         import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 
         // --- GLOBAL CONFIG ---
-        // Oppdatert ikon: Varm Terracotta sirkel
         const APP_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='128' fill='%23DA7756'/%3E%3Cpath d='M256 120c-75.1 0-136 60.9-136 136s60.9 136 136 136 136-60.9 136-136-60.9-136-136-136zm0 248c-61.9 0-112-50.1-112-112s50.1-112 112-112 112 50.1 112 112-50.1 112-112 112z' fill='%23F9F8F6' opacity='0.9'/%3E%3C/svg%3E";
 
         if (window.marked) {
@@ -261,7 +285,7 @@
                         <h1 className="text-4xl font-black text-brand-dark tracking-tight serif-font">JNM Coaching</h1>
                         <p className="text-brand-text/60 mt-2 font-medium">Logg inn for å starte reisen</p>
                     </div>
-                    <div className="w-full max-w-sm glass-panel p-8 rounded-3xl relative z-10 border-white/50">
+                    <div className="w-full max-w-sm bg-white/80 backdrop-blur-xl p-8 rounded-3xl relative z-10 border border-white/50 shadow-lg">
                         <form onSubmit={handleLogin} className="space-y-5">
                             <div>
                                 <label className="block text-xs font-bold text-brand-text/50 uppercase mb-2 ml-1 tracking-widest">Brukernavn</label>
@@ -290,15 +314,17 @@
             { id: 'checkin', label: 'Status', icon: ClipboardCheck },
           ];
           return (
-            <div className="fixed bottom-6 left-4 right-4 glass-panel z-50 rounded-2xl shadow-xl shadow-brand-dark/5 border border-white/60">
-              <div className="flex justify-around items-center h-16 max-w-md mx-auto">
+            <div className="fixed bottom-0 left-0 right-0 glass-panel z-50 safe-area-pb">
+              <div className="flex justify-around items-center h-20 max-w-md mx-auto px-2">
                 {navItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = activeTab === item.id;
                   return (
-                    <button key={item.id} onClick={() => setActiveTab(item.id)} className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-all duration-300 ${isActive ? 'text-brand scale-105' : 'text-brand-text/40 hover:text-brand-text/60'}`}>
-                      <div className={`p-1.5 rounded-xl transition-colors ${isActive ? 'bg-brand/10' : 'bg-transparent'}`}><Icon size={22} strokeWidth={isActive ? 2.5 : 2} /></div>
-                      <span className={`text-[10px] font-bold tracking-wide ${isActive ? 'opacity-100' : 'opacity-0'}`}>{item.label}</span>
+                    <button key={item.id} onClick={() => setActiveTab(item.id)} className={`flex flex-col items-center justify-center w-full h-full space-y-1.5 transition-all duration-300 group`}>
+                      <div className={`p-1 rounded-full transition-colors ${isActive ? 'text-brand' : 'text-brand-text/40 group-hover:text-brand-text/60'}`}>
+                        <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
+                      </div>
+                      <span className={`text-[10px] font-bold tracking-wide transition-colors ${isActive ? 'text-brand' : 'text-brand-text/50'}`}>{item.label}</span>
                     </button>
                   );
                 })}
@@ -308,7 +334,7 @@
         };
 
         const Header = ({ title, user, viewingClient, onLogout, onClearClient }) => (
-          <div className="bg-brand-pastel/80 backdrop-blur-md px-6 py-4 sticky top-0 z-40 flex justify-between items-center border-b border-brand-dark/5">
+          <div className="bg-brand-pastel/95 backdrop-blur-md px-6 py-4 sticky top-0 z-40 flex justify-between items-center border-b border-brand-dark/5 shadow-sm">
             <div className="flex flex-col">
                 <h1 className="text-xl font-black text-brand-text tracking-tight serif-font">{title}</h1>
                 <div className="flex items-center gap-2">
@@ -368,7 +394,6 @@
                 return `${x},${y}`;
             }).join(' ');
 
-            // Farger for grafen: Sage (Ned/Bra) eller Clay (Opp/Nøytral)
             const strokeColor = isDown ? '#5D7556' : '#DA7756'; 
 
             return (
@@ -552,19 +577,19 @@
           return (
             <div className="space-y-4 pb-24 animate-fade-in">
               <Card className="min-h-[60vh]">
-                <div className="flex justify-between items-center mb-8">
+                <div className="flex justify-between items-center mb-8 border-b border-brand-dark/5 pb-6">
                   <div className="flex items-center gap-4">
                     <div className={`p-4 rounded-2xl ${type === 'diet' ? 'bg-brand-mint/20 text-brand-mintdark' : 'bg-brand/10 text-brand'}`}>
                       {type === 'diet' ? <Utensils size={28} /> : <Dumbbell size={28} />}
                     </div>
-                    <h2 className="font-black text-2xl text-brand-text serif-font">{type === 'diet' ? 'Kostholdsplan' : 'Treningsplan'}</h2>
+                    <h2 className="font-black text-2xl text-brand-text serif-font">{type === 'diet' ? 'Matplan' : 'Trening'}</h2>
                   </div>
                   {!isReadOnly && <button onClick={() => { if(isEditing) onSave(text); setIsEditing(!isEditing); }} className="text-xs font-bold text-white px-5 py-2.5 bg-brand-text rounded-full shadow-lg hover:bg-black transition-colors">{isEditing ? 'Lagre' : 'Rediger'}</button>}
                 </div>
                 {isEditing && !isReadOnly ? (
-                  <textarea value={text} onChange={(e) => setText(e.target.value)} className="w-full h-[50vh] p-4 bg-brand-cream rounded-xl focus:ring-2 focus:ring-brand/30 outline-none text-brand-text font-mono text-sm leading-relaxed border border-brand-dark/5" />
+                  <textarea value={text} onChange={(e) => setText(e.target.value)} className="w-full h-[60vh] p-4 bg-brand-cream rounded-xl focus:ring-2 focus:ring-brand/30 outline-none text-brand-text font-mono text-sm leading-relaxed border border-brand-dark/5" />
                 ) : (
-                  <div className="prose prose-slate prose-lg max-w-none text-brand-text/80 font-medium leading-relaxed font-sans" dangerouslySetInnerHTML={{ __html: text ? window.marked.parse(text) : '<p class="text-brand-text/30 italic text-center mt-10">Ingen plan tilgjengelig enda.</p>' }} />
+                  <div className="prose prose-sm md:prose-base max-w-none text-brand-text/80 font-medium leading-relaxed font-sans pb-10" dangerouslySetInnerHTML={{ __html: text ? window.marked.parse(text) : '<p class="text-brand-text/30 italic text-center mt-10">Ingen plan tilgjengelig enda.</p>' }} />
                 )}
               </Card>
             </div>
