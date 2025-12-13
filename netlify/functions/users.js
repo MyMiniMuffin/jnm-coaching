@@ -6,7 +6,8 @@ exports.handler = async (event) => {
   try {
     // HENTE BRUKERE (GET)
     if (event.httpMethod === 'GET') {
-      const users = await sql`SELECT id, username, name, role FROM users`;
+      // OPPDATERT: Henter nå også start_date
+      const users = await sql`SELECT id, username, name, role, start_date FROM users`;
       return { statusCode: 200, body: JSON.stringify(users) };
     }
 
@@ -20,8 +21,8 @@ exports.handler = async (event) => {
         VALUES (${name}, ${username}, ${password}, ${role || 'athlete'})
       `;
       
-      // Hent den nye listen over alle brukere og send tilbake
-      const allUsers = await sql`SELECT id, username, name, role FROM users`;
+      // Hent den nye listen over alle brukere og send tilbake (inkludert start_date)
+      const allUsers = await sql`SELECT id, username, name, role, start_date FROM users`;
       return { statusCode: 200, body: JSON.stringify(allUsers) };
     }
 
@@ -34,7 +35,8 @@ exports.handler = async (event) => {
       // Deretter sletter vi brukeren
       await sql`DELETE FROM users WHERE id = ${id}`;
       
-      const allUsers = await sql`SELECT id, username, name, role FROM users`;
+      // Returner oppdatert liste
+      const allUsers = await sql`SELECT id, username, name, role, start_date FROM users`;
       return { statusCode: 200, body: JSON.stringify(allUsers) };
     }
 
