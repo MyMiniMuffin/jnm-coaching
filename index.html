@@ -713,7 +713,7 @@
                 <div className="space-y-5 pb-28 animate-slide-up">
                     {/* Hero Card - Dynamisk basert på status */}
                     {(() => {
-                        const hasValidStartDate = userData.startDate && userData.startDate.length > 0;
+                        const hasValidStartDate = userData.startDate && String(userData.startDate).length > 0;
                         
                         if (!hasValidStartDate) {
                             // Ingen startdato - vis velkomst
