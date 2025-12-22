@@ -6,14 +6,14 @@
     <title>JNM Coaching</title>
     
     <!-- PWA: Meta Tags for Mobile -->
-    <meta name="theme-color" content="#F9F8F6">
+    <meta name="theme-color" content="#FAFAF9">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="JNM Coaching">
 
-    <!-- FAVICON (Nytt ikon: "Nordstjerne" / Sparkle) -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='160' fill='%23DA7756'/%3E%3Cpath d='M256 96c0 88.4 71.6 160 160 160-88.4 0-160 71.6-160 160 0-88.4-71.6-160-160-160 88.4 0 160-71.6 160-160z' fill='%23F9F8F6'/%3E%3C/svg%3E">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='160' fill='%23DA7756'/%3E%3Cpath d='M256 96c0 88.4 71.6 160 160 160-88.4 0-160 71.6-160 160 0-88.4-71.6-160-160-160 88.4 0 160-71.6 160-160z' fill='%23F9F8F6'/%3E%3C/svg%3E">
+    <!-- FAVICON -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='160' fill='%23171717'/%3E%3Cpath d='M256 96c0 88.4 71.6 160 160 160-88.4 0-160 71.6-160 160 0-88.4-71.6-160-160-160 88.4 0 160-71.6 160-160z' fill='%23FAFAF9'/%3E%3C/svg%3E">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='160' fill='%23171717'/%3E%3Cpath d='M256 96c0 88.4 71.6 160 160 160-88.4 0-160 71.6-160 160 0-88.4-71.6-160-160-160 88.4 0 160-71.6 160-160z' fill='%23FAFAF9'/%3E%3C/svg%3E">
 
     <!-- Tailwind CSS with Typography Plugin -->
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
@@ -24,45 +24,57 @@
             theme: {
                 extend: {
                     fontFamily: {
-                        sans: ['Inter', 'system-ui', 'sans-serif'],
-                        serif: ['Merriweather', 'Georgia', 'serif'],
+                        sans: ['Outfit', 'system-ui', 'sans-serif'],
+                        display: ['Instrument Serif', 'Georgia', 'serif'],
                     },
                     colors: {
-                        brand: {
-                            DEFAULT: '#DA7756', // Warm Clay / Terracotta
-                            dark: '#B05638',    // Darker Clay
-                            pastel: '#F9F8F6',  // Warm Paper/Sand (Bakgrunn)
-                            cream: '#F2EFE9',   // Slightly darker cream for cards
-                            mint: '#A8BCA1',    // Sage Green
-                            mintdark: '#5D7556',// Forest Green
-                            warning: '#E0A842', // Warm Ochre
-                            text: '#4A4543',    // Warm Charcoal
-                        }
+                        surface: {
+                            50: '#FAFAF9',
+                            100: '#F5F5F4',
+                            200: '#E7E5E4',
+                            300: '#D6D3D1',
+                        },
+                        ink: {
+                            DEFAULT: '#171717',
+                            muted: '#525252',
+                            faint: '#A3A3A3',
+                        },
+                        accent: {
+                            DEFAULT: '#171717',
+                            hover: '#262626',
+                        },
+                        success: '#16A34A',
+                        warning: '#CA8A04',
+                        error: '#DC2626',
                     },
                     animation: {
-                        'fade-in': 'fadeIn 0.2s ease-out',
-                        'zoom-in': 'zoomIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                        'pulse-slow': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'fade-in': 'fadeIn 0.4s ease-out',
+                        'slide-up': 'slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
+                        'scale-in': 'scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
                     },
                     keyframes: {
                         fadeIn: {
                             'from': { opacity: '0' },
                             'to': { opacity: '1' }
                         },
-                        zoomIn: {
-                            'from': { opacity: '0', transform: 'scale(0.95)' },
+                        slideUp: {
+                            'from': { opacity: '0', transform: 'translateY(16px)' },
+                            'to': { opacity: '1', transform: 'translateY(0)' }
+                        },
+                        scaleIn: {
+                            'from': { opacity: '0', transform: 'scale(0.96)' },
                             'to': { opacity: '1', transform: 'scale(1)' }
                         }
                     },
                     typography: (theme) => ({
                         DEFAULT: {
                             css: {
-                                color: theme('colors.brand.text'),
-                                a: { color: theme('colors.brand.DEFAULT'), '&:hover': { color: theme('colors.brand.dark') } },
-                                h1: { fontFamily: theme('fontFamily.serif'), color: theme('colors.brand.text') },
-                                h2: { fontFamily: theme('fontFamily.serif'), color: theme('colors.brand.text') },
-                                h3: { fontFamily: theme('fontFamily.serif'), color: theme('colors.brand.text') },
-                                strong: { color: theme('colors.brand.text') },
+                                color: theme('colors.ink.DEFAULT'),
+                                a: { color: theme('colors.ink.DEFAULT'), textDecoration: 'underline' },
+                                h1: { fontFamily: theme('fontFamily.display'), fontWeight: '400' },
+                                h2: { fontFamily: theme('fontFamily.display'), fontWeight: '400' },
+                                h3: { fontFamily: theme('fontFamily.display'), fontWeight: '400' },
+                                strong: { fontWeight: '600' },
                             },
                         },
                     }),
@@ -90,63 +102,87 @@
     </script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Merriweather:wght@300;400;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@300;400;500;600;700&display=swap');
 
-        body {
+        * {
             -webkit-tap-highlight-color: transparent;
-            overscroll-behavior-y: none;
-            font-family: 'Inter', sans-serif;
-            background-color: #F9F8F6;
-            color: #4A4543;
         }
 
-        h1, h2, h3, .serif-font {
-            font-family: 'Merriweather', serif;
+        body {
+            overscroll-behavior-y: none;
+            font-family: 'Outfit', system-ui, sans-serif;
+            background-color: #FAFAF9;
+            color: #171717;
+            letter-spacing: -0.01em;
+        }
+
+        .font-display {
+            font-family: 'Instrument Serif', Georgia, serif;
         }
 
         .safe-area-pb { padding-bottom: env(safe-area-inset-bottom); }
         
-        .custom-checkbox:checked {
-            background-color: #DA7756;
-            border-color: #DA7756;
+        input[type="checkbox"]:checked {
+            background-color: #171717;
+            border-color: #171717;
         }
 
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.95); /* Mer solid for bedre kontrast */
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border-top: 1px solid rgba(0, 0, 0, 0.05);
-            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.02);
+        .glass-nav {
+            background: rgba(250, 250, 249, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
         }
         
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* Custom typography adjustments for markdown */
-        .prose p { margin-bottom: 0.75em; line-height: 1.6; }
-        .prose h1 { font-size: 1.5em; margin-top: 1em; margin-bottom: 0.5em; }
-        .prose h2 { font-size: 1.25em; margin-top: 1em; margin-bottom: 0.5em; }
-        .prose ul { list-style-type: disc; padding-left: 1.2em; }
-        .prose li { margin-bottom: 0.25em; }
+        .prose p { margin-bottom: 1em; line-height: 1.7; }
+        .prose h1 { font-size: 1.75em; margin-top: 1.5em; margin-bottom: 0.5em; }
+        .prose h2 { font-size: 1.375em; margin-top: 1.5em; margin-bottom: 0.5em; }
+        .prose ul { list-style-type: disc; padding-left: 1.5em; }
+        .prose li { margin-bottom: 0.5em; }
+
+        /* Subtle grain texture */
+        .grain::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+            opacity: 0.03;
+            pointer-events: none;
+        }
+
+        /* Custom focus states */
+        input:focus, textarea:focus, select:focus, button:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 2px #171717;
+        }
+
+        /* Smooth number input */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
     </style>
 </head>
-<body class="text-brand-text select-none">
+<body class="text-ink select-none antialiased">
     <div id="root"></div>
 
     <script type="text/babel" data-type="module">
-        import React, { useState, useEffect } from 'react';
+        import React, { useState, useEffect, useCallback } from 'react';
         import { createRoot } from 'react-dom/client';
         import { 
           Home, Utensils, Dumbbell, ClipboardCheck, Camera, Save, ChevronRight, ChevronLeft,
-          TrendingUp, TrendingDown, Minus, User, Briefcase, LogOut, Lock, ArrowRight, Plus, 
-          X, Trash2, Footprints, Edit2, Check, Moon, Zap, Scale, Loader2, AlertTriangle, 
-          Calendar, Pause, Activity
+          TrendingUp, TrendingDown, Minus, User, Briefcase, LogOut, ArrowRight, Plus, 
+          X, Trash2, Footprints, Edit2, Check, Moon, Zap, Scale, Loader2, AlertCircle, 
+          Calendar, Pause, Play, Activity, Eye, ChevronDown
         } from 'lucide-react';
         
         import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 
-        // --- GLOBAL CONFIG ---
-        const APP_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='160' fill='%23DA7756'/%3E%3Cpath d='M256 96c0 88.4 71.6 160 160 160-88.4 0-160 71.6-160 160 0-88.4-71.6-160-160-160 88.4 0 160-71.6 160-160z' fill='%23F9F8F6'/%3E%3C/svg%3E";
+        // --- CONFIG ---
+        const APP_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='160' fill='%23171717'/%3E%3Cpath d='M256 96c0 88.4 71.6 160 160 160-88.4 0-160 71.6-160 160 0-88.4-71.6-160-160-160 88.4 0 160-71.6 160-160z' fill='%23FAFAF9'/%3E%3C/svg%3E";
 
         if (window.marked) {
             window.marked.setOptions({ breaks: true, gfm: true });
@@ -200,7 +236,7 @@
         };
 
         // --- Helpers ---
-        const formatWeight = (val) => (!val ? '--' : parseFloat(val).toFixed(1).replace('.', ','));
+        const formatWeight = (val) => (!val ? '—' : parseFloat(val).toFixed(1).replace('.', ','));
         
         const formatDateNO = (dateString) => {
             if (!dateString) return '';
@@ -226,9 +262,53 @@
 
         // --- Components ---
 
-        // NY: Skeleton Loader Component for smooth loading feels
         const Skeleton = ({ className }) => (
-            <div className={`bg-brand-text/5 animate-pulse-slow rounded-xl ${className}`} />
+            <div className={`bg-surface-200 animate-pulse rounded-2xl ${className}`} />
+        );
+
+        const Badge = ({ children, variant = 'default', className = '' }) => {
+            const variants = {
+                default: 'bg-surface-200 text-ink',
+                success: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+                warning: 'bg-amber-50 text-amber-700 border border-amber-200',
+                muted: 'bg-surface-100 text-ink-muted',
+            };
+            return (
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full ${variants[variant]} ${className}`}>
+                    {children}
+                </span>
+            );
+        };
+
+        const Button = ({ children, variant = 'primary', size = 'md', className = '', ...props }) => {
+            const variants = {
+                primary: 'bg-ink text-surface-50 hover:bg-accent-hover active:scale-[0.98]',
+                secondary: 'bg-surface-100 text-ink hover:bg-surface-200 active:scale-[0.98]',
+                ghost: 'text-ink-muted hover:text-ink hover:bg-surface-100',
+                danger: 'bg-red-50 text-red-600 hover:bg-red-100',
+            };
+            const sizes = {
+                sm: 'px-3 py-1.5 text-sm',
+                md: 'px-4 py-2.5 text-sm',
+                lg: 'px-6 py-3.5 text-base',
+            };
+            return (
+                <button 
+                    className={`font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 ${variants[variant]} ${sizes[size]} ${className}`}
+                    {...props}
+                >
+                    {children}
+                </button>
+            );
+        };
+
+        const Card = ({ children, className = "", interactive = false, ...props }) => (
+            <div 
+                className={`bg-white rounded-2xl border border-surface-200 ${interactive ? 'hover:border-surface-300 hover:shadow-sm cursor-pointer transition-all' : ''} ${className}`} 
+                {...props}
+            >
+                {children}
+            </div>
         );
 
         const ImageModal = ({ images, initialIndex, onClose }) => {
@@ -262,15 +342,6 @@
             };
 
             useEffect(() => {
-                const preload = (url) => {
-                    const img = new Image();
-                    img.src = getFullSizeImage(url);
-                };
-                if (hasNext) preload(images[index + 1]);
-                if (hasPrev) preload(images[index - 1]);
-            }, [index, images, hasNext, hasPrev]);
-
-            useEffect(() => {
                 const handleKeyDown = (e) => {
                     if (e.key === 'ArrowRight' && hasNext) handleNext();
                     if (e.key === 'ArrowLeft' && hasPrev) handlePrev();
@@ -281,43 +352,49 @@
             }, [hasNext, hasPrev, onClose]);
 
             return (
-                <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-sm flex items-center justify-center p-0 animate-fade-in touch-none">
-                    <button onClick={onClose} className="absolute top-6 right-6 text-white/70 hover:text-white bg-white/10 p-2 rounded-full z-[120] transition-colors"><X size={32} /></button>
+                <div className="fixed inset-0 z-[100] bg-ink/95 flex items-center justify-center animate-fade-in">
+                    <button onClick={onClose} className="absolute top-6 right-6 text-white/60 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors z-[120]">
+                        <X size={28} />
+                    </button>
                     
-                    <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
-                        {/* OPPDATERT: Zoom oppsett */}
+                    <div className="relative w-full h-full flex items-center justify-center">
                         <TransformWrapper 
                             key={index} 
                             initialScale={1} 
                             minScale={0.5} 
                             maxScale={4} 
-                            centerOnInit={true} 
-                            wheel={{ step: 0.2 }}
-                            doubleClick={{ disabled: false, step: 0.7 }} /* Dobbelttrykk aktivert */
+                            centerOnInit={true}
                         >
-                            {({ zoomIn, zoomOut, resetTransform }) => (
-                                <React.Fragment>
-                                    {loading && (
-                                        <div className="absolute inset-0 flex items-center justify-center z-50">
-                                            <Loader2 className="text-white animate-spin opacity-50" size={48} />
-                                        </div>
-                                    )}
-                                    <TransformComponent wrapperStyle={{ width: "100%", height: "100%" }} contentStyle={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                        <img 
-                                            src={getFullSizeImage(currentImage)} 
-                                            onLoad={() => setLoading(false)}
-                                            className={`max-w-full max-h-[90vh] object-contain shadow-2xl select-none animate-zoom-in ${loading ? 'opacity-0' : 'opacity-100'}`} 
-                                            alt="Fullskjerm" 
-                                            onClick={(e) => e.stopPropagation()} 
-                                        />
-                                    </TransformComponent>
-                                </React.Fragment>
-                            )}
+                            <TransformComponent wrapperStyle={{ width: "100%", height: "100%" }} contentStyle={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                {loading && (
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <Loader2 className="text-white animate-spin" size={32} />
+                                    </div>
+                                )}
+                                <img 
+                                    src={getFullSizeImage(currentImage)} 
+                                    onLoad={() => setLoading(false)}
+                                    className={`max-w-full max-h-[90vh] object-contain select-none transition-opacity duration-300 ${loading ? 'opacity-0' : 'opacity-100'}`} 
+                                    alt="Fullskjerm" 
+                                />
+                            </TransformComponent>
                         </TransformWrapper>
                         
-                        {hasPrev && (<button onClick={handlePrev} className="absolute left-4 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md transition-all z-[110] active:scale-90"><ChevronLeft size={36} /></button>)}
-                        {hasNext && (<button onClick={handleNext} className="absolute right-4 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md transition-all z-[110] active:scale-90"><ChevronRight size={36} /></button>)}
-                        {images.length > 1 && (<div className="absolute bottom-10 left-1/2 -translate-x-1/2 text-white/80 font-medium bg-black/40 px-4 py-1.5 rounded-full text-sm backdrop-blur-sm border border-white/10 z-[110] font-serif">{index + 1} / {images.length}</div>)}
+                        {hasPrev && (
+                            <button onClick={handlePrev} className="absolute left-4 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all z-[110]">
+                                <ChevronLeft size={28} />
+                            </button>
+                        )}
+                        {hasNext && (
+                            <button onClick={handleNext} className="absolute right-4 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all z-[110]">
+                                <ChevronRight size={28} />
+                            </button>
+                        )}
+                        {images.length > 1 && (
+                            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/80 font-medium bg-white/10 px-4 py-2 rounded-full text-sm z-[110]">
+                                {index + 1} / {images.length}
+                            </div>
+                        )}
                     </div>
                 </div>
             );
@@ -345,97 +422,116 @@
             };
 
             return (
-                <div className="min-h-screen flex flex-col items-center justify-center p-6 animate-fade-in bg-brand-pastel relative overflow-hidden">
-                    <div className="text-center mb-10 relative z-10">
-                        <div className="w-24 h-24 bg-white/60 backdrop-blur-md rounded-full mx-auto flex items-center justify-center shadow-xl shadow-brand/10 mb-6 p-1 ring-1 ring-brand-dark/10">
-                            <img src={APP_ICON} alt="Logo" className="w-full h-full object-contain drop-shadow-sm rounded-full opacity-90" />
+                <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-surface-50 relative animate-fade-in">
+                    <div className="text-center mb-12">
+                        <div className="w-20 h-20 mx-auto mb-8">
+                            <img src={APP_ICON} alt="Logo" className="w-full h-full" />
                         </div>
-                        <h1 className="text-4xl font-black text-brand-dark tracking-tight serif-font">JNM Coaching</h1>
-                        <p className="text-brand-text/60 mt-2 font-medium">Logg inn for å starte reisen</p>
+                        <h1 className="text-3xl font-display text-ink mb-2">JNM Coaching</h1>
+                        <p className="text-ink-muted">Logg inn for å fortsette</p>
                     </div>
-                    <div className="w-full max-w-sm bg-white/80 backdrop-blur-xl p-8 rounded-3xl relative z-10 border border-white/50 shadow-lg">
-                        <form onSubmit={handleLogin} className="space-y-5">
+
+                    <div className="w-full max-w-sm">
+                        <form onSubmit={handleLogin} className="space-y-4">
                             <div>
-                                <label className="block text-xs font-bold text-brand-text/50 uppercase mb-2 ml-1 tracking-widest">Brukernavn</label>
-                                <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full px-4 py-3 bg-brand-cream/50 border border-brand-dark/10 rounded-xl focus:ring-2 focus:ring-brand/50 focus:border-brand/50 outline-none transition-all" placeholder="Navn" />
+                                <label className="block text-sm font-medium text-ink-muted mb-2">Brukernavn</label>
+                                <input 
+                                    type="text" 
+                                    value={username} 
+                                    onChange={(e) => setUsername(e.target.value)} 
+                                    className="w-full px-4 py-3.5 bg-white border border-surface-200 rounded-xl focus:ring-2 focus:ring-ink focus:border-ink outline-none transition-all" 
+                                    placeholder="Skriv inn brukernavn" 
+                                />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-brand-text/50 uppercase mb-2 ml-1 tracking-widest">Passord</label>
-                                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-4 py-3 bg-brand-cream/50 border border-brand-dark/10 rounded-xl focus:ring-2 focus:ring-brand/50 focus:border-brand/50 outline-none transition-all" placeholder="••••••••" />
+                                <label className="block text-sm font-medium text-ink-muted mb-2">Passord</label>
+                                <input 
+                                    type="password" 
+                                    value={password} 
+                                    onChange={(e) => setPassword(e.target.value)} 
+                                    className="w-full px-4 py-3.5 bg-white border border-surface-200 rounded-xl focus:ring-2 focus:ring-ink focus:border-ink outline-none transition-all" 
+                                    placeholder="••••••••" 
+                                />
                             </div>
-                            {error && <p className="text-brand-dark text-sm text-center font-bold bg-red-50 py-3 rounded-xl border border-red-100">{error}</p>}
-                            <button type="submit" disabled={isLoading} className="w-full py-4 rounded-xl font-bold text-white text-lg bg-brand hover:bg-brand-dark shadow-lg shadow-brand/20 flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50">
-                                {isLoading ? 'Kobler til...' : <><span className="mr-1">Logg inn</span> <ArrowRight size={20} /></>}
-                            </button>
+
+                            {error && (
+                                <div className="flex items-center gap-2 text-red-600 bg-red-50 border border-red-100 px-4 py-3 rounded-xl text-sm">
+                                    <AlertCircle size={16} />
+                                    {error}
+                                </div>
+                            )}
+
+                            <Button type="submit" disabled={isLoading} size="lg" className="w-full mt-6">
+                                {isLoading ? (
+                                    <Loader2 className="animate-spin" size={20} />
+                                ) : (
+                                    <>Logg inn <ArrowRight size={18} /></>
+                                )}
+                            </Button>
                         </form>
                     </div>
-                    <div className="absolute bottom-6 text-brand-text/20 text-xs font-serif italic">Designed for balance</div>
+
+                    <p className="absolute bottom-8 text-ink-faint text-xs">JNM Coaching © 2025</p>
                 </div>
             );
         };
 
         const Navigation = ({ activeTab, setActiveTab }) => {
-          const navItems = [
-            { id: 'dashboard', label: 'Hjem', icon: Home },
-            { id: 'diet', label: 'Mat', icon: Utensils },
-            { id: 'workout', label: 'Trening', icon: Dumbbell },
-            { id: 'checkin', label: 'Innsjekk', icon: ClipboardCheck },
-          ];
+            const navItems = [
+                { id: 'dashboard', label: 'Hjem', icon: Home },
+                { id: 'diet', label: 'Mat', icon: Utensils },
+                { id: 'workout', label: 'Trening', icon: Dumbbell },
+                { id: 'checkin', label: 'Rapport', icon: ClipboardCheck },
+            ];
 
-          const handleTabChange = (tabId) => {
-              setActiveTab(tabId);
-              window.scrollTo({ top: 0, behavior: 'instant' });
-          };
-
-          return (
-            <div className="fixed bottom-0 left-0 right-0 glass-panel z-50 safe-area-pb pb-4"> 
-              <div className="flex justify-around items-center h-20 max-w-md mx-auto px-2">
-                {navItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = activeTab === item.id;
-                  return (
-                    <button 
-                        key={item.id} 
-                        onClick={() => handleTabChange(item.id)} 
-                        className={`flex flex-col items-center justify-center w-full h-full space-y-1.5 transition-all duration-300 active:scale-90`}
-                    >
-                      <div className={`p-1 rounded-full transition-colors ${isActive ? 'text-brand' : 'text-brand-text/40'}`}>
-                        <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
-                      </div>
-                      <span className={`text-[10px] font-bold tracking-wide transition-colors ${isActive ? 'text-brand' : 'text-brand-text/50'}`}>{item.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          );
+            return (
+                <div className="fixed bottom-0 left-0 right-0 glass-nav z-50 safe-area-pb border-t border-surface-200"> 
+                    <div className="flex justify-around items-center h-16 max-w-md mx-auto">
+                        {navItems.map((item) => {
+                            const Icon = item.icon;
+                            const isActive = activeTab === item.id;
+                            return (
+                                <button 
+                                    key={item.id} 
+                                    onClick={() => { setActiveTab(item.id); window.scrollTo({ top: 0, behavior: 'instant' }); }} 
+                                    className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-all active:scale-90 ${isActive ? 'text-ink' : 'text-ink-faint'}`}
+                                >
+                                    <Icon size={22} strokeWidth={isActive ? 2 : 1.5} />
+                                    <span className={`text-[10px] font-medium ${isActive ? 'text-ink' : 'text-ink-faint'}`}>{item.label}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
         };
 
         const Header = ({ title, user, viewingClient, onLogout, onClearClient }) => (
-          <div className="bg-brand-pastel/95 backdrop-blur-md px-6 py-4 sticky top-0 z-40 flex justify-between items-center border-b border-brand-dark/5 shadow-sm">
-            <div className="flex flex-col">
-                <h1 className="text-xl font-black text-brand-text tracking-tight serif-font">{title}</h1>
-                <div className="flex items-center gap-2">
-                    <span className={`text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 opacity-60`}>
-                        {user.role === 'coach' ? <Briefcase size={10} /> : <User size={10} />} {user.name}
-                    </span>
-                    {viewingClient && (
-                        <span className="text-[10px] bg-brand/10 px-2 py-0.5 rounded-full text-brand-dark font-medium flex items-center gap-1">
-                            <ChevronRight size={10} /> {viewingClient.name}
-                        </span>
+            <header className="bg-surface-50/95 backdrop-blur-md px-5 py-4 sticky top-0 z-40 border-b border-surface-200">
+                <div className="flex justify-between items-center max-w-md mx-auto">
+                    <div>
+                        <h1 className="text-xl font-display text-ink">{title}</h1>
+                        <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-xs text-ink-muted flex items-center gap-1">
+                                {user.role === 'coach' ? <Briefcase size={12} /> : <User size={12} />}
+                                {user.name}
+                            </span>
+                            {viewingClient && (
+                                <Badge variant="muted" className="text-[10px]">
+                                    <ChevronRight size={10} /> {viewingClient.name}
+                                </Badge>
+                            )}
+                        </div>
+                    </div>
+                    {viewingClient ? (
+                        <Button variant="secondary" size="sm" onClick={onClearClient}>Lukk</Button>
+                    ) : (
+                        <button onClick={onLogout} className="text-ink-faint hover:text-ink p-2 rounded-xl hover:bg-surface-100 transition-colors">
+                            <LogOut size={20} />
+                        </button>
                     )}
                 </div>
-            </div>
-            {viewingClient ? (
-                <button onClick={onClearClient} className="text-sm font-bold text-brand-text/70 bg-white px-3 py-1.5 rounded-full hover:bg-brand-cream shadow-sm transition-transform active:scale-95 border border-brand-dark/5">Lukk</button>
-            ) : (
-                <button onClick={onLogout} className="text-brand-text/30 hover:text-brand-warning p-2 rounded-full hover:bg-brand-cream/50 transition-colors"><LogOut size={20} /></button>
-            )}
-          </div>
-        );
-
-        const Card = ({ children, className = "", ...props }) => (
-          <div className={`bg-white rounded-[2rem] p-5 shadow-sm border border-brand-dark/5 ${className}`} {...props}>{children}</div>
+            </header>
         );
 
         // --- Views ---
@@ -444,9 +540,9 @@
             const validCheckins = checkins.filter(c => c.weight && parseFloat(c.weight) > 0).sort((a, b) => a.timestamp - b.timestamp);
 
             if (validCheckins.length === 0) return (
-                <div className="flex flex-col items-center justify-center h-[50vh] animate-fade-in text-brand-text/50">
-                    <p className="font-serif italic text-lg mb-4">Ingen data å vise enda.</p>
-                    <button onClick={onBack} className="bg-brand text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-brand-dark transition-colors">Tilbake</button>
+                <div className="flex flex-col items-center justify-center h-[60vh] animate-fade-in text-center px-6">
+                    <p className="text-ink-muted font-display text-lg italic mb-6">Ingen vektdata enda</p>
+                    <Button variant="secondary" onClick={onBack}>Tilbake</Button>
                 </div>
             );
 
@@ -457,11 +553,11 @@
             const isSame = parseFloat(totalChange) === 0;
 
             const width = 300;
-            const height = 150;
-            const padding = 10;
+            const height = 140;
+            const padding = 16;
             const weights = validCheckins.map(c => parseFloat(c.weight));
-            const minW = Math.min(...weights);
-            const maxW = Math.max(...weights);
+            const minW = Math.min(...weights) - 0.5;
+            const maxW = Math.max(...weights) + 0.5;
             const timestamps = validCheckins.map(c => c.timestamp);
             const minT = Math.min(...timestamps);
             const maxT = Math.max(...timestamps);
@@ -472,538 +568,691 @@
                 return `${x},${y}`;
             }).join(' ');
 
-            const strokeColor = isDown ? '#5D7556' : '#DA7756'; 
-
             return (
-                <div className="space-y-6 animate-fade-in pb-24">
-                    <div className="flex items-center gap-4 mb-2">
-                         <button onClick={onBack} className="p-2 bg-white rounded-full shadow-sm text-brand-text/50 hover:text-brand transition-colors"><ChevronLeft size={24}/></button>
-                         <h2 className="text-2xl font-black text-brand-text serif-font">Vektutvikling</h2>
-                    </div>
+                <div className="space-y-6 animate-slide-up pb-28">
+                    <button onClick={onBack} className="flex items-center gap-2 text-ink-muted hover:text-ink transition-colors">
+                        <ChevronLeft size={20} />
+                        <span className="text-sm font-medium">Tilbake</span>
+                    </button>
 
-                    <div className={`bg-gradient-to-br ${isDown ? 'from-brand-mint to-brand-mintdark' : 'from-brand to-brand-dark'} text-white p-6 rounded-[2rem] shadow-xl shadow-brand-dark/10 relative overflow-hidden`}>
-                        <div className="flex justify-between items-end relative z-10">
-                            <div>
-                                <p className="text-white/70 text-xs font-bold uppercase mb-1 tracking-widest">Endring</p>
-                                <div className="text-4xl font-serif font-bold flex items-center gap-2">
-                                     {totalChange > 0 ? '+' : ''}{totalChange.replace('.', ',')} kg
-                                     {isDown ? <TrendingDown className="opacity-80" size={28} /> : isSame ? <Minus className="opacity-80" size={28} /> : <TrendingUp className="opacity-80" size={28} />}
-                                </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <Card className="p-5">
+                            <p className="text-xs text-ink-muted uppercase tracking-wide mb-1">Endring</p>
+                            <div className={`text-2xl font-semibold flex items-center gap-2 ${isDown ? 'text-emerald-600' : isSame ? 'text-ink-muted' : 'text-ink'}`}>
+                                {totalChange > 0 ? '+' : ''}{totalChange.replace('.', ',')} kg
+                                {isDown ? <TrendingDown size={20} /> : isSame ? <Minus size={20} /> : <TrendingUp size={20} />}
                             </div>
-                            <div className="text-right">
-                                <p className="text-white/70 text-xs font-bold uppercase tracking-widest">Start / Nå</p>
-                                <p className="font-bold text-xl opacity-90">{formatWeight(first.weight)} / {formatWeight(last.weight)}</p>
-                            </div>
-                        </div>
-                         <div className="absolute -bottom-10 -right-10 w-48 h-48 bg-white/10 rounded-full mix-blend-overlay filter blur-2xl opacity-40"></div>
+                        </Card>
+                        <Card className="p-5">
+                            <p className="text-xs text-ink-muted uppercase tracking-wide mb-1">Nåværende</p>
+                            <p className="text-2xl font-semibold">{formatWeight(last.weight)} kg</p>
+                        </Card>
                     </div>
 
                     {validCheckins.length > 1 && (
-                        <Card className="!p-0 overflow-hidden relative h-48 flex items-center justify-center bg-white border border-brand-dark/5 shadow-sm">
-                             <div className="absolute top-4 left-4 text-[10px] font-bold text-brand-text/30 uppercase tracking-widest">Trendlinje</div>
-                            <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full px-2 py-4">
-                                 <polyline fill="none" stroke={strokeColor} strokeWidth="3" points={points} strokeLinecap="round" strokeLinejoin="round" />
-                                 {validCheckins.map((c, i) => {
-                                     const x = minT === maxT ? width / 2 : ((c.timestamp - minT) / (maxT - minT)) * (width - 2 * padding) + padding;
-                                     const y = minW === maxW ? height / 2 : height - padding - ((parseFloat(c.weight) - minW) / (maxW - minW)) * (height - 2 * padding);
-                                     return <circle key={i} cx={x} cy={y} r="4" fill="#F9F8F6" stroke={strokeColor} strokeWidth="2.5" />
-                                 })}
+                        <Card className="p-4">
+                            <p className="text-xs text-ink-muted uppercase tracking-wide mb-3">Utvikling</p>
+                            <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-32">
+                                <defs>
+                                    <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
+                                        <stop offset="0%" stopColor="#A3A3A3" />
+                                        <stop offset="100%" stopColor="#171717" />
+                                    </linearGradient>
+                                </defs>
+                                <polyline fill="none" stroke="url(#lineGradient)" strokeWidth="2" points={points} strokeLinecap="round" strokeLinejoin="round" />
+                                {validCheckins.map((c, i) => {
+                                    const x = minT === maxT ? width / 2 : ((c.timestamp - minT) / (maxT - minT)) * (width - 2 * padding) + padding;
+                                    const y = minW === maxW ? height / 2 : height - padding - ((parseFloat(c.weight) - minW) / (maxW - minW)) * (height - 2 * padding);
+                                    return <circle key={i} cx={x} cy={y} r="4" fill="#FAFAF9" stroke="#171717" strokeWidth="2" />
+                                })}
                             </svg>
                         </Card>
                     )}
 
-                    <div className="space-y-3">
-                        <h3 className="text-xs font-bold text-brand-text/40 uppercase tracking-widest px-2">Historikk</h3>
-                         {[...validCheckins].reverse().map((entry, i) => {
-                             const prev = [...validCheckins].reverse()[i+1];
-                             const change = prev ? (parseFloat(entry.weight) - parseFloat(prev.weight)) : 0;
-                             const changeFormatted = change.toFixed(1).replace('.', ',');
-                             
-                             return (
-                                 <div key={entry.id} className="bg-white p-4 rounded-2xl flex justify-between items-center border border-brand-dark/5 shadow-sm">
-                                     <div>
-                                         {/* OPPDATERT: Bruker formatDateNO */}
-                                         <div className="font-bold text-brand-text font-serif">{formatDateNO(entry.date)}</div>
-                                         <div className="text-xs text-brand-text/40">{new Date(entry.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
-                                     </div>
-                                     <div className="flex items-center gap-4">
-                                         {prev && (
-                                             <span className={`text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1 ${change < 0 ? 'bg-brand-mint/20 text-brand-mintdark' : change > 0 ? 'bg-brand/10 text-brand-dark' : 'bg-brand-cream text-brand-text/50'}`}>
-                                                 {change < 0 ? <TrendingDown size={12}/> : change > 0 ? <TrendingUp size={12}/> : <Minus size={12}/>}
-                                                 {change > 0 ? '+' : ''}{changeFormatted}
-                                             </span>
-                                         )}
-                                         <span className="font-bold text-lg text-brand-text min-w-[3rem] text-right">{formatWeight(entry.weight)}</span>
-                                     </div>
-                                 </div>
-                             )
-                         })}
+                    <div className="space-y-2">
+                        <p className="text-xs text-ink-muted uppercase tracking-wide px-1">Historikk</p>
+                        {[...validCheckins].reverse().map((entry, i) => {
+                            const prev = [...validCheckins].reverse()[i+1];
+                            const change = prev ? (parseFloat(entry.weight) - parseFloat(prev.weight)) : 0;
+                            
+                            return (
+                                <Card key={entry.id} className="p-4 flex justify-between items-center">
+                                    <div>
+                                        <p className="font-medium">{formatDateNO(entry.date)}</p>
+                                        <p className="text-xs text-ink-muted">{new Date(entry.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        {prev && change !== 0 && (
+                                            <Badge variant={change < 0 ? 'success' : 'muted'}>
+                                                {change < 0 ? <TrendingDown size={12}/> : <TrendingUp size={12}/>}
+                                                {change > 0 ? '+' : ''}{change.toFixed(1).replace('.', ',')}
+                                            </Badge>
+                                        )}
+                                        <span className="font-semibold text-lg tabular-nums">{formatWeight(entry.weight)}</span>
+                                    </div>
+                                </Card>
+                            )
+                        })}
                     </div>
                 </div>
             )
         }
 
         const DashboardView = ({ userData, isCoach, onUpdateData, onOpenWeightHistory }) => {
-          const lastCheckin = userData.checkins?.length > 0 ? userData.checkins[userData.checkins.length - 1] : null;
+            const lastCheckin = userData.checkins?.length > 0 ? userData.checkins[userData.checkins.length - 1] : null;
 
-          const calculateWeek = () => {
-              if (!userData.startDate) return 1;
-              const start = new Date(userData.startDate);
-              const end = userData.isPaused && userData.pausedAt ? new Date(userData.pausedAt) : new Date();
-              const diffTime = Math.max(0, end - start);
-              const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-              return Math.floor(diffDays / 7) + 1;
-          };
+            const calculateWeek = () => {
+                if (!userData.startDate) return 1;
+                const start = new Date(userData.startDate);
+                const end = userData.isPaused && userData.pausedAt ? new Date(userData.pausedAt) : new Date();
+                const diffTime = Math.max(0, end - start);
+                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                return Math.floor(diffDays / 7) + 1;
+            };
 
-          const currentWeek = calculateWeek();
+            const currentWeek = calculateWeek();
+            const progress = Math.min((currentWeek / (userData.totalWeeks || 12)) * 100, 100);
 
-          const handleEditGoal = async () => {
-              const input = prompt("Sett nytt skrittmål:", userData.stepGoal || 10000);
-              if (input && !isNaN(parseInt(input))) await onUpdateData('stepGoal', parseInt(input));
-          };
+            const handlePlanSettings = async () => {
+                if (!isCoach) return;
+                const choice = prompt(`Plan-innstillinger:\n\n1. Sett startdato\n2. Endre antall uker\n3. ${userData.isPaused ? 'Fortsett plan' : 'Pause plan'}`);
+                if (choice === '1') {
+                    const dateStr = prompt("Startdato (YYYY-MM-DD):", new Date().toISOString().split('T')[0]);
+                    if (dateStr) await onUpdateData({ startDate: new Date(dateStr).toISOString() });
+                } else if (choice === '2') {
+                    const weeks = prompt("Totalt antall uker:", userData.totalWeeks || 12);
+                    if (weeks) await onUpdateData('totalWeeks', parseInt(weeks));
+                } else if (choice === '3') {
+                    if (userData.isPaused) {
+                        if(confirm("Gjenoppta plan?")) await onUpdateData({ action: 'resume' });
+                    } else {
+                        if(confirm("Sett plan på pause?")) await onUpdateData({ action: 'pause' });
+                    }
+                }
+            };
 
-          const handlePlanSettings = async () => {
-              if (!isCoach) return;
-              const choice = prompt(`Styring av plan:\n\n1. Sett Startdato\n2. Endre total uker\n3. ${userData.isPaused ? 'Fortsett plan' : 'Sett på pause'}`);
-              if (choice === '1') {
-                  const dateStr = prompt("Startdato (YYYY-MM-DD):", new Date().toISOString().split('T')[0]);
-                  if (dateStr) await onUpdateData({ startDate: new Date(dateStr).toISOString() });
-              } else if (choice === '2') {
-                  const weeks = prompt("Totalt antall uker:", userData.totalWeeks || 12);
-                  if (weeks) await onUpdateData('totalWeeks', parseInt(weeks));
-              } else if (choice === '3') {
-                  if (userData.isPaused) {
-                      if(confirm("Gjenoppta plan?")) await onUpdateData({ action: 'resume' });
-                  } else {
-                      if(confirm("Pause planen?")) await onUpdateData({ action: 'pause' });
-                  }
-              }
-          };
+            const handleEditGoal = async () => {
+                const input = prompt("Nytt skrittmål:", userData.stepGoal || 10000);
+                if (input && !isNaN(parseInt(input))) await onUpdateData('stepGoal', parseInt(input));
+            };
 
-          return (
-            <div className="space-y-6 pb-24 animate-fade-in">
-              <div className={`rounded-[2rem] p-6 text-white shadow-xl shadow-brand/10 relative overflow-hidden transition-colors duration-500 ${userData.isPaused ? 'bg-gradient-to-br from-brand-text/70 to-brand-text/90' : 'bg-gradient-to-br from-brand to-[#E6B89C]'}`}>
-                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full mix-blend-overlay filter blur-3xl opacity-30 transform translate-x-10 -translate-y-10"></div>
-                
-                <div className="flex justify-between items-start relative z-10 mb-4">
-                    <button onClick={handlePlanSettings} disabled={!isCoach} className={`flex items-center gap-2 backdrop-blur-md px-4 py-2 rounded-full text-xs font-bold border transition-transform ${isCoach ? 'hover:scale-105 active:scale-95 cursor-pointer' : 'cursor-default'} ${userData.isPaused ? 'bg-brand-warning/20 border-brand-warning/50 text-brand-warning' : 'bg-white/20 border-white/20 text-white shadow-sm'}`}>
-                        {userData.isPaused ? <Pause size={12} /> : <Calendar size={12} />}
-                        {userData.isPaused ? 'PAUSET' : `Uke ${currentWeek} av ${userData.totalWeeks || 12}`}
-                        {isCoach && <Edit2 size={10} className="ml-1 opacity-70" />}
-                    </button>
-                </div>
-
-                <h2 className="text-3xl font-black mb-1 relative z-10 serif-font tracking-tight">{userData.isPaused ? 'Pause' : 'Din Oversikt'}</h2>
-                <p className="text-white/90 relative z-10 font-medium text-sm tracking-wide opacity-80">
-                    {userData.isPaused ? 'Planen hviler.' : 'Konsistens skaper resultater.'}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <Card className="flex flex-col items-center justify-center py-8 relative group border-brand-dark/5 active:scale-95 transition-transform">
-                    <div className="w-12 h-12 bg-brand-cream rounded-full flex items-center justify-center text-brand mb-3 group-hover:scale-110 transition-transform"><Footprints size={24} /></div>
-                    <span className="text-brand-text/40 text-[10px] font-bold uppercase tracking-widest">Skrittmål</span>
-                    <span className="text-brand-text font-serif font-bold text-2xl">{userData.stepGoal?.toLocaleString() || '10 000'}</span>
-                    {isCoach && <button onClick={handleEditGoal} className="absolute top-3 right-3 p-2 text-brand-text/20 hover:text-brand"><Edit2 size={14} /></button>}
-                </Card>
-                
-                <Card className="flex flex-col items-center justify-center py-8 group cursor-pointer hover:shadow-md transition-all active:scale-95 relative border-brand-dark/5" onClick={onOpenWeightHistory}>
-                  <div className="absolute top-3 right-3 text-brand-text/20"><ChevronRight size={16} /></div>
-                  <div className="w-12 h-12 bg-brand-mint/20 rounded-full flex items-center justify-center text-brand-mintdark mb-3 group-hover:scale-110 transition-transform"><TrendingUp size={24} /></div>
-                  <span className="text-brand-text/40 text-[10px] font-bold uppercase tracking-widest">Siste vekt</span>
-                  <span className="text-brand-text font-serif font-bold text-2xl">{lastCheckin ? `${formatWeight(lastCheckin.weight)}` : '--'} <span className="text-sm font-sans text-brand-text/50">kg</span></span>
-                </Card>
-              </div>
-
-              {lastCheckin && (
-                  <div className="px-1">
-                    <h3 className="text-lg font-black text-brand-text mb-4 ml-1 serif-font">Siste rapport</h3>
-                    <Card className="!p-6 space-y-4">
-                        <div className="flex justify-between items-center text-sm pb-3 border-b border-brand-dark/5">
-                            <span className="text-brand-text/60 font-medium">Nøyaktighet</span>
-                            <span className="font-bold text-brand bg-brand/10 px-3 py-1 rounded-full">{lastCheckin.accuracy}/10</span>
-                        </div>
-                        
-                        {/* OPPDATERT: Styrke / Cardio med ikoner og badges */}
-                        <div className="flex justify-between items-center text-sm pb-3 border-b border-brand-dark/5">
-                            <span className="text-brand-text/60 font-medium">Styrke / Cardio</span>
-                            <span className="font-bold text-brand-text flex items-center gap-2">
-                                <span className="flex items-center gap-1 text-xs bg-orange-50 px-2 py-1 rounded text-orange-600 font-extrabold"><Dumbbell size={12} /> {lastCheckin.strengthSessions}</span>
-                                <span className="text-brand-text/20 text-sm">|</span>
-                                <span className="flex items-center gap-1 text-xs bg-blue-50 px-2 py-1 rounded text-blue-500 font-extrabold"><Activity size={12} /> {lastCheckin.cardioSessions || 0}</span>
-                            </span>
-                        </div>
-                        
-                        <div className="flex justify-between items-center text-sm pb-3 border-b border-brand-dark/5">
-                            <span className="text-brand-text/60 font-medium">Energi / Søvn</span>
-                            <span className="font-bold text-brand-text flex items-center gap-2">
-                                <span className="flex items-center gap-1 text-xs bg-brand-warning/10 px-2 py-1 rounded text-brand-warning font-extrabold"><Zap size={12} /> {lastCheckin.energy}</span>
-                                <span className="text-brand-text/20 text-sm">|</span>
-                                <span className="flex items-center gap-1 text-xs bg-indigo-50 px-2 py-1 rounded text-indigo-400 font-extrabold"><Moon size={12} /> {lastCheckin.sleep}</span>
-                            </span>
-                        </div>
-                        <div className="flex justify-between items-center text-sm">
-                            <span className="text-brand-text/60 font-medium">Skritt</span>
-                            <span className={`font-bold px-3 py-1 rounded-full text-xs ${lastCheckin.stepsReached ? 'text-brand-mintdark bg-brand-mint/20' : 'text-brand-text/40 bg-brand-cream'}`}>
-                                {lastCheckin.stepsReached ? 'Oppnådd' : 'Under mål'}
-                            </span>
-                        </div>
-                    </Card>
-                  </div>
-              )}
-            </div>
-          );
-        };
-
-        const PlanSection = ({ type, content, onSave, isReadOnly }) => {
-          const [isEditing, setIsEditing] = useState(false);
-          const [text, setText] = useState(content);
-          useEffect(() => setText(content), [content]);
-          
-          return (
-            <div className="space-y-4 pb-24 animate-fade-in">
-              <Card className="min-h-[60vh]">
-                <div className="flex justify-between items-center mb-8 border-b border-brand-dark/5 pb-6">
-                  <div className="flex items-center gap-4">
-                    <div className={`p-4 rounded-2xl ${type === 'diet' ? 'bg-brand-mint/20 text-brand-mintdark' : 'bg-brand/10 text-brand'}`}>
-                      {type === 'diet' ? <Utensils size={28} /> : <Dumbbell size={28} />}
-                    </div>
-                    <h2 className="font-black text-2xl text-brand-text serif-font">{type === 'diet' ? 'Matplan' : 'Trening'}</h2>
-                  </div>
-                  {!isReadOnly && <button onClick={() => { if(isEditing) onSave(text); setIsEditing(!isEditing); }} className="text-xs font-bold text-white px-5 py-2.5 bg-brand-text rounded-full shadow-lg hover:bg-black transition-colors">{isEditing ? 'Lagre' : 'Rediger'}</button>}
-                </div>
-                {isEditing && !isReadOnly ? (
-                  <textarea value={text} onChange={(e) => setText(e.target.value)} className="w-full h-[60vh] p-4 bg-brand-cream rounded-xl focus:ring-2 focus:ring-brand/30 outline-none text-brand-text font-mono text-sm leading-relaxed border border-brand-dark/5" />
-                ) : (
-                  <div className="prose prose-sm md:prose-base max-w-none text-brand-text/80 font-medium leading-relaxed font-sans pb-10" dangerouslySetInnerHTML={{ __html: text ? window.marked.parse(text) : '<p class="text-brand-text/30 italic text-center mt-10">Ingen plan tilgjengelig enda.</p>' }} />
-                )}
-              </Card>
-            </div>
-          );
-        };
-
-        const CheckInView = ({ checkins, onNewCheckin, onDelete, isReadOnly, stepGoal }) => {
-          const [step, setStep] = useState('form');
-          const [lightbox, setLightbox] = useState({ isOpen: false, images: [], index: 0 });
-          const [isCompressing, setIsCompressing] = useState(false);
-          const [errorMessage, setErrorMessage] = useState('');
-          const [isSubmitting, setIsSubmitting] = useState(false);
-          
-          const [formData, setFormData] = useState({
-            weight: '', sleep: 5, energy: 5, accuracy: 10,
-            strengthSessions: 0, cardioSessions: 0,
-            stepsReached: false, takenSupplements: false,
-            comment: '', images: []
-          });
-
-          const handleImageUpload = async (e) => {
-            const files = Array.from(e.target.files);
-            if (files.length === 0) return;
-            setIsCompressing(true);
-            try {
-                const cloudName = 'drg4fxboh'; 
-                const uploadPreset = 'jnm_upload'; 
-                const uploadPromises = files.map(async (file) => {
-                    const fd = new FormData();
-                    fd.append('file', file);
-                    fd.append('upload_preset', uploadPreset); 
-                    const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: 'POST', body: fd });
-                    if (!res.ok) throw new Error('Opplasting feilet');
-                    return (await res.json()).secure_url;
-                });
-                const uploadedUrls = await Promise.all(uploadPromises);
-                setFormData(prev => ({ ...prev, images: [...prev.images, ...uploadedUrls] }));
-            } catch (err) {
-                console.error(err);
-                setErrorMessage("Bildeopplasting feilet.");
-            } finally {
-                setIsCompressing(false);
-            }
-          };
-
-          const removeImage = (indexToRemove) => {
-              setFormData(prev => ({ ...prev, images: prev.images.filter((_, index) => index !== indexToRemove) }));
-          };
-          const openLightbox = (images, index = 0) => setLightbox({ isOpen: true, images, index });
-
-          const handleSubmit = async (e) => {
-            e.preventDefault();
-            setIsSubmitting(true);
-            setErrorMessage('');
-            try {
-                // VIKTIG OPPDATERING HER: ISO-format for dato (YYYY-MM-DD)
-                const newEntry = { 
-                    id: Date.now(), 
-                    date: new Date().toISOString().split('T')[0], 
-                    timestamp: Date.now(), 
-                    ...formData 
-                };
-                
-                await onNewCheckin(newEntry);
-                setStep('success');
-                setTimeout(() => {
-                  setStep('form');
-                  setFormData({ weight: '', sleep: 5, energy: 5, accuracy: 10, strengthSessions: 0, cardioSessions: 0, stepsReached: false, takenSupplements: false, comment: '', images: [] });
-                }, 3000);
-            } catch (error) {
-                setErrorMessage('Feil: ' + error.message);
-            } finally {
-                setIsSubmitting(false);
-            }
-          };
-
-          if (step === 'success') {
             return (
-              <div className="flex flex-col items-center justify-center h-[60vh] animate-fade-in text-center px-6">
-                <div className="w-24 h-24 bg-brand-mint/20 rounded-full flex items-center justify-center text-brand-mintdark mb-6 animate-pulse"><Check size={48} strokeWidth={3} /></div>
-                <h2 className="text-3xl font-black text-brand-text serif-font mb-2">Takk!</h2>
-                <p className="text-brand-text/60">Din oppdatering er lagret.</p>
-                <button onClick={() => setStep('form')} className="mt-8 text-brand-text font-bold bg-brand-cream border border-brand-dark/10 px-8 py-3 rounded-full hover:bg-white transition-colors">Tilbake</button>
-              </div>
-            );
-          }
+                <div className="space-y-5 pb-28 animate-slide-up">
+                    {/* Progress Card */}
+                    <Card className={`p-6 relative overflow-hidden ${userData.isPaused ? 'bg-surface-100' : 'bg-ink text-white'}`}>
+                        <div className="relative z-10">
+                            <div className="flex justify-between items-start mb-6">
+                                <div>
+                                    <p className={`text-sm ${userData.isPaused ? 'text-ink-muted' : 'text-white/70'}`}>
+                                        {userData.isPaused ? 'Plan på pause' : 'Din fremgang'}
+                                    </p>
+                                    <h2 className="text-3xl font-display mt-1">
+                                        {userData.isPaused ? 'Pauset' : `Uke ${currentWeek}`}
+                                    </h2>
+                                </div>
+                                {isCoach && (
+                                    <button 
+                                        onClick={handlePlanSettings}
+                                        className={`p-2 rounded-lg transition-colors ${userData.isPaused ? 'hover:bg-surface-200 text-ink-muted' : 'hover:bg-white/10 text-white/70'}`}
+                                    >
+                                        <Edit2 size={18} />
+                                    </button>
+                                )}
+                            </div>
 
-          return (
-            <div className="space-y-6 pb-24 animate-fade-in">
-              {lightbox.isOpen && (
-                  <ImageModal images={lightbox.images} initialIndex={lightbox.index} onClose={() => setLightbox({ ...lightbox, isOpen: false })} />
-              )}
-
-              {!isReadOnly && (
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    <Card className="space-y-8">
-                      <h3 className="font-bold text-brand-text/80 mb-4 border-b border-brand-dark/5 pb-4 text-lg serif-font">Ny ukesrapport</h3>
-                      <div>
-                        <label className="block text-xs font-bold text-brand-text/50 uppercase mb-3 ml-1 tracking-widest">Vekt (kg)</label>
-                        <div className="relative">
-                            <Scale className="absolute left-4 top-4 text-brand opacity-60" size={20} />
-                            {/* OPPDATERT: inputMode="decimal" gir riktig tastatur på mobil */}
-                            <input 
-                                type="number" 
-                                inputMode="decimal" 
-                                step="0.1" 
-                                required 
-                                value={formData.weight} 
-                                onChange={(e) => setFormData({...formData, weight: e.target.value})} 
-                                className="w-full pl-12 pr-4 py-4 bg-brand-cream border-none rounded-xl outline-none focus:ring-2 focus:ring-brand/30 font-bold text-xl text-brand-text placeholder-brand-text/20" 
-                                placeholder="0.0" 
-                            />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                         <div><label className="block text-xs font-bold text-brand-text/50 uppercase mb-2 tracking-widest">Energi</label><select value={formData.energy} onChange={(e) => setFormData({...formData, energy: e.target.value})} className="w-full p-4 bg-brand-cream rounded-xl outline-none focus:ring-2 focus:ring-brand/30 font-bold text-brand-text">{[...Array(10)].map((_, i) => <option key={i+1} value={i+1}>{i+1}</option>)}</select></div>
-                         <div><label className="block text-xs font-bold text-brand-text/50 uppercase mb-2 tracking-widest">Søvn</label><select value={formData.sleep} onChange={(e) => setFormData({...formData, sleep: e.target.value})} className="w-full p-4 bg-brand-cream rounded-xl outline-none focus:ring-2 focus:ring-brand/30 font-bold text-brand-text">{[...Array(10)].map((_, i) => <option key={i+1} value={i+1}>{i+1}</option>)}</select></div>
-                      </div>
-                      
-                      <div>
-                        <label className="block text-xs font-bold text-brand-text/50 uppercase mb-2 tracking-widest">Nøyaktighet ({formData.accuracy}/10)</label> {/* ENDRET FRA Etterlevelse */}
-                        <select value={formData.accuracy} onChange={(e) => setFormData({...formData, accuracy: e.target.value})} className="w-full p-4 bg-brand-cream rounded-xl outline-none focus:ring-2 focus:ring-brand/30 font-bold text-brand-text">{[...Array(10)].map((_, i) => <option key={i+1} value={i+1}>{i+1}</option>)}</select>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div><label className="block text-xs font-bold text-brand-text/50 uppercase mb-2 tracking-widest">Styrkeøkter</label><select value={formData.strengthSessions} onChange={(e) => setFormData({...formData, strengthSessions: e.target.value})} className="w-full p-4 bg-brand-cream rounded-xl outline-none focus:ring-2 focus:ring-brand/30 font-bold text-brand-text"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7+</option></select></div>
-                        <div><label className="block text-xs font-bold text-brand-text/50 uppercase mb-2 tracking-widest">Cardio</label><select value={formData.cardioSessions} onChange={(e) => setFormData({...formData, cardioSessions: e.target.value})} className="w-full p-4 bg-brand-cream rounded-xl outline-none focus:ring-2 focus:ring-brand/30 font-bold text-brand-text"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7+</option></select></div>
-                      </div>
-
-                      <div className="space-y-3 pt-2">
-                          <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-colors ${formData.stepsReached ? 'bg-brand-mint/10 border-brand-mint/30' : 'bg-brand-cream border-transparent'}`}>
-                              <input type="checkbox" checked={formData.stepsReached} onChange={(e) => setFormData({...formData, stepsReached: e.target.checked})} className="custom-checkbox w-6 h-6 rounded-lg text-brand focus:ring-brand" />
-                              <div><div className="font-bold text-brand-text">Skrittmål</div><div className="text-xs text-brand-text/50">Gjennomført {stepGoal} skritt</div></div>
-                          </label>
-                          <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-colors ${formData.takenSupplements ? 'bg-brand-mint/10 border-brand-mint/30' : 'bg-brand-cream border-transparent'}`}>
-                              <input type="checkbox" checked={formData.takenSupplements} onChange={(e) => setFormData({...formData, takenSupplements: e.target.checked})} className="custom-checkbox w-6 h-6 rounded-lg text-brand focus:ring-brand" />
-                              <div><div className="font-bold text-brand-text">Kosttilskudd</div><div className="text-xs text-brand-text/50">Tatt for dagen</div></div>
-                          </label>
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold text-brand-text/50 uppercase mb-2 ml-1 tracking-widest">Kommentar</label>
-                        <textarea value={formData.comment} onChange={(e) => setFormData({...formData, comment: e.target.value})} className="w-full px-4 py-4 bg-brand-cream border-none rounded-xl h-28 outline-none resize-none focus:ring-2 focus:ring-brand/30 text-brand-text" placeholder="Hvordan har uken vært?" />
-                      </div>
-                    </Card>
-
-                    <Card className="border-dashed border-2 border-brand/20 bg-brand/5 shadow-none">
-                        <div className="space-y-4">
-                            {formData.images.length > 0 && (
-                                <div className="grid grid-cols-3 gap-3">
-                                    {formData.images.map((img, idx) => (
-                                        <div key={idx} className="relative aspect-square group">
-                                            <img src={getThumbnail(img)} className="w-full h-full object-cover rounded-xl shadow-sm cursor-pointer border border-white" alt="Preview" onClick={() => openLightbox(formData.images, idx)} />
-                                            <button type="button" onClick={() => removeImage(idx)} className="absolute -top-2 -right-2 bg-brand-text text-white p-1 rounded-full shadow-md hover:scale-110 transition-transform"><X size={12} /></button>
-                                        </div>
-                                    ))}
+                            {!userData.isPaused && (
+                                <div>
+                                    <div className="flex justify-between text-sm mb-2">
+                                        <span className="text-white/70">Fremdrift</span>
+                                        <span className="font-medium">{userData.totalWeeks || 12} uker totalt</span>
+                                    </div>
+                                    <div className="h-2 bg-white/20 rounded-full overflow-hidden">
+                                        <div 
+                                            className="h-full bg-white rounded-full transition-all duration-500" 
+                                            style={{ width: `${progress}%` }}
+                                        />
+                                    </div>
                                 </div>
                             )}
 
-                            <label className={`flex flex-col items-center justify-center p-8 cursor-pointer hover:bg-white/40 rounded-xl transition-all ${isCompressing ? 'opacity-50 pointer-events-none' : ''}`}>
-                                {isCompressing ? (
-                                    <div className="flex flex-col items-center">
-                                        <div className="animate-spin text-brand mb-2"><Loader2 size={24} /></div>
-                                        <span className="text-xs font-bold text-brand">Laster opp...</span>
-                                    </div>
-                                ) : (
-                                    <>
-                                        <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-brand mb-3 shadow-sm"><Camera size={24} /></div>
-                                        <span className="font-bold text-brand text-sm">Last opp bilder</span>
-                                        <span className="text-xs text-brand-text/40 mt-1">Trykk her for å velge</span>
-                                        <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
-                                    </>
-                                )}
-                            </label>
+                            {userData.isPaused && (
+                                <Badge variant="warning" className="mt-2">
+                                    <Pause size={12} /> Pauset
+                                </Badge>
+                            )}
                         </div>
                     </Card>
 
-                    {errorMessage && (
-                        <div className="bg-red-50 border border-red-100 text-red-800 px-4 py-4 rounded-xl text-sm font-medium flex items-start gap-3">
-                            <AlertTriangle className="shrink-0 mt-0.5" size={18} />
-                            <span>{errorMessage}</span>
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <Card 
+                            className="p-5 group"
+                            interactive
+                            onClick={onOpenWeightHistory}
+                        >
+                            <div className="flex justify-between items-start mb-3">
+                                <div className="w-10 h-10 bg-surface-100 rounded-xl flex items-center justify-center text-ink-muted group-hover:bg-surface-200 transition-colors">
+                                    <Scale size={20} />
+                                </div>
+                                <ChevronRight size={16} className="text-ink-faint" />
+                            </div>
+                            <p className="text-xs text-ink-muted uppercase tracking-wide">Siste vekt</p>
+                            <p className="text-2xl font-semibold mt-1">
+                                {lastCheckin ? formatWeight(lastCheckin.weight) : '—'}
+                                <span className="text-sm font-normal text-ink-muted ml-1">kg</span>
+                            </p>
+                        </Card>
+
+                        <Card className="p-5 relative">
+                            <div className="flex justify-between items-start mb-3">
+                                <div className="w-10 h-10 bg-surface-100 rounded-xl flex items-center justify-center text-ink-muted">
+                                    <Footprints size={20} />
+                                </div>
+                                {isCoach && (
+                                    <button onClick={handleEditGoal} className="text-ink-faint hover:text-ink p-1">
+                                        <Edit2 size={14} />
+                                    </button>
+                                )}
+                            </div>
+                            <p className="text-xs text-ink-muted uppercase tracking-wide">Skrittmål</p>
+                            <p className="text-2xl font-semibold mt-1">{(userData.stepGoal || 10000).toLocaleString()}</p>
+                        </Card>
+                    </div>
+
+                    {/* Last Report */}
+                    {lastCheckin && (
+                        <div>
+                            <p className="text-xs text-ink-muted uppercase tracking-wide mb-3 px-1">Siste rapport</p>
+                            <Card className="divide-y divide-surface-100">
+                                <div className="p-4 flex justify-between items-center">
+                                    <span className="text-ink-muted">Nøyaktighet</span>
+                                    <Badge>{lastCheckin.accuracy}/10</Badge>
+                                </div>
+                                <div className="p-4 flex justify-between items-center">
+                                    <span className="text-ink-muted">Styrke / Cardio</span>
+                                    <div className="flex gap-2">
+                                        <Badge><Dumbbell size={12} /> {lastCheckin.strengthSessions}</Badge>
+                                        <Badge><Activity size={12} /> {lastCheckin.cardioSessions || 0}</Badge>
+                                    </div>
+                                </div>
+                                <div className="p-4 flex justify-between items-center">
+                                    <span className="text-ink-muted">Energi / Søvn</span>
+                                    <div className="flex gap-2">
+                                        <Badge><Zap size={12} /> {lastCheckin.energy}</Badge>
+                                        <Badge><Moon size={12} /> {lastCheckin.sleep}</Badge>
+                                    </div>
+                                </div>
+                                <div className="p-4 flex justify-between items-center">
+                                    <span className="text-ink-muted">Skrittmål</span>
+                                    <Badge variant={lastCheckin.stepsReached ? 'success' : 'muted'}>
+                                        {lastCheckin.stepsReached ? <><Check size={12} /> Oppnådd</> : 'Ikke nådd'}
+                                    </Badge>
+                                </div>
+                            </Card>
                         </div>
                     )}
+                </div>
+            );
+        };
 
-                    <button type="submit" disabled={isSubmitting || isCompressing} className="w-full bg-brand text-white font-bold py-4 rounded-xl shadow-xl shadow-brand/20 hover:bg-brand-dark active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:scale-100">
-                        {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />} 
-                        {isSubmitting ? 'Sender inn...' : 'Send Rapport'}
-                    </button>
-                  </form>
-              )}
+        const PlanSection = ({ type, content, onSave, isReadOnly }) => {
+            const [isEditing, setIsEditing] = useState(false);
+            const [text, setText] = useState(content);
+            useEffect(() => setText(content), [content]);
+            
+            const Icon = type === 'diet' ? Utensils : Dumbbell;
 
-              <div className={!isReadOnly ? "mt-12 border-t border-brand-dark/5 pt-8" : ""}>
-                <h3 className="text-xs font-bold text-brand-text/40 uppercase tracking-widest mb-6 px-2">Tidligere Rapporter</h3>
-                {checkins.length === 0 ? <div className="text-center text-brand-text/30 py-10 font-serif italic">Ingen historikk enda.</div> : (
-                    <div className="space-y-4">
-                        {checkins.slice().sort((a,b) => b.timestamp - a.timestamp).map((entry) => {
-                            const displayImages = entry.images && entry.images.length > 0 ? entry.images : (entry.image ? [entry.image] : []);
-                            return (
-                            <div key={entry.id} className="bg-white p-6 rounded-[2rem] border border-brand-dark/5 shadow-sm relative overflow-hidden group">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div>
-                                        {/* OPPDATERT: Bruker formatDateNO */}
-                                        <div className="font-bold text-brand-text text-lg serif-font">{formatDateNO(entry.date)}</div>
-                                        <div className="text-xs text-brand-text/40 font-medium">{new Date(entry.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+            return (
+                <div className="space-y-5 pb-28 animate-slide-up">
+                    <Card className="overflow-hidden">
+                        <div className="flex justify-between items-center p-5 border-b border-surface-100">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-surface-100 rounded-xl flex items-center justify-center text-ink-muted">
+                                    <Icon size={20} />
+                                </div>
+                                <h2 className="font-display text-xl">{type === 'diet' ? 'Matplan' : 'Treningsplan'}</h2>
+                            </div>
+                            {!isReadOnly && (
+                                <Button 
+                                    variant={isEditing ? 'primary' : 'secondary'}
+                                    size="sm"
+                                    onClick={() => { if(isEditing) onSave(text); setIsEditing(!isEditing); }}
+                                >
+                                    {isEditing ? <><Check size={16} /> Lagre</> : <><Edit2 size={16} /> Rediger</>}
+                                </Button>
+                            )}
+                        </div>
+
+                        <div className="p-5">
+                            {isEditing && !isReadOnly ? (
+                                <textarea 
+                                    value={text} 
+                                    onChange={(e) => setText(e.target.value)} 
+                                    className="w-full min-h-[60vh] p-4 bg-surface-50 rounded-xl border border-surface-200 focus:ring-2 focus:ring-ink focus:border-ink outline-none text-ink font-mono text-sm leading-relaxed resize-none" 
+                                    placeholder="Skriv planen her..."
+                                />
+                            ) : (
+                                <div 
+                                    className="prose prose-sm max-w-none" 
+                                    dangerouslySetInnerHTML={{ 
+                                        __html: text ? window.marked.parse(text) : '<p class="text-ink-muted italic text-center py-12">Ingen plan enda</p>' 
+                                    }} 
+                                />
+                            )}
+                        </div>
+                    </Card>
+                </div>
+            );
+        };
+
+        const CheckInView = ({ checkins, onNewCheckin, onDelete, isReadOnly, stepGoal }) => {
+            const [step, setStep] = useState('form');
+            const [lightbox, setLightbox] = useState({ isOpen: false, images: [], index: 0 });
+            const [isCompressing, setIsCompressing] = useState(false);
+            const [errorMessage, setErrorMessage] = useState('');
+            const [isSubmitting, setIsSubmitting] = useState(false);
+            
+            const [formData, setFormData] = useState({
+                weight: '', sleep: 5, energy: 5, accuracy: 10,
+                strengthSessions: 0, cardioSessions: 0,
+                stepsReached: false, takenSupplements: false,
+                comment: '', images: []
+            });
+
+            const handleImageUpload = async (e) => {
+                const files = Array.from(e.target.files);
+                if (files.length === 0) return;
+                setIsCompressing(true);
+                try {
+                    const cloudName = 'drg4fxboh'; 
+                    const uploadPreset = 'jnm_upload'; 
+                    const uploadPromises = files.map(async (file) => {
+                        const fd = new FormData();
+                        fd.append('file', file);
+                        fd.append('upload_preset', uploadPreset); 
+                        const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: 'POST', body: fd });
+                        if (!res.ok) throw new Error('Opplasting feilet');
+                        return (await res.json()).secure_url;
+                    });
+                    const uploadedUrls = await Promise.all(uploadPromises);
+                    setFormData(prev => ({ ...prev, images: [...prev.images, ...uploadedUrls] }));
+                } catch (err) {
+                    console.error(err);
+                    setErrorMessage("Bildeopplasting feilet.");
+                } finally {
+                    setIsCompressing(false);
+                }
+            };
+
+            const removeImage = (indexToRemove) => {
+                setFormData(prev => ({ ...prev, images: prev.images.filter((_, index) => index !== indexToRemove) }));
+            };
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                setIsSubmitting(true);
+                setErrorMessage('');
+                try {
+                    const newEntry = { 
+                        id: Date.now(), 
+                        date: new Date().toISOString().split('T')[0], 
+                        timestamp: Date.now(), 
+                        ...formData 
+                    };
+                    await onNewCheckin(newEntry);
+                    setStep('success');
+                    setTimeout(() => {
+                        setStep('form');
+                        setFormData({ weight: '', sleep: 5, energy: 5, accuracy: 10, strengthSessions: 0, cardioSessions: 0, stepsReached: false, takenSupplements: false, comment: '', images: [] });
+                    }, 2500);
+                } catch (error) {
+                    setErrorMessage('Feil: ' + error.message);
+                } finally {
+                    setIsSubmitting(false);
+                }
+            };
+
+            if (step === 'success') {
+                return (
+                    <div className="flex flex-col items-center justify-center h-[60vh] animate-scale-in text-center px-6">
+                        <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 mb-6">
+                            <Check size={32} strokeWidth={2.5} />
+                        </div>
+                        <h2 className="text-2xl font-display mb-2">Rapport sendt</h2>
+                        <p className="text-ink-muted">Oppdateringen din er lagret</p>
+                    </div>
+                );
+            }
+
+            const InputLabel = ({ children }) => (
+                <label className="block text-sm font-medium text-ink-muted mb-2">{children}</label>
+            );
+
+            const SelectField = ({ label, value, onChange, options }) => (
+                <div>
+                    <InputLabel>{label}</InputLabel>
+                    <div className="relative">
+                        <select 
+                            value={value} 
+                            onChange={onChange} 
+                            className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl appearance-none focus:ring-2 focus:ring-ink focus:border-ink outline-none font-medium cursor-pointer"
+                        >
+                            {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" size={18} />
+                    </div>
+                </div>
+            );
+
+            return (
+                <div className="space-y-5 pb-28 animate-slide-up">
+                    {lightbox.isOpen && (
+                        <ImageModal images={lightbox.images} initialIndex={lightbox.index} onClose={() => setLightbox({ ...lightbox, isOpen: false })} />
+                    )}
+
+                    {!isReadOnly && (
+                        <form onSubmit={handleSubmit} className="space-y-5">
+                            <Card className="p-5 space-y-5">
+                                <h3 className="font-display text-lg">Ny ukesrapport</h3>
+                                
+                                <div>
+                                    <InputLabel>Vekt (kg)</InputLabel>
+                                    <div className="relative">
+                                        <Scale className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" size={18} />
+                                        <input 
+                                            type="number" 
+                                            inputMode="decimal" 
+                                            step="0.1" 
+                                            required 
+                                            value={formData.weight} 
+                                            onChange={(e) => setFormData({...formData, weight: e.target.value})} 
+                                            className="w-full pl-12 pr-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink focus:border-ink font-medium text-lg placeholder-ink-faint" 
+                                            placeholder="0.0" 
+                                        />
                                     </div>
-                                    
-                                    {/* ENDRET: Sletteknapp flyttet inn i flex-container */}
-                                    <div className="flex items-center gap-3">
-                                         {isReadOnly && (
-                                             <button 
-                                                onClick={(e) => { e.stopPropagation(); onDelete(entry.id); }} 
-                                                className="opacity-0 group-hover:opacity-100 transition-opacity text-brand-text/30 hover:text-red-500"
-                                             >
-                                                <Trash2 size={18} />
-                                             </button>
-                                         )}
-                                        <div className="bg-brand-cream px-4 py-1.5 rounded-full text-sm font-bold text-brand-dark border border-brand-dark/5">{formatWeight(entry.weight)} kg</div>
-                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <SelectField 
+                                        label="Energi" 
+                                        value={formData.energy} 
+                                        onChange={(e) => setFormData({...formData, energy: e.target.value})} 
+                                        options={[...Array(10)].map((_, i) => i+1)} 
+                                    />
+                                    <SelectField 
+                                        label="Søvn" 
+                                        value={formData.sleep} 
+                                        onChange={(e) => setFormData({...formData, sleep: e.target.value})} 
+                                        options={[...Array(10)].map((_, i) => i+1)} 
+                                    />
                                 </div>
                                 
-                                <div className="grid grid-cols-3 gap-3 mb-4 text-center text-xs">
-                                    <div className="bg-blue-50/50 p-2 rounded-xl border border-blue-100/50 flex flex-col justify-between h-full"> {/* SYMMETRI FIKS */}
-                                        <div className="text-[9px] uppercase text-blue-400 font-bold mb-1 tracking-wider">Nøyaktighet</div>
-                                        <div className="flex items-center justify-center gap-1 font-bold text-brand-text text-base">
-                                            {entry.accuracy}<span className="text-xs text-brand-text/30 font-normal">/10</span>
-                                        </div>
-                                    </div>
-                                    <div className="bg-orange-50/50 p-2 rounded-xl border border-orange-100/50 flex flex-col justify-between h-full"> {/* SYMMETRI FIKS */}
-                                        <div className="text-[9px] uppercase text-orange-400 font-bold mb-1 tracking-wider">Styrke / Cardio</div>
-                                        <div className="flex items-center justify-center gap-1 font-bold text-brand-text text-base">
-                                            {entry.strengthSessions} <span className="text-brand-text/20">|</span> {entry.cardioSessions || 0}
-                                        </div>
-                                    </div>
-                                    <div className="bg-purple-50/50 p-2 rounded-xl border border-purple-100/50 flex flex-col justify-between h-full"> {/* SYMMETRI FIKS */}
-                                        <div className="text-[9px] uppercase text-purple-400 font-bold mb-1 tracking-wider">Energi / Søvn</div>
-                                        <div className="flex items-center justify-center gap-1 font-bold text-brand-text text-base">
-                                            {entry.energy} <span className="text-brand-text/20">|</span> {entry.sleep}
-                                        </div>
-                                    </div>
+                                <SelectField 
+                                    label={`Nøyaktighet (${formData.accuracy}/10)`}
+                                    value={formData.accuracy} 
+                                    onChange={(e) => setFormData({...formData, accuracy: e.target.value})} 
+                                    options={[...Array(10)].map((_, i) => i+1)} 
+                                />
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <SelectField 
+                                        label="Styrkeøkter" 
+                                        value={formData.strengthSessions} 
+                                        onChange={(e) => setFormData({...formData, strengthSessions: e.target.value})} 
+                                        options={[0,1,2,3,4,5,6,7]} 
+                                    />
+                                    <SelectField 
+                                        label="Cardio" 
+                                        value={formData.cardioSessions} 
+                                        onChange={(e) => setFormData({...formData, cardioSessions: e.target.value})} 
+                                        options={[0,1,2,3,4,5,6,7]} 
+                                    />
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-2 mb-4 text-xs font-bold text-brand-text/70">
-                                    <div className={`py-2 px-3 rounded-xl flex items-center justify-center gap-2 ${entry.stepsReached ? 'bg-brand-mint/10 text-brand-mintdark' : 'bg-brand-cream text-brand-text/40'}`}>
-                                        <Footprints size={14} /> 
-                                        <span>{entry.stepsReached ? 'Skrittmål nådd' : 'Under skrittmål'}</span>
-                                    </div>
-                                    <div className={`py-2 px-3 rounded-xl flex items-center justify-center gap-2 ${entry.takenSupplements ? 'bg-brand/10 text-brand' : 'bg-brand-cream text-brand-text/40'}`}>
-                                        <span className="uppercase text-[10px] tracking-wider">Tilskudd</span>
-                                        {entry.takenSupplements ? <Check size={14} /> : <X size={14} />}
-                                    </div>
+                                <div className="space-y-3">
+                                    <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-all ${formData.stepsReached ? 'bg-emerald-50 border-emerald-200' : 'bg-surface-50 border-surface-200'}`}>
+                                        <input 
+                                            type="checkbox" 
+                                            checked={formData.stepsReached} 
+                                            onChange={(e) => setFormData({...formData, stepsReached: e.target.checked})} 
+                                            className="w-5 h-5 rounded-md border-surface-300 text-ink focus:ring-ink cursor-pointer" 
+                                        />
+                                        <div>
+                                            <p className="font-medium">Skrittmål oppnådd</p>
+                                            <p className="text-sm text-ink-muted">{stepGoal?.toLocaleString() || '10 000'} skritt</p>
+                                        </div>
+                                    </label>
+                                    <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-all ${formData.takenSupplements ? 'bg-emerald-50 border-emerald-200' : 'bg-surface-50 border-surface-200'}`}>
+                                        <input 
+                                            type="checkbox" 
+                                            checked={formData.takenSupplements} 
+                                            onChange={(e) => setFormData({...formData, takenSupplements: e.target.checked})} 
+                                            className="w-5 h-5 rounded-md border-surface-300 text-ink focus:ring-ink cursor-pointer" 
+                                        />
+                                        <div>
+                                            <p className="font-medium">Kosttilskudd tatt</p>
+                                            <p className="text-sm text-ink-muted">Dagens dose</p>
+                                        </div>
+                                    </label>
                                 </div>
 
-                                {entry.comment && <div className="bg-brand-cream/50 p-4 rounded-xl text-sm text-brand-text/80 mb-4 italic font-serif">"{entry.comment}"</div>}
-                                
-                                {displayImages.length > 0 && (
-                                    <div className="flex gap-3 overflow-x-auto pb-2 hide-scrollbar snap-x">
-                                        {displayImages.map((img, idx) => (
-                                            <div key={idx} className="flex-none w-20 h-20 snap-start cursor-pointer group/img" onClick={() => openLightbox(displayImages, idx)}>
-                                                <img src={getThumbnail(img)} loading="lazy" className="w-full h-full object-cover rounded-xl border border-brand-dark/5 shadow-sm group-hover/img:scale-105 transition-transform bg-brand-cream" alt="Checkin" />
+                                <div>
+                                    <InputLabel>Kommentar</InputLabel>
+                                    <textarea 
+                                        value={formData.comment} 
+                                        onChange={(e) => setFormData({...formData, comment: e.target.value})} 
+                                        className="w-full px-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl h-28 outline-none resize-none focus:ring-2 focus:ring-ink focus:border-ink" 
+                                        placeholder="Hvordan har uken vært?" 
+                                    />
+                                </div>
+                            </Card>
+
+                            {/* Image Upload */}
+                            <Card className="p-5">
+                                {formData.images.length > 0 && (
+                                    <div className="grid grid-cols-4 gap-2 mb-4">
+                                        {formData.images.map((img, idx) => (
+                                            <div key={idx} className="relative aspect-square">
+                                                <img 
+                                                    src={getThumbnail(img)} 
+                                                    className="w-full h-full object-cover rounded-lg cursor-pointer" 
+                                                    alt="Preview" 
+                                                    onClick={() => setLightbox({ isOpen: true, images: formData.images, index: idx })} 
+                                                />
+                                                <button 
+                                                    type="button" 
+                                                    onClick={() => removeImage(idx)} 
+                                                    className="absolute -top-1.5 -right-1.5 bg-ink text-white p-1 rounded-full"
+                                                >
+                                                    <X size={12} />
+                                                </button>
                                             </div>
                                         ))}
                                     </div>
                                 )}
+
+                                <label className={`flex flex-col items-center justify-center p-8 border-2 border-dashed border-surface-200 rounded-xl cursor-pointer hover:border-surface-300 hover:bg-surface-50 transition-all ${isCompressing ? 'opacity-50 pointer-events-none' : ''}`}>
+                                    {isCompressing ? (
+                                        <Loader2 className="animate-spin text-ink-muted" size={24} />
+                                    ) : (
+                                        <>
+                                            <Camera size={24} className="text-ink-muted mb-2" />
+                                            <span className="font-medium text-ink-muted">Last opp bilder</span>
+                                        </>
+                                    )}
+                                    <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
+                                </label>
+                            </Card>
+
+                            {errorMessage && (
+                                <div className="flex items-center gap-3 bg-red-50 border border-red-100 text-red-700 px-4 py-3 rounded-xl text-sm">
+                                    <AlertCircle size={18} />
+                                    {errorMessage}
+                                </div>
+                            )}
+
+                            <Button type="submit" size="lg" className="w-full" disabled={isSubmitting || isCompressing}>
+                                {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />} 
+                                {isSubmitting ? 'Sender...' : 'Send rapport'}
+                            </Button>
+                        </form>
+                    )}
+
+                    {/* History */}
+                    <div className={!isReadOnly ? "pt-8 border-t border-surface-200" : ""}>
+                        <p className="text-xs text-ink-muted uppercase tracking-wide mb-4 px-1">Tidligere rapporter</p>
+                        
+                        {checkins.length === 0 ? (
+                            <div className="text-center text-ink-muted py-12 font-display italic">Ingen historikk enda</div>
+                        ) : (
+                            <div className="space-y-3">
+                                {checkins.slice().sort((a,b) => b.timestamp - a.timestamp).map((entry) => {
+                                    const displayImages = entry.images && entry.images.length > 0 ? entry.images : (entry.image ? [entry.image] : []);
+                                    
+                                    return (
+                                        <Card key={entry.id} className="p-5 group">
+                                            <div className="flex justify-between items-start mb-4">
+                                                <div>
+                                                    <p className="font-medium">{formatDateNO(entry.date)}</p>
+                                                    <p className="text-xs text-ink-muted">{new Date(entry.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    {isReadOnly && (
+                                                        <button 
+                                                            onClick={() => { if(confirm('Slett denne rapporten?')) onDelete(entry.id); }} 
+                                                            className="opacity-0 group-hover:opacity-100 transition-opacity p-2 text-ink-faint hover:text-red-500"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    )}
+                                                    <Badge>{formatWeight(entry.weight)} kg</Badge>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="grid grid-cols-3 gap-2 text-xs mb-4">
+                                                <div className="bg-surface-50 p-3 rounded-lg text-center">
+                                                    <p className="text-ink-faint mb-1">Nøyaktighet</p>
+                                                    <p className="font-semibold">{entry.accuracy}/10</p>
+                                                </div>
+                                                <div className="bg-surface-50 p-3 rounded-lg text-center">
+                                                    <p className="text-ink-faint mb-1">Styrke / Cardio</p>
+                                                    <p className="font-semibold">{entry.strengthSessions} / {entry.cardioSessions || 0}</p>
+                                                </div>
+                                                <div className="bg-surface-50 p-3 rounded-lg text-center">
+                                                    <p className="text-ink-faint mb-1">Energi / Søvn</p>
+                                                    <p className="font-semibold">{entry.energy} / {entry.sleep}</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex gap-2 mb-4">
+                                                <Badge variant={entry.stepsReached ? 'success' : 'muted'}>
+                                                    <Footprints size={12} />
+                                                    {entry.stepsReached ? 'Skrittmål' : 'Under mål'}
+                                                </Badge>
+                                                <Badge variant={entry.takenSupplements ? 'success' : 'muted'}>
+                                                    {entry.takenSupplements ? <Check size={12} /> : <X size={12} />}
+                                                    Tilskudd
+                                                </Badge>
+                                            </div>
+
+                                            {entry.comment && (
+                                                <p className="text-sm text-ink-muted bg-surface-50 p-3 rounded-lg italic mb-4">"{entry.comment}"</p>
+                                            )}
+                                            
+                                            {displayImages.length > 0 && (
+                                                <div className="flex gap-2 overflow-x-auto hide-scrollbar">
+                                                    {displayImages.map((img, idx) => (
+                                                        <img 
+                                                            key={idx} 
+                                                            src={getThumbnail(img)} 
+                                                            loading="lazy" 
+                                                            className="w-16 h-16 object-cover rounded-lg cursor-pointer flex-none" 
+                                                            alt="Checkin" 
+                                                            onClick={() => setLightbox({ isOpen: true, images: displayImages, index: idx })} 
+                                                        />
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </Card>
+                                    );
+                                })}
                             </div>
-                        )})}
+                        )}
                     </div>
-                )}
-              </div>
-            </div>
-          );
+                </div>
+            );
         };
 
         const CoachDashboard = ({ user, allUsers, onSelectClient, onAddClient, onDeleteClient }) => {
             const [showModal, setShowModal] = useState(false);
             const clients = allUsers.filter(u => u.role === 'athlete');
+
             return (
-                <div className="space-y-6 pb-24 animate-fade-in">
+                <div className="space-y-5 pb-28 animate-slide-up">
                     {showModal && (
-                        <div className="fixed inset-0 bg-brand-text/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                            <Card className="w-full max-w-sm relative !shadow-2xl">
-                                <button onClick={() => setShowModal(false)} className="absolute right-4 top-4 text-brand-text/30 hover:text-brand-text"><X size={20} /></button>
-                                <h2 className="text-2xl font-black text-brand-text mb-6 serif-font">Ny utøver</h2>
+                        <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+                            <Card className="w-full max-w-sm p-6 animate-scale-in">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h2 className="text-xl font-display">Ny utøver</h2>
+                                    <button onClick={() => setShowModal(false)} className="text-ink-muted hover:text-ink p-1">
+                                        <X size={20} />
+                                    </button>
+                                </div>
                                 <form onSubmit={(e) => {
                                     e.preventDefault();
                                     const fd = new FormData(e.target);
                                     onAddClient(Object.fromEntries(fd));
                                     setShowModal(false);
                                 }} className="space-y-4">
-                                    <input required name="name" type="text" placeholder="Fullt Navn" className="w-full p-4 bg-brand-cream rounded-xl outline-none focus:ring-2 focus:ring-brand/30" />
-                                    <input required name="username" type="text" placeholder="Brukernavn" className="w-full p-4 bg-brand-cream rounded-xl outline-none focus:ring-2 focus:ring-brand/30" />
-                                    <input required name="password" type="text" placeholder="Passord" className="w-full p-4 bg-brand-cream rounded-xl outline-none focus:ring-2 focus:ring-brand/30" />
-                                    <button type="submit" className="w-full bg-brand text-white font-bold py-4 rounded-xl hover:bg-brand-dark transition-colors">Opprett</button>
+                                    <input required name="name" type="text" placeholder="Fullt navn" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink" />
+                                    <input required name="username" type="text" placeholder="Brukernavn" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink" />
+                                    <input required name="password" type="text" placeholder="Passord" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink" />
+                                    <Button type="submit" size="lg" className="w-full">Opprett utøver</Button>
                                 </form>
                             </Card>
                         </div>
                     )}
                     
-                    <div className="bg-gradient-to-r from-brand to-[#E6B89C] rounded-[2rem] p-8 text-white shadow-xl shadow-brand/20 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-3xl transform translate-x-10 -translate-y-10"></div>
-                        <h2 className="text-3xl font-black mb-2 relative z-10 serif-font">Hei Coach! 👋</h2>
-                        <p className="text-white/90 relative z-10 font-medium">Du følger opp {clients.length} utøvere.</p>
+                    <Card className="p-6 bg-ink text-white">
+                        <p className="text-white/70 text-sm">Velkommen tilbake</p>
+                        <h2 className="text-2xl font-display mt-1">{user.name}</h2>
+                        <p className="text-white/70 mt-4 text-sm">{clients.length} {clients.length === 1 ? 'utøver' : 'utøvere'} under oppfølging</p>
+                    </Card>
+
+                    <div className="flex justify-between items-center">
+                        <p className="text-xs text-ink-muted uppercase tracking-wide">Dine utøvere</p>
+                        <Button variant="primary" size="sm" onClick={() => setShowModal(true)}>
+                            <Plus size={16} /> Ny
+                        </Button>
                     </div>
 
-                    <div className="px-2 flex justify-between items-center mt-8">
-                        <h3 className="text-lg font-bold text-brand-text serif-font">Dine utøvere</h3>
-                        <button onClick={() => setShowModal(true)} className="bg-brand-text text-white px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 shadow-md hover:bg-black transition-colors"><Plus size={16} /> Ny</button>
-                    </div>
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                         {clients.map(client => (
-                            <div key={client.id} className="w-full bg-white p-4 rounded-2xl border border-brand-dark/5 shadow-sm flex items-center justify-between gap-3 hover:shadow-md cursor-pointer group transition-all" onClick={() => onSelectClient(client)}>
+                            <Card 
+                                key={client.id} 
+                                className="p-4 flex items-center justify-between group"
+                                interactive
+                                onClick={() => onSelectClient(client)}
+                            >
                                 <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-brand-cream text-brand-dark rounded-full flex items-center justify-center font-black text-lg serif-font">{client.name.charAt(0)}</div>
+                                    <div className="w-12 h-12 bg-surface-100 rounded-xl flex items-center justify-center font-display text-xl text-ink">
+                                        {client.name.charAt(0)}
+                                    </div>
                                     <div>
-                                        <div className="font-bold text-brand-text text-lg">{client.name}</div>
-                                        <div className="text-xs text-brand-text/40">@{client.username}</div>
-                                        {/* NYTT: Startdato */}
-                                        <div className="text-[10px] text-brand-text/50 mt-1 flex items-center gap-1">
-                                            <Calendar size={10} />
-                                            {client.start_date ? formatDateNO(client.start_date) : 'Ingen startdato'}
-                                        </div>
+                                        <p className="font-medium">{client.name}</p>
+                                        <p className="text-sm text-ink-muted">@{client.username}</p>
                                     </div>
                                 </div>
-                                <div className="flex gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-                                    <button onClick={(e) => { e.stopPropagation(); if(confirm('Slett?')) onDeleteClient(client.id); }} className="p-3 text-brand-text/20 hover:text-red-500"><Trash2 size={20} /></button>
-                                    <div className="p-3 text-brand"><ChevronRight size={20} /></div>
+                                <div className="flex items-center gap-2">
+                                    <button 
+                                        onClick={(e) => { e.stopPropagation(); if(confirm('Slett utøver?')) onDeleteClient(client.id); }} 
+                                        className="opacity-0 group-hover:opacity-100 transition-opacity p-2 text-ink-faint hover:text-red-500"
+                                    >
+                                        <Trash2 size={18} />
+                                    </button>
+                                    <ChevronRight size={18} className="text-ink-faint" />
                                 </div>
-                            </div>
+                            </Card>
                         ))}
                     </div>
                 </div>
@@ -1011,155 +1260,161 @@
         };
 
         const App = () => {
-          const [currentUser, setCurrentUser] = useState(null); 
-          const [activeTab, setActiveTab] = useState('dashboard');
-          const [allUsers, setAllUsers] = useState([]);
-          const [viewingClient, setViewingClient] = useState(null);
-          
-          const [isClientLoading, setIsClientLoading] = useState(false);
-          const [showWeightHistory, setShowWeightHistory] = useState(false);
+            const [currentUser, setCurrentUser] = useState(null); 
+            const [activeTab, setActiveTab] = useState('dashboard');
+            const [allUsers, setAllUsers] = useState([]);
+            const [viewingClient, setViewingClient] = useState(null);
+            
+            const [isClientLoading, setIsClientLoading] = useState(false);
+            const [showWeightHistory, setShowWeightHistory] = useState(false);
 
-          const [currentData, setCurrentData] = useState({ 
-              dietPlan: '', workoutPlan: '', stepGoal: 10000, 
-              totalWeeks: 12, startDate: null, isPaused: false, pausedAt: null, checkins: [] 
-          });
-          const [isLoading, setIsLoading] = useState(true);
+            const [currentData, setCurrentData] = useState({ 
+                dietPlan: '', workoutPlan: '', stepGoal: 10000, 
+                totalWeeks: 12, startDate: null, isPaused: false, pausedAt: null, checkins: [] 
+            });
+            const [isLoading, setIsLoading] = useState(true);
 
-          useEffect(() => {
-            const init = async () => {
-                try {
-                    const users = await api.getUsers();
-                    setAllUsers(users);
-                    const savedSession = localStorage.getItem('jnm_session');
-                    if (savedSession) {
-                        const sessionUser = JSON.parse(savedSession);
-                        const isValidUser = users.find(u => u.id === sessionUser.id);
-                        if (isValidUser) {
-                            setCurrentUser(isValidUser);
-                            if (isValidUser.role === 'athlete') setViewingClient(isValidUser);
-                        } else {
-                            localStorage.removeItem('jnm_session');
-                            setCurrentUser(null);
+            useEffect(() => {
+                const init = async () => {
+                    try {
+                        const users = await api.getUsers();
+                        setAllUsers(users);
+                        const savedSession = localStorage.getItem('jnm_session');
+                        if (savedSession) {
+                            const sessionUser = JSON.parse(savedSession);
+                            const isValidUser = users.find(u => u.id === sessionUser.id);
+                            if (isValidUser) {
+                                setCurrentUser(isValidUser);
+                                if (isValidUser.role === 'athlete') setViewingClient(isValidUser);
+                            } else {
+                                localStorage.removeItem('jnm_session');
+                            }
                         }
-                    }
-                } catch(e) { console.error(e); } finally { setIsLoading(false); }
+                    } catch(e) { console.error(e); } finally { setIsLoading(false); }
+                };
+                init();
+            }, []);
+
+            useEffect(() => {
+                if (viewingClient) {
+                    api.getUserData(viewingClient.id)
+                        .then(setCurrentData)
+                        .catch(() => setCurrentData({ dietPlan: '', workoutPlan: '', stepGoal: 10000, totalWeeks: 12, startDate: null, isPaused: false, pausedAt: null, checkins: [] }))
+                        .finally(() => setIsClientLoading(false));
+                }
+            }, [viewingClient]);
+
+            const handleLogin = (user) => {
+                setCurrentUser(user);
+                localStorage.setItem('jnm_session', JSON.stringify(user));
+                if (user.role === 'athlete') setViewingClient(user);
             };
-            init();
-          }, []);
 
-          useEffect(() => {
-            if (viewingClient) {
-                api.getUserData(viewingClient.id)
-                    .then(setCurrentData)
-                    .catch(() => setCurrentData({ dietPlan: '', workoutPlan: '', stepGoal: 10000, totalWeeks: 12, startDate: null, isPaused: false, pausedAt: null, checkins: [] }))
-                    .finally(() => setIsClientLoading(false));
-            }
-          }, [viewingClient]);
+            const handleLogout = () => {
+                setCurrentUser(null);
+                setViewingClient(null);
+                localStorage.removeItem('jnm_session');
+                setActiveTab('dashboard');
+            };
 
-          const handleLogin = (user) => {
-              setCurrentUser(user);
-              localStorage.setItem('jnm_session', JSON.stringify(user));
-              if (user.role === 'athlete') setViewingClient(user);
-          };
-
-          const handleLogout = () => {
-              setCurrentUser(null);
-              setViewingClient(null);
-              localStorage.removeItem('jnm_session');
-              setActiveTab('dashboard');
-          };
-
-          const handleNewCheckin = async (entry) => {
+            const handleNewCheckin = async (entry) => {
                 if (!viewingClient) return;
                 await api.submitCheckin(viewingClient.id, entry);
                 setCurrentData(prev => ({ ...prev, checkins: [...prev.checkins, entry] }));
-          };
-          
-          const handleUpdateData = async (keyOrObj, value) => {
-              if (!viewingClient) return;
-              let updates = typeof keyOrObj === 'string' ? { [keyOrObj]: value } : keyOrObj;
-              const previousData = { ...currentData };
-              const newData = { ...currentData, ...updates };
-              setCurrentData(newData);
-              try { await api.saveUserData(viewingClient.id, newData); } 
-              catch (e) { alert('Lagring feilet'); setCurrentData(previousData); }
-          };
+            };
+            
+            const handleUpdateData = async (keyOrObj, value) => {
+                if (!viewingClient) return;
+                let updates = typeof keyOrObj === 'string' ? { [keyOrObj]: value } : keyOrObj;
+                const previousData = { ...currentData };
+                const newData = { ...currentData, ...updates };
+                setCurrentData(newData);
+                try { await api.saveUserData(viewingClient.id, newData); } 
+                catch (e) { alert('Lagring feilet'); setCurrentData(previousData); }
+            };
 
-          const handleDeleteCheckin = async (checkinId) => {
-            if (!viewingClient || !confirm('Slett denne innsjekken?')) return;
-            const previousData = { ...currentData };
-            setCurrentData(prev => ({ ...prev, checkins: prev.checkins.filter(c => c.id !== checkinId) }));
-            try { await api.deleteCheckin(checkinId); } 
-            catch (e) { alert('Kunne ikke slette.'); setCurrentData(previousData); }
-          };
+            const handleDeleteCheckin = async (checkinId) => {
+                if (!viewingClient) return;
+                const previousData = { ...currentData };
+                setCurrentData(prev => ({ ...prev, checkins: prev.checkins.filter(c => c.id !== checkinId) }));
+                try { await api.deleteCheckin(checkinId); } 
+                catch (e) { alert('Kunne ikke slette.'); setCurrentData(previousData); }
+            };
 
-          if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-brand-pastel text-brand font-bold animate-pulse font-serif text-xl">Laster JNM Coaching...</div>;
-          if (!currentUser) return <LoginScreen onLogin={handleLogin} />;
-          const isCoach = currentUser.role === 'coach';
-
-          if (isCoach && !viewingClient) {
-              return (
-                  <div className="max-w-md mx-auto min-h-screen bg-brand-pastel relative shadow-2xl shadow-black/5 overflow-hidden">
-                      <Header title="Oversikt" user={currentUser} onLogout={handleLogout} />
-                      <main className="p-4 relative z-10">
-                          <CoachDashboard 
-                              user={currentUser} 
-                              allUsers={allUsers} 
-                              onSelectClient={(client) => { 
-                                  setCurrentData({ dietPlan: '', workoutPlan: '', stepGoal: 10000, totalWeeks: 12, startDate: null, isPaused: false, pausedAt: null, checkins: [] });
-                                  setIsClientLoading(true);
-                                  setViewingClient(client); 
-                                  setShowWeightHistory(false); 
-                                  setActiveTab('dashboard'); 
-                              }} 
-                              onAddClient={async (u) => setAllUsers(await api.createUser({...u, id: Date.now().toString(), role:'athlete'}))} 
-                              onDeleteClient={async (id) => setAllUsers(await api.deleteUser(id))} 
-                           />
-                      </main>
-                  </div>
-              );
-          }
-
-          return (
-            <div className="max-w-md mx-auto min-h-screen bg-brand-pastel relative shadow-2xl shadow-black/5 overflow-hidden">
-              <Header title={activeTab === 'dashboard' ? 'Hjem' : activeTab === 'diet' ? 'Matplan' : activeTab === 'workout' ? 'Trening' : 'Innsjekk'} user={currentUser} viewingClient={isCoach ? viewingClient : null} onLogout={handleLogout} onClearClient={() => { setViewingClient(null); setActiveTab('dashboard'); }} /> {/* ENDRET FRA 'Status' */}
-              <main className="p-4 pb-32 relative z-10">
-                {/* OPPDATERT: Skeleton Loading State */}
-                {isClientLoading ? (
-                    <div className="space-y-6 pt-6">
-                        <Skeleton className="h-48 w-full rounded-[2rem]" />
-                        <div className="grid grid-cols-2 gap-4">
-                             <Skeleton className="h-32 w-full rounded-[2rem]" />
-                             <Skeleton className="h-32 w-full rounded-[2rem]" />
-                        </div>
-                        <Skeleton className="h-64 w-full rounded-[2rem]" />
+            if (isLoading) {
+                return (
+                    <div className="min-h-screen flex flex-col items-center justify-center bg-surface-50">
+                        <Loader2 className="animate-spin text-ink-muted mb-4" size={32} />
+                        <p className="text-ink-muted font-medium">Laster...</p>
                     </div>
-                ) : (
-                    <>
-                        {activeTab === 'dashboard' ? (
-                            showWeightHistory ? (
-                                <WeightProgressView 
-                                    checkins={currentData.checkins} 
-                                    onBack={() => setShowWeightHistory(false)} 
-                                />
-                            ) : (
-                                <DashboardView 
-                                    userData={currentData} 
-                                    isCoach={isCoach} 
-                                    onUpdateData={handleUpdateData} 
-                                    onOpenWeightHistory={() => setShowWeightHistory(true)} 
-                                />
-                            )
-                        ) :
-                        activeTab === 'diet' ? <PlanSection type="diet" content={currentData.dietPlan} onSave={(val) => handleUpdateData('dietPlan', val)} isReadOnly={!isCoach} /> :
-                        activeTab === 'workout' ? <PlanSection type="workout" content={currentData.workoutPlan} onSave={(val) => handleUpdateData('workoutPlan', val)} isReadOnly={!isCoach} /> :
-                        <CheckInView checkins={currentData.checkins} onNewCheckin={handleNewCheckin} onDelete={handleDeleteCheckin} isReadOnly={isCoach} stepGoal={currentData.stepGoal} />}
-                    </>
-                )}
-              </main>
-              <Navigation activeTab={activeTab} setActiveTab={(tab) => { setActiveTab(tab); setShowWeightHistory(false); }} />
-            </div>
-          );
+                );
+            }
+
+            if (!currentUser) return <LoginScreen onLogin={handleLogin} />;
+            
+            const isCoach = currentUser.role === 'coach';
+
+            if (isCoach && !viewingClient) {
+                return (
+                    <div className="max-w-md mx-auto min-h-screen bg-surface-50">
+                        <Header title="Oversikt" user={currentUser} onLogout={handleLogout} />
+                        <main className="p-4">
+                            <CoachDashboard 
+                                user={currentUser} 
+                                allUsers={allUsers} 
+                                onSelectClient={(client) => { 
+                                    setCurrentData({ dietPlan: '', workoutPlan: '', stepGoal: 10000, totalWeeks: 12, startDate: null, isPaused: false, pausedAt: null, checkins: [] });
+                                    setIsClientLoading(true);
+                                    setViewingClient(client); 
+                                    setShowWeightHistory(false); 
+                                    setActiveTab('dashboard'); 
+                                }} 
+                                onAddClient={async (u) => setAllUsers(await api.createUser({...u, id: Date.now().toString(), role:'athlete'}))} 
+                                onDeleteClient={async (id) => setAllUsers(await api.deleteUser(id))} 
+                            />
+                        </main>
+                    </div>
+                );
+            }
+
+            const tabTitles = { dashboard: 'Hjem', diet: 'Matplan', workout: 'Trening', checkin: 'Rapport' };
+
+            return (
+                <div className="max-w-md mx-auto min-h-screen bg-surface-50">
+                    <Header 
+                        title={tabTitles[activeTab]} 
+                        user={currentUser} 
+                        viewingClient={isCoach ? viewingClient : null} 
+                        onLogout={handleLogout} 
+                        onClearClient={() => { setViewingClient(null); setActiveTab('dashboard'); }} 
+                    />
+                    <main className="p-4">
+                        {isClientLoading ? (
+                            <div className="space-y-4 pt-4">
+                                <Skeleton className="h-40 w-full" />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <Skeleton className="h-32 w-full" />
+                                    <Skeleton className="h-32 w-full" />
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                {activeTab === 'dashboard' ? (
+                                    showWeightHistory ? (
+                                        <WeightProgressView checkins={currentData.checkins} onBack={() => setShowWeightHistory(false)} />
+                                    ) : (
+                                        <DashboardView userData={currentData} isCoach={isCoach} onUpdateData={handleUpdateData} onOpenWeightHistory={() => setShowWeightHistory(true)} />
+                                    )
+                                ) :
+                                activeTab === 'diet' ? <PlanSection type="diet" content={currentData.dietPlan} onSave={(val) => handleUpdateData('dietPlan', val)} isReadOnly={!isCoach} /> :
+                                activeTab === 'workout' ? <PlanSection type="workout" content={currentData.workoutPlan} onSave={(val) => handleUpdateData('workoutPlan', val)} isReadOnly={!isCoach} /> :
+                                <CheckInView checkins={currentData.checkins} onNewCheckin={handleNewCheckin} onDelete={handleDeleteCheckin} isReadOnly={isCoach} stepGoal={currentData.stepGoal} />}
+                            </>
+                        )}
+                    </main>
+                    <Navigation activeTab={activeTab} setActiveTab={(tab) => { setActiveTab(tab); setShowWeightHistory(false); }} />
+                </div>
+            );
         };
 
         const root = createRoot(document.getElementById('root'));
