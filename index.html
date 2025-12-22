@@ -712,49 +712,96 @@
             return (
                 <div className="space-y-5 pb-28 animate-slide-up">
                     {/* Progress Card */}
-                    <Card className={`p-6 relative overflow-hidden ${userData.isPaused ? 'bg-surface-100' : 'bg-ink text-white'}`}>
-                        <div className="relative z-10">
-                            <div className="flex justify-between items-start mb-6">
-                                <div>
-                                    <p className={`text-sm ${userData.isPaused ? 'text-ink-muted' : 'text-white/70'}`}>
-                                        {userData.isPaused ? 'Plan på pause' : 'Din fremgang'}
-                                    </p>
-                                    <h2 className="text-3xl font-display mt-1">
-                                        {userData.isPaused ? 'Pauset' : `Uke ${currentWeek}`}
-                                    </h2>
+                    {/* Hero Card - Dynamisk basert på status */}
+                    {!userData.startDate ? (
+                        /* Ingen startdato - vis velkomst */
+                        <Card className="p-6 bg-gradient-to-br from-ink to-neutral-800 text-white relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl transform translate-x-10 -translate-y-10" />
+                            <div className="relative z-10">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center">
+                                        <span className="text-2xl">👋</span>
+                                    </div>
+                                    <div>
+                                        <p className="text-white/70 text-sm">Velkommen</p>
+                                        <h2 className="text-xl font-display">Klar for å starte?</h2>
+                                    </div>
+                                </div>
+                                <p className="text-white/60 text-sm leading-relaxed mb-4">
+                                    {isCoach ? 'Sett en startdato for å begynne oppfølgingen.' : 'Coachen din vil snart sette opp planen din.'}
+                                </p>
+                                {isCoach && (
+                                    <button 
+                                        onClick={handlePlanSettings}
+                                        className="flex items-center gap-2 bg-white text-ink px-4 py-2.5 rounded-xl font-medium text-sm hover:bg-white/90 transition-colors"
+                                    >
+                                        <Calendar size={16} /> Sett startdato
+                                    </button>
+                                )}
+                            </div>
+                        </Card>
+                    ) : userData.isPaused ? (
+                        /* Plan på pause */
+                        <Card className="p-6 bg-surface-100 relative overflow-hidden">
+                            <div className="flex justify-between items-start">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center">
+                                        <Pause className="text-amber-600" size={24} />
+                                    </div>
+                                    <div>
+                                        <p className="text-ink-muted text-sm">Plan på pause</p>
+                                        <h2 className="text-2xl font-display text-ink">Tar en pust</h2>
+                                    </div>
                                 </div>
                                 {isCoach && (
                                     <button 
                                         onClick={handlePlanSettings}
-                                        className={`p-2 rounded-lg transition-colors ${userData.isPaused ? 'hover:bg-surface-200 text-ink-muted' : 'hover:bg-white/10 text-white/70'}`}
+                                        className="p-2 rounded-lg hover:bg-surface-200 text-ink-muted transition-colors"
                                     >
                                         <Edit2 size={18} />
                                     </button>
                                 )}
                             </div>
+                            <p className="text-ink-muted text-sm mt-4">
+                                {isCoach ? 'Klikk på blyanten for å gjenoppta.' : 'Coachen vil gjenoppta planen når du er klar.'}
+                            </p>
+                        </Card>
+                    ) : (
+                        /* Aktiv plan - vis fremgang */
+                        <Card className="p-6 bg-ink text-white relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-3xl transform translate-x-10 -translate-y-10" />
+                            <div className="relative z-10">
+                                <div className="flex justify-between items-start mb-5">
+                                    <div>
+                                        <p className="text-white/60 text-sm">Din fremgang</p>
+                                        <h2 className="text-4xl font-display mt-1">Uke {currentWeek}</h2>
+                                    </div>
+                                    {isCoach && (
+                                        <button 
+                                            onClick={handlePlanSettings}
+                                            className="p-2 rounded-lg hover:bg-white/10 text-white/60 transition-colors"
+                                        >
+                                            <Edit2 size={18} />
+                                        </button>
+                                    )}
+                                </div>
 
-                            {!userData.isPaused && (
-                                <div>
-                                    <div className="flex justify-between text-sm mb-2">
-                                        <span className="text-white/70">Fremdrift</span>
-                                        <span className="font-medium">{userData.totalWeeks || 12} uker totalt</span>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-white/60">Fremdrift</span>
+                                        <span className="font-medium">{Math.round(progress)}%</span>
                                     </div>
                                     <div className="h-2 bg-white/20 rounded-full overflow-hidden">
                                         <div 
-                                            className="h-full bg-white rounded-full transition-all duration-500" 
+                                            className="h-full bg-gradient-to-r from-white/80 to-white rounded-full transition-all duration-500" 
                                             style={{ width: `${progress}%` }}
                                         />
                                     </div>
+                                    <p className="text-white/40 text-xs text-right">{userData.totalWeeks || 12} uker totalt</p>
                                 </div>
-                            )}
-
-                            {userData.isPaused && (
-                                <Badge variant="warning" className="mt-2">
-                                    <Pause size={12} /> Pauset
-                                </Badge>
-                            )}
-                        </div>
-                    </Card>
+                            </div>
+                        </Card>
+                    )}
 
                     {/* Stats Grid */}
                     <div className="grid grid-cols-2 gap-4">
