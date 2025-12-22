@@ -640,6 +640,7 @@
 
         const DashboardView = ({ userData, isCoach, onUpdateData, onOpenWeightHistory }) => {
             const lastCheckin = userData.checkins?.length > 0 ? userData.checkins[userData.checkins.length - 1] : null;
+            const checkins = userData.checkins || [];
 
             const calculateWeek = () => {
                 if (!userData.startDate) return 1;
@@ -652,6 +653,38 @@
 
             const currentWeek = calculateWeek();
             const progress = Math.min((currentWeek / (userData.totalWeeks || 12)) * 100, 100);
+
+            // Beregn statistikk fra alle innsjekker
+            const stats = React.useMemo(() => {
+                if (checkins.length === 0) return null;
+                
+                const totalStrength = checkins.reduce((sum, c) => sum + (parseInt(c.strengthSessions) || 0), 0);
+                const totalCardio = checkins.reduce((sum, c) => sum + (parseInt(c.cardioSessions) || 0), 0);
+                const stepsHit = checkins.filter(c => c.stepsReached).length;
+                const avgAccuracy = (checkins.reduce((sum, c) => sum + (parseInt(c.accuracy) || 0), 0) / checkins.length).toFixed(1);
+                
+                // Vektendring
+                const validWeights = checkins.filter(c => c.weight && parseFloat(c.weight) > 0).sort((a, b) => a.timestamp - b.timestamp);
+                let weightChange = null;
+                if (validWeights.length >= 2) {
+                    const first = parseFloat(validWeights[0].weight);
+                    const last = parseFloat(validWeights[validWeights.length - 1].weight);
+                    weightChange = (last - first).toFixed(1);
+                }
+                
+                return { totalStrength, totalCardio, stepsHit, avgAccuracy, weightChange, totalCheckins: checkins.length };
+            }, [checkins]);
+
+            // Motiverende sitater
+            const quotes = [
+                { text: "Små steg hver dag fører til store resultater.", author: "Ukjent" },
+                { text: "Du trenger ikke være perfekt, bare konsistent.", author: "Ukjent" },
+                { text: "Kroppen oppnår det sinnet tror på.", author: "Ukjent" },
+                { text: "Fremgang, ikke perfeksjon.", author: "Ukjent" },
+                { text: "Den eneste dårlige treningen er den som ikke ble gjort.", author: "Ukjent" },
+                { text: "Disiplin er broen mellom mål og resultater.", author: "Jim Rohn" },
+            ];
+            const todayQuote = quotes[new Date().getDay() % quotes.length];
 
             const handlePlanSettings = async () => {
                 if (!isCoach) return;
@@ -791,6 +824,50 @@
                             </Card>
                         </div>
                     )}
+
+                    {/* Totaloversikt - kun hvis det finnes data */}
+                    {stats && (
+                        <div>
+                            <p className="text-xs text-ink-muted uppercase tracking-wide mb-3 px-1">Din reise så langt</p>
+                            <Card className="p-5">
+                                <div className="grid grid-cols-4 gap-3 text-center mb-5">
+                                    <div>
+                                        <div className="text-2xl font-semibold text-ink">{stats.totalStrength}</div>
+                                        <div className="text-[10px] text-ink-muted uppercase tracking-wide mt-1">Styrkeøkter</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-2xl font-semibold text-ink">{stats.totalCardio}</div>
+                                        <div className="text-[10px] text-ink-muted uppercase tracking-wide mt-1">Cardio</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-2xl font-semibold text-ink">{stats.stepsHit}/{stats.totalCheckins}</div>
+                                        <div className="text-[10px] text-ink-muted uppercase tracking-wide mt-1">Skrittmål</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-2xl font-semibold text-ink">{stats.avgAccuracy}</div>
+                                        <div className="text-[10px] text-ink-muted uppercase tracking-wide mt-1">Snitt nøyakt.</div>
+                                    </div>
+                                </div>
+                                
+                                {stats.weightChange && (
+                                    <div className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl ${parseFloat(stats.weightChange) < 0 ? 'bg-emerald-50 text-emerald-700' : parseFloat(stats.weightChange) > 0 ? 'bg-surface-100 text-ink' : 'bg-surface-100 text-ink-muted'}`}>
+                                        {parseFloat(stats.weightChange) < 0 ? <TrendingDown size={18} /> : parseFloat(stats.weightChange) > 0 ? <TrendingUp size={18} /> : <Minus size={18} />}
+                                        <span className="font-medium">
+                                            {parseFloat(stats.weightChange) > 0 ? '+' : ''}{stats.weightChange.replace('.', ',')} kg total endring
+                                        </span>
+                                    </div>
+                                )}
+                            </Card>
+                        </div>
+                    )}
+
+                    {/* Dagens motivasjon */}
+                    <Card className="p-6 bg-gradient-to-br from-surface-50 to-surface-100 border-dashed">
+                        <div className="text-center">
+                            <p className="font-display text-lg text-ink italic leading-relaxed">"{todayQuote.text}"</p>
+                            <p className="text-xs text-ink-muted mt-3">— {todayQuote.author}</p>
+                        </div>
+                    </Card>
                 </div>
             );
         };
