@@ -6,8 +6,7 @@ exports.handler = async (event) => {
   try {
     // HENTE BRUKERE (GET)
     if (event.httpMethod === 'GET') {
-      // OPPDATERT: Henter nå også start_date
-      const users = await sql`SELECT id, username, name, role, start_date FROM users`;
+      const users = await sql`SELECT id, username, name, role, start_date, is_archived FROM users`;
       return { statusCode: 200, body: JSON.stringify(users) };
     }
 
@@ -15,14 +14,22 @@ exports.handler = async (event) => {
     if (event.httpMethod === 'POST') {
       const { name, username, password, role } = JSON.parse(event.body);
       
-      // Legg til i databasen
       await sql`
-        INSERT INTO users (name, username, password, role)
-        VALUES (${name}, ${username}, ${password}, ${role || 'athlete'})
+        INSERT INTO users (name, username, password, role, is_archived)
+        VALUES (${name}, ${username}, ${password}, ${role || 'athlete'}, false)
       `;
       
-      // Hent den nye listen over alle brukere og send tilbake (inkludert start_date)
-      const allUsers = await sql`SELECT id, username, name, role, start_date FROM users`;
+      const allUsers = await sql`SELECT id, username, name, role, start_date, is_archived FROM users`;
+      return { statusCode: 200, body: JSON.stringify(allUsers) };
+    }
+
+    // ARKIVERE/GJENOPPRETTE BRUKER (PATCH)
+    if (event.httpMethod === 'PATCH') {
+      const { id, is_archived } = JSON.parse(event.body);
+      
+      await sql`UPDATE users SET is_archived = ${is_archived} WHERE id = ${id}`;
+      
+      const allUsers = await sql`SELECT id, username, name, role, start_date, is_archived FROM users`;
       return { statusCode: 200, body: JSON.stringify(allUsers) };
     }
 
@@ -30,13 +37,12 @@ exports.handler = async (event) => {
     if (event.httpMethod === 'DELETE') {
       const { id } = JSON.parse(event.body);
       
-      // Vi må slette brukerens innsjekker først (pga database-regler)
+      // Slett brukerens innsjekker først
       await sql`DELETE FROM checkins WHERE user_id = ${id}`;
-      // Deretter sletter vi brukeren
+      // Deretter slett brukeren
       await sql`DELETE FROM users WHERE id = ${id}`;
       
-      // Returner oppdatert liste
-      const allUsers = await sql`SELECT id, username, name, role, start_date FROM users`;
+      const allUsers = await sql`SELECT id, username, name, role, start_date, is_archived FROM users`;
       return { statusCode: 200, body: JSON.stringify(allUsers) };
     }
 
