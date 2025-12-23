@@ -945,7 +945,7 @@
             );
         };
 
-        const CheckInView = ({ checkins, onNewCheckin, onDelete, isReadOnly, stepGoal }) => {
+        const CheckInView = ({ checkins, onNewCheckin, onDelete, isReadOnly, stepGoal, hideForm = false }) => {
             const [step, setStep] = useState('form');
             const [lightbox, setLightbox] = useState({ isOpen: false, images: [], index: 0 });
             const [isCompressing, setIsCompressing] = useState(false);
@@ -1050,7 +1050,7 @@
                         <ImageModal images={lightbox.images} initialIndex={lightbox.index} onClose={() => setLightbox({ ...lightbox, isOpen: false })} />
                     )}
 
-                    {!isReadOnly && (
+                    {!isReadOnly && !hideForm && (
                         <form onSubmit={handleSubmit} className="space-y-5">
                             <Card className="p-5 space-y-5">
                                 <h3 className="font-display text-lg">Ny ukesrapport</h3>
@@ -1199,7 +1199,7 @@
                     )}
 
                     {/* History */}
-                    <div className={!isReadOnly ? "pt-8 border-t border-surface-200" : ""}>
+                    <div className={!isReadOnly && !hideForm ? "pt-8 border-t border-surface-200" : ""}>
                         <p className="text-xs text-ink-muted uppercase tracking-wide mb-4 px-1">Tidligere rapporter</p>
                         
                         {checkins.length === 0 ? (
@@ -1508,6 +1508,68 @@
             if (!currentUser) return <LoginScreen onLogin={handleLogin} />;
             
             const isCoach = currentUser.role === 'coach';
+            const isArchived = currentUser.is_archived && !isCoach;
+
+            // Arkivert bruker - begrenset tilgang
+            if (isArchived) {
+                return (
+                    <div className="max-w-md mx-auto min-h-screen bg-surface-50">
+                        <Header title="Konto pauset" user={currentUser} onLogout={handleLogout} />
+                        <main className="p-4">
+                            <div className="flex flex-col items-center justify-center min-h-[70vh] text-center px-6 animate-fade-in">
+                                <div className="w-20 h-20 bg-surface-100 rounded-2xl flex items-center justify-center text-ink-muted mb-6">
+                                    <Pause size={40} />
+                                </div>
+                                <h2 className="text-2xl font-display text-ink mb-3">Kontoen er pauset</h2>
+                                <p className="text-ink-muted leading-relaxed mb-8">
+                                    Din konto er for øyeblikket satt på pause av coachen din. 
+                                    Du kan fortsatt se historikken din, men kan ikke sende inn nye rapporter.
+                                </p>
+                                
+                                <div className="w-full space-y-3">
+                                    <Button 
+                                        variant="secondary" 
+                                        size="lg" 
+                                        className="w-full"
+                                        onClick={() => setActiveTab('history')}
+                                    >
+                                        <Eye size={18} /> Se historikk
+                                    </Button>
+                                    <Button 
+                                        variant="ghost" 
+                                        size="lg" 
+                                        className="w-full"
+                                        onClick={handleLogout}
+                                    >
+                                        <LogOut size={18} /> Logg ut
+                                    </Button>
+                                </div>
+                            </div>
+
+                            {activeTab === 'history' && (
+                                <div className="fixed inset-0 bg-surface-50 z-50 overflow-auto">
+                                    <div className="sticky top-0 bg-surface-50/95 backdrop-blur-md border-b border-surface-200 px-4 py-4 flex items-center gap-3">
+                                        <button onClick={() => setActiveTab('dashboard')} className="p-2 hover:bg-surface-100 rounded-xl">
+                                            <ChevronLeft size={24} />
+                                        </button>
+                                        <h2 className="text-xl font-display">Din historikk</h2>
+                                    </div>
+                                    <div className="p-4 pb-8">
+                                        <CheckInView 
+                                            checkins={currentData.checkins} 
+                                            onNewCheckin={() => {}} 
+                                            onDelete={() => {}} 
+                                            isReadOnly={true} 
+                                            stepGoal={currentData.stepGoal}
+                                            hideForm={true}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </main>
+                    </div>
+                );
+            }
 
             if (isCoach && !viewingClient) {
                 return (
