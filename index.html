@@ -525,8 +525,10 @@
         };
 
         const Header = ({ title, user, viewingClient, onLogout, onClearClient }) => (
-            <header className="bg-surface-50/95 backdrop-blur-md px-5 py-4 sticky top-0 z-40 border-b border-surface-200 safe-area-pt">
-                <div className="flex justify-between items-center max-w-md mx-auto">
+            <header className="bg-surface-50/95 backdrop-blur-md sticky top-0 z-40 border-b border-surface-200">
+                {/* Safe area spacer for iPhone Dynamic Island/notch */}
+                <div className="safe-area-pt" />
+                <div className="flex justify-between items-center max-w-md mx-auto px-5 py-4">
                     <div>
                         <h1 className="text-xl font-display text-ink">{title}</h1>
                         <div className="flex items-center gap-2 mt-0.5">
