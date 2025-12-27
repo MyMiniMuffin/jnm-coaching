@@ -2,7 +2,7 @@
 <html lang="no">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>JNM Coaching</title>
     
     <!-- PWA: Meta Tags for Mobile -->
@@ -500,7 +500,7 @@
             ];
 
             return (
-                <div className="fixed bottom-0 left-0 right-0 glass-nav z-50 safe-area-pb border-t border-surface-200"> 
+                <div className="fixed bottom-0 left-0 right-0 glass-nav z-50 border-t border-surface-200"> 
                     <div className="flex justify-around items-center h-16 max-w-md mx-auto">
                         {navItems.map((item) => {
                             const Icon = item.icon;
@@ -517,6 +517,8 @@
                             );
                         })}
                     </div>
+                    {/* Safe area spacer for iPhone home indicator */}
+                    <div className="safe-area-pb" />
                 </div>
             );
         };
@@ -584,7 +586,7 @@
             }).join(' ');
 
             return (
-                <div className="space-y-6 animate-slide-up pb-28">
+                <div className="space-y-6 animate-slide-up pb-32">
                     <button onClick={onBack} className="flex items-center gap-2 text-ink-muted hover:text-ink transition-colors">
                         <ChevronLeft size={20} />
                         <span className="text-sm font-medium">Tilbake</span>
@@ -725,7 +727,7 @@
             };
 
             return (
-                <div className="space-y-5 pb-28 animate-slide-up">
+                <div className="space-y-5 pb-32 animate-slide-up">
                     {/* Hero Card */}
                     <div className="p-6 bg-ink text-white rounded-2xl relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-3xl transform translate-x-10 -translate-y-10" />
@@ -903,7 +905,7 @@
             const Icon = type === 'diet' ? Utensils : Dumbbell;
 
             return (
-                <div className="space-y-5 pb-28 animate-slide-up">
+                <div className="space-y-5 pb-32 animate-slide-up">
                     <Card className="overflow-hidden">
                         <div className="flex justify-between items-center p-5 border-b border-surface-100">
                             <div className="flex items-center gap-3">
@@ -1045,7 +1047,7 @@
             );
 
             return (
-                <div className="space-y-5 pb-28 animate-slide-up">
+                <div className="space-y-5 pb-32 animate-slide-up">
                     {lightbox.isOpen && (
                         <ImageModal images={lightbox.images} initialIndex={lightbox.index} onClose={() => setLightbox({ ...lightbox, isOpen: false })} />
                     )}
@@ -1291,7 +1293,7 @@
             const archivedClients = allUsers.filter(u => u.role === 'athlete' && u.is_archived);
 
             return (
-                <div className="space-y-5 pb-28 animate-slide-up">
+                <div className="space-y-5 pb-32 animate-slide-up">
                     {showModal && (
                         <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
                             <Card className="w-full max-w-sm p-6 animate-scale-in">
