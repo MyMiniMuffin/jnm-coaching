@@ -131,6 +131,7 @@
         }
 
         .safe-area-pb { padding-bottom: env(safe-area-inset-bottom); }
+        .safe-area-pt { padding-top: env(safe-area-inset-top); }
         
         input[type="checkbox"]:checked {
             background-color: #171717;
@@ -524,7 +525,7 @@
         };
 
         const Header = ({ title, user, viewingClient, onLogout, onClearClient }) => (
-            <header className="bg-surface-50/95 backdrop-blur-md px-5 py-4 sticky top-0 z-40 border-b border-surface-200">
+            <header className="bg-surface-50/95 backdrop-blur-md px-5 py-4 sticky top-0 z-40 border-b border-surface-200 safe-area-pt">
                 <div className="flex justify-between items-center max-w-md mx-auto">
                     <div>
                         <h1 className="text-xl font-display text-ink">{title}</h1>
