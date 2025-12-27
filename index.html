@@ -656,8 +656,11 @@
         }
 
         const DashboardView = ({ userData, isCoach, onUpdateData, onOpenWeightHistory }) => {
-            const lastCheckin = userData.checkins?.length > 0 ? userData.checkins[userData.checkins.length - 1] : null;
             const checkins = userData.checkins || [];
+            // Checkins kommer sortert DESC fra databasen, så første element er nyeste
+            // Men for å være sikker, sorter etter timestamp og ta nyeste
+            const sortedCheckins = [...checkins].sort((a, b) => b.timestamp - a.timestamp);
+            const lastCheckin = sortedCheckins.length > 0 ? sortedCheckins[0] : null;
 
             const calculateWeek = () => {
                 if (!userData.startDate) return 1;
