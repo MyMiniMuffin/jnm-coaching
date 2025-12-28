@@ -950,19 +950,31 @@
                                 </div>
                             </div>
 
-                            {/* Bilder side-by-side */}
-                            <div className="flex-1 flex">
+                            {/* Bilder side-by-side med zoom */}
+                            <div className="flex-1 flex overflow-hidden">
                                 {/* Før */}
-                                <div className="flex-1 relative">
-                                    <img 
-                                        src={getFullSizeImage(compareImages.before.url)} 
-                                        className="w-full h-full object-contain"
-                                        alt="Før"
-                                    />
-                                    <div className="absolute top-4 left-4 bg-black/50 text-white px-3 py-1.5 rounded-full text-sm font-medium backdrop-blur-sm">
+                                <div className="flex-1 relative overflow-hidden">
+                                    <TransformWrapper
+                                        initialScale={1}
+                                        minScale={0.5}
+                                        maxScale={4}
+                                        centerOnInit={true}
+                                    >
+                                        <TransformComponent
+                                            wrapperStyle={{ width: "100%", height: "100%" }}
+                                            contentStyle={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}
+                                        >
+                                            <img 
+                                                src={getFullSizeImage(compareImages.before.url)} 
+                                                className="max-w-full max-h-full object-contain"
+                                                alt="Før"
+                                            />
+                                        </TransformComponent>
+                                    </TransformWrapper>
+                                    <div className="absolute top-4 left-4 bg-black/50 text-white px-3 py-1.5 rounded-full text-sm font-medium backdrop-blur-sm pointer-events-none">
                                         FØR
                                     </div>
-                                    <div className="absolute bottom-4 left-4 right-4 bg-black/50 backdrop-blur-sm rounded-xl p-3">
+                                    <div className="absolute bottom-4 left-4 right-4 bg-black/50 backdrop-blur-sm rounded-xl p-3 pointer-events-none">
                                         <p className="text-white font-medium">{formatDateNO(compareImages.before.date)}</p>
                                         {compareImages.before.weight && (
                                             <p className="text-white/70 text-sm">{formatWeight(compareImages.before.weight)} kg</p>
@@ -974,16 +986,28 @@
                                 <div className="w-0.5 bg-white/20" />
 
                                 {/* Etter */}
-                                <div className="flex-1 relative">
-                                    <img 
-                                        src={getFullSizeImage(compareImages.after.url)} 
-                                        className="w-full h-full object-contain"
-                                        alt="Etter"
-                                    />
-                                    <div className="absolute top-4 right-4 bg-black/50 text-white px-3 py-1.5 rounded-full text-sm font-medium backdrop-blur-sm">
+                                <div className="flex-1 relative overflow-hidden">
+                                    <TransformWrapper
+                                        initialScale={1}
+                                        minScale={0.5}
+                                        maxScale={4}
+                                        centerOnInit={true}
+                                    >
+                                        <TransformComponent
+                                            wrapperStyle={{ width: "100%", height: "100%" }}
+                                            contentStyle={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}
+                                        >
+                                            <img 
+                                                src={getFullSizeImage(compareImages.after.url)} 
+                                                className="max-w-full max-h-full object-contain"
+                                                alt="Etter"
+                                            />
+                                        </TransformComponent>
+                                    </TransformWrapper>
+                                    <div className="absolute top-4 right-4 bg-black/50 text-white px-3 py-1.5 rounded-full text-sm font-medium backdrop-blur-sm pointer-events-none">
                                         ETTER
                                     </div>
-                                    <div className="absolute bottom-4 left-4 right-4 bg-black/50 backdrop-blur-sm rounded-xl p-3">
+                                    <div className="absolute bottom-4 left-4 right-4 bg-black/50 backdrop-blur-sm rounded-xl p-3 pointer-events-none">
                                         <p className="text-white font-medium">{formatDateNO(compareImages.after.date)}</p>
                                         {compareImages.after.weight && (
                                             <p className="text-white/70 text-sm">{formatWeight(compareImages.after.weight)} kg</p>
@@ -993,16 +1017,21 @@
                             </div>
 
                             {/* Footer med statistikk */}
-                            {weightDiff && (
-                                <div className="p-4 safe-area-pb">
-                                    <div className={`flex items-center justify-center gap-2 py-3 px-6 rounded-full mx-auto w-fit ${parseFloat(weightDiff) < 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-white'}`}>
-                                        {parseFloat(weightDiff) < 0 ? <TrendingDown size={20} /> : parseFloat(weightDiff) > 0 ? <TrendingUp size={20} /> : <Minus size={20} />}
-                                        <span className="font-semibold text-lg">
-                                            {parseFloat(weightDiff) > 0 ? '+' : ''}{weightDiff.replace('.', ',')} kg
-                                        </span>
+                            <div className="p-4 safe-area-pb">
+                                <div className="flex items-center justify-center gap-4">
+                                    {weightDiff && (
+                                        <div className={`flex items-center gap-2 py-2 px-4 rounded-full ${parseFloat(weightDiff) < 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-white'}`}>
+                                            {parseFloat(weightDiff) < 0 ? <TrendingDown size={18} /> : parseFloat(weightDiff) > 0 ? <TrendingUp size={18} /> : <Minus size={18} />}
+                                            <span className="font-semibold">
+                                                {parseFloat(weightDiff) > 0 ? '+' : ''}{weightDiff.replace('.', ',')} kg
+                                            </span>
+                                        </div>
+                                    )}
+                                    <div className="bg-white/10 text-white/60 py-2 px-4 rounded-full text-sm">
+                                        Knip for å zoome
                                     </div>
                                 </div>
-                            )}
+                            </div>
                         </div>
                     )}
 
