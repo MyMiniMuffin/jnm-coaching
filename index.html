@@ -819,6 +819,7 @@
             const [viewMode, setViewMode] = useState('grid'); // 'grid', 'timeline', eller 'compare'
             const [compareImages, setCompareImages] = useState({ before: null, after: null });
             const [selectingFor, setSelectingFor] = useState(null); // 'before' eller 'after'
+            const [fullscreenCompare, setFullscreenCompare] = useState(false);
 
             // Samle alle bilder med metadata, sortert fra nyeste til eldste
             const allImages = useMemo(() => {
@@ -928,6 +929,81 @@
                             initialIndex={lightbox.index} 
                             onClose={closeLightbox} 
                         />
+                    )}
+
+                    {/* Fullskjerm sammenligning */}
+                    {fullscreenCompare && compareImages.before && compareImages.after && (
+                        <div className="fixed inset-0 z-[100] bg-ink flex flex-col animate-fade-in">
+                            {/* Header */}
+                            <div className="safe-area-pt">
+                                <div className="flex justify-between items-center p-4">
+                                    <div className="text-white">
+                                        <p className="text-sm text-white/60">Sammenligning</p>
+                                        <p className="font-medium">{daysDiff} dager</p>
+                                    </div>
+                                    <button 
+                                        onClick={() => setFullscreenCompare(false)} 
+                                        className="text-white/60 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors"
+                                    >
+                                        <X size={28} />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Bilder side-by-side */}
+                            <div className="flex-1 flex">
+                                {/* Før */}
+                                <div className="flex-1 relative">
+                                    <img 
+                                        src={getFullSizeImage(compareImages.before.url)} 
+                                        className="w-full h-full object-contain"
+                                        alt="Før"
+                                    />
+                                    <div className="absolute top-4 left-4 bg-black/50 text-white px-3 py-1.5 rounded-full text-sm font-medium backdrop-blur-sm">
+                                        FØR
+                                    </div>
+                                    <div className="absolute bottom-4 left-4 right-4 bg-black/50 backdrop-blur-sm rounded-xl p-3">
+                                        <p className="text-white font-medium">{formatDateNO(compareImages.before.date)}</p>
+                                        {compareImages.before.weight && (
+                                            <p className="text-white/70 text-sm">{formatWeight(compareImages.before.weight)} kg</p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Skillelinje */}
+                                <div className="w-0.5 bg-white/20" />
+
+                                {/* Etter */}
+                                <div className="flex-1 relative">
+                                    <img 
+                                        src={getFullSizeImage(compareImages.after.url)} 
+                                        className="w-full h-full object-contain"
+                                        alt="Etter"
+                                    />
+                                    <div className="absolute top-4 right-4 bg-black/50 text-white px-3 py-1.5 rounded-full text-sm font-medium backdrop-blur-sm">
+                                        ETTER
+                                    </div>
+                                    <div className="absolute bottom-4 left-4 right-4 bg-black/50 backdrop-blur-sm rounded-xl p-3">
+                                        <p className="text-white font-medium">{formatDateNO(compareImages.after.date)}</p>
+                                        {compareImages.after.weight && (
+                                            <p className="text-white/70 text-sm">{formatWeight(compareImages.after.weight)} kg</p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Footer med statistikk */}
+                            {weightDiff && (
+                                <div className="p-4 safe-area-pb">
+                                    <div className={`flex items-center justify-center gap-2 py-3 px-6 rounded-full mx-auto w-fit ${parseFloat(weightDiff) < 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-white'}`}>
+                                        {parseFloat(weightDiff) < 0 ? <TrendingDown size={20} /> : parseFloat(weightDiff) > 0 ? <TrendingUp size={20} /> : <Minus size={20} />}
+                                        <span className="font-semibold text-lg">
+                                            {parseFloat(weightDiff) > 0 ? '+' : ''}{weightDiff.replace('.', ',')} kg
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     )}
 
                     {/* Header med visningsvalg */}
@@ -1061,6 +1137,18 @@
                                         )}
                                     </div>
                                 </Card>
+                            )}
+
+                            {/* Fullskjerm-knapp */}
+                            {compareImages.before && compareImages.after && (
+                                <Button 
+                                    variant="primary" 
+                                    size="md" 
+                                    className="w-full"
+                                    onClick={() => setFullscreenCompare(true)}
+                                >
+                                    <Eye size={18} /> Se i fullskjerm
+                                </Button>
                             )}
 
                             {/* Instruksjon eller bildevelger */}
