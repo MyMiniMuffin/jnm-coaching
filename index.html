@@ -1932,6 +1932,40 @@
                 setShowWeightHistory(false);
             }, []);
 
+            // Swipe og pull-to-refresh hooks MÅ være før alle returns
+            const tabOrder = ['dashboard', 'gallery', 'diet', 'workout', 'checkin'];
+            const currentTabIndex = tabOrder.indexOf(activeTab);
+            
+            const handleSwipeLeft = useCallback(() => {
+                if (currentTabIndex < tabOrder.length - 1 && !showWeightHistory) {
+                    setActiveTab(tabOrder[currentTabIndex + 1]);
+                    window.scrollTo({ top: 0, behavior: 'instant' });
+                }
+            }, [currentTabIndex, showWeightHistory]);
+            
+            const handleSwipeRight = useCallback(() => {
+                if (currentTabIndex > 0 && !showWeightHistory) {
+                    setActiveTab(tabOrder[currentTabIndex - 1]);
+                    window.scrollTo({ top: 0, behavior: 'instant' });
+                }
+            }, [currentTabIndex, showWeightHistory]);
+
+            const swipeHandlers = useSwipe(handleSwipeLeft, handleSwipeRight, { 
+                threshold: 60, 
+                enabled: !isClientLoading && !showWeightHistory && !!viewingClient
+            });
+
+            const handleRefresh = useCallback(async () => {
+                if (viewingClient) {
+                    const freshData = await api.getUserData(viewingClient.id);
+                    setCurrentData(freshData);
+                }
+            }, [viewingClient]);
+
+            const { handlers: pullHandlers, pullIndicator } = usePullToRefresh(handleRefresh, { 
+                enabled: !isClientLoading && !!viewingClient 
+            });
+
             if (isLoading) {
                 return (
                     <div className="min-h-screen flex flex-col items-center justify-center bg-surface-50">
@@ -2026,40 +2060,6 @@
             }
 
             const tabTitles = { dashboard: 'Hjem', gallery: 'Galleri', diet: 'Matplan', workout: 'Trening', checkin: 'Rapport' };
-            const tabOrder = ['dashboard', 'gallery', 'diet', 'workout', 'checkin'];
-
-            // Swipe mellom tabs
-            const currentTabIndex = tabOrder.indexOf(activeTab);
-            const handleSwipeLeft = useCallback(() => {
-                if (currentTabIndex < tabOrder.length - 1 && !showWeightHistory) {
-                    setActiveTab(tabOrder[currentTabIndex + 1]);
-                    window.scrollTo({ top: 0, behavior: 'instant' });
-                }
-            }, [currentTabIndex, showWeightHistory]);
-            
-            const handleSwipeRight = useCallback(() => {
-                if (currentTabIndex > 0 && !showWeightHistory) {
-                    setActiveTab(tabOrder[currentTabIndex - 1]);
-                    window.scrollTo({ top: 0, behavior: 'instant' });
-                }
-            }, [currentTabIndex, showWeightHistory]);
-
-            const swipeHandlers = useSwipe(handleSwipeLeft, handleSwipeRight, { 
-                threshold: 60, 
-                enabled: !isClientLoading && !showWeightHistory 
-            });
-
-            // Pull to refresh
-            const handleRefresh = useCallback(async () => {
-                if (viewingClient) {
-                    const freshData = await api.getUserData(viewingClient.id);
-                    setCurrentData(freshData);
-                }
-            }, [viewingClient]);
-
-            const { handlers: pullHandlers, pullIndicator } = usePullToRefresh(handleRefresh, { 
-                enabled: !isClientLoading && !!viewingClient 
-            });
 
             return (
                 <div 
