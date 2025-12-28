@@ -412,7 +412,7 @@
                     </div>
                 </div>
             );
-        };
+        });
 
         const LoginScreen = React.memo(({ onLogin }) => {
             const [username, setUsername] = useState('');
@@ -488,7 +488,7 @@
                     <p className="absolute bottom-8 text-ink-faint text-xs">JNM Coaching © 2025</p>
                 </div>
             );
-        };
+        });
 
         const NAV_ITEMS = [
             { id: 'dashboard', label: 'Hjem', icon: Home },
@@ -555,7 +555,7 @@
                     )}
                 </div>
             </header>
-        );
+        ));
 
         // --- Views ---
 
@@ -658,8 +658,8 @@
                         })}
                     </div>
                 </div>
-            )
-        }
+            );
+        });
 
         // Motiverende sitater - statisk, flyttes utenfor komponenten
         const QUOTES = [
@@ -908,7 +908,7 @@
                     </Card>
                 </div>
             );
-        };
+        });
 
         const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
             const [isEditing, setIsEditing] = useState(false);
@@ -1475,7 +1475,7 @@
                     </div>
                 </div>
             );
-        };
+        });
 
         // Initial data state - definert utenfor komponenten
         const INITIAL_DATA_STATE = { 
