@@ -492,6 +492,7 @@
 
         const NAV_ITEMS = [
             { id: 'dashboard', label: 'Hjem', icon: Home },
+            { id: 'gallery', label: 'Galleri', icon: Camera },
             { id: 'diet', label: 'Mat', icon: Utensils },
             { id: 'workout', label: 'Trening', icon: Dumbbell },
             { id: 'checkin', label: 'Rapport', icon: ClipboardCheck },
@@ -657,6 +658,183 @@
                             )
                         })}
                     </div>
+                </div>
+            );
+        });
+
+        // GalleryView - samler alle bilder fra checkins for lett sammenligning
+        const GalleryView = React.memo(({ checkins }) => {
+            const [lightbox, setLightbox] = useState({ isOpen: false, images: [], index: 0 });
+            const [viewMode, setViewMode] = useState('grid'); // 'grid' eller 'timeline'
+
+            // Samle alle bilder med metadata, sortert fra nyeste til eldste
+            const allImages = useMemo(() => {
+                const images = [];
+                const sortedCheckins = [...checkins].sort((a, b) => b.timestamp - a.timestamp);
+                
+                sortedCheckins.forEach(checkin => {
+                    const checkinImages = checkin.images && checkin.images.length > 0 
+                        ? checkin.images 
+                        : (checkin.image ? [checkin.image] : []);
+                    
+                    checkinImages.forEach(img => {
+                        images.push({
+                            url: img,
+                            date: checkin.date,
+                            timestamp: checkin.timestamp,
+                            weight: checkin.weight,
+                            checkinId: checkin.id
+                        });
+                    });
+                });
+                
+                return images;
+            }, [checkins]);
+
+            // Grupper bilder etter måned for timeline-visning
+            const imagesByMonth = useMemo(() => {
+                const grouped = {};
+                allImages.forEach(img => {
+                    const date = new Date(img.timestamp);
+                    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                    const monthLabel = date.toLocaleDateString('no-NO', { month: 'long', year: 'numeric' });
+                    
+                    if (!grouped[monthKey]) {
+                        grouped[monthKey] = { label: monthLabel, images: [] };
+                    }
+                    grouped[monthKey].images.push(img);
+                });
+                return Object.entries(grouped).sort((a, b) => b[0].localeCompare(a[0]));
+            }, [allImages]);
+
+            const closeLightbox = useCallback(() => {
+                setLightbox(prev => ({ ...prev, isOpen: false }));
+            }, []);
+
+            const openLightbox = useCallback((index) => {
+                setLightbox({ isOpen: true, images: allImages.map(img => img.url), index });
+            }, [allImages]);
+
+            if (allImages.length === 0) {
+                return (
+                    <div className="flex flex-col items-center justify-center h-[60vh] animate-fade-in text-center px-6">
+                        <div className="w-16 h-16 bg-surface-100 rounded-2xl flex items-center justify-center text-ink-muted mb-6">
+                            <Camera size={32} />
+                        </div>
+                        <p className="text-ink-muted font-display text-lg italic mb-2">Ingen bilder enda</p>
+                        <p className="text-ink-faint text-sm">Bilder fra ukesrapporter vil vises her</p>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="space-y-5 pb-32 animate-slide-up">
+                    {lightbox.isOpen && (
+                        <ImageModal 
+                            images={lightbox.images} 
+                            initialIndex={lightbox.index} 
+                            onClose={closeLightbox} 
+                        />
+                    )}
+
+                    {/* Header med visningsvalg */}
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <h2 className="font-display text-xl">Fremgangsgalleri</h2>
+                            <p className="text-sm text-ink-muted">{allImages.length} bilder</p>
+                        </div>
+                        <div className="flex gap-1 bg-surface-100 p-1 rounded-lg">
+                            <button
+                                onClick={() => setViewMode('grid')}
+                                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-ink' : 'text-ink-muted'}`}
+                            >
+                                Rutenett
+                            </button>
+                            <button
+                                onClick={() => setViewMode('timeline')}
+                                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === 'timeline' ? 'bg-white shadow-sm text-ink' : 'text-ink-muted'}`}
+                            >
+                                Tidslinje
+                            </button>
+                        </div>
+                    </div>
+
+                    {viewMode === 'grid' ? (
+                        /* Grid-visning - kompakt oversikt */
+                        <div className="grid grid-cols-3 gap-1.5">
+                            {allImages.map((img, idx) => (
+                                <div 
+                                    key={`${img.checkinId}-${idx}`}
+                                    className="relative aspect-square cursor-pointer group"
+                                    onClick={() => openLightbox(idx)}
+                                >
+                                    <img 
+                                        src={getThumbnail(img.url)} 
+                                        loading="lazy"
+                                        className="w-full h-full object-cover rounded-lg"
+                                        alt={`Fremgang ${formatDateNO(img.date)}`}
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-ink/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
+                                        <div className="absolute bottom-2 left-2 right-2">
+                                            <p className="text-white text-xs font-medium">{formatDateNO(img.date)}</p>
+                                            {img.weight && (
+                                                <p className="text-white/70 text-[10px]">{formatWeight(img.weight)} kg</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        /* Timeline-visning - gruppert etter måned */
+                        <div className="space-y-6">
+                            {imagesByMonth.map(([monthKey, { label, images }]) => (
+                                <div key={monthKey}>
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <h3 className="text-sm font-medium text-ink-muted capitalize">{label}</h3>
+                                        <div className="flex-1 h-px bg-surface-200" />
+                                        <span className="text-xs text-ink-faint">{images.length} bilder</span>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-1.5">
+                                        {images.map((img, idx) => {
+                                            const globalIndex = allImages.findIndex(i => i.url === img.url && i.timestamp === img.timestamp);
+                                            return (
+                                                <div 
+                                                    key={`${img.checkinId}-${idx}`}
+                                                    className="relative aspect-square cursor-pointer group"
+                                                    onClick={() => openLightbox(globalIndex)}
+                                                >
+                                                    <img 
+                                                        src={getThumbnail(img.url)} 
+                                                        loading="lazy"
+                                                        className="w-full h-full object-cover rounded-lg"
+                                                        alt={`Fremgang ${formatDateNO(img.date)}`}
+                                                    />
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-ink/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
+                                                        <div className="absolute bottom-2 left-2 right-2">
+                                                            <p className="text-white text-xs font-medium">{formatDateNO(img.date)}</p>
+                                                            {img.weight && (
+                                                                <p className="text-white/70 text-[10px]">{formatWeight(img.weight)} kg</p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Sammenligningstips */}
+                    {allImages.length >= 2 && (
+                        <Card className="p-4 bg-surface-50 border-dashed">
+                            <p className="text-sm text-ink-muted text-center">
+                                💡 Trykk på et bilde og sveip for å sammenligne fremgangen din
+                            </p>
+                        </Card>
+                    )}
                 </div>
             );
         });
@@ -1695,7 +1873,7 @@
                 );
             }
 
-            const tabTitles = { dashboard: 'Hjem', diet: 'Matplan', workout: 'Trening', checkin: 'Rapport' };
+            const tabTitles = { dashboard: 'Hjem', gallery: 'Galleri', diet: 'Matplan', workout: 'Trening', checkin: 'Rapport' };
 
             return (
                 <div className="max-w-md mx-auto min-h-screen bg-surface-50">
@@ -1724,6 +1902,7 @@
                                         <DashboardView userData={currentData} isCoach={isCoach} onUpdateData={handleUpdateData} onOpenWeightHistory={handleOpenWeightHistory} />
                                     )
                                 ) :
+                                activeTab === 'gallery' ? <GalleryView checkins={currentData.checkins} /> :
                                 activeTab === 'diet' ? <PlanSection type="diet" content={currentData.dietPlan} onSave={(val) => handleUpdateData('dietPlan', val)} isReadOnly={!isCoach} /> :
                                 activeTab === 'workout' ? <PlanSection type="workout" content={currentData.workoutPlan} onSave={(val) => handleUpdateData('workoutPlan', val)} isReadOnly={!isCoach} /> :
                                 <CheckInView checkins={currentData.checkins} onNewCheckin={handleNewCheckin} onDelete={handleDeleteCheckin} isReadOnly={isCoach} stepGoal={currentData.stepGoal} />}
