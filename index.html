@@ -181,7 +181,7 @@
     <div id="root"></div>
 
     <script type="text/babel" data-type="module">
-        import React, { useState, useEffect, useCallback } from 'react';
+        import React, { useState, useEffect, useCallback, useMemo } from 'react';
         import { createRoot } from 'react-dom/client';
         import { 
           Home, Utensils, Dumbbell, ClipboardCheck, Camera, Save, ChevronRight, ChevronLeft,
@@ -276,58 +276,56 @@
             return url.replace('/upload/', '/upload/w_1280,c_limit,q_auto,f_auto/');
         };
 
-        // --- Components ---
+        // --- Components (memoized for performance) ---
 
-        const Skeleton = ({ className }) => (
+        const Skeleton = React.memo(({ className }) => (
             <div className={`bg-surface-200 animate-pulse rounded-2xl ${className}`} />
-        );
+        ));
 
-        const Badge = ({ children, variant = 'default', className = '' }) => {
-            const variants = {
-                default: 'bg-surface-200 text-ink',
-                success: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
-                warning: 'bg-amber-50 text-amber-700 border border-amber-200',
-                muted: 'bg-surface-100 text-ink-muted',
-            };
-            return (
-                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full ${variants[variant]} ${className}`}>
-                    {children}
-                </span>
-            );
+        const BADGE_VARIANTS = {
+            default: 'bg-surface-200 text-ink',
+            success: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+            warning: 'bg-amber-50 text-amber-700 border border-amber-200',
+            muted: 'bg-surface-100 text-ink-muted',
         };
 
-        const Button = ({ children, variant = 'primary', size = 'md', className = '', ...props }) => {
-            const variants = {
-                primary: 'bg-ink text-surface-50 hover:bg-accent-hover active:scale-[0.98]',
-                secondary: 'bg-surface-100 text-ink hover:bg-surface-200 active:scale-[0.98]',
-                ghost: 'text-ink-muted hover:text-ink hover:bg-surface-100',
-                danger: 'bg-red-50 text-red-600 hover:bg-red-100',
-            };
-            const sizes = {
-                sm: 'px-3 py-1.5 text-sm',
-                md: 'px-4 py-2.5 text-sm',
-                lg: 'px-6 py-3.5 text-base',
-            };
-            return (
-                <button 
-                    className={`font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 ${variants[variant]} ${sizes[size]} ${className}`}
-                    {...props}
-                >
-                    {children}
-                </button>
-            );
+        const Badge = React.memo(({ children, variant = 'default', className = '' }) => (
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full ${BADGE_VARIANTS[variant]} ${className}`}>
+                {children}
+            </span>
+        ));
+
+        const BUTTON_VARIANTS = {
+            primary: 'bg-ink text-surface-50 hover:bg-accent-hover active:scale-[0.98]',
+            secondary: 'bg-surface-100 text-ink hover:bg-surface-200 active:scale-[0.98]',
+            ghost: 'text-ink-muted hover:text-ink hover:bg-surface-100',
+            danger: 'bg-red-50 text-red-600 hover:bg-red-100',
+        };
+        const BUTTON_SIZES = {
+            sm: 'px-3 py-1.5 text-sm',
+            md: 'px-4 py-2.5 text-sm',
+            lg: 'px-6 py-3.5 text-base',
         };
 
-        const Card = ({ children, className = "", interactive = false, ...props }) => (
+        const Button = React.memo(({ children, variant = 'primary', size = 'md', className = '', ...props }) => (
+            <button 
+                className={`font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 ${BUTTON_VARIANTS[variant]} ${BUTTON_SIZES[size]} ${className}`}
+                {...props}
+            >
+                {children}
+            </button>
+        ));
+
+        const Card = React.memo(({ children, className = "", interactive = false, ...props }) => (
             <div 
                 className={`bg-white rounded-2xl border border-surface-200 ${interactive ? 'hover:border-surface-300 hover:shadow-sm cursor-pointer transition-all' : ''} ${className}`} 
                 {...props}
             >
                 {children}
             </div>
-        );
+        ));
 
-        const ImageModal = ({ images, initialIndex, onClose }) => {
+        const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
             const [index, setIndex] = useState(initialIndex || 0);
             const [loading, setLoading] = useState(true);
 
@@ -416,7 +414,7 @@
             );
         };
 
-        const LoginScreen = ({ onLogin }) => {
+        const LoginScreen = React.memo(({ onLogin }) => {
             const [username, setUsername] = useState('');
             const [password, setPassword] = useState('');
             const [error, setError] = useState('');
@@ -492,24 +490,29 @@
             );
         };
 
-        const Navigation = ({ activeTab, setActiveTab }) => {
-            const navItems = [
-                { id: 'dashboard', label: 'Hjem', icon: Home },
-                { id: 'diet', label: 'Mat', icon: Utensils },
-                { id: 'workout', label: 'Trening', icon: Dumbbell },
-                { id: 'checkin', label: 'Rapport', icon: ClipboardCheck },
-            ];
+        const NAV_ITEMS = [
+            { id: 'dashboard', label: 'Hjem', icon: Home },
+            { id: 'diet', label: 'Mat', icon: Utensils },
+            { id: 'workout', label: 'Trening', icon: Dumbbell },
+            { id: 'checkin', label: 'Rapport', icon: ClipboardCheck },
+        ];
+
+        const Navigation = React.memo(({ activeTab, setActiveTab }) => {
+            const handleTabClick = useCallback((id) => {
+                setActiveTab(id);
+                window.scrollTo({ top: 0, behavior: 'instant' });
+            }, [setActiveTab]);
 
             return (
                 <div className="fixed bottom-0 left-0 right-0 glass-nav z-50 border-t border-surface-200"> 
                     <div className="flex justify-around items-center h-16 max-w-md mx-auto">
-                        {navItems.map((item) => {
+                        {NAV_ITEMS.map((item) => {
                             const Icon = item.icon;
                             const isActive = activeTab === item.id;
                             return (
                                 <button 
                                     key={item.id} 
-                                    onClick={() => { setActiveTab(item.id); window.scrollTo({ top: 0, behavior: 'instant' }); }} 
+                                    onClick={() => handleTabClick(item.id)} 
                                     className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-all active:scale-90 ${isActive ? 'text-ink' : 'text-ink-faint'}`}
                                 >
                                     <Icon size={22} strokeWidth={isActive ? 2 : 1.5} />
@@ -522,9 +525,9 @@
                     <div className="safe-area-pb" />
                 </div>
             );
-        };
+        });
 
-        const Header = ({ title, user, viewingClient, onLogout, onClearClient }) => (
+        const Header = React.memo(({ title, user, viewingClient, onLogout, onClearClient }) => (
             <header className="bg-surface-50/95 backdrop-blur-md sticky top-0 z-40 border-b border-surface-200">
                 {/* Safe area spacer for iPhone Dynamic Island/notch */}
                 <div className="safe-area-pt" />
@@ -556,7 +559,7 @@
 
         // --- Views ---
 
-        const WeightProgressView = ({ checkins, onBack }) => {
+        const WeightProgressView = React.memo(({ checkins, onBack }) => {
             const validCheckins = checkins.filter(c => c.weight && parseFloat(c.weight) > 0).sort((a, b) => a.timestamp - b.timestamp);
 
             if (validCheckins.length === 0) return (
@@ -658,27 +661,39 @@
             )
         }
 
-        const DashboardView = ({ userData, isCoach, onUpdateData, onOpenWeightHistory }) => {
-            const checkins = userData.checkins || [];
-            // Checkins kommer sortert DESC fra databasen, så første element er nyeste
-            // Men for å være sikker, sorter etter timestamp og ta nyeste
-            const sortedCheckins = [...checkins].sort((a, b) => b.timestamp - a.timestamp);
-            const lastCheckin = sortedCheckins.length > 0 ? sortedCheckins[0] : null;
+        // Motiverende sitater - statisk, flyttes utenfor komponenten
+        const QUOTES = [
+            { text: "Små steg hver dag fører til store resultater.", author: "Ukjent" },
+            { text: "Du trenger ikke være perfekt, bare konsistent.", author: "Ukjent" },
+            { text: "Kroppen oppnår det sinnet tror på.", author: "Ukjent" },
+            { text: "Fremgang, ikke perfeksjon.", author: "Ukjent" },
+            { text: "Den eneste dårlige treningen er den som ikke ble gjort.", author: "Ukjent" },
+            { text: "Disiplin er broen mellom mål og resultater.", author: "Jim Rohn" },
+        ];
 
-            const calculateWeek = () => {
-                if (!userData.startDate) return 1;
+        const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeightHistory }) => {
+            const checkins = userData.checkins || [];
+            
+            // Memoize sorterte checkins og lastCheckin
+            const { sortedCheckins, lastCheckin } = useMemo(() => {
+                const sorted = [...checkins].sort((a, b) => b.timestamp - a.timestamp);
+                return { sortedCheckins: sorted, lastCheckin: sorted.length > 0 ? sorted[0] : null };
+            }, [checkins]);
+
+            // Memoize week calculation
+            const { currentWeek, progress } = useMemo(() => {
+                if (!userData.startDate) return { currentWeek: 1, progress: 0 };
                 const start = new Date(userData.startDate);
                 const end = userData.isPaused && userData.pausedAt ? new Date(userData.pausedAt) : new Date();
                 const diffTime = Math.max(0, end - start);
                 const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-                return Math.floor(diffDays / 7) + 1;
-            };
-
-            const currentWeek = calculateWeek();
-            const progress = Math.min((currentWeek / (userData.totalWeeks || 12)) * 100, 100);
+                const week = Math.floor(diffDays / 7) + 1;
+                const prog = Math.min((week / (userData.totalWeeks || 12)) * 100, 100);
+                return { currentWeek: week, progress: prog };
+            }, [userData.startDate, userData.isPaused, userData.pausedAt, userData.totalWeeks]);
 
             // Beregn statistikk fra alle innsjekker
-            const stats = React.useMemo(() => {
+            const stats = useMemo(() => {
                 if (checkins.length === 0) return null;
                 
                 const totalStrength = checkins.reduce((sum, c) => sum + (parseInt(c.strengthSessions) || 0), 0);
@@ -698,18 +713,10 @@
                 return { totalStrength, totalCardio, stepsHit, avgAccuracy, weightChange, totalCheckins: checkins.length };
             }, [checkins]);
 
-            // Motiverende sitater
-            const quotes = [
-                { text: "Små steg hver dag fører til store resultater.", author: "Ukjent" },
-                { text: "Du trenger ikke være perfekt, bare konsistent.", author: "Ukjent" },
-                { text: "Kroppen oppnår det sinnet tror på.", author: "Ukjent" },
-                { text: "Fremgang, ikke perfeksjon.", author: "Ukjent" },
-                { text: "Den eneste dårlige treningen er den som ikke ble gjort.", author: "Ukjent" },
-                { text: "Disiplin er broen mellom mål og resultater.", author: "Jim Rohn" },
-            ];
-            const todayQuote = quotes[new Date().getDay() % quotes.length];
+            // Memoize dagens quote
+            const todayQuote = useMemo(() => QUOTES[new Date().getDay() % QUOTES.length], []);
 
-            const handlePlanSettings = async () => {
+            const handlePlanSettings = useCallback(async () => {
                 if (!isCoach) return;
                 const choice = prompt(`Plan-innstillinger:\n\n1. Sett startdato\n2. Endre antall uker\n3. ${userData.isPaused ? 'Fortsett plan' : 'Pause plan'}`);
                 if (choice === '1') {
@@ -725,12 +732,12 @@
                         if(confirm("Sett plan på pause?")) await onUpdateData({ action: 'pause' });
                     }
                 }
-            };
+            }, [isCoach, userData.isPaused, userData.totalWeeks, onUpdateData]);
 
-            const handleEditGoal = async () => {
+            const handleEditGoal = useCallback(async () => {
                 const input = prompt("Nytt skrittmål:", userData.stepGoal || 10000);
                 if (input && !isNaN(parseInt(input))) await onUpdateData('stepGoal', parseInt(input));
-            };
+            }, [userData.stepGoal, onUpdateData]);
 
             return (
                 <div className="space-y-5 pb-32 animate-slide-up">
@@ -903,12 +910,25 @@
             );
         };
 
-        const PlanSection = ({ type, content, onSave, isReadOnly }) => {
+        const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
             const [isEditing, setIsEditing] = useState(false);
             const [text, setText] = useState(content);
             useEffect(() => setText(content), [content]);
             
             const Icon = type === 'diet' ? Utensils : Dumbbell;
+            const title = type === 'diet' ? 'Matplan' : 'Treningsplan';
+
+            const handleToggleEdit = useCallback(() => {
+                if (isEditing) onSave(text);
+                setIsEditing(prev => !prev);
+            }, [isEditing, text, onSave]);
+
+            const handleTextChange = useCallback((e) => setText(e.target.value), []);
+
+            // Memoize parsed markdown
+            const parsedContent = useMemo(() => {
+                return text ? window.marked.parse(text) : '<p class="text-ink-muted italic text-center py-12">Ingen plan enda</p>';
+            }, [text]);
 
             return (
                 <div className="space-y-5 pb-32 animate-slide-up">
@@ -918,13 +938,13 @@
                                 <div className="w-10 h-10 bg-surface-100 rounded-xl flex items-center justify-center text-ink-muted">
                                     <Icon size={20} />
                                 </div>
-                                <h2 className="font-display text-xl">{type === 'diet' ? 'Matplan' : 'Treningsplan'}</h2>
+                                <h2 className="font-display text-xl">{title}</h2>
                             </div>
                             {!isReadOnly && (
                                 <Button 
                                     variant={isEditing ? 'primary' : 'secondary'}
                                     size="sm"
-                                    onClick={() => { if(isEditing) onSave(text); setIsEditing(!isEditing); }}
+                                    onClick={handleToggleEdit}
                                 >
                                     {isEditing ? <><Check size={16} /> Lagre</> : <><Edit2 size={16} /> Rediger</>}
                                 </Button>
@@ -935,39 +955,70 @@
                             {isEditing && !isReadOnly ? (
                                 <textarea 
                                     value={text} 
-                                    onChange={(e) => setText(e.target.value)} 
+                                    onChange={handleTextChange} 
                                     className="w-full min-h-[60vh] p-4 bg-surface-50 rounded-xl border border-surface-200 focus:ring-2 focus:ring-ink focus:border-ink outline-none text-ink font-mono text-sm leading-relaxed resize-none" 
                                     placeholder="Skriv planen her..."
                                 />
                             ) : (
                                 <div 
                                     className="prose prose-sm max-w-none" 
-                                    dangerouslySetInnerHTML={{ 
-                                        __html: text ? window.marked.parse(text) : '<p class="text-ink-muted italic text-center py-12">Ingen plan enda</p>' 
-                                    }} 
+                                    dangerouslySetInnerHTML={{ __html: parsedContent }} 
                                 />
                             )}
                         </div>
                     </Card>
                 </div>
             );
+        });
+
+        // Flytt sub-komponenter utenfor CheckInView for å unngå re-deklarering
+        const InputLabel = React.memo(({ children }) => (
+            <label className="block text-sm font-medium text-ink-muted mb-2">{children}</label>
+        ));
+
+        const SelectField = React.memo(({ label, value, onChange, options }) => (
+            <div>
+                <InputLabel>{label}</InputLabel>
+                <div className="relative">
+                    <select 
+                        value={value} 
+                        onChange={onChange} 
+                        className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl appearance-none focus:ring-2 focus:ring-ink focus:border-ink outline-none font-medium cursor-pointer"
+                    >
+                        {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" size={18} />
+                </div>
+            </div>
+        ));
+
+        // Pre-generate options arrays outside component
+        const OPTIONS_1_TO_10 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+        const OPTIONS_0_TO_7 = [0, 1, 2, 3, 4, 5, 6, 7];
+        const INITIAL_FORM_DATA = {
+            weight: '', sleep: 5, energy: 5, accuracy: 10,
+            strengthSessions: 0, cardioSessions: 0,
+            stepsReached: false, takenSupplements: false,
+            comment: '', images: []
         };
 
-        const CheckInView = ({ checkins, onNewCheckin, onDelete, isReadOnly, stepGoal, hideForm = false }) => {
+        const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, stepGoal, hideForm = false }) => {
             const [step, setStep] = useState('form');
             const [lightbox, setLightbox] = useState({ isOpen: false, images: [], index: 0 });
             const [isCompressing, setIsCompressing] = useState(false);
             const [errorMessage, setErrorMessage] = useState('');
             const [isSubmitting, setIsSubmitting] = useState(false);
-            
-            const [formData, setFormData] = useState({
-                weight: '', sleep: 5, energy: 5, accuracy: 10,
-                strengthSessions: 0, cardioSessions: 0,
-                stepsReached: false, takenSupplements: false,
-                comment: '', images: []
-            });
+            const [formData, setFormData] = useState(INITIAL_FORM_DATA);
 
-            const handleImageUpload = async (e) => {
+            const closeLightbox = useCallback(() => {
+                setLightbox(prev => ({ ...prev, isOpen: false }));
+            }, []);
+
+            const openLightbox = useCallback((images, index) => {
+                setLightbox({ isOpen: true, images, index });
+            }, []);
+
+            const handleImageUpload = useCallback(async (e) => {
                 const files = Array.from(e.target.files);
                 if (files.length === 0) return;
                 setIsCompressing(true);
@@ -990,13 +1041,13 @@
                 } finally {
                     setIsCompressing(false);
                 }
-            };
+            }, []);
 
-            const removeImage = (indexToRemove) => {
+            const removeImage = useCallback((indexToRemove) => {
                 setFormData(prev => ({ ...prev, images: prev.images.filter((_, index) => index !== indexToRemove) }));
-            };
+            }, []);
 
-            const handleSubmit = async (e) => {
+            const handleSubmit = useCallback(async (e) => {
                 e.preventDefault();
                 setIsSubmitting(true);
                 setErrorMessage('');
@@ -1011,14 +1062,25 @@
                     setStep('success');
                     setTimeout(() => {
                         setStep('form');
-                        setFormData({ weight: '', sleep: 5, energy: 5, accuracy: 10, strengthSessions: 0, cardioSessions: 0, stepsReached: false, takenSupplements: false, comment: '', images: [] });
+                        setFormData(INITIAL_FORM_DATA);
                     }, 2500);
                 } catch (error) {
                     setErrorMessage('Feil: ' + error.message);
                 } finally {
                     setIsSubmitting(false);
                 }
-            };
+            }, [formData, onNewCheckin]);
+
+            // Memoize sorted checkins
+            const sortedCheckins = useMemo(() => 
+                [...checkins].sort((a, b) => b.timestamp - a.timestamp), 
+                [checkins]
+            );
+
+            // Form field handlers - memoized
+            const updateField = useCallback((field, value) => {
+                setFormData(prev => ({ ...prev, [field]: value }));
+            }, []);
 
             if (step === 'success') {
                 return (
@@ -1032,30 +1094,10 @@
                 );
             }
 
-            const InputLabel = ({ children }) => (
-                <label className="block text-sm font-medium text-ink-muted mb-2">{children}</label>
-            );
-
-            const SelectField = ({ label, value, onChange, options }) => (
-                <div>
-                    <InputLabel>{label}</InputLabel>
-                    <div className="relative">
-                        <select 
-                            value={value} 
-                            onChange={onChange} 
-                            className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl appearance-none focus:ring-2 focus:ring-ink focus:border-ink outline-none font-medium cursor-pointer"
-                        >
-                            {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
-                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" size={18} />
-                    </div>
-                </div>
-            );
-
             return (
                 <div className="space-y-5 pb-32 animate-slide-up">
                     {lightbox.isOpen && (
-                        <ImageModal images={lightbox.images} initialIndex={lightbox.index} onClose={() => setLightbox({ ...lightbox, isOpen: false })} />
+                        <ImageModal images={lightbox.images} initialIndex={lightbox.index} onClose={closeLightbox} />
                     )}
 
                     {!isReadOnly && !hideForm && (
@@ -1073,7 +1115,7 @@
                                             step="0.1" 
                                             required 
                                             value={formData.weight} 
-                                            onChange={(e) => setFormData({...formData, weight: e.target.value})} 
+                                            onChange={(e) => updateField('weight', e.target.value)} 
                                             className="w-full pl-12 pr-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink focus:border-ink font-medium text-lg placeholder-ink-faint" 
                                             placeholder="0.0" 
                                         />
@@ -1084,36 +1126,36 @@
                                     <SelectField 
                                         label="Energi" 
                                         value={formData.energy} 
-                                        onChange={(e) => setFormData({...formData, energy: e.target.value})} 
-                                        options={[...Array(10)].map((_, i) => i+1)} 
+                                        onChange={(e) => updateField('energy', e.target.value)} 
+                                        options={OPTIONS_1_TO_10} 
                                     />
                                     <SelectField 
                                         label="Søvn" 
                                         value={formData.sleep} 
-                                        onChange={(e) => setFormData({...formData, sleep: e.target.value})} 
-                                        options={[...Array(10)].map((_, i) => i+1)} 
+                                        onChange={(e) => updateField('sleep', e.target.value)} 
+                                        options={OPTIONS_1_TO_10} 
                                     />
                                 </div>
                                 
                                 <SelectField 
                                     label={`Nøyaktighet (${formData.accuracy}/10)`}
                                     value={formData.accuracy} 
-                                    onChange={(e) => setFormData({...formData, accuracy: e.target.value})} 
-                                    options={[...Array(10)].map((_, i) => i+1)} 
+                                    onChange={(e) => updateField('accuracy', e.target.value)} 
+                                    options={OPTIONS_1_TO_10} 
                                 />
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <SelectField 
                                         label="Styrkeøkter" 
                                         value={formData.strengthSessions} 
-                                        onChange={(e) => setFormData({...formData, strengthSessions: e.target.value})} 
-                                        options={[0,1,2,3,4,5,6,7]} 
+                                        onChange={(e) => updateField('strengthSessions', e.target.value)} 
+                                        options={OPTIONS_0_TO_7} 
                                     />
                                     <SelectField 
                                         label="Cardio" 
                                         value={formData.cardioSessions} 
-                                        onChange={(e) => setFormData({...formData, cardioSessions: e.target.value})} 
-                                        options={[0,1,2,3,4,5,6,7]} 
+                                        onChange={(e) => updateField('cardioSessions', e.target.value)} 
+                                        options={OPTIONS_0_TO_7} 
                                     />
                                 </div>
 
@@ -1122,7 +1164,7 @@
                                         <input 
                                             type="checkbox" 
                                             checked={formData.stepsReached} 
-                                            onChange={(e) => setFormData({...formData, stepsReached: e.target.checked})} 
+                                            onChange={(e) => updateField('stepsReached', e.target.checked)} 
                                             className="w-5 h-5 rounded-md border-surface-300 text-ink focus:ring-ink cursor-pointer" 
                                         />
                                         <div>
@@ -1134,7 +1176,7 @@
                                         <input 
                                             type="checkbox" 
                                             checked={formData.takenSupplements} 
-                                            onChange={(e) => setFormData({...formData, takenSupplements: e.target.checked})} 
+                                            onChange={(e) => updateField('takenSupplements', e.target.checked)} 
                                             className="w-5 h-5 rounded-md border-surface-300 text-ink focus:ring-ink cursor-pointer" 
                                         />
                                         <div>
@@ -1148,7 +1190,7 @@
                                     <InputLabel>Kommentar</InputLabel>
                                     <textarea 
                                         value={formData.comment} 
-                                        onChange={(e) => setFormData({...formData, comment: e.target.value})} 
+                                        onChange={(e) => updateField('comment', e.target.value)} 
                                         className="w-full px-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl h-28 outline-none resize-none focus:ring-2 focus:ring-ink focus:border-ink" 
                                         placeholder="Hvordan har uken vært?" 
                                     />
@@ -1210,11 +1252,11 @@
                     <div className={!isReadOnly && !hideForm ? "pt-8 border-t border-surface-200" : ""}>
                         <p className="text-xs text-ink-muted uppercase tracking-wide mb-4 px-1">Tidligere rapporter</p>
                         
-                        {checkins.length === 0 ? (
+                        {sortedCheckins.length === 0 ? (
                             <div className="text-center text-ink-muted py-12 font-display italic">Ingen historikk enda</div>
                         ) : (
                             <div className="space-y-3">
-                                {checkins.slice().sort((a,b) => b.timestamp - a.timestamp).map((entry) => {
+                                {sortedCheckins.map((entry) => {
                                     const displayImages = entry.images && entry.images.length > 0 ? entry.images : (entry.image ? [entry.image] : []);
                                     
                                     return (
@@ -1276,7 +1318,7 @@
                                                             loading="lazy" 
                                                             className="w-16 h-16 object-cover rounded-lg cursor-pointer flex-none" 
                                                             alt="Checkin" 
-                                                            onClick={() => setLightbox({ isOpen: true, images: displayImages, index: idx })} 
+                                                            onClick={() => openLightbox(displayImages, idx)} 
                                                         />
                                                     ))}
                                                 </div>
@@ -1289,14 +1331,32 @@
                     </div>
                 </div>
             );
-        };
+        });
 
-        const CoachDashboard = ({ user, allUsers, onSelectClient, onAddClient, onDeleteClient, onArchiveClient }) => {
+        const CoachDashboard = React.memo(({ user, allUsers, onSelectClient, onAddClient, onDeleteClient, onArchiveClient }) => {
             const [showModal, setShowModal] = useState(false);
             const [showArchived, setShowArchived] = useState(false);
             
-            const activeClients = allUsers.filter(u => u.role === 'athlete' && !u.is_archived);
-            const archivedClients = allUsers.filter(u => u.role === 'athlete' && u.is_archived);
+            // Memoize filtrerte lister
+            const { activeClients, archivedClients, totalAthletes } = useMemo(() => ({
+                activeClients: allUsers.filter(u => u.role === 'athlete' && !u.is_archived),
+                archivedClients: allUsers.filter(u => u.role === 'athlete' && u.is_archived),
+                totalAthletes: allUsers.filter(u => u.role === 'athlete').length
+            }), [allUsers]);
+
+            const displayedClients = showArchived ? archivedClients : activeClients;
+
+            const closeModal = useCallback(() => setShowModal(false), []);
+            const openModal = useCallback(() => setShowModal(true), []);
+            const showActive = useCallback(() => setShowArchived(false), []);
+            const showArchivedClients = useCallback(() => setShowArchived(true), []);
+
+            const handleFormSubmit = useCallback((e) => {
+                e.preventDefault();
+                const fd = new FormData(e.target);
+                onAddClient(Object.fromEntries(fd));
+                setShowModal(false);
+            }, [onAddClient]);
 
             return (
                 <div className="space-y-5 pb-32 animate-slide-up">
@@ -1305,16 +1365,11 @@
                             <Card className="w-full max-w-sm p-6 animate-scale-in">
                                 <div className="flex justify-between items-center mb-6">
                                     <h2 className="text-xl font-display">Ny utøver</h2>
-                                    <button onClick={() => setShowModal(false)} className="text-ink-muted hover:text-ink p-1">
+                                    <button onClick={closeModal} className="text-ink-muted hover:text-ink p-1">
                                         <X size={20} />
                                     </button>
                                 </div>
-                                <form onSubmit={(e) => {
-                                    e.preventDefault();
-                                    const fd = new FormData(e.target);
-                                    onAddClient(Object.fromEntries(fd));
-                                    setShowModal(false);
-                                }} className="space-y-4">
+                                <form onSubmit={handleFormSubmit} className="space-y-4">
                                     <input required name="name" type="text" placeholder="Fullt navn" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink" />
                                     <input required name="username" type="text" placeholder="Brukernavn" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink" />
                                     <input required name="password" type="text" placeholder="Passord" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink" />
@@ -1341,7 +1396,7 @@
                                     <p className="text-white/50 text-xs uppercase tracking-wide mt-1">Arkivert</p>
                                 </div>
                                 <div className="text-center">
-                                    <p className="text-3xl font-semibold">{allUsers.filter(u => u.role === 'athlete').length}</p>
+                                    <p className="text-3xl font-semibold">{totalAthletes}</p>
                                     <p className="text-white/50 text-xs uppercase tracking-wide mt-1">Totalt</p>
                                 </div>
                             </div>
@@ -1352,32 +1407,32 @@
                     <div className="flex justify-between items-center">
                         <div className="flex gap-2">
                             <button 
-                                onClick={() => setShowArchived(false)}
+                                onClick={showActive}
                                 className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${!showArchived ? 'bg-ink text-white' : 'text-ink-muted hover:bg-surface-100'}`}
                             >
                                 Aktive ({activeClients.length})
                             </button>
                             <button 
-                                onClick={() => setShowArchived(true)}
+                                onClick={showArchivedClients}
                                 className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${showArchived ? 'bg-ink text-white' : 'text-ink-muted hover:bg-surface-100'}`}
                             >
                                 Arkivert ({archivedClients.length})
                             </button>
                         </div>
-                        <Button variant="primary" size="sm" onClick={() => setShowModal(true)}>
+                        <Button variant="primary" size="sm" onClick={openModal}>
                             <Plus size={16} /> Ny
                         </Button>
                     </div>
 
                     {/* Client List */}
                     <div className="space-y-2">
-                        {(showArchived ? archivedClients : activeClients).length === 0 ? (
+                        {displayedClients.length === 0 ? (
                             <div className="text-center py-12 text-ink-muted">
                                 <p className="font-display italic">{showArchived ? 'Ingen arkiverte utøvere' : 'Ingen aktive utøvere'}</p>
                                 {!showArchived && <p className="text-sm mt-2">Trykk "Ny" for å legge til en utøver</p>}
                             </div>
                         ) : (
-                            (showArchived ? archivedClients : activeClients).map(client => (
+                            displayedClients.map(client => (
                                 <Card 
                                     key={client.id} 
                                     className={`p-4 flex items-center justify-between group ${showArchived ? 'opacity-60' : ''}`}
@@ -1422,6 +1477,12 @@
             );
         };
 
+        // Initial data state - definert utenfor komponenten
+        const INITIAL_DATA_STATE = { 
+            dietPlan: '', workoutPlan: '', stepGoal: 10000, 
+            totalWeeks: 12, startDate: null, isPaused: false, pausedAt: null, checkins: [] 
+        };
+
         const App = () => {
             const [currentUser, setCurrentUser] = useState(null); 
             const [activeTab, setActiveTab] = useState('dashboard');
@@ -1431,10 +1492,7 @@
             const [isClientLoading, setIsClientLoading] = useState(false);
             const [showWeightHistory, setShowWeightHistory] = useState(false);
 
-            const [currentData, setCurrentData] = useState({ 
-                dietPlan: '', workoutPlan: '', stepGoal: 10000, 
-                totalWeeks: 12, startDate: null, isPaused: false, pausedAt: null, checkins: [] 
-            });
+            const [currentData, setCurrentData] = useState(INITIAL_DATA_STATE);
             const [isLoading, setIsLoading] = useState(true);
 
             useEffect(() => {
@@ -1462,47 +1520,87 @@
                 if (viewingClient) {
                     api.getUserData(viewingClient.id)
                         .then(setCurrentData)
-                        .catch(() => setCurrentData({ dietPlan: '', workoutPlan: '', stepGoal: 10000, totalWeeks: 12, startDate: null, isPaused: false, pausedAt: null, checkins: [] }))
+                        .catch(() => setCurrentData(INITIAL_DATA_STATE))
                         .finally(() => setIsClientLoading(false));
                 }
             }, [viewingClient]);
 
-            const handleLogin = (user) => {
+            const handleLogin = useCallback((user) => {
                 setCurrentUser(user);
                 localStorage.setItem('jnm_session', JSON.stringify(user));
                 if (user.role === 'athlete') setViewingClient(user);
-            };
+            }, []);
 
-            const handleLogout = () => {
+            const handleLogout = useCallback(() => {
                 setCurrentUser(null);
                 setViewingClient(null);
                 localStorage.removeItem('jnm_session');
                 setActiveTab('dashboard');
-            };
+            }, []);
 
-            const handleNewCheckin = async (entry) => {
+            const handleNewCheckin = useCallback(async (entry) => {
                 if (!viewingClient) return;
                 await api.submitCheckin(viewingClient.id, entry);
                 setCurrentData(prev => ({ ...prev, checkins: [...prev.checkins, entry] }));
-            };
+            }, [viewingClient]);
             
-            const handleUpdateData = async (keyOrObj, value) => {
+            const handleUpdateData = useCallback(async (keyOrObj, value) => {
                 if (!viewingClient) return;
                 let updates = typeof keyOrObj === 'string' ? { [keyOrObj]: value } : keyOrObj;
-                const previousData = { ...currentData };
-                const newData = { ...currentData, ...updates };
-                setCurrentData(newData);
-                try { await api.saveUserData(viewingClient.id, newData); } 
-                catch (e) { alert('Lagring feilet'); setCurrentData(previousData); }
-            };
+                setCurrentData(prev => {
+                    const newData = { ...prev, ...updates };
+                    api.saveUserData(viewingClient.id, newData).catch(() => {
+                        alert('Lagring feilet');
+                        setCurrentData(prev);
+                    });
+                    return newData;
+                });
+            }, [viewingClient]);
 
-            const handleDeleteCheckin = async (checkinId) => {
+            const handleDeleteCheckin = useCallback(async (checkinId) => {
                 if (!viewingClient) return;
-                const previousData = { ...currentData };
-                setCurrentData(prev => ({ ...prev, checkins: prev.checkins.filter(c => c.id !== checkinId) }));
-                try { await api.deleteCheckin(checkinId); } 
-                catch (e) { alert('Kunne ikke slette.'); setCurrentData(previousData); }
-            };
+                setCurrentData(prev => {
+                    const previousCheckins = prev.checkins;
+                    api.deleteCheckin(checkinId).catch(() => {
+                        alert('Kunne ikke slette.');
+                        setCurrentData(p => ({ ...p, checkins: previousCheckins }));
+                    });
+                    return { ...prev, checkins: prev.checkins.filter(c => c.id !== checkinId) };
+                });
+            }, [viewingClient]);
+
+            const handleClearClient = useCallback(() => {
+                setViewingClient(null);
+                setActiveTab('dashboard');
+            }, []);
+
+            const handleSelectClient = useCallback((client) => {
+                setCurrentData(INITIAL_DATA_STATE);
+                setIsClientLoading(true);
+                setViewingClient(client); 
+                setShowWeightHistory(false); 
+                setActiveTab('dashboard');
+            }, []);
+
+            const handleAddClient = useCallback(async (u) => {
+                setAllUsers(await api.createUser({...u, id: Date.now().toString(), role:'athlete'}));
+            }, []);
+
+            const handleDeleteClient = useCallback(async (id) => {
+                setAllUsers(await api.deleteUser(id));
+            }, []);
+
+            const handleArchiveClient = useCallback(async (id, archive) => {
+                setAllUsers(await api.archiveUser(id, archive));
+            }, []);
+
+            const handleOpenWeightHistory = useCallback(() => setShowWeightHistory(true), []);
+            const handleCloseWeightHistory = useCallback(() => setShowWeightHistory(false), []);
+
+            const handleTabChange = useCallback((tab) => {
+                setActiveTab(tab);
+                setShowWeightHistory(false);
+            }, []);
 
             if (isLoading) {
                 return (
@@ -1587,16 +1685,10 @@
                             <CoachDashboard 
                                 user={currentUser} 
                                 allUsers={allUsers} 
-                                onSelectClient={(client) => { 
-                                    setCurrentData({ dietPlan: '', workoutPlan: '', stepGoal: 10000, totalWeeks: 12, startDate: null, isPaused: false, pausedAt: null, checkins: [] });
-                                    setIsClientLoading(true);
-                                    setViewingClient(client); 
-                                    setShowWeightHistory(false); 
-                                    setActiveTab('dashboard'); 
-                                }} 
-                                onAddClient={async (u) => setAllUsers(await api.createUser({...u, id: Date.now().toString(), role:'athlete'}))} 
-                                onDeleteClient={async (id) => setAllUsers(await api.deleteUser(id))}
-                                onArchiveClient={async (id, archive) => setAllUsers(await api.archiveUser(id, archive))}
+                                onSelectClient={handleSelectClient} 
+                                onAddClient={handleAddClient} 
+                                onDeleteClient={handleDeleteClient}
+                                onArchiveClient={handleArchiveClient}
                             />
                         </main>
                     </div>
@@ -1612,7 +1704,7 @@
                         user={currentUser} 
                         viewingClient={isCoach ? viewingClient : null} 
                         onLogout={handleLogout} 
-                        onClearClient={() => { setViewingClient(null); setActiveTab('dashboard'); }} 
+                        onClearClient={handleClearClient} 
                     />
                     <main className="p-4">
                         {isClientLoading ? (
@@ -1627,9 +1719,9 @@
                             <>
                                 {activeTab === 'dashboard' ? (
                                     showWeightHistory ? (
-                                        <WeightProgressView checkins={currentData.checkins} onBack={() => setShowWeightHistory(false)} />
+                                        <WeightProgressView checkins={currentData.checkins} onBack={handleCloseWeightHistory} />
                                     ) : (
-                                        <DashboardView userData={currentData} isCoach={isCoach} onUpdateData={handleUpdateData} onOpenWeightHistory={() => setShowWeightHistory(true)} />
+                                        <DashboardView userData={currentData} isCoach={isCoach} onUpdateData={handleUpdateData} onOpenWeightHistory={handleOpenWeightHistory} />
                                     )
                                 ) :
                                 activeTab === 'diet' ? <PlanSection type="diet" content={currentData.dietPlan} onSave={(val) => handleUpdateData('dietPlan', val)} isReadOnly={!isCoach} /> :
@@ -1638,7 +1730,7 @@
                             </>
                         )}
                     </main>
-                    <Navigation activeTab={activeTab} setActiveTab={(tab) => { setActiveTab(tab); setShowWeightHistory(false); }} />
+                    <Navigation activeTab={activeTab} setActiveTab={handleTabChange} />
                 </div>
             );
         };
