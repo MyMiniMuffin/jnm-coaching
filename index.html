@@ -816,7 +816,9 @@
         // GalleryView - samler alle bilder fra checkins for lett sammenligning
         const GalleryView = React.memo(({ checkins }) => {
             const [lightbox, setLightbox] = useState({ isOpen: false, images: [], index: 0 });
-            const [viewMode, setViewMode] = useState('grid'); // 'grid' eller 'timeline'
+            const [viewMode, setViewMode] = useState('grid'); // 'grid', 'timeline', eller 'compare'
+            const [compareImages, setCompareImages] = useState({ before: null, after: null });
+            const [selectingFor, setSelectingFor] = useState(null); // 'before' eller 'after'
 
             // Samle alle bilder med metadata, sortert fra nyeste til eldste
             const allImages = useMemo(() => {
@@ -863,8 +865,48 @@
             }, []);
 
             const openLightbox = useCallback((index) => {
+                if (selectingFor) return; // Ikke åpne lightbox når vi velger bilder
                 setLightbox({ isOpen: true, images: allImages.map(img => img.url), index });
+            }, [allImages, selectingFor]);
+
+            const handleImageClick = useCallback((img, idx) => {
+                if (selectingFor) {
+                    setCompareImages(prev => ({ ...prev, [selectingFor]: img }));
+                    setSelectingFor(null);
+                } else {
+                    openLightbox(idx);
+                }
+            }, [selectingFor, openLightbox]);
+
+            const startCompare = useCallback(() => {
+                // Auto-velg eldste og nyeste bilde som standard
+                if (allImages.length >= 2) {
+                    const oldest = allImages[allImages.length - 1];
+                    const newest = allImages[0];
+                    setCompareImages({ before: oldest, after: newest });
+                }
+                setViewMode('compare');
             }, [allImages]);
+
+            const clearCompare = useCallback(() => {
+                setCompareImages({ before: null, after: null });
+                setSelectingFor(null);
+                setViewMode('grid');
+            }, []);
+
+            // Beregn vektendring mellom valgte bilder
+            const weightDiff = useMemo(() => {
+                if (!compareImages.before?.weight || !compareImages.after?.weight) return null;
+                const diff = parseFloat(compareImages.after.weight) - parseFloat(compareImages.before.weight);
+                return diff.toFixed(1);
+            }, [compareImages]);
+
+            // Beregn dager mellom bildene
+            const daysDiff = useMemo(() => {
+                if (!compareImages.before?.timestamp || !compareImages.after?.timestamp) return null;
+                const diff = Math.abs(compareImages.after.timestamp - compareImages.before.timestamp);
+                return Math.round(diff / (1000 * 60 * 60 * 24));
+            }, [compareImages]);
 
             if (allImages.length === 0) {
                 return (
@@ -891,33 +933,185 @@
                     {/* Header med visningsvalg */}
                     <div className="flex justify-between items-center">
                         <div>
-                            <h2 className="font-display text-xl">Fremgangsgalleri</h2>
-                            <p className="text-sm text-ink-muted">{allImages.length} bilder</p>
+                            <h2 className="font-display text-xl">
+                                {viewMode === 'compare' ? 'Sammenlign' : 'Fremgangsgalleri'}
+                            </h2>
+                            <p className="text-sm text-ink-muted">
+                                {viewMode === 'compare' ? 'Velg bilder å sammenligne' : `${allImages.length} bilder`}
+                            </p>
                         </div>
-                        <div className="flex gap-1 bg-surface-100 p-1 rounded-lg">
-                            <button
-                                onClick={() => setViewMode('grid')}
-                                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-ink' : 'text-ink-muted'}`}
-                            >
-                                Rutenett
-                            </button>
-                            <button
-                                onClick={() => setViewMode('timeline')}
-                                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === 'timeline' ? 'bg-white shadow-sm text-ink' : 'text-ink-muted'}`}
-                            >
-                                Tidslinje
-                            </button>
-                        </div>
+                        {viewMode !== 'compare' ? (
+                            <div className="flex gap-1 bg-surface-100 p-1 rounded-lg">
+                                <button
+                                    onClick={() => setViewMode('grid')}
+                                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-ink' : 'text-ink-muted'}`}
+                                >
+                                    Rutenett
+                                </button>
+                                <button
+                                    onClick={() => setViewMode('timeline')}
+                                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === 'timeline' ? 'bg-white shadow-sm text-ink' : 'text-ink-muted'}`}
+                                >
+                                    Tidslinje
+                                </button>
+                            </div>
+                        ) : (
+                            <Button variant="secondary" size="sm" onClick={clearCompare}>
+                                <X size={16} /> Lukk
+                            </Button>
+                        )}
                     </div>
 
-                    {viewMode === 'grid' ? (
+                    {/* Sammenlign-modus */}
+                    {viewMode === 'compare' && (
+                        <div className="space-y-4">
+                            {/* Sammenligning side-by-side */}
+                            <div className="grid grid-cols-2 gap-3">
+                                {/* Før-bilde */}
+                                <div className="space-y-2">
+                                    <p className="text-xs font-medium text-ink-muted uppercase tracking-wide text-center">Før</p>
+                                    <div 
+                                        className={`relative aspect-[3/4] rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${selectingFor === 'before' ? 'border-ink ring-2 ring-ink/20' : 'border-surface-200'}`}
+                                        onClick={() => setSelectingFor(selectingFor === 'before' ? null : 'before')}
+                                    >
+                                        {compareImages.before ? (
+                                            <>
+                                                <img 
+                                                    src={getFullSizeImage(compareImages.before.url)} 
+                                                    className="w-full h-full object-cover"
+                                                    alt="Før"
+                                                />
+                                                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-ink/80 to-transparent p-3">
+                                                    <p className="text-white text-sm font-medium">{formatDateNO(compareImages.before.date)}</p>
+                                                    {compareImages.before.weight && (
+                                                        <p className="text-white/70 text-xs">{formatWeight(compareImages.before.weight)} kg</p>
+                                                    )}
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-surface-100">
+                                                <Plus size={24} className="text-ink-muted mb-2" />
+                                                <p className="text-sm text-ink-muted">Velg bilde</p>
+                                            </div>
+                                        )}
+                                        {selectingFor === 'before' && (
+                                            <div className="absolute inset-0 bg-ink/10 flex items-center justify-center">
+                                                <span className="bg-ink text-white px-3 py-1.5 rounded-full text-sm font-medium">
+                                                    Velger...
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Etter-bilde */}
+                                <div className="space-y-2">
+                                    <p className="text-xs font-medium text-ink-muted uppercase tracking-wide text-center">Etter</p>
+                                    <div 
+                                        className={`relative aspect-[3/4] rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${selectingFor === 'after' ? 'border-ink ring-2 ring-ink/20' : 'border-surface-200'}`}
+                                        onClick={() => setSelectingFor(selectingFor === 'after' ? null : 'after')}
+                                    >
+                                        {compareImages.after ? (
+                                            <>
+                                                <img 
+                                                    src={getFullSizeImage(compareImages.after.url)} 
+                                                    className="w-full h-full object-cover"
+                                                    alt="Etter"
+                                                />
+                                                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-ink/80 to-transparent p-3">
+                                                    <p className="text-white text-sm font-medium">{formatDateNO(compareImages.after.date)}</p>
+                                                    {compareImages.after.weight && (
+                                                        <p className="text-white/70 text-xs">{formatWeight(compareImages.after.weight)} kg</p>
+                                                    )}
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-surface-100">
+                                                <Plus size={24} className="text-ink-muted mb-2" />
+                                                <p className="text-sm text-ink-muted">Velg bilde</p>
+                                            </div>
+                                        )}
+                                        {selectingFor === 'after' && (
+                                            <div className="absolute inset-0 bg-ink/10 flex items-center justify-center">
+                                                <span className="bg-ink text-white px-3 py-1.5 rounded-full text-sm font-medium">
+                                                    Velger...
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Statistikk */}
+                            {compareImages.before && compareImages.after && (
+                                <Card className="p-4">
+                                    <div className="grid grid-cols-2 gap-4 text-center">
+                                        <div>
+                                            <p className="text-xs text-ink-muted uppercase tracking-wide mb-1">Tidsperiode</p>
+                                            <p className="text-lg font-semibold">{daysDiff} dager</p>
+                                        </div>
+                                        {weightDiff && (
+                                            <div>
+                                                <p className="text-xs text-ink-muted uppercase tracking-wide mb-1">Vektendring</p>
+                                                <p className={`text-lg font-semibold flex items-center justify-center gap-1 ${parseFloat(weightDiff) < 0 ? 'text-emerald-600' : parseFloat(weightDiff) > 0 ? 'text-ink' : 'text-ink-muted'}`}>
+                                                    {parseFloat(weightDiff) > 0 ? '+' : ''}{weightDiff.replace('.', ',')} kg
+                                                    {parseFloat(weightDiff) < 0 ? <TrendingDown size={18} /> : parseFloat(weightDiff) > 0 ? <TrendingUp size={18} /> : null}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </Card>
+                            )}
+
+                            {/* Instruksjon eller bildevelger */}
+                            {selectingFor && (
+                                <Card className="p-3 bg-ink text-white">
+                                    <p className="text-sm text-center">
+                                        👆 Trykk på et bilde nedenfor for å velge som "{selectingFor === 'before' ? 'før' : 'etter'}"-bilde
+                                    </p>
+                                </Card>
+                            )}
+
+                            {/* Bilderutenett for valg */}
+                            <div>
+                                <p className="text-xs text-ink-muted uppercase tracking-wide mb-3">Velg bilder</p>
+                                <div className="grid grid-cols-4 gap-1.5">
+                                    {allImages.map((img, idx) => {
+                                        const isSelected = compareImages.before?.url === img.url || compareImages.after?.url === img.url;
+                                        const isBefore = compareImages.before?.url === img.url;
+                                        return (
+                                            <div 
+                                                key={`${img.checkinId}-${idx}`}
+                                                className={`relative aspect-square cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${isSelected ? 'border-ink' : 'border-transparent'} ${selectingFor ? 'hover:scale-105' : ''}`}
+                                                onClick={() => handleImageClick(img, idx)}
+                                            >
+                                                <img 
+                                                    src={getThumbnail(img.url)} 
+                                                    loading="lazy"
+                                                    className="w-full h-full object-cover"
+                                                    alt={`Fremgang ${formatDateNO(img.date)}`}
+                                                />
+                                                {isSelected && (
+                                                    <div className="absolute top-1 right-1 bg-ink text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
+                                                        {isBefore ? 'FØR' : 'ETTER'}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {viewMode === 'grid' && (
                         /* Grid-visning - kompakt oversikt */
                         <div className="grid grid-cols-3 gap-1.5">
                             {allImages.map((img, idx) => (
                                 <div 
                                     key={`${img.checkinId}-${idx}`}
                                     className="relative aspect-square cursor-pointer group"
-                                    onClick={() => openLightbox(idx)}
+                                    onClick={() => handleImageClick(img, idx)}
                                 >
                                     <img 
                                         src={getThumbnail(img.url)} 
@@ -936,7 +1130,9 @@
                                 </div>
                             ))}
                         </div>
-                    ) : (
+                    )}
+
+                    {viewMode === 'timeline' && (
                         /* Timeline-visning - gruppert etter måned */
                         <div className="space-y-6">
                             {imagesByMonth.map(([monthKey, { label, images }]) => (
@@ -953,7 +1149,7 @@
                                                 <div 
                                                     key={`${img.checkinId}-${idx}`}
                                                     className="relative aspect-square cursor-pointer group"
-                                                    onClick={() => openLightbox(globalIndex)}
+                                                    onClick={() => handleImageClick(img, globalIndex)}
                                                 >
                                                     <img 
                                                         src={getThumbnail(img.url)} 
@@ -978,13 +1174,17 @@
                         </div>
                     )}
 
-                    {/* Sammenligningstips */}
-                    {allImages.length >= 2 && (
-                        <Card className="p-4 bg-surface-50 border-dashed">
-                            <p className="text-sm text-ink-muted text-center">
-                                💡 Trykk på et bilde og sveip for å sammenligne fremgangen din
-                            </p>
-                        </Card>
+                    {/* Sammenlign-knapp */}
+                    {viewMode !== 'compare' && allImages.length >= 2 && (
+                        <Button 
+                            variant="secondary" 
+                            size="lg" 
+                            className="w-full"
+                            onClick={startCompare}
+                        >
+                            <ArrowRight size={18} className="rotate-90" />
+                            Sammenlign før/etter
+                        </Button>
                     )}
                 </div>
             );
