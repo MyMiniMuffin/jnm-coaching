@@ -394,6 +394,27 @@
                  const res = await fetch('/.netlify/functions/data', { method: 'POST', body: JSON.stringify({ type: 'delete_checkin', data: { checkinId } }) });
                 if (!res.ok) throw new Error('Sletting feilet');
             },
+            createPeriod: async (userId, name, startingWeight, goalWeight = null) => {
+                const res = await fetch('/.netlify/functions/data', { 
+                    method: 'POST', 
+                    body: JSON.stringify({ userId, type: 'create_period', data: { name, startingWeight, goalWeight } }) 
+                });
+                if (!res.ok) throw new Error('Kunne ikke opprette periode');
+            },
+            endPeriod: async (userId, periodId) => {
+                const res = await fetch('/.netlify/functions/data', { 
+                    method: 'POST', 
+                    body: JSON.stringify({ userId, type: 'end_period', data: { periodId } }) 
+                });
+                if (!res.ok) throw new Error('Kunne ikke avslutte periode');
+            },
+            updatePeriod: async (userId, periodId, updates) => {
+                const res = await fetch('/.netlify/functions/data', { 
+                    method: 'POST', 
+                    body: JSON.stringify({ userId, type: 'update_period', data: { periodId, ...updates } }) 
+                });
+                if (!res.ok) throw new Error('Kunne ikke oppdatere periode');
+            },
             login: async (username, password) => {
                 const res = await fetch('/.netlify/functions/auth', { method: 'POST', body: JSON.stringify({ username, password }) });
                 if (res.status === 401) return null; 
@@ -1317,8 +1338,184 @@
             { text: "Disiplin er broen mellom mål og resultater.", author: "Jim Rohn" },
         ];
 
+        // --- Period Management Modal ---
+        const PeriodManagementModal = React.memo(({ userData, onClose, onCreatePeriod, onEndPeriod, onUpdatePeriod }) => {
+            const [view, setView] = useState('list'); // 'list' eller 'create'
+            const [formData, setFormData] = useState({ name: '', startingWeight: '', goalWeight: '' });
+            const periods = userData.periods || [];
+            const activePeriod = periods.find(p => p.isActive);
+
+            const handleCreate = useCallback(async (e) => {
+                e.preventDefault();
+                if (!formData.startingWeight) {
+                    alert('Startvekt er påkrevd');
+                    return;
+                }
+                await onCreatePeriod(formData.name || `Runde ${periods.length + 1}`, formData.startingWeight, formData.goalWeight || null);
+                onClose();
+            }, [formData, periods.length, onCreatePeriod, onClose]);
+
+            const handleEnd = useCallback(async (periodId) => {
+                if (confirm('Avslutt denne runden? Du kan starte en ny runde etterpå.')) {
+                    await onEndPeriod(periodId);
+                    onClose();
+                }
+            }, [onEndPeriod, onClose]);
+
+            return (
+                <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+                    <Card className="w-full max-w-md p-6 max-h-[80vh] overflow-y-auto animate-scale-in">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-xl font-display">Coaching-runder</h2>
+                            <button onClick={onClose} className="text-ink-muted hover:text-ink p-1">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {view === 'list' ? (
+                            <div className="space-y-4">
+                                {/* Aktiv periode */}
+                                {activePeriod && (
+                                    <div className="mb-6">
+                                        <p className="text-xs text-ink-muted uppercase tracking-wide mb-3">Aktiv runde</p>
+                                        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                                            <div className="flex justify-between items-start mb-3">
+                                                <div>
+                                                    <p className="font-semibold text-ink">{activePeriod.name}</p>
+                                                    <p className="text-sm text-ink-muted">Startet {formatDateNO(activePeriod.startDate)}</p>
+                                                </div>
+                                                <Badge variant="success">Aktiv</Badge>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-3 text-sm">
+                                                <div>
+                                                    <p className="text-ink-faint">Startvekt</p>
+                                                    <p className="font-semibold">{activePeriod.startingWeight ? formatWeight(activePeriod.startingWeight) + ' kg' : 'Ikke satt'}</p>
+                                                </div>
+                                                {activePeriod.goalWeight && (
+                                                    <div>
+                                                        <p className="text-ink-faint">Målvekt</p>
+                                                        <p className="font-semibold">{formatWeight(activePeriod.goalWeight)} kg</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <Button 
+                                                variant="secondary" 
+                                                size="sm" 
+                                                className="w-full mt-4"
+                                                onClick={() => handleEnd(activePeriod.id)}
+                                            >
+                                                Avslutt runde
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Tidligere perioder */}
+                                {periods.filter(p => !p.isActive).length > 0 && (
+                                    <div>
+                                        <p className="text-xs text-ink-muted uppercase tracking-wide mb-3">Tidligere runder</p>
+                                        <div className="space-y-2">
+                                            {periods.filter(p => !p.isActive).map(period => (
+                                                <div key={period.id} className="p-4 bg-surface-50 rounded-xl">
+                                                    <div className="flex justify-between items-start mb-2">
+                                                        <div>
+                                                            <p className="font-medium">{period.name}</p>
+                                                            <p className="text-xs text-ink-muted">
+                                                                {formatDateNO(period.startDate)} - {period.endDate ? formatDateNO(period.endDate) : 'Pågår'}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex gap-2 text-xs">
+                                                        {period.startingWeight && (
+                                                            <Badge variant="muted">
+                                                                Start: {formatWeight(period.startingWeight)} kg
+                                                            </Badge>
+                                                        )}
+                                                        {period.goalWeight && (
+                                                            <Badge variant="muted">
+                                                                Mål: {formatWeight(period.goalWeight)} kg
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Start ny runde knapp */}
+                                <Button 
+                                    variant="primary" 
+                                    size="lg" 
+                                    className="w-full"
+                                    onClick={() => setView('create')}
+                                >
+                                    <Plus size={18} /> Start ny runde
+                                </Button>
+                            </div>
+                        ) : (
+                            <form onSubmit={handleCreate} className="space-y-4">
+                                <div>
+                                    <InputLabel>Navn på runde</InputLabel>
+                                    <input 
+                                        type="text"
+                                        value={formData.name}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                                        placeholder={`Runde ${periods.length + 1}`}
+                                        className="w-full px-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink"
+                                    />
+                                </div>
+                                
+                                <div>
+                                    <InputLabel>Startvekt (kg) *</InputLabel>
+                                    <div className="relative">
+                                        <Scale className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" size={18} />
+                                        <input 
+                                            type="number"
+                                            inputMode="decimal"
+                                            step="0.1"
+                                            required
+                                            value={formData.startingWeight}
+                                            onChange={(e) => setFormData(prev => ({ ...prev, startingWeight: e.target.value }))}
+                                            placeholder="0.0"
+                                            className="w-full pl-12 pr-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink font-medium text-lg"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <InputLabel>Målvekt (kg, valgfritt)</InputLabel>
+                                    <input 
+                                        type="number"
+                                        inputMode="decimal"
+                                        step="0.1"
+                                        value={formData.goalWeight}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, goalWeight: e.target.value }))}
+                                        placeholder="0.0"
+                                        className="w-full px-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink font-medium text-lg"
+                                    />
+                                </div>
+
+                                <div className="flex gap-2 pt-2">
+                                    <Button type="button" variant="secondary" size="lg" className="flex-1" onClick={() => setView('list')}>
+                                        Avbryt
+                                    </Button>
+                                    <Button type="submit" variant="primary" size="lg" className="flex-1">
+                                        <Check size={18} /> Opprett
+                                    </Button>
+                                </div>
+                            </form>
+                        )}
+                    </Card>
+                </div>
+            );
+        });
+
         const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeightHistory }) => {
             const checkins = userData.checkins || [];
+            const periods = userData.periods || [];
+            const activePeriod = periods.find(p => p.isActive);
+            const [showPeriodModal, setShowPeriodModal] = useState(false);
             
             // Memoize sorterte checkins og lastCheckin
             const { sortedCheckins, lastCheckin } = useMemo(() => {
@@ -1347,24 +1544,38 @@
                 const stepsHit = checkins.filter(c => c.stepsReached).length;
                 const avgAccuracy = (checkins.reduce((sum, c) => sum + (parseInt(c.accuracy) || 0), 0) / checkins.length).toFixed(1);
                 
-                // Vektendring
-                const validWeights = checkins.filter(c => c.weight && parseFloat(c.weight) > 0).sort((a, b) => a.timestamp - b.timestamp);
+                // Vektendring - bruk aktivt periodestartsvekt hvis tilgjengelig
                 let weightChange = null;
-                if (validWeights.length >= 2) {
+                let periodCheckins = checkins;
+                
+                // Filtrer checkins til kun de fra aktiv periode
+                if (activePeriod && activePeriod.id) {
+                    periodCheckins = checkins.filter(c => c.periodId === activePeriod.id);
+                }
+                
+                const validWeights = periodCheckins.filter(c => c.weight && parseFloat(c.weight) > 0).sort((a, b) => a.timestamp - b.timestamp);
+                
+                if (validWeights.length >= 1 && activePeriod?.startingWeight) {
+                    // Beregn fra rundens startvekt til siste vekt
+                    const startWeight = parseFloat(activePeriod.startingWeight);
+                    const lastWeight = parseFloat(validWeights[validWeights.length - 1].weight);
+                    weightChange = (lastWeight - startWeight).toFixed(1);
+                } else if (validWeights.length >= 2) {
+                    // Fallback: første til siste checkin
                     const first = parseFloat(validWeights[0].weight);
                     const last = parseFloat(validWeights[validWeights.length - 1].weight);
                     weightChange = (last - first).toFixed(1);
                 }
                 
-                return { totalStrength, totalCardio, stepsHit, avgAccuracy, weightChange, totalCheckins: checkins.length };
-            }, [checkins]);
+                return { totalStrength, totalCardio, stepsHit, avgAccuracy, weightChange, totalCheckins: checkins.length, periodCheckins: periodCheckins.length };
+            }, [checkins, activePeriod]);
 
             // Memoize dagens quote
             const todayQuote = useMemo(() => QUOTES[new Date().getDay() % QUOTES.length], []);
 
             const handlePlanSettings = useCallback(async () => {
                 if (!isCoach) return;
-                const choice = prompt(`Plan-innstillinger:\n\n1. Sett startdato\n2. Endre antall uker\n3. ${userData.isPaused ? 'Fortsett plan' : 'Pause plan'}`);
+                const choice = prompt(`Plan-innstillinger:\n\n1. Sett startdato\n2. Endre antall uker\n3. ${userData.isPaused ? 'Fortsett plan' : 'Pause plan'}\n4. Administrer runder`);
                 if (choice === '1') {
                     const dateStr = prompt("Startdato (YYYY-MM-DD):", new Date().toISOString().split('T')[0]);
                     if (dateStr) await onUpdateData({ startDate: new Date(dateStr).toISOString() });
@@ -1377,6 +1588,8 @@
                     } else {
                         if(confirm("Sett plan på pause?")) await onUpdateData({ action: 'pause' });
                     }
+                } else if (choice === '4') {
+                    setShowPeriodModal(true);
                 }
             }, [isCoach, userData.isPaused, userData.totalWeeks, onUpdateData]);
 
@@ -1387,6 +1600,26 @@
 
             return (
                 <div className="space-y-5 pb-32 animate-slide-up">
+                    {/* Period Management Modal */}
+                    {showPeriodModal && (
+                        <PeriodManagementModal 
+                            userData={userData}
+                            onClose={() => setShowPeriodModal(false)}
+                            onCreatePeriod={async (name, startingWeight, goalWeight) => {
+                                await onUpdateData({ action: 'create_period', name, startingWeight, goalWeight });
+                                window.location.reload(); // Refresh for å laste nye data
+                            }}
+                            onEndPeriod={async (periodId) => {
+                                await onUpdateData({ action: 'end_period', periodId });
+                                window.location.reload();
+                            }}
+                            onUpdatePeriod={async (periodId, updates) => {
+                                await onUpdateData({ action: 'update_period', periodId, ...updates });
+                                window.location.reload();
+                            }}
+                        />
+                    )}
+
                     {/* Hero Card */}
                     <div className="p-6 bg-ink text-white rounded-2xl relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-3xl transform translate-x-10 -translate-y-10" />
@@ -1394,11 +1627,17 @@
                             <div className="flex justify-between items-start mb-4">
                                 <div>
                                     <p className="text-white/60 text-sm">
-                                        {userData.isPaused ? 'Plan på pause' : userData.startDate ? 'Din fremgang' : 'Velkommen'}
+                                        {activePeriod ? activePeriod.name : (userData.isPaused ? 'Plan på pause' : userData.startDate ? 'Din fremgang' : 'Velkommen')}
                                     </p>
                                     <h2 className="text-3xl font-display mt-1">
                                         {userData.isPaused ? 'Pauset' : userData.startDate ? `Uke ${currentWeek}` : 'Kom i gang'}
                                     </h2>
+                                    {activePeriod && activePeriod.startingWeight && (
+                                        <p className="text-white/40 text-sm mt-1">
+                                            Startvekt: {formatWeight(activePeriod.startingWeight)} kg
+                                            {activePeriod.goalWeight && ` → Mål: ${formatWeight(activePeriod.goalWeight)} kg`}
+                                        </p>
+                                    )}
                                 </div>
                                 {isCoach && (
                                     <button 
@@ -2127,7 +2366,8 @@
         // Initial data state - definert utenfor komponenten
         const INITIAL_DATA_STATE = { 
             dietPlan: '', workoutPlan: '', stepGoal: 10000, 
-            totalWeeks: 12, startDate: null, isPaused: false, pausedAt: null, checkins: [] 
+            totalWeeks: 12, startDate: null, isPaused: false, pausedAt: null, 
+            periods: [], currentPeriodId: null, startingWeight: null, checkins: [] 
         };
 
         const App = () => {
@@ -2194,6 +2434,36 @@
             const handleUpdateData = useCallback(async (keyOrObj, value) => {
                 if (!viewingClient) return;
                 let updates = typeof keyOrObj === 'string' ? { [keyOrObj]: value } : keyOrObj;
+                
+                // Håndter periode-spesifikke actions
+                if (updates.action === 'create_period') {
+                    try {
+                        await api.createPeriod(viewingClient.id, updates.name, updates.startingWeight, updates.goalWeight);
+                        return;
+                    } catch (e) {
+                        alert('Kunne ikke opprette periode: ' + e.message);
+                        return;
+                    }
+                } else if (updates.action === 'end_period') {
+                    try {
+                        await api.endPeriod(viewingClient.id, updates.periodId);
+                        return;
+                    } catch (e) {
+                        alert('Kunne ikke avslutte periode: ' + e.message);
+                        return;
+                    }
+                } else if (updates.action === 'update_period') {
+                    try {
+                        const { periodId, ...periodUpdates } = updates;
+                        await api.updatePeriod(viewingClient.id, periodId, periodUpdates);
+                        return;
+                    } catch (e) {
+                        alert('Kunne ikke oppdatere periode: ' + e.message);
+                        return;
+                    }
+                }
+                
+                // Standard oppdateringer
                 setCurrentData(prev => {
                     const newData = { ...prev, ...updates };
                     api.saveUserData(viewingClient.id, newData).catch(() => {
@@ -2206,15 +2476,15 @@
 
             const handleDeleteCheckin = useCallback(async (checkinId) => {
                 if (!viewingClient) return;
-                setCurrentData(prev => {
-                    const previousCheckins = prev.checkins;
-                    api.deleteCheckin(checkinId).catch(() => {
-                        alert('Kunne ikke slette.');
-                        setCurrentData(p => ({ ...p, checkins: previousCheckins }));
-                    });
-                    return { ...prev, checkins: prev.checkins.filter(c => c.id !== checkinId) };
-                });
-            }, [viewingClient]);
+                const previousData = { ...currentData };
+                setCurrentData(prev => ({ ...prev, checkins: prev.checkins.filter(c => c.id !== checkinId) }));
+                try { 
+                    await api.deleteCheckin(checkinId); 
+                } catch (e) { 
+                    alert('Kunne ikke slette.'); 
+                    setCurrentData(previousData); 
+                }
+            }, [viewingClient, currentData]);
 
             const handleClearClient = useCallback(() => {
                 setViewingClient(null);

@@ -47,9 +47,10 @@ exports.handler = async (event) => {
         return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig bruker-ID' }) };
       }
 
-      const [userResult, checkins] = await Promise.all([
+      const [userResult, checkins, periods] = await Promise.all([
         sql`
-          SELECT diet_plan, workout_plan, step_goal, total_weeks, start_date, is_paused, paused_at 
+          SELECT diet_plan, workout_plan, step_goal, total_weeks, start_date, is_paused, paused_at,
+                 current_period_id, starting_weight
           FROM users 
           WHERE id = ${userId}
         `,
@@ -60,10 +61,19 @@ exports.handler = async (event) => {
             cardio_sessions as "cardioSessions", 
             steps_reached as "stepsReached", 
             taken_supplements as "takenSupplements", 
-            comment, image_url, images, created_at as timestamp 
+            comment, image_url, images, created_at as timestamp,
+            period_id as "periodId"
           FROM checkins 
           WHERE user_id = ${userId}
           ORDER BY created_at DESC
+        `,
+        sql`
+          SELECT id, name, start_date as "startDate", end_date as "endDate",
+                 starting_weight as "startingWeight", goal_weight as "goalWeight",
+                 is_active as "isActive", notes
+          FROM coaching_periods
+          WHERE user_id = ${userId}
+          ORDER BY start_date DESC
         `
       ]);
 
@@ -98,6 +108,9 @@ exports.handler = async (event) => {
           startDate: user.start_date,
           isPaused: user.is_paused || false,
           pausedAt: user.paused_at,
+          currentPeriodId: user.current_period_id,
+          startingWeight: user.starting_weight,
+          periods: periods || [],
           checkins: formattedCheckins
         })
       };
@@ -178,10 +191,14 @@ exports.handler = async (event) => {
         const strength = parseInt(data.strengthSessions) || 0;
         const imagesJson = JSON.stringify(data.images || []);
         
+        // Hent brukerens aktive periode-ID
+        const userRes = await sql`SELECT current_period_id FROM users WHERE id = ${userId}`;
+        const periodId = userRes[0]?.current_period_id || null;
+        
         await sql`
           INSERT INTO checkins (
             user_id, date, weight, sleep, energy, accuracy, 
-            strength_sessions, cardio_sessions, steps_reached, taken_supplements, comment, images
+            strength_sessions, cardio_sessions, steps_reached, taken_supplements, comment, images, period_id
           )
           VALUES (
             ${userId}, 
@@ -195,7 +212,8 @@ exports.handler = async (event) => {
             ${Boolean(data.stepsReached)}, 
             ${Boolean(data.takenSupplements)}, 
             ${data.comment || ''}, 
-            ${imagesJson}
+            ${imagesJson},
+            ${periodId}
           )
         `;
       }
@@ -205,6 +223,65 @@ exports.handler = async (event) => {
           return { statusCode: 400, body: JSON.stringify({ error: 'Mangler checkin-ID' }) };
         }
         await sql`DELETE FROM checkins WHERE id = ${data.checkinId}`;
+      }
+      
+      else if (type === 'create_period') {
+        // Opprett ny coaching-periode
+        const { name, startingWeight, goalWeight } = data;
+        const startDate = new Date().toISOString();
+        
+        // Deaktiver tidligere perioder
+        await sql`UPDATE coaching_periods SET is_active = false WHERE user_id = ${userId}`;
+        
+        // Opprett ny periode
+        const result = await sql`
+          INSERT INTO coaching_periods (user_id, name, start_date, starting_weight, goal_weight, is_active)
+          VALUES (${userId}, ${name}, ${startDate}, ${parseFloat(startingWeight)}, ${goalWeight ? parseFloat(goalWeight) : null}, true)
+          RETURNING id
+        `;
+        
+        const newPeriodId = result[0].id;
+        
+        // Oppdater brukerens aktive periode og startvekt
+        await sql`UPDATE users SET current_period_id = ${newPeriodId}, starting_weight = ${parseFloat(startingWeight)} WHERE id = ${userId}`;
+      }
+      
+      else if (type === 'end_period') {
+        // Avslutt aktiv periode
+        const periodId = data.periodId;
+        const endDate = new Date().toISOString();
+        
+        await sql`UPDATE coaching_periods SET end_date = ${endDate}, is_active = false WHERE id = ${periodId}`;
+        await sql`UPDATE users SET current_period_id = NULL WHERE id = ${userId} AND current_period_id = ${periodId}`;
+      }
+      
+      else if (type === 'update_period') {
+        // Oppdater periode-detaljer
+        const { periodId, startingWeight, goalWeight, notes } = data;
+        
+        if (!periodId) {
+          return { statusCode: 400, body: JSON.stringify({ error: 'Mangler periode-ID' }) };
+        }
+        
+        const updates = [];
+        if (startingWeight !== undefined) {
+          updates.push(sql`starting_weight = ${parseFloat(startingWeight)}`);
+        }
+        if (goalWeight !== undefined) {
+          updates.push(sql`goal_weight = ${goalWeight ? parseFloat(goalWeight) : null}`);
+        }
+        if (notes !== undefined) {
+          updates.push(sql`notes = ${notes}`);
+        }
+        
+        if (updates.length > 0) {
+          await sql`UPDATE coaching_periods SET ${sql(updates.join(', '))} WHERE id = ${periodId}`;
+          
+          // Hvis startvekt ble endret, oppdater også users-tabellen hvis dette er aktiv periode
+          if (startingWeight !== undefined) {
+            await sql`UPDATE users SET starting_weight = ${parseFloat(startingWeight)} WHERE id = ${userId} AND current_period_id = ${periodId}`;
+          }
+        }
       }
 
       return { statusCode: 200, body: JSON.stringify({ success: true }) };
