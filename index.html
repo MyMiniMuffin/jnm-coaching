@@ -1328,12 +1328,12 @@
 
             // Memoize week calculation
             const { currentWeek, progress } = useMemo(() => {
-                if (!userData.startDate) return { currentWeek: 1, progress: 0 };
+                if (!userData.startDate) return { currentWeek: 0, progress: 0 };
                 const start = new Date(userData.startDate);
                 const end = userData.isPaused && userData.pausedAt ? new Date(userData.pausedAt) : new Date();
                 const diffTime = Math.max(0, end - start);
                 const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-                const week = Math.floor(diffDays / 7) + 1;
+                const week = Math.floor(diffDays / 7);
                 const prog = Math.min((week / (userData.totalWeeks || 12)) * 100, 100);
                 return { currentWeek: week, progress: prog };
             }, [userData.startDate, userData.isPaused, userData.pausedAt, userData.totalWeeks]);
