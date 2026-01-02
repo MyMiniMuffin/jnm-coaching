@@ -194,6 +194,34 @@
 
         // --- CONFIG ---
         const APP_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='160' fill='%23171717'/%3E%3Cpath d='M256 96c0 88.4 71.6 160 160 160-88.4 0-160 71.6-160 160 0-88.4-71.6-160-160-160 88.4 0 160-71.6 160-160z' fill='%23FAFAF9'/%3E%3C/svg%3E";
+        
+        // Session timeout: 7 dager
+        const SESSION_TIMEOUT_MS = 7 * 24 * 60 * 60 * 1000;
+        
+        // Session helpers med timeout
+        const saveSession = (user) => {
+            const sessionData = { user, expiresAt: Date.now() + SESSION_TIMEOUT_MS };
+            localStorage.setItem('jnm_session', JSON.stringify(sessionData));
+        };
+        
+        const getSession = () => {
+            try {
+                const data = localStorage.getItem('jnm_session');
+                if (!data) return null;
+                const session = JSON.parse(data);
+                if (session.expiresAt && Date.now() > session.expiresAt) {
+                    localStorage.removeItem('jnm_session');
+                    return null;
+                }
+                // Bakoverkompatibilitet: gamle sesjoner uten expiresAt
+                return session.user || (session.id ? session : null);
+            } catch (e) {
+                localStorage.removeItem('jnm_session');
+                return null;
+            }
+        };
+        
+        const clearSession = () => localStorage.removeItem('jnm_session');
 
         if (window.marked) {
             window.marked.setOptions({ breaks: true, gfm: true });
@@ -322,21 +350,25 @@
                 startY.current = null;
             }, [pulling, pullDistance, threshold, onRefresh]);
 
-            const pullIndicator = (pullDistance > 0 || refreshing) ? (
-                <div 
-                    className="fixed left-0 right-0 flex justify-center z-50 transition-transform duration-200"
-                    style={{ 
-                        top: 'calc(env(safe-area-inset-top, 0px) + 60px)',
-                        transform: `translateY(${refreshing ? 20 : pullDistance - 40}px)`,
-                        opacity: refreshing ? 1 : Math.min(pullDistance / threshold, 1)
-                    }}
-                >
-                    <div className={`bg-ink text-white px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 shadow-lg ${refreshing ? 'animate-pulse' : ''}`}>
-                        <Loader2 size={16} className={refreshing ? 'animate-spin' : ''} style={{ transform: `rotate(${pullDistance * 3}deg)` }} />
-                        {refreshing ? 'Oppdaterer...' : pullDistance >= threshold ? 'Slipp for å oppdatere' : 'Dra ned...'}
+            const pullIndicator = useMemo(() => {
+                if (pullDistance <= 0 && !refreshing) return null;
+                
+                return (
+                    <div 
+                        className="fixed left-0 right-0 flex justify-center z-50 transition-transform duration-200"
+                        style={{ 
+                            top: 'calc(env(safe-area-inset-top, 0px) + 60px)',
+                            transform: `translateY(${refreshing ? 20 : pullDistance - 40}px)`,
+                            opacity: refreshing ? 1 : Math.min(pullDistance / threshold, 1)
+                        }}
+                    >
+                        <div className={`bg-ink text-white px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 shadow-lg ${refreshing ? 'animate-pulse' : ''}`}>
+                            <Loader2 size={16} className={refreshing ? 'animate-spin' : ''} style={{ transform: `rotate(${pullDistance * 3}deg)` }} />
+                            {refreshing ? 'Oppdaterer...' : pullDistance >= threshold ? 'Slipp for å oppdatere' : 'Dra ned...'}
+                        </div>
                     </div>
-                </div>
-            ) : null;
+                );
+            }, [pullDistance, refreshing, threshold]);
 
             return {
                 containerRef,
@@ -390,8 +422,8 @@
                     throw new Error(errorText || 'Innsending feilet');
                 }
             },
-            deleteCheckin: async (checkinId) => {
-                 const res = await fetch('/.netlify/functions/data', { method: 'POST', body: JSON.stringify({ type: 'delete_checkin', data: { checkinId } }) });
+            deleteCheckin: async (userId, checkinId) => {
+                 const res = await fetch('/.netlify/functions/data', { method: 'POST', body: JSON.stringify({ userId, type: 'delete_checkin', data: { checkinId } }) });
                 if (!res.ok) throw new Error('Sletting feilet');
             },
             createPeriod: async (userId, name, startingWeight, goalWeight = null) => {
@@ -733,7 +765,14 @@
         // --- Views ---
 
         const WeightProgressView = React.memo(({ checkins, onBack }) => {
-            const validCheckins = checkins.filter(c => c.weight && parseFloat(c.weight) > 0).sort((a, b) => a.timestamp - b.timestamp);
+            // OPTIMALISERING: Memoize filtrering og sortering
+            const validCheckins = useMemo(() => 
+                checkins.filter(c => c.weight && parseFloat(c.weight) > 0).sort((a, b) => a.timestamp - b.timestamp),
+                [checkins]
+            );
+            
+            // OPTIMALISERING: Reverser én gang i stedet for i hver map-iterasjon
+            const reversedCheckins = useMemo(() => [...validCheckins].reverse(), [validCheckins]);
 
             if (validCheckins.length === 0) return (
                 <div className="flex flex-col items-center justify-center h-[60vh] animate-fade-in text-center px-6">
@@ -807,8 +846,8 @@
 
                     <div className="space-y-2">
                         <p className="text-xs text-ink-muted uppercase tracking-wide px-1">Historikk</p>
-                        {[...validCheckins].reverse().map((entry, i) => {
-                            const prev = [...validCheckins].reverse()[i+1];
+                        {reversedCheckins.map((entry, i) => {
+                            const prev = reversedCheckins[i+1];
                             const change = prev ? (parseFloat(entry.weight) - parseFloat(prev.weight)) : 0;
                             
                             return (
@@ -1511,11 +1550,12 @@
             );
         });
 
-        const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeightHistory }) => {
+        const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeightHistory, onRefreshData }) => {
             const checkins = userData.checkins || [];
             const periods = userData.periods || [];
             const activePeriod = periods.find(p => p.isActive);
             const [showPeriodModal, setShowPeriodModal] = useState(false);
+            const [periodLoading, setPeriodLoading] = useState(false);
             
             // Memoize sorterte checkins og lastCheckin
             const { sortedCheckins, lastCheckin } = useMemo(() => {
@@ -1605,17 +1645,36 @@
                         <PeriodManagementModal 
                             userData={userData}
                             onClose={() => setShowPeriodModal(false)}
+                            isLoading={periodLoading}
                             onCreatePeriod={async (name, startingWeight, goalWeight) => {
-                                await onUpdateData({ action: 'create_period', name, startingWeight, goalWeight });
-                                window.location.reload(); // Refresh for å laste nye data
+                                setPeriodLoading(true);
+                                try {
+                                    await onUpdateData({ action: 'create_period', name, startingWeight, goalWeight });
+                                    setShowPeriodModal(false);
+                                    if (onRefreshData) await onRefreshData();
+                                } finally {
+                                    setPeriodLoading(false);
+                                }
                             }}
                             onEndPeriod={async (periodId) => {
-                                await onUpdateData({ action: 'end_period', periodId });
-                                window.location.reload();
+                                setPeriodLoading(true);
+                                try {
+                                    await onUpdateData({ action: 'end_period', periodId });
+                                    setShowPeriodModal(false);
+                                    if (onRefreshData) await onRefreshData();
+                                } finally {
+                                    setPeriodLoading(false);
+                                }
                             }}
                             onUpdatePeriod={async (periodId, updates) => {
-                                await onUpdateData({ action: 'update_period', periodId, ...updates });
-                                window.location.reload();
+                                setPeriodLoading(true);
+                                try {
+                                    await onUpdateData({ action: 'update_period', periodId, ...updates });
+                                    setShowPeriodModal(false);
+                                    if (onRefreshData) await onRefreshData();
+                                } finally {
+                                    setPeriodLoading(false);
+                                }
                             }}
                         />
                     )}
@@ -2387,15 +2446,14 @@
                     try {
                         const users = await api.getUsers();
                         setAllUsers(users);
-                        const savedSession = localStorage.getItem('jnm_session');
-                        if (savedSession) {
-                            const sessionUser = JSON.parse(savedSession);
+                        const sessionUser = getSession();
+                        if (sessionUser) {
                             const isValidUser = users.find(u => u.id === sessionUser.id);
                             if (isValidUser) {
                                 setCurrentUser(isValidUser);
                                 if (isValidUser.role === 'athlete') setViewingClient(isValidUser);
                             } else {
-                                localStorage.removeItem('jnm_session');
+                                clearSession();
                             }
                         }
                     } catch(e) { console.error(e); } finally { setIsLoading(false); }
@@ -2414,14 +2472,14 @@
 
             const handleLogin = useCallback((user) => {
                 setCurrentUser(user);
-                localStorage.setItem('jnm_session', JSON.stringify(user));
+                saveSession(user);
                 if (user.role === 'athlete') setViewingClient(user);
             }, []);
 
             const handleLogout = useCallback(() => {
                 setCurrentUser(null);
                 setViewingClient(null);
-                localStorage.removeItem('jnm_session');
+                clearSession();
                 setActiveTab('dashboard');
             }, []);
 
@@ -2476,15 +2534,16 @@
 
             const handleDeleteCheckin = useCallback(async (checkinId) => {
                 if (!viewingClient) return;
-                const previousData = { ...currentData };
+                // Deep copy for korrekt rollback
+                const previousCheckins = [...currentData.checkins];
                 setCurrentData(prev => ({ ...prev, checkins: prev.checkins.filter(c => c.id !== checkinId) }));
                 try { 
-                    await api.deleteCheckin(checkinId); 
+                    await api.deleteCheckin(viewingClient.id, checkinId); 
                 } catch (e) { 
                     alert('Kunne ikke slette.'); 
-                    setCurrentData(previousData); 
+                    setCurrentData(prev => ({ ...prev, checkins: previousCheckins })); 
                 }
-            }, [viewingClient, currentData]);
+            }, [viewingClient, currentData.checkins]);
 
             const handleClearClient = useCallback(() => {
                 setViewingClient(null);
@@ -2677,7 +2736,7 @@
                                     showWeightHistory ? (
                                         <WeightProgressView checkins={currentData.checkins} onBack={handleCloseWeightHistory} />
                                     ) : (
-                                        <DashboardView userData={currentData} isCoach={isCoach} onUpdateData={handleUpdateData} onOpenWeightHistory={handleOpenWeightHistory} />
+                                        <DashboardView userData={currentData} isCoach={isCoach} onUpdateData={handleUpdateData} onOpenWeightHistory={handleOpenWeightHistory} onRefreshData={handleRefresh} />
                                     )
                                 ) :
                                 activeTab === 'gallery' ? <GalleryView checkins={currentData.checkins} /> :
