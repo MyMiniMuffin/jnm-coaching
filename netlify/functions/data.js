@@ -64,6 +64,20 @@ exports.handler = async (event) => {
         periods = [];
       }
 
+      // Sjekk om gallery_images-tabellen eksisterer
+      let galleryImages = [];
+      try {
+        galleryImages = await sql`
+          SELECT id, image_url, label, date, created_at as timestamp
+          FROM gallery_images
+          WHERE user_id = ${userId}
+          ORDER BY date ASC, created_at ASC
+        `;
+      } catch (e) {
+        console.log('gallery_images table may not exist yet:', e.message);
+        galleryImages = [];
+      }
+
       const [userResult, checkins] = await Promise.all([
         sql`
           SELECT diet_plan, workout_plan, step_goal, total_weeks, start_date, is_paused, paused_at,
@@ -120,7 +134,14 @@ exports.handler = async (event) => {
           currentPeriodId: user.current_period_id,
           startingWeight: user.starting_weight,
           periods: periods || [],
-          checkins: formattedCheckins
+          checkins: formattedCheckins,
+          galleryImages: galleryImages.map(img => ({
+            id: img.id,
+            url: img.image_url,
+            label: img.label,
+            date: img.date,
+            timestamp: new Date(img.timestamp).getTime()
+          }))
         })
       };
     }
@@ -335,6 +356,26 @@ exports.handler = async (event) => {
         if (notes !== undefined) {
           await sql`UPDATE coaching_periods SET notes = ${notes} WHERE id = ${periodId} AND user_id = ${userId}`;
         }
+      }
+      
+      else if (type === 'add_gallery_image') {
+        if (!data.imageUrl) {
+          return { statusCode: 400, body: JSON.stringify({ error: 'Mangler bilde-URL' }) };
+        }
+        const label = data.label || 'Startbilde';
+        const date = data.date || new Date().toISOString().split('T')[0];
+        
+        await sql`
+          INSERT INTO gallery_images (user_id, image_url, label, date)
+          VALUES (${userId}, ${data.imageUrl}, ${label}, ${date})
+        `;
+      }
+      
+      else if (type === 'delete_gallery_image') {
+        if (!data.imageId) {
+          return { statusCode: 400, body: JSON.stringify({ error: 'Mangler bilde-ID' }) };
+        }
+        await sql`DELETE FROM gallery_images WHERE id = ${data.imageId} AND user_id = ${userId}`;
       }
 
       return { statusCode: 200, body: JSON.stringify({ success: true }) };

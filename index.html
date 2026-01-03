@@ -364,7 +364,7 @@
                     >
                         <div className={`bg-ink text-white px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 shadow-lg ${refreshing ? 'animate-pulse' : ''}`}>
                             <Loader2 size={16} className={refreshing ? 'animate-spin' : ''} style={{ transform: `rotate(${pullDistance * 3}deg)` }} />
-                            {refreshing ? 'Oppdaterer...' : pullDistance >= threshold ? 'Slipp for å oppdatere' : 'Dra ned...'}
+                            {refreshing ? 'Oppdaterer...' : pullDistance >= threshold ? 'Slipp for Ã¥ oppdatere' : 'Dra ned...'}
                         </div>
                     </div>
                 );
@@ -447,6 +447,20 @@
                 });
                 if (!res.ok) throw new Error('Kunne ikke oppdatere periode');
             },
+            addGalleryImage: async (userId, imageUrl, label, date) => {
+                const res = await fetch('/.netlify/functions/data', { 
+                    method: 'POST', 
+                    body: JSON.stringify({ userId, type: 'add_gallery_image', data: { imageUrl, label, date } }) 
+                });
+                if (!res.ok) throw new Error('Kunne ikke legge til bilde');
+            },
+            deleteGalleryImage: async (userId, imageId) => {
+                const res = await fetch('/.netlify/functions/data', { 
+                    method: 'POST', 
+                    body: JSON.stringify({ userId, type: 'delete_gallery_image', data: { imageId } }) 
+                });
+                if (!res.ok) throw new Error('Kunne ikke slette bilde');
+            },
             login: async (username, password) => {
                 const res = await fetch('/.netlify/functions/auth', { method: 'POST', body: JSON.stringify({ username, password }) });
                 if (res.status === 401) return null; 
@@ -456,7 +470,7 @@
         };
 
         // --- Helpers ---
-        const formatWeight = (val) => (!val ? '—' : parseFloat(val).toFixed(1).replace('.', ','));
+        const formatWeight = (val) => (!val ? 'â€”' : parseFloat(val).toFixed(1).replace('.', ','));
         
         const formatDateNO = (dateString) => {
             if (!dateString) return '';
@@ -633,7 +647,7 @@
                     if (user) onLogin(user);
                     else setError('Feil brukernavn eller passord');
                 } catch (err) {
-                    setError('Serverfeil. Prøv igjen.');
+                    setError('Serverfeil. PrÃ¸v igjen.');
                 } finally {
                     setIsLoading(false);
                 }
@@ -646,7 +660,7 @@
                             <img src={APP_ICON} alt="Logo" className="w-full h-full" />
                         </div>
                         <h1 className="text-3xl font-display text-ink mb-2">JNM Coaching</h1>
-                        <p className="text-ink-muted">Logg inn for å fortsette</p>
+                        <p className="text-ink-muted">Logg inn for Ã¥ fortsette</p>
                     </div>
 
                     <div className="w-full max-w-sm">
@@ -668,7 +682,7 @@
                                     value={password} 
                                     onChange={(e) => setPassword(e.target.value)} 
                                     className="w-full px-4 py-3.5 bg-white border border-surface-200 rounded-xl focus:ring-2 focus:ring-ink focus:border-ink outline-none transition-all" 
-                                    placeholder="••••••••" 
+                                    placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" 
                                 />
                             </div>
 
@@ -689,7 +703,7 @@
                         </form>
                     </div>
 
-                    <p className="absolute bottom-8 text-ink-faint text-xs">JNM Coaching © 2025</p>
+                    <p className="absolute bottom-8 text-ink-faint text-xs">JNM Coaching Â© 2025</p>
                 </div>
             );
         });
@@ -771,7 +785,7 @@
                 [checkins]
             );
             
-            // OPTIMALISERING: Reverser én gang i stedet for i hver map-iterasjon
+            // OPTIMALISERING: Reverser Ã©n gang i stedet for i hver map-iterasjon
             const reversedCheckins = useMemo(() => [...validCheckins].reverse(), [validCheckins]);
 
             if (validCheckins.length === 0) return (
@@ -819,7 +833,7 @@
                             </div>
                         </Card>
                         <Card className="p-5">
-                            <p className="text-xs text-ink-muted uppercase tracking-wide mb-1">Nåværende</p>
+                            <p className="text-xs text-ink-muted uppercase tracking-wide mb-1">NÃ¥vÃ¦rende</p>
                             <p className="text-2xl font-semibold">{formatWeight(last.weight)} kg</p>
                         </Card>
                     </div>
@@ -874,16 +888,34 @@
         });
 
         // GalleryView - samler alle bilder fra checkins for lett sammenligning
-        const GalleryView = React.memo(({ checkins }) => {
+        const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false, onAddGalleryImage, onDeleteGalleryImage }) => {
             const [lightbox, setLightbox] = useState({ isOpen: false, images: [], index: 0 });
             const [viewMode, setViewMode] = useState('grid'); // 'grid', 'timeline', eller 'compare'
             const [compareImages, setCompareImages] = useState({ before: null, after: null });
             const [selectingFor, setSelectingFor] = useState(null); // 'before' eller 'after'
             const [fullscreenCompare, setFullscreenCompare] = useState(false);
+            const [showUploadModal, setShowUploadModal] = useState(false);
+            const [isUploading, setIsUploading] = useState(false);
+            const [uploadForm, setUploadForm] = useState({ label: 'Startbilde', date: new Date().toISOString().split('T')[0] });
 
             // Samle alle bilder med metadata, sortert fra nyeste til eldste
             const allImages = useMemo(() => {
                 const images = [];
+                
+                // Legg til gallery-bilder (coach-opplastet)
+                galleryImages.forEach(img => {
+                    images.push({
+                        url: img.url,
+                        date: img.date,
+                        timestamp: img.timestamp,
+                        weight: null,
+                        label: img.label,
+                        isGalleryImage: true,
+                        galleryImageId: img.id
+                    });
+                });
+                
+                // Legg til checkin-bilder
                 const sortedCheckins = [...checkins].sort((a, b) => b.timestamp - a.timestamp);
                 
                 sortedCheckins.forEach(checkin => {
@@ -897,15 +929,17 @@
                             date: checkin.date,
                             timestamp: checkin.timestamp,
                             weight: checkin.weight,
-                            checkinId: checkin.id
+                            checkinId: checkin.id,
+                            isGalleryImage: false
                         });
                     });
                 });
                 
-                return images;
-            }, [checkins]);
+                // Sorter alle bilder etter timestamp, eldste først for compare-logikk
+                return images.sort((a, b) => b.timestamp - a.timestamp);
+            }, [checkins, galleryImages]);
 
-            // Grupper bilder etter måned for timeline-visning
+            // Grupper bilder etter mÃ¥ned for timeline-visning
             const imagesByMonth = useMemo(() => {
                 const grouped = {};
                 allImages.forEach(img => {
@@ -926,7 +960,7 @@
             }, []);
 
             const openLightbox = useCallback((index) => {
-                if (selectingFor) return; // Ikke åpne lightbox når vi velger bilder
+                if (selectingFor) return; // Ikke Ã¥pne lightbox nÃ¥r vi velger bilder
                 setLightbox({ isOpen: true, images: allImages.map(img => img.url), index });
             }, [allImages, selectingFor]);
 
@@ -955,6 +989,40 @@
                 setViewMode('grid');
             }, []);
 
+            // Håndter bildeopplasting for coach
+            const handleImageUpload = useCallback(async (e) => {
+                const files = Array.from(e.target.files);
+                if (files.length === 0) return;
+                setIsUploading(true);
+                try {
+                    const cloudName = 'drg4fxboh'; 
+                    const uploadPreset = 'jnm_upload';
+                    
+                    for (const file of files) {
+                        const fd = new FormData();
+                        fd.append('file', file);
+                        fd.append('upload_preset', uploadPreset);
+                        const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: 'POST', body: fd });
+                        if (!res.ok) throw new Error('Opplasting feilet');
+                        const data = await res.json();
+                        await onAddGalleryImage(data.secure_url, uploadForm.label, uploadForm.date);
+                    }
+                    setShowUploadModal(false);
+                    setUploadForm({ label: 'Startbilde', date: new Date().toISOString().split('T')[0] });
+                } catch (err) {
+                    console.error(err);
+                    alert('Bildeopplasting feilet');
+                } finally {
+                    setIsUploading(false);
+                }
+            }, [onAddGalleryImage, uploadForm]);
+
+            const handleDeleteGalleryImage = useCallback(async (imageId) => {
+                if (confirm('Slett dette bildet?')) {
+                    await onDeleteGalleryImage(imageId);
+                }
+            }, [onDeleteGalleryImage]);
+
             // Beregn vektendring mellom valgte bilder
             const weightDiff = useMemo(() => {
                 if (!compareImages.before?.weight || !compareImages.after?.weight) return null;
@@ -969,20 +1037,78 @@
                 return Math.round(diff / (1000 * 60 * 60 * 24));
             }, [compareImages]);
 
+            // Upload modal komponent
+            const UploadModal = () => (
+                <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+                    <Card className="w-full max-w-sm p-6 animate-scale-in">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-xl font-display">Last opp bilde</h2>
+                            <button onClick={() => setShowUploadModal(false)} className="text-ink-muted hover:text-ink p-1">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-ink-muted mb-2">Bildetekst</label>
+                                <input 
+                                    type="text"
+                                    value={uploadForm.label}
+                                    onChange={(e) => setUploadForm(prev => ({ ...prev, label: e.target.value }))}
+                                    placeholder="F.eks. Startbilde"
+                                    className="w-full px-4 py-3 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink"
+                                />
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-medium text-ink-muted mb-2">Dato</label>
+                                <input 
+                                    type="date"
+                                    value={uploadForm.date}
+                                    onChange={(e) => setUploadForm(prev => ({ ...prev, date: e.target.value }))}
+                                    className="w-full px-4 py-3 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink"
+                                />
+                            </div>
+
+                            <label className={`flex flex-col items-center justify-center p-8 border-2 border-dashed border-surface-200 rounded-xl cursor-pointer hover:border-surface-300 hover:bg-surface-50 transition-all ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                                {isUploading ? (
+                                    <Loader2 className="animate-spin text-ink-muted" size={24} />
+                                ) : (
+                                    <>
+                                        <Camera size={24} className="text-ink-muted mb-2" />
+                                        <span className="font-medium text-ink-muted">Velg bilde</span>
+                                        <span className="text-xs text-ink-faint mt-1">JPG, PNG eller HEIC</span>
+                                    </>
+                                )}
+                                <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={isUploading} />
+                            </label>
+                        </div>
+                    </Card>
+                </div>
+            );
+
             if (allImages.length === 0) {
                 return (
                     <div className="flex flex-col items-center justify-center h-[60vh] animate-fade-in text-center px-6">
+                        {showUploadModal && <UploadModal />}
                         <div className="w-16 h-16 bg-surface-100 rounded-2xl flex items-center justify-center text-ink-muted mb-6">
                             <Camera size={32} />
                         </div>
                         <p className="text-ink-muted font-display text-lg italic mb-2">Ingen bilder enda</p>
-                        <p className="text-ink-faint text-sm">Bilder fra ukesrapporter vil vises her</p>
+                        <p className="text-ink-faint text-sm mb-6">Bilder fra ukesrapporter vil vises her</p>
+                        {isCoach && onAddGalleryImage && (
+                            <Button variant="primary" size="md" onClick={() => setShowUploadModal(true)}>
+                                <Plus size={18} /> Last opp startbilde
+                            </Button>
+                        )}
                     </div>
                 );
             }
 
             return (
                 <div className="space-y-5 pb-32 animate-slide-up">
+                    {showUploadModal && <UploadModal />}
+                    
                     {lightbox.isOpen && (
                         <ImageModal 
                             images={lightbox.images} 
@@ -1012,7 +1138,7 @@
 
                             {/* Bilder side-by-side med zoom */}
                             <div className="flex-1 flex overflow-hidden">
-                                {/* Før */}
+                                {/* FÃ¸r */}
                                 <div className="flex-1 relative overflow-hidden">
                                     <TransformWrapper
                                         initialScale={1}
@@ -1027,12 +1153,12 @@
                                             <img 
                                                 src={getFullSizeImage(compareImages.before.url)} 
                                                 className="max-w-full max-h-full object-contain"
-                                                alt="Før"
+                                                alt="FÃ¸r"
                                             />
                                         </TransformComponent>
                                     </TransformWrapper>
                                     <div className="absolute top-4 left-4 bg-black/50 text-white px-3 py-1.5 rounded-full text-sm font-medium backdrop-blur-sm pointer-events-none">
-                                        FØR
+                                        FÃ˜R
                                     </div>
                                     <div className="absolute bottom-4 left-4 right-4 bg-black/50 backdrop-blur-sm rounded-xl p-3 pointer-events-none">
                                         <p className="text-white font-medium">{formatDateNO(compareImages.before.date)}</p>
@@ -1088,7 +1214,7 @@
                                         </div>
                                     )}
                                     <div className="bg-white/10 text-white/60 py-2 px-4 rounded-full text-sm">
-                                        Knip for å zoome
+                                        Knip for Ã¥ zoome
                                     </div>
                                 </div>
                             </div>
@@ -1105,26 +1231,33 @@
                                 {viewMode === 'compare' ? 'Velg bilder å sammenligne' : `${allImages.length} bilder`}
                             </p>
                         </div>
-                        {viewMode !== 'compare' ? (
-                            <div className="flex gap-1 bg-surface-100 p-1 rounded-lg">
-                                <button
-                                    onClick={() => setViewMode('grid')}
-                                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-ink' : 'text-ink-muted'}`}
-                                >
-                                    Rutenett
-                                </button>
-                                <button
-                                    onClick={() => setViewMode('timeline')}
-                                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === 'timeline' ? 'bg-white shadow-sm text-ink' : 'text-ink-muted'}`}
-                                >
-                                    Tidslinje
-                                </button>
-                            </div>
-                        ) : (
-                            <Button variant="secondary" size="sm" onClick={clearCompare}>
-                                <X size={16} /> Lukk
-                            </Button>
-                        )}
+                        <div className="flex items-center gap-2">
+                            {isCoach && onAddGalleryImage && viewMode !== 'compare' && (
+                                <Button variant="primary" size="sm" onClick={() => setShowUploadModal(true)}>
+                                    <Plus size={16} />
+                                </Button>
+                            )}
+                            {viewMode !== 'compare' ? (
+                                <div className="flex gap-1 bg-surface-100 p-1 rounded-lg">
+                                    <button
+                                        onClick={() => setViewMode('grid')}
+                                        className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-ink' : 'text-ink-muted'}`}
+                                    >
+                                        Rutenett
+                                    </button>
+                                    <button
+                                        onClick={() => setViewMode('timeline')}
+                                        className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === 'timeline' ? 'bg-white shadow-sm text-ink' : 'text-ink-muted'}`}
+                                    >
+                                        Tidslinje
+                                    </button>
+                                </div>
+                            ) : (
+                                <Button variant="secondary" size="sm" onClick={clearCompare}>
+                                    <X size={16} /> Lukk
+                                </Button>
+                            )}
+                        </div>
                     </div>
 
                     {/* Sammenlign-modus */}
@@ -1132,9 +1265,9 @@
                         <div className="space-y-4">
                             {/* Sammenligning side-by-side */}
                             <div className="grid grid-cols-2 gap-3">
-                                {/* Før-bilde */}
+                                {/* FÃ¸r-bilde */}
                                 <div className="space-y-2">
-                                    <p className="text-xs font-medium text-ink-muted uppercase tracking-wide text-center">Før</p>
+                                    <p className="text-xs font-medium text-ink-muted uppercase tracking-wide text-center">FÃ¸r</p>
                                     <div 
                                         className={`relative aspect-[3/4] rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${selectingFor === 'before' ? 'border-ink ring-2 ring-ink/20' : 'border-surface-200'}`}
                                         onClick={() => setSelectingFor(selectingFor === 'before' ? null : 'before')}
@@ -1144,7 +1277,7 @@
                                                 <img 
                                                     src={getFullSizeImage(compareImages.before.url)} 
                                                     className="w-full h-full object-cover"
-                                                    alt="Før"
+                                                    alt="FÃ¸r"
                                                 />
                                                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-ink/80 to-transparent p-3">
                                                     <p className="text-white text-sm font-medium">{formatDateNO(compareImages.before.date)}</p>
@@ -1244,7 +1377,7 @@
                             {selectingFor && (
                                 <Card className="p-3 bg-ink text-white">
                                     <p className="text-sm text-center">
-                                        👆 Trykk på et bilde nedenfor for å velge som "{selectingFor === 'before' ? 'før' : 'etter'}"-bilde
+                                        ðŸ‘† Trykk pÃ¥ et bilde nedenfor for Ã¥ velge som "{selectingFor === 'before' ? 'fÃ¸r' : 'etter'}"-bilde
                                     </p>
                                 </Card>
                             )}
@@ -1270,7 +1403,7 @@
                                                 />
                                                 {isSelected && (
                                                     <div className="absolute top-1 right-1 bg-ink text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
-                                                        {isBefore ? 'FØR' : 'ETTER'}
+                                                        {isBefore ? 'FÃ˜R' : 'ETTER'}
                                                     </div>
                                                 )}
                                             </div>
@@ -1286,7 +1419,7 @@
                         <div className="grid grid-cols-3 gap-1.5">
                             {allImages.map((img, idx) => (
                                 <div 
-                                    key={`${img.checkinId}-${idx}`}
+                                    key={img.isGalleryImage ? `gallery-${img.galleryImageId}` : `${img.checkinId}-${idx}`}
                                     className="relative aspect-square cursor-pointer group"
                                     onClick={() => handleImageClick(img, idx)}
                                 >
@@ -1294,8 +1427,23 @@
                                         src={getThumbnail(img.url)} 
                                         loading="lazy"
                                         className="w-full h-full object-cover rounded-lg"
-                                        alt={`Fremgang ${formatDateNO(img.date)}`}
+                                        alt={img.label || `Fremgang ${formatDateNO(img.date)}`}
                                     />
+                                    {/* Label badge for gallery-bilder */}
+                                    {img.isGalleryImage && img.label && (
+                                        <div className="absolute top-1.5 left-1.5 bg-ink/80 text-white text-[10px] font-medium px-2 py-0.5 rounded-full backdrop-blur-sm">
+                                            {img.label}
+                                        </div>
+                                    )}
+                                    {/* Slett-knapp for coach på gallery-bilder */}
+                                    {isCoach && img.isGalleryImage && onDeleteGalleryImage && (
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); handleDeleteGalleryImage(img.galleryImageId); }}
+                                            className="absolute top-1.5 right-1.5 bg-red-500/90 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                        >
+                                            <X size={12} />
+                                        </button>
+                                    )}
                                     <div className="absolute inset-0 bg-gradient-to-t from-ink/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
                                         <div className="absolute bottom-2 left-2 right-2">
                                             <p className="text-white text-xs font-medium">{formatDateNO(img.date)}</p>
@@ -1324,7 +1472,7 @@
                                             const globalIndex = allImages.findIndex(i => i.url === img.url && i.timestamp === img.timestamp);
                                             return (
                                                 <div 
-                                                    key={`${img.checkinId}-${idx}`}
+                                                    key={img.isGalleryImage ? `gallery-${img.galleryImageId}` : `${img.checkinId}-${idx}`}
                                                     className="relative aspect-square cursor-pointer group"
                                                     onClick={() => handleImageClick(img, globalIndex)}
                                                 >
@@ -1332,8 +1480,23 @@
                                                         src={getThumbnail(img.url)} 
                                                         loading="lazy"
                                                         className="w-full h-full object-cover rounded-lg"
-                                                        alt={`Fremgang ${formatDateNO(img.date)}`}
+                                                        alt={img.label || `Fremgang ${formatDateNO(img.date)}`}
                                                     />
+                                                    {/* Label badge for gallery-bilder */}
+                                                    {img.isGalleryImage && img.label && (
+                                                        <div className="absolute top-1.5 left-1.5 bg-ink/80 text-white text-[10px] font-medium px-2 py-0.5 rounded-full backdrop-blur-sm">
+                                                            {img.label}
+                                                        </div>
+                                                    )}
+                                                    {/* Slett-knapp for coach på gallery-bilder */}
+                                                    {isCoach && img.isGalleryImage && onDeleteGalleryImage && (
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); handleDeleteGalleryImage(img.galleryImageId); }}
+                                                            className="absolute top-1.5 right-1.5 bg-red-500/90 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        >
+                                                            <X size={12} />
+                                                        </button>
+                                                    )}
                                                     <div className="absolute inset-0 bg-gradient-to-t from-ink/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
                                                         <div className="absolute bottom-2 left-2 right-2">
                                                             <p className="text-white text-xs font-medium">{formatDateNO(img.date)}</p>
@@ -1360,7 +1523,7 @@
                             onClick={startCompare}
                         >
                             <ArrowRight size={18} className="rotate-90" />
-                            Sammenlign før/etter
+                            Sammenlign fÃ¸r/etter
                         </Button>
                     )}
                 </div>
@@ -1369,12 +1532,12 @@
 
         // Motiverende sitater - statisk, flyttes utenfor komponenten
         const QUOTES = [
-            { text: "Små steg hver dag fører til store resultater.", author: "Ukjent" },
-            { text: "Du trenger ikke være perfekt, bare konsistent.", author: "Ukjent" },
-            { text: "Kroppen oppnår det sinnet tror på.", author: "Ukjent" },
+            { text: "SmÃ¥ steg hver dag fÃ¸rer til store resultater.", author: "Ukjent" },
+            { text: "Du trenger ikke vÃ¦re perfekt, bare konsistent.", author: "Ukjent" },
+            { text: "Kroppen oppnÃ¥r det sinnet tror pÃ¥.", author: "Ukjent" },
             { text: "Fremgang, ikke perfeksjon.", author: "Ukjent" },
-            { text: "Den eneste dårlige treningen er den som ikke ble gjort.", author: "Ukjent" },
-            { text: "Disiplin er broen mellom mål og resultater.", author: "Jim Rohn" },
+            { text: "Den eneste dÃ¥rlige treningen er den som ikke ble gjort.", author: "Ukjent" },
+            { text: "Disiplin er broen mellom mÃ¥l og resultater.", author: "Jim Rohn" },
         ];
 
         // --- Period Management Modal ---
@@ -1387,7 +1550,7 @@
             const handleCreate = useCallback(async (e) => {
                 e.preventDefault();
                 if (!formData.startingWeight) {
-                    alert('Startvekt er påkrevd');
+                    alert('Startvekt er pÃ¥krevd');
                     return;
                 }
                 await onCreatePeriod(formData.name || `Runde ${periods.length + 1}`, formData.startingWeight, formData.goalWeight || null);
@@ -1395,7 +1558,7 @@
             }, [formData, periods.length, onCreatePeriod, onClose]);
 
             const handleEnd = useCallback(async (periodId) => {
-                if (confirm('Avslutt denne runden? Du kan starte en ny runde etterpå.')) {
+                if (confirm('Avslutt denne runden? Du kan starte en ny runde etterpÃ¥.')) {
                     await onEndPeriod(periodId);
                     onClose();
                 }
@@ -1432,7 +1595,7 @@
                                                 </div>
                                                 {activePeriod.goalWeight && (
                                                     <div>
-                                                        <p className="text-ink-faint">Målvekt</p>
+                                                        <p className="text-ink-faint">MÃ¥lvekt</p>
                                                         <p className="font-semibold">{formatWeight(activePeriod.goalWeight)} kg</p>
                                                     </div>
                                                 )}
@@ -1460,7 +1623,7 @@
                                                         <div>
                                                             <p className="font-medium">{period.name}</p>
                                                             <p className="text-xs text-ink-muted">
-                                                                {formatDateNO(period.startDate)} - {period.endDate ? formatDateNO(period.endDate) : 'Pågår'}
+                                                                {formatDateNO(period.startDate)} - {period.endDate ? formatDateNO(period.endDate) : 'PÃ¥gÃ¥r'}
                                                             </p>
                                                         </div>
                                                     </div>
@@ -1472,7 +1635,7 @@
                                                         )}
                                                         {period.goalWeight && (
                                                             <Badge variant="muted">
-                                                                Mål: {formatWeight(period.goalWeight)} kg
+                                                                MÃ¥l: {formatWeight(period.goalWeight)} kg
                                                             </Badge>
                                                         )}
                                                     </div>
@@ -1495,7 +1658,7 @@
                         ) : (
                             <form onSubmit={handleCreate} className="space-y-4">
                                 <div>
-                                    <InputLabel>Navn på runde</InputLabel>
+                                    <InputLabel>Navn pÃ¥ runde</InputLabel>
                                     <input 
                                         type="text"
                                         value={formData.name}
@@ -1523,7 +1686,7 @@
                                 </div>
 
                                 <div>
-                                    <InputLabel>Målvekt (kg, valgfritt)</InputLabel>
+                                    <InputLabel>MÃ¥lvekt (kg, valgfritt)</InputLabel>
                                     <input 
                                         type="number"
                                         inputMode="decimal"
@@ -1601,7 +1764,7 @@
                     const lastWeight = parseFloat(validWeights[validWeights.length - 1].weight);
                     weightChange = (lastWeight - startWeight).toFixed(1);
                 } else if (validWeights.length >= 2) {
-                    // Fallback: første til siste checkin
+                    // Fallback: fÃ¸rste til siste checkin
                     const first = parseFloat(validWeights[0].weight);
                     const last = parseFloat(validWeights[validWeights.length - 1].weight);
                     weightChange = (last - first).toFixed(1);
@@ -1626,7 +1789,7 @@
                     if (userData.isPaused) {
                         if(confirm("Gjenoppta plan?")) await onUpdateData({ action: 'resume' });
                     } else {
-                        if(confirm("Sett plan på pause?")) await onUpdateData({ action: 'pause' });
+                        if(confirm("Sett plan pÃ¥ pause?")) await onUpdateData({ action: 'pause' });
                     }
                 } else if (choice === '4') {
                     setShowPeriodModal(true);
@@ -1634,7 +1797,7 @@
             }, [isCoach, userData.isPaused, userData.totalWeeks, onUpdateData]);
 
             const handleEditGoal = useCallback(async () => {
-                const input = prompt("Nytt skrittmål:", userData.stepGoal || 10000);
+                const input = prompt("Nytt skrittmÃ¥l:", userData.stepGoal || 10000);
                 if (input && !isNaN(parseInt(input))) await onUpdateData('stepGoal', parseInt(input));
             }, [userData.stepGoal, onUpdateData]);
 
@@ -1686,7 +1849,7 @@
                             <div className="flex justify-between items-start mb-4">
                                 <div>
                                     <p className="text-white/60 text-sm">
-                                        {activePeriod ? activePeriod.name : (userData.isPaused ? 'Plan på pause' : userData.startDate ? 'Din fremgang' : 'Velkommen')}
+                                        {activePeriod ? activePeriod.name : (userData.isPaused ? 'Plan pÃ¥ pause' : userData.startDate ? 'Din fremgang' : 'Velkommen')}
                                     </p>
                                     <h2 className="text-3xl font-display mt-1">
                                         {userData.isPaused ? 'Pauset' : userData.startDate ? `Uke ${currentWeek}` : 'Kom i gang'}
@@ -1694,7 +1857,7 @@
                                     {activePeriod && activePeriod.startingWeight && (
                                         <p className="text-white/40 text-sm mt-1">
                                             Startvekt: {formatWeight(activePeriod.startingWeight)} kg
-                                            {activePeriod.goalWeight && ` → Mål: ${formatWeight(activePeriod.goalWeight)} kg`}
+                                            {activePeriod.goalWeight && ` â†’ MÃ¥l: ${formatWeight(activePeriod.goalWeight)} kg`}
                                         </p>
                                     )}
                                 </div>
@@ -1726,13 +1889,13 @@
 
                             {!userData.startDate && (
                                 <p className="text-white/60 text-sm">
-                                    {isCoach ? 'Trykk på blyanten for å sette startdato' : 'Venter på at coach setter opp planen'}
+                                    {isCoach ? 'Trykk pÃ¥ blyanten for Ã¥ sette startdato' : 'Venter pÃ¥ at coach setter opp planen'}
                                 </p>
                             )}
 
                             {userData.isPaused && (
                                 <p className="text-white/60 text-sm">
-                                    {isCoach ? 'Trykk på blyanten for å gjenoppta' : 'Planen er satt på pause'}
+                                    {isCoach ? 'Trykk pÃ¥ blyanten for Ã¥ gjenoppta' : 'Planen er satt pÃ¥ pause'}
                                 </p>
                             )}
                         </div>
@@ -1753,7 +1916,7 @@
                             </div>
                             <p className="text-xs text-ink-muted uppercase tracking-wide">Siste vekt</p>
                             <p className="text-2xl font-semibold mt-1">
-                                {lastCheckin ? formatWeight(lastCheckin.weight) : '—'}
+                                {lastCheckin ? formatWeight(lastCheckin.weight) : 'â€”'}
                                 <span className="text-sm font-normal text-ink-muted ml-1">kg</span>
                             </p>
                         </Card>
@@ -1769,7 +1932,7 @@
                                     </button>
                                 )}
                             </div>
-                            <p className="text-xs text-ink-muted uppercase tracking-wide">Skrittmål</p>
+                            <p className="text-xs text-ink-muted uppercase tracking-wide">SkrittmÃ¥l</p>
                             <p className="text-2xl font-semibold mt-1">{(userData.stepGoal || 10000).toLocaleString()}</p>
                         </Card>
                     </div>
@@ -1780,7 +1943,7 @@
                             <p className="text-xs text-ink-muted uppercase tracking-wide mb-3 px-1">Siste rapport</p>
                             <Card className="divide-y divide-surface-100">
                                 <div className="p-4 flex justify-between items-center">
-                                    <span className="text-ink-muted">Nøyaktighet</span>
+                                    <span className="text-ink-muted">NÃ¸yaktighet</span>
                                     <Badge>{lastCheckin.accuracy}/10</Badge>
                                 </div>
                                 <div className="p-4 flex justify-between items-center">
@@ -1791,16 +1954,16 @@
                                     </div>
                                 </div>
                                 <div className="p-4 flex justify-between items-center">
-                                    <span className="text-ink-muted">Energi / Søvn</span>
+                                    <span className="text-ink-muted">Energi / SÃ¸vn</span>
                                     <div className="flex gap-2">
                                         <Badge><Zap size={12} /> {lastCheckin.energy}</Badge>
                                         <Badge><Moon size={12} /> {lastCheckin.sleep}</Badge>
                                     </div>
                                 </div>
                                 <div className="p-4 flex justify-between items-center">
-                                    <span className="text-ink-muted">Skrittmål</span>
+                                    <span className="text-ink-muted">SkrittmÃ¥l</span>
                                     <Badge variant={lastCheckin.stepsReached ? 'success' : 'muted'}>
-                                        {lastCheckin.stepsReached ? <><Check size={12} /> Oppnådd</> : 'Ikke nådd'}
+                                        {lastCheckin.stepsReached ? <><Check size={12} /> OppnÃ¥dd</> : 'Ikke nÃ¥dd'}
                                     </Badge>
                                 </div>
                             </Card>
@@ -1810,12 +1973,12 @@
                     {/* Totaloversikt - kun hvis det finnes data */}
                     {stats && (
                         <div>
-                            <p className="text-xs text-ink-muted uppercase tracking-wide mb-3 px-1">Din reise så langt</p>
+                            <p className="text-xs text-ink-muted uppercase tracking-wide mb-3 px-1">Din reise sÃ¥ langt</p>
                             <Card className="p-5">
                                 <div className="grid grid-cols-4 gap-3 text-center mb-5">
                                     <div>
                                         <div className="text-2xl font-semibold text-ink">{stats.totalStrength}</div>
-                                        <div className="text-[10px] text-ink-muted uppercase tracking-wide mt-1">Styrkeøkter</div>
+                                        <div className="text-[10px] text-ink-muted uppercase tracking-wide mt-1">StyrkeÃ¸kter</div>
                                     </div>
                                     <div>
                                         <div className="text-2xl font-semibold text-ink">{stats.totalCardio}</div>
@@ -1823,11 +1986,11 @@
                                     </div>
                                     <div>
                                         <div className="text-2xl font-semibold text-ink">{stats.stepsHit}/{stats.totalCheckins}</div>
-                                        <div className="text-[10px] text-ink-muted uppercase tracking-wide mt-1">Skrittmål</div>
+                                        <div className="text-[10px] text-ink-muted uppercase tracking-wide mt-1">SkrittmÃ¥l</div>
                                     </div>
                                     <div>
                                         <div className="text-2xl font-semibold text-ink">{stats.avgAccuracy}</div>
-                                        <div className="text-[10px] text-ink-muted uppercase tracking-wide mt-1">Snitt nøyakt.</div>
+                                        <div className="text-[10px] text-ink-muted uppercase tracking-wide mt-1">Snitt nÃ¸yakt.</div>
                                     </div>
                                 </div>
                                 
@@ -1847,7 +2010,7 @@
                     <Card className="p-6 bg-gradient-to-br from-surface-50 to-surface-100 border-dashed">
                         <div className="text-center">
                             <p className="font-display text-lg text-ink italic leading-relaxed">"{todayQuote.text}"</p>
-                            <p className="text-xs text-ink-muted mt-3">— {todayQuote.author}</p>
+                            <p className="text-xs text-ink-muted mt-3">â€” {todayQuote.author}</p>
                         </div>
                     </Card>
                 </div>
@@ -1915,7 +2078,7 @@
             );
         });
 
-        // Flytt sub-komponenter utenfor CheckInView for å unngå re-deklarering
+        // Flytt sub-komponenter utenfor CheckInView for Ã¥ unngÃ¥ re-deklarering
         const InputLabel = React.memo(({ children }) => (
             <label className="block text-sm font-medium text-ink-muted mb-2">{children}</label>
         ));
@@ -2004,7 +2167,7 @@
                     };
                     await onNewCheckin(newEntry);
                     setStep('success');
-                    createConfetti(); // 🎉 Konfetti!
+                    createConfetti(); // ðŸŽ‰ Konfetti!
                     setTimeout(() => {
                         setStep('form');
                         setFormData(INITIAL_FORM_DATA);
@@ -2075,7 +2238,7 @@
                                         options={OPTIONS_1_TO_10} 
                                     />
                                     <SelectField 
-                                        label="Søvn" 
+                                        label="SÃ¸vn" 
                                         value={formData.sleep} 
                                         onChange={(e) => updateField('sleep', e.target.value)} 
                                         options={OPTIONS_1_TO_10} 
@@ -2083,7 +2246,7 @@
                                 </div>
                                 
                                 <SelectField 
-                                    label={`Nøyaktighet (${formData.accuracy}/10)`}
+                                    label={`NÃ¸yaktighet (${formData.accuracy}/10)`}
                                     value={formData.accuracy} 
                                     onChange={(e) => updateField('accuracy', e.target.value)} 
                                     options={OPTIONS_1_TO_10} 
@@ -2091,7 +2254,7 @@
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <SelectField 
-                                        label="Styrkeøkter" 
+                                        label="StyrkeÃ¸kter" 
                                         value={formData.strengthSessions} 
                                         onChange={(e) => updateField('strengthSessions', e.target.value)} 
                                         options={OPTIONS_0_TO_7} 
@@ -2113,7 +2276,7 @@
                                             className="w-5 h-5 rounded-md border-surface-300 text-ink focus:ring-ink cursor-pointer" 
                                         />
                                         <div>
-                                            <p className="font-medium">Skrittmål oppnådd</p>
+                                            <p className="font-medium">SkrittmÃ¥l oppnÃ¥dd</p>
                                             <p className="text-sm text-ink-muted">{stepGoal?.toLocaleString() || '10 000'} skritt</p>
                                         </div>
                                     </label>
@@ -2137,7 +2300,7 @@
                                         value={formData.comment} 
                                         onChange={(e) => updateField('comment', e.target.value)} 
                                         className="w-full px-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl h-28 outline-none resize-none focus:ring-2 focus:ring-ink focus:border-ink" 
-                                        placeholder="Hvordan har uken vært?" 
+                                        placeholder="Hvordan har uken vÃ¦rt?" 
                                     />
                                 </div>
                             </Card>
@@ -2226,7 +2389,7 @@
                                             
                                             <div className="grid grid-cols-3 gap-2 text-xs mb-4">
                                                 <div className="bg-surface-50 p-3 rounded-lg text-center">
-                                                    <p className="text-ink-faint mb-1">Nøyaktighet</p>
+                                                    <p className="text-ink-faint mb-1">NÃ¸yaktighet</p>
                                                     <p className="font-semibold">{entry.accuracy}/10</p>
                                                 </div>
                                                 <div className="bg-surface-50 p-3 rounded-lg text-center">
@@ -2234,7 +2397,7 @@
                                                     <p className="font-semibold">{entry.strengthSessions} / {entry.cardioSessions || 0}</p>
                                                 </div>
                                                 <div className="bg-surface-50 p-3 rounded-lg text-center">
-                                                    <p className="text-ink-faint mb-1">Energi / Søvn</p>
+                                                    <p className="text-ink-faint mb-1">Energi / SÃ¸vn</p>
                                                     <p className="font-semibold">{entry.energy} / {entry.sleep}</p>
                                                 </div>
                                             </div>
@@ -2242,7 +2405,7 @@
                                             <div className="flex gap-2 mb-4">
                                                 <Badge variant={entry.stepsReached ? 'success' : 'muted'}>
                                                     <Footprints size={12} />
-                                                    {entry.stepsReached ? 'Skrittmål' : 'Under mål'}
+                                                    {entry.stepsReached ? 'SkrittmÃ¥l' : 'Under mÃ¥l'}
                                                 </Badge>
                                                 <Badge variant={entry.takenSupplements ? 'success' : 'muted'}>
                                                     {entry.takenSupplements ? <Check size={12} /> : <X size={12} />}
@@ -2309,7 +2472,7 @@
                         <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
                             <Card className="w-full max-w-sm p-6 animate-scale-in">
                                 <div className="flex justify-between items-center mb-6">
-                                    <h2 className="text-xl font-display">Ny utøver</h2>
+                                    <h2 className="text-xl font-display">Ny utÃ¸ver</h2>
                                     <button onClick={closeModal} className="text-ink-muted hover:text-ink p-1">
                                         <X size={20} />
                                     </button>
@@ -2318,7 +2481,7 @@
                                     <input required name="name" type="text" placeholder="Fullt navn" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink" />
                                     <input required name="username" type="text" placeholder="Brukernavn" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink" />
                                     <input required name="password" type="text" placeholder="Passord" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink" />
-                                    <Button type="submit" size="lg" className="w-full">Opprett utøver</Button>
+                                    <Button type="submit" size="lg" className="w-full">Opprett utÃ¸ver</Button>
                                 </form>
                             </Card>
                         </div>
@@ -2373,8 +2536,8 @@
                     <div className="space-y-2">
                         {displayedClients.length === 0 ? (
                             <div className="text-center py-12 text-ink-muted">
-                                <p className="font-display italic">{showArchived ? 'Ingen arkiverte utøvere' : 'Ingen aktive utøvere'}</p>
-                                {!showArchived && <p className="text-sm mt-2">Trykk "Ny" for å legge til en utøver</p>}
+                                <p className="font-display italic">{showArchived ? 'Ingen arkiverte utÃ¸vere' : 'Ingen aktive utÃ¸vere'}</p>
+                                {!showArchived && <p className="text-sm mt-2">Trykk "Ny" for Ã¥ legge til en utÃ¸ver</p>}
                             </div>
                         ) : (
                             displayedClients.map(client => (
@@ -2407,7 +2570,7 @@
                                         </button>
                                         {/* Slett knapp */}
                                         <button 
-                                            onClick={(e) => { e.stopPropagation(); if(confirm('Slett utøver permanent?')) onDeleteClient(client.id); }} 
+                                            onClick={(e) => { e.stopPropagation(); if(confirm('Slett utÃ¸ver permanent?')) onDeleteClient(client.id); }} 
                                             className="opacity-0 group-hover:opacity-100 transition-opacity p-2 text-ink-faint hover:text-red-500"
                                         >
                                             <Trash2 size={18} />
@@ -2426,7 +2589,8 @@
         const INITIAL_DATA_STATE = { 
             dietPlan: '', workoutPlan: '', stepGoal: 10000, 
             totalWeeks: 12, startDate: null, isPaused: false, pausedAt: null, 
-            periods: [], currentPeriodId: null, startingWeight: null, checkins: [] 
+            periods: [], currentPeriodId: null, startingWeight: null, checkins: [],
+            galleryImages: []
         };
 
         const App = () => {
@@ -2493,7 +2657,7 @@
                 if (!viewingClient) return;
                 let updates = typeof keyOrObj === 'string' ? { [keyOrObj]: value } : keyOrObj;
                 
-                // Håndter periode-spesifikke actions
+                // HÃ¥ndter periode-spesifikke actions
                 if (updates.action === 'create_period') {
                     try {
                         await api.createPeriod(viewingClient.id, updates.name, updates.startingWeight, updates.goalWeight);
@@ -2570,6 +2734,22 @@
                 setAllUsers(await api.archiveUser(id, archive));
             }, []);
 
+            const handleAddGalleryImage = useCallback(async (imageUrl, label, date) => {
+                if (!viewingClient) return;
+                await api.addGalleryImage(viewingClient.id, imageUrl, label, date);
+                // Refresh data for å hente ny bildeliste
+                const freshData = await api.getUserData(viewingClient.id);
+                setCurrentData(freshData);
+            }, [viewingClient]);
+
+            const handleDeleteGalleryImage = useCallback(async (imageId) => {
+                if (!viewingClient) return;
+                await api.deleteGalleryImage(viewingClient.id, imageId);
+                // Refresh data for å hente oppdatert bildeliste
+                const freshData = await api.getUserData(viewingClient.id);
+                setCurrentData(freshData);
+            }, [viewingClient]);
+
             const handleOpenWeightHistory = useCallback(() => setShowWeightHistory(true), []);
             const handleCloseWeightHistory = useCallback(() => setShowWeightHistory(false), []);
 
@@ -2578,7 +2758,7 @@
                 setShowWeightHistory(false);
             }, []);
 
-            // Swipe og pull-to-refresh hooks MÅ være før alle returns
+            // Swipe og pull-to-refresh hooks MÃ… vÃ¦re fÃ¸r alle returns
             const tabOrder = ['dashboard', 'gallery', 'diet', 'workout', 'checkin'];
             const currentTabIndex = tabOrder.indexOf(activeTab);
             
@@ -2638,7 +2818,7 @@
                                 </div>
                                 <h2 className="text-2xl font-display text-ink mb-3">Kontoen er pauset</h2>
                                 <p className="text-ink-muted leading-relaxed mb-8">
-                                    Din konto er for øyeblikket satt på pause av coachen din. 
+                                    Din konto er for Ã¸yeblikket satt pÃ¥ pause av coachen din. 
                                     Du kan fortsatt se historikken din, men kan ikke sende inn nye rapporter.
                                 </p>
                                 
@@ -2739,7 +2919,13 @@
                                         <DashboardView userData={currentData} isCoach={isCoach} onUpdateData={handleUpdateData} onOpenWeightHistory={handleOpenWeightHistory} onRefreshData={handleRefresh} />
                                     )
                                 ) :
-                                activeTab === 'gallery' ? <GalleryView checkins={currentData.checkins} /> :
+                                activeTab === 'gallery' ? <GalleryView 
+                                    checkins={currentData.checkins} 
+                                    galleryImages={currentData.galleryImages || []}
+                                    isCoach={isCoach}
+                                    onAddGalleryImage={handleAddGalleryImage}
+                                    onDeleteGalleryImage={handleDeleteGalleryImage}
+                                /> :
                                 activeTab === 'diet' ? <PlanSection type="diet" content={currentData.dietPlan} onSave={(val) => handleUpdateData('dietPlan', val)} isReadOnly={!isCoach} /> :
                                 activeTab === 'workout' ? <PlanSection type="workout" content={currentData.workoutPlan} onSave={(val) => handleUpdateData('workoutPlan', val)} isReadOnly={!isCoach} /> :
                                 <CheckInView checkins={currentData.checkins} onNewCheckin={handleNewCheckin} onDelete={handleDeleteCheckin} isReadOnly={isCoach} stepGoal={currentData.stepGoal} />}
