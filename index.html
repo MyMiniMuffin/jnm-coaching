@@ -1019,7 +1019,12 @@
 
             const handleDeleteGalleryImage = useCallback(async (imageId) => {
                 if (confirm('Slett dette bildet?')) {
-                    await onDeleteGalleryImage(imageId);
+                    try {
+                        await onDeleteGalleryImage(imageId);
+                    } catch (err) {
+                        console.error(err);
+                        alert('Kunne ikke slette bildet');
+                    }
                 }
             }, [onDeleteGalleryImage]);
 
@@ -1037,60 +1042,71 @@
                 return Math.round(diff / (1000 * 60 * 60 * 24));
             }, [compareImages]);
 
-            // Upload modal komponent
-            const UploadModal = () => (
-                <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-                    <Card className="w-full max-w-sm p-6 animate-scale-in">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-display">Last opp bilde</h2>
-                            <button onClick={() => setShowUploadModal(false)} className="text-ink-muted hover:text-ink p-1">
-                                <X size={20} />
-                            </button>
-                        </div>
-                        
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-ink-muted mb-2">Bildetekst</label>
-                                <input 
-                                    type="text"
-                                    value={uploadForm.label}
-                                    onChange={(e) => setUploadForm(prev => ({ ...prev, label: e.target.value }))}
-                                    placeholder="F.eks. Startbilde"
-                                    className="w-full px-4 py-3 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink"
-                                />
-                            </div>
-                            
-                            <div>
-                                <label className="block text-sm font-medium text-ink-muted mb-2">Dato</label>
-                                <input 
-                                    type="date"
-                                    value={uploadForm.date}
-                                    onChange={(e) => setUploadForm(prev => ({ ...prev, date: e.target.value }))}
-                                    className="w-full px-4 py-3 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink"
-                                />
-                            </div>
+            // Memoized input handlers for upload form
+            const handleLabelChange = useCallback((e) => {
+                setUploadForm(prev => ({ ...prev, label: e.target.value }));
+            }, []);
 
-                            <label className={`flex flex-col items-center justify-center p-8 border-2 border-dashed border-surface-200 rounded-xl cursor-pointer hover:border-surface-300 hover:bg-surface-50 transition-all ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}>
-                                {isUploading ? (
-                                    <Loader2 className="animate-spin text-ink-muted" size={24} />
-                                ) : (
-                                    <>
-                                        <Camera size={24} className="text-ink-muted mb-2" />
-                                        <span className="font-medium text-ink-muted">Velg bilde</span>
-                                        <span className="text-xs text-ink-faint mt-1">JPG, PNG eller HEIC</span>
-                                    </>
-                                )}
-                                <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={isUploading} />
-                            </label>
-                        </div>
-                    </Card>
-                </div>
-            );
+            const handleDateChange = useCallback((e) => {
+                setUploadForm(prev => ({ ...prev, date: e.target.value }));
+            }, []);
+
+            const closeUploadModal = useCallback(() => {
+                setShowUploadModal(false);
+            }, []);
 
             if (allImages.length === 0) {
                 return (
                     <div className="flex flex-col items-center justify-center h-[60vh] animate-fade-in text-center px-6">
-                        {showUploadModal && <UploadModal />}
+                        {/* Upload Modal */}
+                        {showUploadModal && (
+                            <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+                                <Card className="w-full max-w-sm p-6 animate-scale-in">
+                                    <div className="flex justify-between items-center mb-6">
+                                        <h2 className="text-xl font-display">Last opp bilde</h2>
+                                        <button onClick={closeUploadModal} className="text-ink-muted hover:text-ink p-1">
+                                            <X size={20} />
+                                        </button>
+                                    </div>
+                                    
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-ink-muted mb-2">Bildetekst</label>
+                                            <input 
+                                                type="text"
+                                                value={uploadForm.label}
+                                                onChange={handleLabelChange}
+                                                placeholder="F.eks. Startbilde"
+                                                className="w-full px-4 py-3 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink"
+                                            />
+                                        </div>
+                                        
+                                        <div>
+                                            <label className="block text-sm font-medium text-ink-muted mb-2">Dato</label>
+                                            <input 
+                                                type="date"
+                                                value={uploadForm.date}
+                                                onChange={handleDateChange}
+                                                className="w-full px-4 py-3 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink"
+                                            />
+                                        </div>
+
+                                        <label className={`flex flex-col items-center justify-center p-8 border-2 border-dashed border-surface-200 rounded-xl cursor-pointer hover:border-surface-300 hover:bg-surface-50 transition-all ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                                            {isUploading ? (
+                                                <Loader2 className="animate-spin text-ink-muted" size={24} />
+                                            ) : (
+                                                <>
+                                                    <Camera size={24} className="text-ink-muted mb-2" />
+                                                    <span className="font-medium text-ink-muted">Velg bilde</span>
+                                                    <span className="text-xs text-ink-faint mt-1">JPG, PNG eller HEIC</span>
+                                                </>
+                                            )}
+                                            <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={isUploading} />
+                                        </label>
+                                    </div>
+                                </Card>
+                            </div>
+                        )}
                         <div className="w-16 h-16 bg-surface-100 rounded-2xl flex items-center justify-center text-ink-muted mb-6">
                             <Camera size={32} />
                         </div>
@@ -1107,7 +1123,55 @@
 
             return (
                 <div className="space-y-5 pb-32 animate-slide-up">
-                    {showUploadModal && <UploadModal />}
+                    {/* Upload Modal */}
+                    {showUploadModal && (
+                        <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+                            <Card className="w-full max-w-sm p-6 animate-scale-in">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h2 className="text-xl font-display">Last opp bilde</h2>
+                                    <button onClick={closeUploadModal} className="text-ink-muted hover:text-ink p-1">
+                                        <X size={20} />
+                                    </button>
+                                </div>
+                                
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-ink-muted mb-2">Bildetekst</label>
+                                        <input 
+                                            type="text"
+                                            value={uploadForm.label}
+                                            onChange={handleLabelChange}
+                                            placeholder="F.eks. Startbilde"
+                                            className="w-full px-4 py-3 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink"
+                                        />
+                                    </div>
+                                    
+                                    <div>
+                                        <label className="block text-sm font-medium text-ink-muted mb-2">Dato</label>
+                                        <input 
+                                            type="date"
+                                            value={uploadForm.date}
+                                            onChange={handleDateChange}
+                                            className="w-full px-4 py-3 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink"
+                                        />
+                                    </div>
+
+                                    <label className={`flex flex-col items-center justify-center p-8 border-2 border-dashed border-surface-200 rounded-xl cursor-pointer hover:border-surface-300 hover:bg-surface-50 transition-all ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                                        {isUploading ? (
+                                            <Loader2 className="animate-spin text-ink-muted" size={24} />
+                                        ) : (
+                                            <>
+                                                <Camera size={24} className="text-ink-muted mb-2" />
+                                                <span className="font-medium text-ink-muted">Velg bilde</span>
+                                                <span className="text-xs text-ink-faint mt-1">JPG, PNG eller HEIC</span>
+                                            </>
+                                        )}
+                                        <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={isUploading} />
+                                    </label>
+                                </div>
+                            </Card>
+                        </div>
+                    )}
                     
                     {lightbox.isOpen && (
                         <ImageModal 
@@ -1435,13 +1499,13 @@
                                             {img.label}
                                         </div>
                                     )}
-                                    {/* Slett-knapp for coach på gallery-bilder */}
+                                    {/* Slett-knapp for coach på gallery-bilder - alltid synlig */}
                                     {isCoach && img.isGalleryImage && onDeleteGalleryImage && (
                                         <button
                                             onClick={(e) => { e.stopPropagation(); handleDeleteGalleryImage(img.galleryImageId); }}
-                                            className="absolute top-1.5 right-1.5 bg-red-500/90 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                            className="absolute top-1.5 right-1.5 bg-red-500 text-white p-1.5 rounded-full shadow-lg active:scale-95 transition-transform z-10"
                                         >
-                                            <X size={12} />
+                                            <X size={14} />
                                         </button>
                                     )}
                                     <div className="absolute inset-0 bg-gradient-to-t from-ink/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
@@ -1488,13 +1552,13 @@
                                                             {img.label}
                                                         </div>
                                                     )}
-                                                    {/* Slett-knapp for coach på gallery-bilder */}
+                                                    {/* Slett-knapp for coach på gallery-bilder - alltid synlig */}
                                                     {isCoach && img.isGalleryImage && onDeleteGalleryImage && (
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); handleDeleteGalleryImage(img.galleryImageId); }}
-                                                            className="absolute top-1.5 right-1.5 bg-red-500/90 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                                            className="absolute top-1.5 right-1.5 bg-red-500 text-white p-1.5 rounded-full shadow-lg active:scale-95 transition-transform z-10"
                                                         >
-                                                            <X size={12} />
+                                                            <X size={14} />
                                                         </button>
                                                     )}
                                                     <div className="absolute inset-0 bg-gradient-to-t from-ink/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
