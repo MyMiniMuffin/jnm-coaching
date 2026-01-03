@@ -1861,7 +1861,7 @@
             }, [isCoach, userData.isPaused, userData.totalWeeks, onUpdateData]);
 
             const handleEditGoal = useCallback(async () => {
-                const input = prompt("Nytt skrittmål:", userData.stepGoal || 10000);
+                const input = prompt("Nytt ukentlig skrittmål:", userData.stepGoal || 10000);
                 if (input && !isNaN(parseInt(input))) await onUpdateData('stepGoal', parseInt(input));
             }, [userData.stepGoal, onUpdateData]);
 
@@ -1996,7 +1996,7 @@
                                     </button>
                                 )}
                             </div>
-                            <p className="text-xs text-ink-muted uppercase tracking-wide">Skrittmål</p>
+                            <p className="text-xs text-ink-muted uppercase tracking-wide">Ukentlig skrittmål</p>
                             <p className="text-2xl font-semibold mt-1">{(userData.stepGoal || 10000).toLocaleString()}</p>
                         </Card>
                     </div>
@@ -2752,7 +2752,8 @@
                 // Standard oppdateringer
                 setCurrentData(prev => {
                     const newData = { ...prev, ...updates };
-                    api.saveUserData(viewingClient.id, newData).catch(() => {
+                    // Send bare updates til API, ikke hele newData
+                    api.saveUserData(viewingClient.id, updates).catch(() => {
                         alert('Lagring feilet');
                         setCurrentData(prev);
                     });
