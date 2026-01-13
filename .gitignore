@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Environment variables (hemmelige nøkler)
+.env
+.env.local
+.env.production
+
+# Mac-filer
+.DS_Store
+**/.DS_Store
+
+# Netlify
+.netlify/
+
+# Editor-filer
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Log-filer
+*.log
+npm-debug.log*
+
+# Cache
+.cache/
+dist/
+build/
