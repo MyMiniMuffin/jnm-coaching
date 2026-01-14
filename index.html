@@ -421,8 +421,7 @@
                 });
                 if (res.status === 401) {
                     clearSession();
-                    window.location.reload();
-                    return;
+                    return [];
                 }
                 if (!res.ok) throw new Error('Kunne ikke hente brukere');
                 return await res.json();
@@ -435,8 +434,7 @@
                 });
                 if (res.status === 401) {
                     clearSession();
-                    window.location.reload();
-                    return;
+                    throw new Error("Ikke autentisert");
                 }
                 if (!res.ok) throw new Error('Feil ved opprettelse');
                 return await res.json();
@@ -449,8 +447,7 @@
                 });
                 if (res.status === 401) {
                     clearSession();
-                    window.location.reload();
-                    return;
+                    throw new Error("Ikke autentisert");
                 }
                 if (!res.ok) throw new Error('Feil ved sletting');
                 return await res.json();
@@ -463,8 +460,7 @@
                 });
                 if (res.status === 401) {
                     clearSession();
-                    window.location.reload();
-                    return;
+                    throw new Error("Ikke autentisert");
                 }
                 if (!res.ok) throw new Error('Feil ved arkivering');
                 return await res.json();
@@ -475,8 +471,7 @@
                 });
                 if (res.status === 401) {
                     clearSession();
-                    window.location.reload();
-                    return;
+                    throw new Error("Ikke autentisert");
                 }
                 if (!res.ok) throw new Error('Feil ved henting av data');
                 return await res.json();
@@ -489,8 +484,7 @@
                 });
                 if (res.status === 401) {
                     clearSession();
-                    window.location.reload();
-                    return;
+                    throw new Error("Ikke autentisert");
                 }
                 if (!res.ok) throw new Error('Lagring feilet');
                 return data;
@@ -504,8 +498,7 @@
                 });
                 if (res.status === 401) {
                     clearSession();
-                    window.location.reload();
-                    return;
+                    throw new Error("Ikke autentisert");
                 }
                 if (!res.ok) {
                     const errorText = await res.text();
@@ -520,8 +513,7 @@
                 });
                 if (res.status === 401) {
                     clearSession();
-                    window.location.reload();
-                    return;
+                    throw new Error("Ikke autentisert");
                 }
                 if (!res.ok) throw new Error('Sletting feilet');
             },
@@ -533,8 +525,7 @@
                 });
                 if (res.status === 401) {
                     clearSession();
-                    window.location.reload();
-                    return;
+                    throw new Error("Ikke autentisert");
                 }
                 if (!res.ok) throw new Error('Kunne ikke opprette periode');
             },
@@ -546,8 +537,7 @@
                 });
                 if (res.status === 401) {
                     clearSession();
-                    window.location.reload();
-                    return;
+                    throw new Error("Ikke autentisert");
                 }
                 if (!res.ok) throw new Error('Kunne ikke avslutte periode');
             },
@@ -559,8 +549,7 @@
                 });
                 if (res.status === 401) {
                     clearSession();
-                    window.location.reload();
-                    return;
+                    throw new Error("Ikke autentisert");
                 }
                 if (!res.ok) throw new Error('Kunne ikke oppdatere periode');
             },
@@ -572,8 +561,7 @@
                 });
                 if (res.status === 401) {
                     clearSession();
-                    window.location.reload();
-                    return;
+                    throw new Error("Ikke autentisert");
                 }
                 if (!res.ok) throw new Error('Kunne ikke legge til bilde');
             },
@@ -585,8 +573,7 @@
                 });
                 if (res.status === 401) {
                     clearSession();
-                    window.location.reload();
-                    return;
+                    throw new Error("Ikke autentisert");
                 }
                 if (!res.ok) throw new Error('Kunne ikke slette bilde');
             },
@@ -598,8 +585,7 @@
                 });
                 if (res.status === 401) {
                     clearSession();
-                    window.location.reload();
-                    return;
+                    throw new Error("Ikke autentisert");
                 }
                 if (!res.ok) throw new Error('Opplasting feilet');
                 return await res.json();
