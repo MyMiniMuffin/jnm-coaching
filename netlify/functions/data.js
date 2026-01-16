@@ -93,15 +93,15 @@ exports.handler = async (event) => {
           WHERE id = ${userId}
         `,
         sql`
-          SELECT 
-            id, date, weight, sleep, energy, accuracy, 
-            strength_sessions as "strengthSessions", 
-            cardio_sessions as "cardioSessions", 
-            steps_reached as "stepsReached", 
-            taken_supplements as "takenSupplements", 
+          SELECT
+            id, date, weight, sleep, energy, accuracy,
+            strength_sessions as "strengthSessions",
+            cardio_sessions as "cardioSessions",
+            steps_reached as "stepsReached",
+            taken_supplements as "takenSupplements",
             comment, image_url, images, created_at as timestamp,
-            period_id as "periodId"
-          FROM checkins 
+            period_id as "periodId", is_read as "isRead"
+          FROM checkins
           WHERE user_id = ${userId}
           ORDER BY created_at DESC
         `
@@ -276,17 +276,22 @@ exports.handler = async (event) => {
         if (!data.checkinId) {
           return { statusCode: 400, body: JSON.stringify({ error: 'Mangler checkin-ID' }) };
         }
-        
+
         // SIKKERHET: Sjekk at brukeren eier denne checkin
         const ownerCheck = await sql`
           SELECT id FROM checkins WHERE id = ${data.checkinId} AND user_id = ${userId}
         `;
-        
+
         if (ownerCheck.length === 0) {
           return { statusCode: 403, body: JSON.stringify({ error: 'Ingen tilgang til denne rapporten' }) };
         }
-        
+
         await sql`DELETE FROM checkins WHERE id = ${data.checkinId} AND user_id = ${userId}`;
+      }
+
+      else if (type === 'mark_checkins_read') {
+        // Marker alle innsjekk for en bruker som lest (kun for coach)
+        await sql`UPDATE checkins SET is_read = true WHERE user_id = ${userId}`;
       }
       
       else if (type === 'create_period') {

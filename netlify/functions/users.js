@@ -45,11 +45,29 @@ exports.handler = async (event) => {
     // HENTE BRUKERE (GET)
     if (event.httpMethod === 'GET') {
       const users = await sql`
-        SELECT id, username, name, role, start_date, is_archived 
-        FROM users 
+        SELECT id, username, name, role, start_date, is_archived
+        FROM users
         ORDER BY name ASC
       `;
-      return { statusCode: 200, body: JSON.stringify(users) };
+
+      // Hent antall uleste innsjekk per bruker
+      const unreadCounts = await sql`
+        SELECT user_id, COUNT(*) as unread_count
+        FROM checkins
+        WHERE is_read = false
+        GROUP BY user_id
+      `;
+
+      // Legg til unread_count på hver bruker
+      const usersWithUnread = users.map(user => {
+        const unreadData = unreadCounts.find(u => u.user_id === user.id);
+        return {
+          ...user,
+          unreadCheckins: unreadData ? parseInt(unreadData.unread_count) : 0
+        };
+      });
+
+      return { statusCode: 200, body: JSON.stringify(usersWithUnread) };
     }
 
     // LAGE NY BRUKER (POST)
