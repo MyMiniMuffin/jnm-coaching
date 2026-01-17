@@ -72,44 +72,60 @@ exports.handler = async (event) => {
 
     // LAGE NY BRUKER (POST)
     if (event.httpMethod === 'POST') {
-      const { name, username, password, role } = JSON.parse(event.body);
-      
-      // Valider input
-      const validationErrors = validateUserInput(name, username, password);
-      if (validationErrors.length > 0) {
-        return { 
-          statusCode: 400, 
-          body: JSON.stringify({ error: validationErrors.join(', ') }) 
+      try {
+        const { name, username, password, role } = JSON.parse(event.body);
+
+        console.log('Users POST: Oppretter ny bruker:', { name, username, role });
+
+        // Valider input
+        const validationErrors = validateUserInput(name, username, password);
+        if (validationErrors.length > 0) {
+          console.error('Users POST: Valideringsfeil:', validationErrors);
+          return {
+            statusCode: 400,
+            body: JSON.stringify({ error: validationErrors.join(', ') })
+          };
+        }
+
+        const normalizedUsername = username.trim().toLowerCase();
+
+        // Sjekk om brukernavn allerede finnes
+        const existing = await sql`
+          SELECT id FROM users WHERE username = ${normalizedUsername} LIMIT 1
+        `;
+        if (existing.length > 0) {
+          console.error('Users POST: Brukernavn allerede i bruk:', normalizedUsername);
+          return {
+            statusCode: 409,
+            body: JSON.stringify({ error: 'Brukernavnet er allerede i bruk' })
+          };
+        }
+
+        // Hash passordet før lagring
+        console.log('Users POST: Hasher passord...');
+        const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+
+        console.log('Users POST: Setter inn ny bruker i database...');
+        await sql`
+          INSERT INTO users (name, username, password, role)
+          VALUES (${name.trim()}, ${normalizedUsername}, ${hashedPassword}, ${role || 'athlete'})
+        `;
+
+        console.log('Users POST: Bruker opprettet suksessfullt');
+
+        const allUsers = await sql`
+          SELECT id, username, name, role, start_date, is_archived
+          FROM users
+          ORDER BY name ASC
+        `;
+        return { statusCode: 200, body: JSON.stringify(allUsers) };
+      } catch (postError) {
+        console.error('Users POST: Feil ved opprettelse av bruker:', postError);
+        return {
+          statusCode: 500,
+          body: JSON.stringify({ error: 'Feil ved opprettelse av bruker: ' + postError.message })
         };
       }
-
-      const normalizedUsername = username.trim().toLowerCase();
-
-      // Sjekk om brukernavn allerede finnes
-      const existing = await sql`
-        SELECT id FROM users WHERE username = ${normalizedUsername} LIMIT 1
-      `;
-      if (existing.length > 0) {
-        return { 
-          statusCode: 409, 
-          body: JSON.stringify({ error: 'Brukernavnet er allerede i bruk' }) 
-        };
-      }
-
-      // Hash passordet før lagring
-      const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
-      
-      await sql`
-        INSERT INTO users (name, username, password, role)
-        VALUES (${name.trim()}, ${normalizedUsername}, ${hashedPassword}, ${role || 'athlete'})
-      `;
-      
-      const allUsers = await sql`
-        SELECT id, username, name, role, start_date, is_archived 
-        FROM users 
-        ORDER BY name ASC
-      `;
-      return { statusCode: 200, body: JSON.stringify(allUsers) };
     }
 
     // OPPDATERE BRUKER (PATCH) - For arkivering etc.

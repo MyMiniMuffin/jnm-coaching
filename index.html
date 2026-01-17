@@ -442,6 +442,9 @@
             };
             if (token) {
                 headers['Authorization'] = `Bearer ${token}`;
+                console.log('[API] Auth header satt, token lengde:', token.length);
+            } else {
+                console.warn('[API] Ingen token tilgjengelig!');
             }
             return headers;
         };
@@ -459,6 +462,7 @@
                 return await res.json();
             },
             createUser: async (newUser) => {
+                console.log('[API] Oppretter ny bruker:', newUser.name);
                 const res = await fetch('/.netlify/functions/users', {
                     method: 'POST',
                     headers: getAuthHeaders(),
@@ -466,10 +470,17 @@
                 });
                 if (res.status === 401) {
                     clearSession();
+                    window.location.reload();
                     throw new Error("Ikke autentisert");
                 }
-                if (!res.ok) throw new Error('Feil ved opprettelse');
-                return await res.json();
+                if (!res.ok) {
+                    const errorData = await res.json().catch(() => ({}));
+                    console.error('[API] Feil ved opprettelse:', errorData);
+                    throw new Error(errorData.error || 'Feil ved opprettelse');
+                }
+                const result = await res.json();
+                console.log('[API] Bruker opprettet suksessfullt');
+                return result;
             },
             deleteUser: async (userId) => {
                 const res = await fetch('/.netlify/functions/users', {
@@ -671,9 +682,13 @@
                 });
                 if (res.status === 401) {
                     clearSession();
+                    window.location.reload();
                     throw new Error("Ikke autentisert");
                 }
-                if (!res.ok) throw new Error('Opplasting feilet');
+                if (!res.ok) {
+                    const errorData = await res.json().catch(() => ({}));
+                    throw new Error(errorData.error || 'Opplasting feilet');
+                }
                 return await res.json();
             },
             login: async (username, password) => {
@@ -2468,22 +2483,28 @@
                 const files = Array.from(e.target.files);
                 if (files.length === 0) return;
                 setIsCompressing(true);
+                setErrorMessage('');
+                console.log('[CheckIn] Starter opplasting av', files.length, 'bilder');
                 try {
                     const uploadPromises = files.map(async (file) => {
+                        console.log('[CheckIn] Leser fil:', file.name, 'størrelse:', file.size);
                         const reader = new FileReader();
                         reader.readAsDataURL(file);
                         const base64Image = await new Promise((resolve) => {
                             reader.onload = () => resolve(reader.result);
                         });
+                        console.log('[CheckIn] Base64-lengde:', base64Image.length);
 
                         const result = await api.uploadImage(base64Image);
+                        console.log('[CheckIn] Opplasting fullført:', result.url);
                         return result.url;
                     });
                     const uploadedUrls = await Promise.all(uploadPromises);
                     setFormData(prev => ({ ...prev, images: [...prev.images, ...uploadedUrls] }));
+                    console.log('[CheckIn] Alle bilder lastet opp!');
                 } catch (err) {
-                    console.error(err);
-                    setErrorMessage("Bildeopplasting feilet.");
+                    console.error('[CheckIn] Bildeopplasting feilet:', err);
+                    setErrorMessage("Bildeopplasting feilet: " + (err.message || 'Ukjent feil'));
                 } finally {
                     setIsCompressing(false);
                 }

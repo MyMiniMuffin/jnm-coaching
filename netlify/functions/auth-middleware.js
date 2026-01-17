@@ -3,9 +3,14 @@ const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET || 'CHANGE_THIS_IN_PRODUCTION';
 
 const verifyToken = (event) => {
-  const authHeader = event.headers.authorization || event.headers.Authorization;
+  // Sjekk alle mulige header-varianter (case-insensitive)
+  const authHeader = event.headers.authorization ||
+                     event.headers.Authorization ||
+                     event.headers['authorization'] ||
+                     event.headers['Authorization'];
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  if (!authHeader) {
+    console.error('Auth middleware: Ingen authorization header funnet. Headers:', Object.keys(event.headers));
     return {
       success: false,
       statusCode: 401,
@@ -13,7 +18,25 @@ const verifyToken = (event) => {
     };
   }
 
+  if (!authHeader.startsWith('Bearer ')) {
+    console.error('Auth middleware: Authorization header har ikke Bearer prefix:', authHeader.substring(0, 20));
+    return {
+      success: false,
+      statusCode: 401,
+      body: JSON.stringify({ error: 'Ugyldig autentiseringsformat.' })
+    };
+  }
+
   const token = authHeader.substring(7);
+
+  if (!token || token.trim().length === 0) {
+    console.error('Auth middleware: Tomt token');
+    return {
+      success: false,
+      statusCode: 401,
+      body: JSON.stringify({ error: 'Tomt token. Vennligst logg inn på nytt.' })
+    };
+  }
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
@@ -24,6 +47,7 @@ const verifyToken = (event) => {
       role: decoded.role
     };
   } catch (error) {
+    console.error('Auth middleware: Token verification feilet:', error.name, error.message);
     if (error.name === 'TokenExpiredError') {
       return {
         success: false,
@@ -31,10 +55,17 @@ const verifyToken = (event) => {
         body: JSON.stringify({ error: 'Sesjonen har utløpt. Vennligst logg inn på nytt.' })
       };
     }
+    if (error.name === 'JsonWebTokenError') {
+      return {
+        success: false,
+        statusCode: 401,
+        body: JSON.stringify({ error: 'Ugyldig token. Vennligst logg inn på nytt.' })
+      };
+    }
     return {
       success: false,
       statusCode: 401,
-      body: JSON.stringify({ error: 'Ugyldig autentisering. Vennligst logg inn på nytt.' })
+      body: JSON.stringify({ error: 'Autentiseringsfeil. Vennligst logg inn på nytt.' })
     };
   }
 };

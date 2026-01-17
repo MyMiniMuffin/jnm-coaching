@@ -15,10 +15,20 @@ exports.handler = async (event) => {
   // Verifiser autentisering
   const authResult = requireAuth(event);
   if (!authResult.success) {
+    console.error('Upload: Autentisering feilet', authResult);
     return { statusCode: authResult.statusCode, body: authResult.body };
   }
 
   try {
+    // Sjekk at Cloudinary er konfigurert
+    if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+      console.error('Upload: Cloudinary miljøvariabler mangler');
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: 'Cloudinary er ikke konfigurert. Vennligst kontakt administrator.' })
+      };
+    }
+
     const { image } = JSON.parse(event.body);
 
     if (!image) {
@@ -36,6 +46,8 @@ exports.handler = async (event) => {
       };
     }
 
+    console.log('Upload: Starter opplasting til Cloudinary...');
+
     // Last opp til Cloudinary med signed upload
     const result = await cloudinary.uploader.upload(image, {
       folder: 'jnm_coaching',
@@ -47,6 +59,8 @@ exports.handler = async (event) => {
       ]
     });
 
+    console.log('Upload: Opplasting fullført:', result.secure_url);
+
     return {
       statusCode: 200,
       body: JSON.stringify({
@@ -57,9 +71,19 @@ exports.handler = async (event) => {
 
   } catch (error) {
     console.error('Upload error:', error);
+
+    // Gi mer spesifikk feilmelding
+    let errorMessage = 'Feil under opplasting av bilde';
+    if (error.message) {
+      errorMessage += ': ' + error.message;
+    }
+    if (error.http_code) {
+      errorMessage += ' (HTTP ' + error.http_code + ')';
+    }
+
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Feil under opplasting av bilde: ' + error.message })
+      body: JSON.stringify({ error: errorMessage })
     };
   }
 };
