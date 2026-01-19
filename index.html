@@ -195,53 +195,88 @@
         // --- CONFIG ---
         const APP_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='160' fill='%23171717'/%3E%3Cpath d='M256 96c0 88.4 71.6 160 160 160-88.4 0-160 71.6-160 160 0-88.4-71.6-160-160-160 88.4 0 160-71.6 160-160z' fill='%23FAFAF9'/%3E%3C/svg%3E";
         
-        // Session timeout: 30 dager
-        const SESSION_TIMEOUT_MS = 30 * 24 * 60 * 60 * 1000;
+        // ============================================
+        // SESSION MANAGEMENT v3 - FIKSET FOR PWA
+        // ============================================
         
-        // Session helpers med timeout
+        const SESSION_KEY = 'jnm_session';
+        const SESSION_TIMEOUT_MS = 30 * 24 * 60 * 60 * 1000; // 30 dager
+        
+        // Lagre session med all nødvendig info
         const saveSession = (userData) => {
-            const sessionData = {
-                user: {
-                    id: userData.id,
-                    username: userData.username,
-                    name: userData.name,
-                    role: userData.role
-                },
-                token: userData.token,
-                expiresAt: Date.now() + SESSION_TIMEOUT_MS
-            };
-            localStorage.setItem('jnm_session', JSON.stringify(sessionData));
+            try {
+                const sessionData = {
+                    user: {
+                        id: userData.id,
+                        username: userData.username,
+                        name: userData.name,
+                        role: userData.role
+                    },
+                    token: userData.token,
+                    expiresAt: Date.now() + SESSION_TIMEOUT_MS,
+                    savedAt: Date.now()
+                };
+                localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
+                console.log('[Session] Lagret for:', userData.username);
+            } catch (e) {
+                console.error('[Session] Lagringsfeil:', e);
+            }
         };
 
+        // Hent session - ROBUST versjon som IKKE sletter ved feil
         const getSession = () => {
             try {
-                const data = localStorage.getItem('jnm_session');
-                if (!data) return null;
-                const session = JSON.parse(data);
-                if (session.expiresAt && Date.now() > session.expiresAt) {
-                    localStorage.removeItem('jnm_session');
+                const data = localStorage.getItem(SESSION_KEY);
+                if (!data) {
+                    console.log('[Session] Ingen session funnet');
                     return null;
                 }
-                // Returner brukerdata
-                return session.user || (session.id ? session : null);
+                
+                const session = JSON.parse(data);
+                
+                // Sjekk utløpstid
+                if (session.expiresAt && Date.now() > session.expiresAt) {
+                    console.log('[Session] Utløpt, sletter');
+                    localStorage.removeItem(SESSION_KEY);
+                    return null;
+                }
+                
+                // Returner brukerdata - håndter både gammelt og nytt format
+                const user = session.user || (session.id ? session : null);
+                if (user) {
+                    console.log('[Session] Gyldig session:', user.username);
+                }
+                return user;
             } catch (e) {
-                localStorage.removeItem('jnm_session');
+                console.error('[Session] Parse-feil:', e);
+                // VIKTIG: Ikke slett ved parse-feil - kan være midlertidig
                 return null;
             }
         };
 
+        // Hent token
         const getToken = () => {
             try {
-                const data = localStorage.getItem('jnm_session');
+                const data = localStorage.getItem(SESSION_KEY);
                 if (!data) return null;
                 const session = JSON.parse(data);
                 return session.token || null;
             } catch (e) {
+                console.error('[Session] Token-feil:', e);
                 return null;
             }
         };
 
-        const clearSession = () => localStorage.removeItem('jnm_session');
+        // Slett session - KUN ved eksplisitt utlogging
+        const clearSession = () => {
+            console.log('[Session] Eksplisitt sletting');
+            localStorage.removeItem(SESSION_KEY);
+        };
+        
+        // Sjekk om vi har gyldig session (for visibility change)
+        const hasValidSession = () => {
+            return getSession() !== null && getToken() !== null;
+        };
 
         if (window.marked) {
             window.marked.setOptions({ breaks: true, gfm: true });
@@ -434,7 +469,10 @@
             }
         };
 
-        // --- API LAYER ---
+        // ============================================
+        // API LAYER v3 - FIKSET: Ingen auto-logout
+        // ============================================
+        
         const getAuthHeaders = () => {
             const token = getToken();
             const headers = {
@@ -442,24 +480,27 @@
             };
             if (token) {
                 headers['Authorization'] = `Bearer ${token}`;
-                console.log('[API] Auth header satt, token lengde:', token.length);
-            } else {
-                console.warn('[API] Ingen token tilgjengelig!');
             }
             return headers;
         };
 
         const api = {
             getUsers: async () => {
-                const res = await fetch('/.netlify/functions/users', {
-                    headers: getAuthHeaders()
-                });
-                if (res.status === 401) {
-                    clearSession();
-                    return [];
+                try {
+                    const res = await fetch('/.netlify/functions/users', {
+                        headers: getAuthHeaders()
+                    });
+                    if (res.status === 401) {
+                        console.warn('[API] 401 ved getUsers - returnerer authError');
+                        return { authError: true, data: [] };
+                    }
+                    if (!res.ok) throw new Error('Kunne ikke hente brukere');
+                    const data = await res.json();
+                    return { authError: false, data };
+                } catch (e) {
+                    console.error('[API] getUsers feil:', e);
+                    return { authError: false, data: [], networkError: true };
                 }
-                if (!res.ok) throw new Error('Kunne ikke hente brukere');
-                return await res.json();
             },
             createUser: async (newUser) => {
                 console.log('[API] Oppretter ny bruker:', newUser.name);
@@ -469,9 +510,8 @@
                     body: JSON.stringify(newUser)
                 });
                 if (res.status === 401) {
-                    clearSession();
-                    window.location.reload();
-                    throw new Error("Ikke autentisert");
+                    console.warn('[API] 401 ved createUser');
+                    return { authError: true };
                 }
                 if (!res.ok) {
                     const errorData = await res.json().catch(() => ({}));
@@ -480,7 +520,7 @@
                 }
                 const result = await res.json();
                 console.log('[API] Bruker opprettet suksessfullt');
-                return result;
+                return { authError: false, data: result };
             },
             deleteUser: async (userId) => {
                 const res = await fetch('/.netlify/functions/users', {
@@ -489,11 +529,11 @@
                     body: JSON.stringify({ id: userId })
                 });
                 if (res.status === 401) {
-                    clearSession();
-                    throw new Error("Ikke autentisert");
+                    console.warn('[API] 401 ved deleteUser');
+                    return { authError: true };
                 }
                 if (!res.ok) throw new Error('Feil ved sletting');
-                return await res.json();
+                return { authError: false, data: await res.json() };
             },
             archiveUser: async (userId, archive) => {
                 const res = await fetch('/.netlify/functions/users', {
@@ -502,11 +542,11 @@
                     body: JSON.stringify({ id: userId, is_archived: archive })
                 });
                 if (res.status === 401) {
-                    clearSession();
-                    throw new Error("Ikke autentisert");
+                    console.warn('[API] 401 ved archiveUser');
+                    return { authError: true };
                 }
                 if (!res.ok) throw new Error('Feil ved arkivering');
-                return await res.json();
+                return { authError: false, data: await res.json() };
             },
             getUserData: async (userId, useCache = true) => {
                 const cacheKey = `user-data-${userId}`;
@@ -514,24 +554,26 @@
                 // Sjekk cache først
                 if (useCache) {
                     const cached = cache.get(cacheKey);
-                    if (cached) return cached;
+                    if (cached) return { authError: false, data: cached };
                 }
 
-                const res = await fetch(`/.netlify/functions/data?id=${userId}`, {
-                    headers: getAuthHeaders()
-                });
-                if (res.status === 401) {
-                    clearSession();
-                    throw new Error("Ikke autentisert");
+                try {
+                    const res = await fetch(`/.netlify/functions/data?id=${userId}`, {
+                        headers: getAuthHeaders()
+                    });
+                    if (res.status === 401) {
+                        console.warn('[API] 401 ved getUserData');
+                        return { authError: true };
+                    }
+                    if (!res.ok) throw new Error('Feil ved henting av data');
+
+                    const data = await res.json();
+                    cache.set(cacheKey, data);
+                    return { authError: false, data };
+                } catch (e) {
+                    console.error('[API] getUserData feil:', e);
+                    return { authError: false, networkError: true };
                 }
-                if (!res.ok) throw new Error('Feil ved henting av data');
-
-                const data = await res.json();
-
-                // Lagre i cache
-                cache.set(cacheKey, data);
-
-                return data;
             },
             saveUserData: async (userId, data) => {
                 const res = await fetch('/.netlify/functions/data', {
@@ -540,15 +582,12 @@
                     body: JSON.stringify({ userId, type: 'plan_update', data })
                 });
                 if (res.status === 401) {
-                    clearSession();
-                    throw new Error("Ikke autentisert");
+                    console.warn('[API] 401 ved saveUserData');
+                    return { authError: true };
                 }
                 if (!res.ok) throw new Error('Lagring feilet');
-
-                // Invalidate cache for denne brukeren
                 cache.invalidate(`user-data-${userId}`);
-
-                return data;
+                return { authError: false, data };
             },
             submitCheckin: async (userId, entry) => {
                 const payload = JSON.stringify({ userId, type: 'new_checkin', data: entry });
@@ -558,16 +597,15 @@
                     body: payload
                 });
                 if (res.status === 401) {
-                    clearSession();
-                    throw new Error("Ikke autentisert");
+                    console.warn('[API] 401 ved submitCheckin');
+                    return { authError: true };
                 }
                 if (!res.ok) {
                     const errorText = await res.text();
                     throw new Error(errorText || 'Innsending feilet');
                 }
-
-                // Invalidate cache
                 cache.invalidate(`user-data-${userId}`);
+                return { authError: false };
             },
             deleteCheckin: async (userId, checkinId) => {
                 const res = await fetch('/.netlify/functions/data', {
@@ -576,13 +614,12 @@
                     body: JSON.stringify({ userId, type: 'delete_checkin', data: { checkinId } })
                 });
                 if (res.status === 401) {
-                    clearSession();
-                    throw new Error("Ikke autentisert");
+                    console.warn('[API] 401 ved deleteCheckin');
+                    return { authError: true };
                 }
                 if (!res.ok) throw new Error('Sletting feilet');
-
-                // Invalidate cache
                 cache.invalidate(`user-data-${userId}`);
+                return { authError: false };
             },
             markCheckinsRead: async (userId) => {
                 const res = await fetch('/.netlify/functions/data', {
@@ -591,13 +628,12 @@
                     body: JSON.stringify({ userId, type: 'mark_checkins_read', data: {} })
                 });
                 if (res.status === 401) {
-                    clearSession();
-                    throw new Error("Ikke autentisert");
+                    console.warn('[API] 401 ved markCheckinsRead');
+                    return { authError: true };
                 }
                 if (!res.ok) throw new Error('Kunne ikke markere som lest');
-
-                // Invalidate cache
                 cache.invalidate(`user-data-${userId}`);
+                return { authError: false };
             },
             createPeriod: async (userId, name, startingWeight, goalWeight = null) => {
                 const res = await fetch('/.netlify/functions/data', {
@@ -606,13 +642,12 @@
                     body: JSON.stringify({ userId, type: 'create_period', data: { name, startingWeight, goalWeight } })
                 });
                 if (res.status === 401) {
-                    clearSession();
-                    throw new Error("Ikke autentisert");
+                    console.warn('[API] 401 ved createPeriod');
+                    return { authError: true };
                 }
                 if (!res.ok) throw new Error('Kunne ikke opprette periode');
-
-                // Invalidate cache
                 cache.invalidate(`user-data-${userId}`);
+                return { authError: false };
             },
             endPeriod: async (userId, periodId) => {
                 const res = await fetch('/.netlify/functions/data', {
@@ -621,13 +656,12 @@
                     body: JSON.stringify({ userId, type: 'end_period', data: { periodId } })
                 });
                 if (res.status === 401) {
-                    clearSession();
-                    throw new Error("Ikke autentisert");
+                    console.warn('[API] 401 ved endPeriod');
+                    return { authError: true };
                 }
                 if (!res.ok) throw new Error('Kunne ikke avslutte periode');
-
-                // Invalidate cache
                 cache.invalidate(`user-data-${userId}`);
+                return { authError: false };
             },
             updatePeriod: async (userId, periodId, updates) => {
                 const res = await fetch('/.netlify/functions/data', {
@@ -636,13 +670,12 @@
                     body: JSON.stringify({ userId, type: 'update_period', data: { periodId, ...updates } })
                 });
                 if (res.status === 401) {
-                    clearSession();
-                    throw new Error("Ikke autentisert");
+                    console.warn('[API] 401 ved updatePeriod');
+                    return { authError: true };
                 }
                 if (!res.ok) throw new Error('Kunne ikke oppdatere periode');
-
-                // Invalidate cache
                 cache.invalidate(`user-data-${userId}`);
+                return { authError: false };
             },
             addGalleryImage: async (userId, imageUrl, label, date, weight) => {
                 const res = await fetch('/.netlify/functions/data', {
@@ -651,13 +684,12 @@
                     body: JSON.stringify({ userId, type: 'add_gallery_image', data: { imageUrl, label, date, weight } })
                 });
                 if (res.status === 401) {
-                    clearSession();
-                    throw new Error("Ikke autentisert");
+                    console.warn('[API] 401 ved addGalleryImage');
+                    return { authError: true };
                 }
                 if (!res.ok) throw new Error('Kunne ikke legge til bilde');
-
-                // Invalidate cache
                 cache.invalidate(`user-data-${userId}`);
+                return { authError: false };
             },
             deleteGalleryImage: async (userId, imageId) => {
                 const res = await fetch('/.netlify/functions/data', {
@@ -666,13 +698,12 @@
                     body: JSON.stringify({ userId, type: 'delete_gallery_image', data: { imageId } })
                 });
                 if (res.status === 401) {
-                    clearSession();
-                    throw new Error("Ikke autentisert");
+                    console.warn('[API] 401 ved deleteGalleryImage');
+                    return { authError: true };
                 }
                 if (!res.ok) throw new Error('Kunne ikke slette bilde');
-
-                // Invalidate cache
                 cache.invalidate(`user-data-${userId}`);
+                return { authError: false };
             },
             uploadImage: async (base64Image) => {
                 const res = await fetch('/.netlify/functions/upload', {
@@ -681,15 +712,14 @@
                     body: JSON.stringify({ image: base64Image })
                 });
                 if (res.status === 401) {
-                    clearSession();
-                    window.location.reload();
-                    throw new Error("Ikke autentisert");
+                    console.warn('[API] 401 ved uploadImage');
+                    return { authError: true };
                 }
                 if (!res.ok) {
                     const errorData = await res.json().catch(() => ({}));
                     throw new Error(errorData.error || 'Opplasting feilet');
                 }
-                return await res.json();
+                return { authError: false, data: await res.json() };
             },
             login: async (username, password) => {
                 const res = await fetch('/.netlify/functions/auth', {
@@ -941,6 +971,27 @@
                 </div>
             );
         });
+
+        // ReauthPrompt - vises når token har utløpt
+        const ReauthPrompt = React.memo(({ onReauth, onLogout }) => (
+            <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-fade-in">
+                <Card className="w-full max-w-sm p-6 animate-scale-in text-center">
+                    <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-600 mx-auto mb-4">
+                        <AlertCircle size={32} />
+                    </div>
+                    <h2 className="text-xl font-display mb-2">Sesjonen har utløpt</h2>
+                    <p className="text-ink-muted mb-6">Vennligst logg inn på nytt for å fortsette.</p>
+                    <div className="flex gap-3">
+                        <Button variant="secondary" size="lg" className="flex-1" onClick={onLogout}>
+                            Avbryt
+                        </Button>
+                        <Button variant="primary" size="lg" className="flex-1" onClick={onReauth}>
+                            Logg inn
+                        </Button>
+                    </div>
+                </Card>
+            </div>
+        ));
 
         const NAV_ITEMS = [
             { id: 'dashboard', label: 'Hjem', icon: Home },
@@ -2969,31 +3020,95 @@
 
             const [currentData, setCurrentData] = useState(INITIAL_DATA_STATE);
             const [isLoading, setIsLoading] = useState(true);
+            const [showReauthPrompt, setShowReauthPrompt] = useState(false);
 
+            // ============================================
+            // FIKSET INIT - Bruker cached session først
+            // ============================================
             useEffect(() => {
                 const init = async () => {
+                    console.log('[Init] Starter app...');
+                    
+                    // 1. Sjekk lokal session FØRST - bruk den umiddelbart
+                    const sessionUser = getSession();
+                    const token = getToken();
+                    
+                    if (sessionUser && token) {
+                        console.log('[Init] Bruker cached session:', sessionUser.username);
+                        setCurrentUser(sessionUser);
+                        if (sessionUser.role === 'athlete') {
+                            setViewingClient(sessionUser);
+                        }
+                    }
+                    
+                    // 2. Hent oppdatert brukerliste i bakgrunnen
                     try {
-                        const users = await api.getUsers();
-                        setAllUsers(users);
-                        const sessionUser = getSession();
-                        if (sessionUser) {
-                            const isValidUser = users.find(u => u.id === sessionUser.id);
-                            if (isValidUser) {
-                                setCurrentUser(isValidUser);
-                                if (isValidUser.role === 'athlete') setViewingClient(isValidUser);
-                            } else {
-                                clearSession();
+                        const result = await api.getUsers();
+                        
+                        if (result.networkError) {
+                            console.log('[Init] Nettverksfeil - bruker cached session');
+                            // Behold session ved nettverksfeil - ikke gjør noe
+                        } else if (result.authError) {
+                            console.warn('[Init] Auth-feil fra API');
+                            if (sessionUser) {
+                                // Vis prompt i stedet for auto-logout
+                                setShowReauthPrompt(true);
+                            }
+                        } else {
+                            setAllUsers(result.data || []);
+                            
+                            // Oppdater currentUser med ferske data hvis mulig
+                            if (sessionUser && result.data) {
+                                const freshUser = result.data.find(u => u.id === sessionUser.id);
+                                if (freshUser) {
+                                    console.log('[Init] Oppdaterte brukerdata fra API');
+                                    setCurrentUser(freshUser);
+                                }
+                                // VIKTIG: Ikke slett session hvis bruker ikke finnes i listen
+                                // Det kan være midlertidig nettverksfeil
                             }
                         }
-                    } catch(e) { console.error(e); } finally { setIsLoading(false); }
+                    } catch (e) {
+                        console.error('[Init] Feil:', e);
+                        // Ved feil: Behold eksisterende session
+                    }
+                    
+                    setIsLoading(false);
                 };
                 init();
             }, []);
 
+            // Visibility change handler - sjekk session når app blir synlig
+            useEffect(() => {
+                const handleVisibility = () => {
+                    if (document.visibilityState === 'visible' && currentUser) {
+                        console.log('[Visibility] App ble synlig, sjekker session');
+                        if (!hasValidSession()) {
+                            console.warn('[Visibility] Session borte - viser re-auth prompt');
+                            setShowReauthPrompt(true);
+                        }
+                    }
+                };
+                
+                document.addEventListener('visibilitychange', handleVisibility);
+                return () => document.removeEventListener('visibilitychange', handleVisibility);
+            }, [currentUser]);
+
+            // Last klientdata - med authError håndtering
             useEffect(() => {
                 if (viewingClient) {
+                    setIsClientLoading(true);
                     api.getUserData(viewingClient.id)
-                        .then(setCurrentData)
+                        .then(result => {
+                            if (result.authError) {
+                                console.warn('[App] Auth-feil ved henting av klientdata');
+                                setShowReauthPrompt(true);
+                            } else if (result.data) {
+                                setCurrentData(result.data);
+                            } else if (result.networkError) {
+                                console.log('[App] Nettverksfeil - bruker cached data');
+                            }
+                        })
                         .catch(() => setCurrentData(INITIAL_DATA_STATE))
                         .finally(() => setIsClientLoading(false));
                 }
@@ -3002,14 +3117,25 @@
             const handleLogin = useCallback((user) => {
                 setCurrentUser(user);
                 saveSession(user);
+                setShowReauthPrompt(false);
                 if (user.role === 'athlete') setViewingClient(user);
             }, []);
 
             const handleLogout = useCallback(() => {
+                console.log('[App] Bruker logger ut');
+                clearSession();
                 setCurrentUser(null);
                 setViewingClient(null);
-                clearSession();
+                setShowReauthPrompt(false);
                 setActiveTab('dashboard');
+            }, []);
+
+            const handleReauth = useCallback(() => {
+                console.log('[App] Bruker må logge inn på nytt');
+                clearSession();
+                setCurrentUser(null);
+                setViewingClient(null);
+                setShowReauthPrompt(false);
             }, []);
 
             const handleNewCheckin = useCallback(async (entry) => {
@@ -3102,31 +3228,54 @@
             }, []);
 
             const handleAddClient = useCallback(async (u) => {
-                setAllUsers(await api.createUser({...u, id: Date.now().toString(), role:'athlete'}));
+                const result = await api.createUser({...u, id: Date.now().toString(), role:'athlete'});
+                if (result.authError) {
+                    setShowReauthPrompt(true);
+                    return;
+                }
+                if (result.data) setAllUsers(result.data);
             }, []);
 
             const handleDeleteClient = useCallback(async (id) => {
-                setAllUsers(await api.deleteUser(id));
+                const result = await api.deleteUser(id);
+                if (result.authError) {
+                    setShowReauthPrompt(true);
+                    return;
+                }
+                if (result.data) setAllUsers(result.data);
             }, []);
 
             const handleArchiveClient = useCallback(async (id, archive) => {
-                setAllUsers(await api.archiveUser(id, archive));
+                const result = await api.archiveUser(id, archive);
+                if (result.authError) {
+                    setShowReauthPrompt(true);
+                    return;
+                }
+                if (result.data) setAllUsers(result.data);
             }, []);
 
             const handleAddGalleryImage = useCallback(async (imageUrl, label, date, weight) => {
                 if (!viewingClient) return;
-                await api.addGalleryImage(viewingClient.id, imageUrl, label, date, weight);
+                const result = await api.addGalleryImage(viewingClient.id, imageUrl, label, date, weight);
+                if (result.authError) {
+                    setShowReauthPrompt(true);
+                    return;
+                }
                 // Refresh data for å hente ny bildeliste
-                const freshData = await api.getUserData(viewingClient.id);
-                setCurrentData(freshData);
+                const freshResult = await api.getUserData(viewingClient.id, false);
+                if (freshResult.data) setCurrentData(freshResult.data);
             }, [viewingClient]);
 
             const handleDeleteGalleryImage = useCallback(async (imageId) => {
                 if (!viewingClient) return;
-                await api.deleteGalleryImage(viewingClient.id, imageId);
+                const result = await api.deleteGalleryImage(viewingClient.id, imageId);
+                if (result.authError) {
+                    setShowReauthPrompt(true);
+                    return;
+                }
                 // Refresh data for å hente oppdatert bildeliste
-                const freshData = await api.getUserData(viewingClient.id);
-                setCurrentData(freshData);
+                const freshResult = await api.getUserData(viewingClient.id, false);
+                if (freshResult.data) setCurrentData(freshResult.data);
             }, [viewingClient]);
 
             const handleOpenWeightHistory = useCallback(() => setShowWeightHistory(true), []);
@@ -3162,8 +3311,12 @@
 
             const handleRefresh = useCallback(async () => {
                 if (viewingClient) {
-                    const freshData = await api.getUserData(viewingClient.id);
-                    setCurrentData(freshData);
+                    const result = await api.getUserData(viewingClient.id, false);
+                    if (result.authError) {
+                        setShowReauthPrompt(true);
+                    } else if (result.data) {
+                        setCurrentData(result.data);
+                    }
                 }
             }, [viewingClient]);
 
@@ -3189,6 +3342,7 @@
             if (isArchived) {
                 return (
                     <div className="max-w-md mx-auto min-h-screen bg-surface-50">
+                        {showReauthPrompt && <ReauthPrompt onReauth={handleReauth} onLogout={handleLogout} />}
                         <Header title="Konto pauset" user={currentUser} onLogout={handleLogout} />
                         <main className="p-4">
                             <div className="flex flex-col items-center justify-center min-h-[70vh] text-center px-6 animate-fade-in">
@@ -3249,6 +3403,7 @@
             if (isCoach && !viewingClient) {
                 return (
                     <div className="max-w-md mx-auto min-h-screen bg-surface-50">
+                        {showReauthPrompt && <ReauthPrompt onReauth={handleReauth} onLogout={handleLogout} />}
                         <Header title="Oversikt" user={currentUser} onLogout={handleLogout} />
                         <main className="p-4">
                             <CoachDashboard 
@@ -3272,6 +3427,7 @@
                     {...swipeHandlers}
                     {...pullHandlers}
                 >
+                    {showReauthPrompt && <ReauthPrompt onReauth={handleReauth} onLogout={handleLogout} />}
                     {pullIndicator}
                     <Header 
                         title={tabTitles[activeTab]} 
