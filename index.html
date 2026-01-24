@@ -1325,7 +1325,10 @@
                         });
 
                         const result = await api.uploadImage(base64Image);
-                        await onAddGalleryImage(result.url, uploadForm.label, uploadForm.date, uploadForm.weight);
+                        if (result.authError) {
+                            throw new Error('Autentisering feilet');
+                        }
+                        await onAddGalleryImage(result.data.url, uploadForm.label, uploadForm.date, uploadForm.weight);
                     }
                     setShowUploadModal(false);
                     setUploadForm({ label: 'Startbilde', date: new Date().toISOString().split('T')[0], weight: '' });
@@ -2564,8 +2567,11 @@
                         console.log('[CheckIn] Base64-lengde:', base64Image.length);
 
                         const result = await api.uploadImage(base64Image);
-                        console.log('[CheckIn] Opplasting fullført:', result.url);
-                        return result.url;
+                        if (result.authError) {
+                            throw new Error('Autentisering feilet');
+                        }
+                        console.log('[CheckIn] Opplasting fullført:', result.data.url);
+                        return result.data.url;
                     });
                     const uploadedUrls = await Promise.all(uploadPromises);
                     setFormData(prev => ({ ...prev, images: [...prev.images, ...uploadedUrls] }));
@@ -2793,6 +2799,8 @@
                         ) : (
                             <div className="space-y-3">
                                 {sortedCheckins.map((entry) => {
+                                    console.log('[CheckinHistory] Processing entry:', entry.id, 'entry.images:', entry.images, 'type:', typeof entry.images);
+
                                     // Sikre at images alltid er en array
                                     let imageArray = [];
                                     if (entry.images) {
@@ -2800,19 +2808,23 @@
                                         if (typeof entry.images === 'string') {
                                             try {
                                                 imageArray = JSON.parse(entry.images);
+                                                console.log('[CheckinHistory] Parsed string to array:', imageArray);
                                             } catch (e) {
                                                 console.error('[CheckinHistory] Kunne ikke parse images:', entry.images);
                                                 imageArray = [];
                                             }
                                         } else if (Array.isArray(entry.images)) {
                                             imageArray = entry.images;
+                                            console.log('[CheckinHistory] Already array:', imageArray);
                                         }
                                     } else if (entry.image) {
                                         imageArray = [entry.image];
+                                        console.log('[CheckinHistory] Using legacy image field:', imageArray);
                                     }
 
                                     // Filtrer ut ugyldige verdier
                                     const displayImages = imageArray.filter(img => img && typeof img === 'string' && img.trim() !== '');
+                                    console.log('[CheckinHistory] Final displayImages:', displayImages);
 
                                     return (
                                         <Card key={entry.id} className="p-5 group">
@@ -2866,16 +2878,25 @@
                                             
                                             {displayImages.length > 0 && (
                                                 <div className="flex gap-2 overflow-x-auto hide-scrollbar">
-                                                    {displayImages.map((img, idx) => (
-                                                        <img
-                                                            key={idx}
-                                                            src={getThumbnail(img)}
-                                                            loading="lazy"
-                                                            className="w-16 h-16 object-cover rounded-lg cursor-pointer flex-none"
-                                                            alt="Checkin"
-                                                            onClick={() => openLightbox(displayImages, idx)}
-                                                        />
-                                                    ))}
+                                                    {displayImages.map((img, idx) => {
+                                                        const thumbnailUrl = getThumbnail(img);
+                                                        console.log('[DEBUG] Original img:', img);
+                                                        console.log('[DEBUG] Thumbnail URL:', thumbnailUrl);
+                                                        return (
+                                                            <img
+                                                                key={idx}
+                                                                src={thumbnailUrl}
+                                                                loading="lazy"
+                                                                className="w-16 h-16 object-cover rounded-lg cursor-pointer flex-none"
+                                                                alt="Checkin"
+                                                                onClick={() => openLightbox(displayImages, idx)}
+                                                                onError={(e) => {
+                                                                    console.error('[DEBUG] Image failed to load:', thumbnailUrl);
+                                                                    console.error('[DEBUG] Original URL:', img);
+                                                                }}
+                                                            />
+                                                        );
+                                                    })}
                                                 </div>
                                             )}
                                         </Card>
