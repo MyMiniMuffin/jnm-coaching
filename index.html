@@ -1223,10 +1223,27 @@
                 
                 // Legg til checkin-bilder - bruk timestamp direkte
                 checkins.forEach(checkin => {
-                    const checkinImages = checkin.images && checkin.images.length > 0 
-                        ? checkin.images 
-                        : (checkin.image ? [checkin.image] : []);
-                    
+                    // Sikre at images alltid er en array
+                    let imageArray = [];
+                    if (checkin.images) {
+                        // Hvis det er en streng, prøv å parse den
+                        if (typeof checkin.images === 'string') {
+                            try {
+                                imageArray = JSON.parse(checkin.images);
+                            } catch (e) {
+                                console.error('[allImages] Kunne ikke parse images:', checkin.images);
+                                imageArray = [];
+                            }
+                        } else if (Array.isArray(checkin.images)) {
+                            imageArray = checkin.images;
+                        }
+                    } else if (checkin.image) {
+                        imageArray = [checkin.image];
+                    }
+
+                    // Filtrer ut ugyldige verdier og legg til i images array
+                    const checkinImages = imageArray.filter(img => img && typeof img === 'string' && img.trim() !== '');
+
                     checkinImages.forEach(img => {
                         images.push({
                             url: img,
@@ -2776,8 +2793,27 @@
                         ) : (
                             <div className="space-y-3">
                                 {sortedCheckins.map((entry) => {
-                                    const displayImages = entry.images && entry.images.length > 0 ? entry.images : (entry.image ? [entry.image] : []);
-                                    
+                                    // Sikre at images alltid er en array
+                                    let imageArray = [];
+                                    if (entry.images) {
+                                        // Hvis det er en streng, prøv å parse den
+                                        if (typeof entry.images === 'string') {
+                                            try {
+                                                imageArray = JSON.parse(entry.images);
+                                            } catch (e) {
+                                                console.error('[CheckinHistory] Kunne ikke parse images:', entry.images);
+                                                imageArray = [];
+                                            }
+                                        } else if (Array.isArray(entry.images)) {
+                                            imageArray = entry.images;
+                                        }
+                                    } else if (entry.image) {
+                                        imageArray = [entry.image];
+                                    }
+
+                                    // Filtrer ut ugyldige verdier
+                                    const displayImages = imageArray.filter(img => img && typeof img === 'string' && img.trim() !== '');
+
                                     return (
                                         <Card key={entry.id} className="p-5 group">
                                             <div className="flex justify-between items-start mb-4">
@@ -2831,13 +2867,13 @@
                                             {displayImages.length > 0 && (
                                                 <div className="flex gap-2 overflow-x-auto hide-scrollbar">
                                                     {displayImages.map((img, idx) => (
-                                                        <img 
-                                                            key={idx} 
-                                                            src={getThumbnail(img)} 
-                                                            loading="lazy" 
-                                                            className="w-16 h-16 object-cover rounded-lg cursor-pointer flex-none" 
-                                                            alt="Checkin" 
-                                                            onClick={() => openLightbox(displayImages, idx)} 
+                                                        <img
+                                                            key={idx}
+                                                            src={getThumbnail(img)}
+                                                            loading="lazy"
+                                                            className="w-16 h-16 object-cover rounded-lg cursor-pointer flex-none"
+                                                            alt="Checkin"
+                                                            onClick={() => openLightbox(displayImages, idx)}
                                                         />
                                                     ))}
                                                 </div>
