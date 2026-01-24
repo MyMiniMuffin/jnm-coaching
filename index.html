@@ -97,7 +97,7 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
     <!-- Babel -->
-    <script src="https://unpkg.com/@babel/standalone@7.23.5/babel.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <!-- React Import Map -->
     <script type="importmap">
@@ -738,23 +738,7 @@
         
         const formatDateNO = (dateString) => {
             if (!dateString) return '';
-            // Håndter Date-objekter
-            if (dateString instanceof Date) {
-                const day = String(dateString.getDate()).padStart(2, '0');
-                const month = String(dateString.getMonth() + 1).padStart(2, '0');
-                const year = dateString.getFullYear();
-                return `${day}.${month}.${year}`;
-            }
-            // Håndter timestamps (tall)
-            if (typeof dateString === 'number') {
-                const date = new Date(dateString);
-                const day = String(date.getDate()).padStart(2, '0');
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const year = date.getFullYear();
-                return `${day}.${month}.${year}`;
-            }
-            // Håndter strenger
-            const datePart = String(dateString).split('T')[0];
+            const datePart = dateString.split('T')[0];
             if (datePart.includes('-')) {
                 const [year, month, day] = datePart.split('-');
                 return `${day}.${month}.${year}`;
@@ -861,7 +845,7 @@
                 };
                 window.addEventListener('keydown', handleKeyDown);
                 return () => window.removeEventListener('keydown', handleKeyDown);
-            }, [hasNext, hasPrev, onClose, handleNext, handlePrev]);
+            }, [hasNext, hasPrev, onClose]);
 
             return (
                 <div className="fixed inset-0 z-[100] bg-ink/95 flex items-center justify-center animate-fade-in">
@@ -1341,10 +1325,7 @@
                         });
 
                         const result = await api.uploadImage(base64Image);
-                        if (result.authError) {
-                            throw new Error('Autentisering feilet');
-                        }
-                        await onAddGalleryImage(result.data.url, uploadForm.label, uploadForm.date, uploadForm.weight);
+                        await onAddGalleryImage(result.url, uploadForm.label, uploadForm.date, uploadForm.weight);
                     }
                     setShowUploadModal(false);
                     setUploadForm({ label: 'Startbilde', date: new Date().toISOString().split('T')[0], weight: '' });
@@ -1810,7 +1791,7 @@
                             {selectingFor && (
                                 <Card className="p-3 bg-ink text-white">
                                     <p className="text-sm text-center">
-                                        👆 Trykk på et bilde nedenfor for å velge som "{selectingFor === 'before' ? 'før' : 'etter'}"-bilde
+                                        ðŸ‘† Trykk på et bilde nedenfor for å velge som "{selectingFor === 'before' ? 'før' : 'etter'}"-bilde
                                     </p>
                                 </Card>
                             )}
@@ -2298,7 +2279,7 @@
                                     {activePeriod && activePeriod.startingWeight && (
                                         <p className="text-white/40 text-sm mt-1">
                                             Startvekt: {formatWeight(activePeriod.startingWeight)} kg
-                                            {activePeriod.goalWeight && ` → Mål: ${formatWeight(activePeriod.goalWeight)} kg`}
+                                            {activePeriod.goalWeight && ` â†’ Mål: ${formatWeight(activePeriod.goalWeight)} kg`}
                                         </p>
                                     )}
                                 </div>
@@ -2583,11 +2564,8 @@
                         console.log('[CheckIn] Base64-lengde:', base64Image.length);
 
                         const result = await api.uploadImage(base64Image);
-                        if (result.authError) {
-                            throw new Error('Autentisering feilet');
-                        }
-                        console.log('[CheckIn] Opplasting fullført:', result.data.url);
-                        return result.data.url;
+                        console.log('[CheckIn] Opplasting fullført:', result.url);
+                        return result.url;
                     });
                     const uploadedUrls = await Promise.all(uploadPromises);
                     setFormData(prev => ({ ...prev, images: [...prev.images, ...uploadedUrls] }));
@@ -2617,7 +2595,7 @@
                     };
                     await onNewCheckin(newEntry);
                     setStep('success');
-                    createConfetti(); // 🎉 Konfetti!
+                    createConfetti(); // ðŸŽ‰ Konfetti!
                     setTimeout(() => {
                         setStep('form');
                         setFormData(INITIAL_FORM_DATA);
@@ -2815,8 +2793,6 @@
                         ) : (
                             <div className="space-y-3">
                                 {sortedCheckins.map((entry) => {
-                                    console.log('[CheckinHistory] Processing entry:', entry.id, 'entry.images:', entry.images, 'type:', typeof entry.images);
-
                                     // Sikre at images alltid er en array
                                     let imageArray = [];
                                     if (entry.images) {
@@ -2824,23 +2800,19 @@
                                         if (typeof entry.images === 'string') {
                                             try {
                                                 imageArray = JSON.parse(entry.images);
-                                                console.log('[CheckinHistory] Parsed string to array:', imageArray);
                                             } catch (e) {
                                                 console.error('[CheckinHistory] Kunne ikke parse images:', entry.images);
                                                 imageArray = [];
                                             }
                                         } else if (Array.isArray(entry.images)) {
                                             imageArray = entry.images;
-                                            console.log('[CheckinHistory] Already array:', imageArray);
                                         }
                                     } else if (entry.image) {
                                         imageArray = [entry.image];
-                                        console.log('[CheckinHistory] Using legacy image field:', imageArray);
                                     }
 
                                     // Filtrer ut ugyldige verdier
                                     const displayImages = imageArray.filter(img => img && typeof img === 'string' && img.trim() !== '');
-                                    console.log('[CheckinHistory] Final displayImages:', displayImages);
 
                                     return (
                                         <Card key={entry.id} className="p-5 group">
@@ -2894,25 +2866,16 @@
                                             
                                             {displayImages.length > 0 && (
                                                 <div className="flex gap-2 overflow-x-auto hide-scrollbar">
-                                                    {displayImages.map((img, idx) => {
-                                                        const thumbnailUrl = getThumbnail(img);
-                                                        console.log('[DEBUG] Original img:', img);
-                                                        console.log('[DEBUG] Thumbnail URL:', thumbnailUrl);
-                                                        return (
-                                                            <img
-                                                                key={idx}
-                                                                src={thumbnailUrl}
-                                                                loading="lazy"
-                                                                className="w-16 h-16 object-cover rounded-lg cursor-pointer flex-none"
-                                                                alt="Checkin"
-                                                                onClick={() => openLightbox(displayImages, idx)}
-                                                                onError={(e) => {
-                                                                    console.error('[DEBUG] Image failed to load:', thumbnailUrl);
-                                                                    console.error('[DEBUG] Original URL:', img);
-                                                                }}
-                                                            />
-                                                        );
-                                                    })}
+                                                    {displayImages.map((img, idx) => (
+                                                        <img
+                                                            key={idx}
+                                                            src={getThumbnail(img)}
+                                                            loading="lazy"
+                                                            className="w-16 h-16 object-cover rounded-lg cursor-pointer flex-none"
+                                                            alt="Checkin"
+                                                            onClick={() => openLightbox(displayImages, idx)}
+                                                        />
+                                                    ))}
                                                 </div>
                                             )}
                                         </Card>
@@ -3075,15 +3038,12 @@
         });
 
         // Initial data state - definert utenfor komponenten
-        const INITIAL_DATA_STATE = {
-            dietPlan: '', workoutPlan: '', stepGoal: 10000,
-            totalWeeks: 12, startDate: null, isPaused: false, pausedAt: null,
+        const INITIAL_DATA_STATE = { 
+            dietPlan: '', workoutPlan: '', stepGoal: 10000, 
+            totalWeeks: 12, startDate: null, isPaused: false, pausedAt: null, 
             periods: [], currentPeriodId: null, startingWeight: null, checkins: [],
             galleryImages: []
         };
-
-        // Tab-rekkefølge for swipe-navigasjon
-        const TAB_ORDER = ['dashboard', 'gallery', 'diet', 'workout', 'checkin'];
 
         const App = () => {
             const [currentUser, setCurrentUser] = useState(null); 
@@ -3170,9 +3130,9 @@
                 return () => document.removeEventListener('visibilitychange', handleVisibility);
             }, [currentUser]);
 
-            // Last klientdata - kun for athlete som logger inn direkte
+            // Last klientdata - med authError håndtering
             useEffect(() => {
-                if (viewingClient && currentUser?.role === 'athlete') {
+                if (viewingClient) {
                     setIsClientLoading(true);
                     api.getUserData(viewingClient.id)
                         .then(result => {
@@ -3188,7 +3148,7 @@
                         .catch(() => setCurrentData(INITIAL_DATA_STATE))
                         .finally(() => setIsClientLoading(false));
                 }
-            }, [viewingClient, currentUser?.role]);
+            }, [viewingClient]);
 
             const handleLogin = useCallback((user) => {
                 setCurrentUser(user);
@@ -3285,32 +3245,15 @@
             const handleSelectClient = useCallback(async (client) => {
                 setCurrentData(INITIAL_DATA_STATE);
                 setIsClientLoading(true);
+                setViewingClient(client);
                 setShowWeightHistory(false);
                 setActiveTab('dashboard');
-
-                // Hent data FØR vi setter viewingClient for å unngå dobbel henting fra useEffect
-                try {
-                    const result = await api.getUserData(client.id, false);
-                    if (result.authError) {
-                        setShowReauthPrompt(true);
-                        setIsClientLoading(false);
-                        return;
-                    }
-                    if (result.data) {
-                        setCurrentData(result.data);
-                    }
-                } catch (e) {
-                    console.error('Kunne ikke hente klientdata:', e);
-                }
-
-                // Sett viewingClient ETTER data er hentet
-                setViewingClient(client);
-                setIsClientLoading(false);
 
                 // Marker alle innsjekk som lest når coach åpner klienten
                 if (client.unreadCheckins > 0) {
                     try {
                         await api.markCheckinsRead(client.id);
+                        // Oppdater allUsers for å fjerne unread-badge
                         setAllUsers(prev => prev.map(u =>
                             u.id === client.id ? { ...u, unreadCheckins: 0 } : u
                         ));
@@ -3380,18 +3323,19 @@
             }, []);
 
             // Swipe og pull-to-refresh hooks MÅ være før alle returns
-            const currentTabIndex = TAB_ORDER.indexOf(activeTab);
+            const tabOrder = ['dashboard', 'gallery', 'diet', 'workout', 'checkin'];
+            const currentTabIndex = tabOrder.indexOf(activeTab);
             
             const handleSwipeLeft = useCallback(() => {
-                if (currentTabIndex < TAB_ORDER.length - 1 && !showWeightHistory) {
-                    setActiveTab(TAB_ORDER[currentTabIndex + 1]);
+                if (currentTabIndex < tabOrder.length - 1 && !showWeightHistory) {
+                    setActiveTab(tabOrder[currentTabIndex + 1]);
                     window.scrollTo({ top: 0, behavior: 'instant' });
                 }
             }, [currentTabIndex, showWeightHistory]);
-
+            
             const handleSwipeRight = useCallback(() => {
                 if (currentTabIndex > 0 && !showWeightHistory) {
-                    setActiveTab(TAB_ORDER[currentTabIndex - 1]);
+                    setActiveTab(tabOrder[currentTabIndex - 1]);
                     window.scrollTo({ top: 0, behavior: 'instant' });
                 }
             }, [currentTabIndex, showWeightHistory]);
