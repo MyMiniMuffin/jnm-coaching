@@ -738,7 +738,23 @@
         
         const formatDateNO = (dateString) => {
             if (!dateString) return '';
-            const datePart = dateString.split('T')[0];
+            // Håndter Date-objekter
+            if (dateString instanceof Date) {
+                const day = String(dateString.getDate()).padStart(2, '0');
+                const month = String(dateString.getMonth() + 1).padStart(2, '0');
+                const year = dateString.getFullYear();
+                return `${day}.${month}.${year}`;
+            }
+            // Håndter timestamps (tall)
+            if (typeof dateString === 'number') {
+                const date = new Date(dateString);
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const year = date.getFullYear();
+                return `${day}.${month}.${year}`;
+            }
+            // Håndter strenger
+            const datePart = String(dateString).split('T')[0];
             if (datePart.includes('-')) {
                 const [year, month, day] = datePart.split('-');
                 return `${day}.${month}.${year}`;
@@ -845,7 +861,7 @@
                 };
                 window.addEventListener('keydown', handleKeyDown);
                 return () => window.removeEventListener('keydown', handleKeyDown);
-            }, [hasNext, hasPrev, onClose]);
+            }, [hasNext, hasPrev, onClose, handleNext, handlePrev]);
 
             return (
                 <div className="fixed inset-0 z-[100] bg-ink/95 flex items-center justify-center animate-fade-in">
@@ -1794,7 +1810,7 @@
                             {selectingFor && (
                                 <Card className="p-3 bg-ink text-white">
                                     <p className="text-sm text-center">
-                                        ðŸ‘† Trykk på et bilde nedenfor for å velge som "{selectingFor === 'before' ? 'før' : 'etter'}"-bilde
+                                        👆 Trykk på et bilde nedenfor for å velge som "{selectingFor === 'before' ? 'før' : 'etter'}"-bilde
                                     </p>
                                 </Card>
                             )}
@@ -2282,7 +2298,7 @@
                                     {activePeriod && activePeriod.startingWeight && (
                                         <p className="text-white/40 text-sm mt-1">
                                             Startvekt: {formatWeight(activePeriod.startingWeight)} kg
-                                            {activePeriod.goalWeight && ` â†’ Mål: ${formatWeight(activePeriod.goalWeight)} kg`}
+                                            {activePeriod.goalWeight && ` → Mål: ${formatWeight(activePeriod.goalWeight)} kg`}
                                         </p>
                                     )}
                                 </div>
@@ -2601,7 +2617,7 @@
                     };
                     await onNewCheckin(newEntry);
                     setStep('success');
-                    createConfetti(); // ðŸŽ‰ Konfetti!
+                    createConfetti(); // 🎉 Konfetti!
                     setTimeout(() => {
                         setStep('form');
                         setFormData(INITIAL_FORM_DATA);
@@ -3059,12 +3075,15 @@
         });
 
         // Initial data state - definert utenfor komponenten
-        const INITIAL_DATA_STATE = { 
-            dietPlan: '', workoutPlan: '', stepGoal: 10000, 
-            totalWeeks: 12, startDate: null, isPaused: false, pausedAt: null, 
+        const INITIAL_DATA_STATE = {
+            dietPlan: '', workoutPlan: '', stepGoal: 10000,
+            totalWeeks: 12, startDate: null, isPaused: false, pausedAt: null,
             periods: [], currentPeriodId: null, startingWeight: null, checkins: [],
             galleryImages: []
         };
+
+        // Tab-rekkefølge for swipe-navigasjon
+        const TAB_ORDER = ['dashboard', 'gallery', 'diet', 'workout', 'checkin'];
 
         const App = () => {
             const [currentUser, setCurrentUser] = useState(null); 
@@ -3151,9 +3170,9 @@
                 return () => document.removeEventListener('visibilitychange', handleVisibility);
             }, [currentUser]);
 
-            // Last klientdata - med authError håndtering
+            // Last klientdata - kun for athlete som logger inn direkte
             useEffect(() => {
-                if (viewingClient) {
+                if (viewingClient && currentUser?.role === 'athlete') {
                     setIsClientLoading(true);
                     api.getUserData(viewingClient.id)
                         .then(result => {
@@ -3169,7 +3188,7 @@
                         .catch(() => setCurrentData(INITIAL_DATA_STATE))
                         .finally(() => setIsClientLoading(false));
                 }
-            }, [viewingClient]);
+            }, [viewingClient, currentUser?.role]);
 
             const handleLogin = useCallback((user) => {
                 setCurrentUser(user);
@@ -3266,15 +3285,32 @@
             const handleSelectClient = useCallback(async (client) => {
                 setCurrentData(INITIAL_DATA_STATE);
                 setIsClientLoading(true);
-                setViewingClient(client);
                 setShowWeightHistory(false);
                 setActiveTab('dashboard');
+
+                // Hent data FØR vi setter viewingClient for å unngå dobbel henting fra useEffect
+                try {
+                    const result = await api.getUserData(client.id, false);
+                    if (result.authError) {
+                        setShowReauthPrompt(true);
+                        setIsClientLoading(false);
+                        return;
+                    }
+                    if (result.data) {
+                        setCurrentData(result.data);
+                    }
+                } catch (e) {
+                    console.error('Kunne ikke hente klientdata:', e);
+                }
+
+                // Sett viewingClient ETTER data er hentet
+                setViewingClient(client);
+                setIsClientLoading(false);
 
                 // Marker alle innsjekk som lest når coach åpner klienten
                 if (client.unreadCheckins > 0) {
                     try {
                         await api.markCheckinsRead(client.id);
-                        // Oppdater allUsers for å fjerne unread-badge
                         setAllUsers(prev => prev.map(u =>
                             u.id === client.id ? { ...u, unreadCheckins: 0 } : u
                         ));
@@ -3344,19 +3380,18 @@
             }, []);
 
             // Swipe og pull-to-refresh hooks MÅ være før alle returns
-            const tabOrder = ['dashboard', 'gallery', 'diet', 'workout', 'checkin'];
-            const currentTabIndex = tabOrder.indexOf(activeTab);
+            const currentTabIndex = TAB_ORDER.indexOf(activeTab);
             
             const handleSwipeLeft = useCallback(() => {
-                if (currentTabIndex < tabOrder.length - 1 && !showWeightHistory) {
-                    setActiveTab(tabOrder[currentTabIndex + 1]);
+                if (currentTabIndex < TAB_ORDER.length - 1 && !showWeightHistory) {
+                    setActiveTab(TAB_ORDER[currentTabIndex + 1]);
                     window.scrollTo({ top: 0, behavior: 'instant' });
                 }
             }, [currentTabIndex, showWeightHistory]);
-            
+
             const handleSwipeRight = useCallback(() => {
                 if (currentTabIndex > 0 && !showWeightHistory) {
-                    setActiveTab(tabOrder[currentTabIndex - 1]);
+                    setActiveTab(TAB_ORDER[currentTabIndex - 1]);
                     window.scrollTo({ top: 0, behavior: 'instant' });
                 }
             }, [currentTabIndex, showWeightHistory]);
