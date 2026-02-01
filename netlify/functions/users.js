@@ -44,30 +44,30 @@ exports.handler = async (event) => {
   try {
     // HENTE BRUKERE (GET)
     if (event.httpMethod === 'GET') {
-      const users = await sql`
-        SELECT id, username, name, role, start_date, is_archived
-        FROM users
-        ORDER BY name ASC
+      // Én enkelt query med LEFT JOIN i stedet for 2 queries + O(n²) loop
+      const usersWithUnread = await sql`
+        SELECT
+          u.id,
+          u.username,
+          u.name,
+          u.role,
+          u.start_date,
+          u.is_archived,
+          COALESCE(COUNT(c.id) FILTER (WHERE c.is_read = false), 0)::integer as "unreadCheckins"
+        FROM users u
+        LEFT JOIN checkins c ON c.user_id = u.id
+        GROUP BY u.id, u.username, u.name, u.role, u.start_date, u.is_archived
+        ORDER BY u.name ASC
       `;
 
-      // Hent antall uleste innsjekk per bruker
-      const unreadCounts = await sql`
-        SELECT user_id, COUNT(*) as unread_count
-        FROM checkins
-        WHERE is_read = false
-        GROUP BY user_id
-      `;
-
-      // Legg til unread_count på hver bruker
-      const usersWithUnread = users.map(user => {
-        const unreadData = unreadCounts.find(u => u.user_id === user.id);
-        return {
-          ...user,
-          unreadCheckins: unreadData ? parseInt(unreadData.unread_count) : 0
-        };
-      });
-
-      return { statusCode: 200, body: JSON.stringify(usersWithUnread) };
+      return {
+        statusCode: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'private, max-age=30, stale-while-revalidate=60'
+        },
+        body: JSON.stringify(usersWithUnread)
+      };
     }
 
     // LAGE NY BRUKER (POST)

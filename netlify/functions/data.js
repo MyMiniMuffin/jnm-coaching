@@ -92,7 +92,7 @@ exports.handler = async (event) => {
           FROM users 
           WHERE id = ${userId}
         `,
-        sql`
+sql`
           SELECT
             id, date, weight, sleep, energy, accuracy,
             strength_sessions as "strengthSessions",
@@ -104,6 +104,7 @@ exports.handler = async (event) => {
           FROM checkins
           WHERE user_id = ${userId}
           ORDER BY created_at DESC
+          LIMIT 150
         `
       ]);
 
@@ -130,6 +131,10 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'private, max-age=60, stale-while-revalidate=120'
+        },
         body: JSON.stringify({
           dietPlan: user.diet_plan || '',
           workoutPlan: user.workout_plan || '',
@@ -180,29 +185,52 @@ exports.handler = async (event) => {
       }
 
       if (type === 'plan_update') {
-        // Enkle oppdateringer med validering
+        // Samle alle felter som skal oppdateres i én query for bedre ytelse
+        const updates = {};
+
         if (data.dietPlan !== undefined) {
-          await sql`UPDATE users SET diet_plan = ${data.dietPlan} WHERE id = ${userId}`;
+          updates.diet_plan = data.dietPlan;
         }
         if (data.workoutPlan !== undefined) {
-          await sql`UPDATE users SET workout_plan = ${data.workoutPlan} WHERE id = ${userId}`;
+          updates.workout_plan = data.workoutPlan;
         }
         if (data.stepGoal !== undefined) {
           const stepGoal = parseInt(data.stepGoal);
           if (!isNaN(stepGoal) && stepGoal >= 1000 && stepGoal <= 100000) {
-            await sql`UPDATE users SET step_goal = ${stepGoal} WHERE id = ${userId}`;
+            updates.step_goal = stepGoal;
           }
         }
         if (data.totalWeeks !== undefined) {
           const totalWeeks = parseInt(data.totalWeeks);
           if (!isNaN(totalWeeks) && totalWeeks >= 1 && totalWeeks <= 52) {
-            await sql`UPDATE users SET total_weeks = ${totalWeeks} WHERE id = ${userId}`;
+            updates.total_weeks = totalWeeks;
           }
         }
-        
-        // Startdato oppdatering
+
+        // Startdato oppdatering (nullstiller også pause)
         if (data.startDate !== undefined) {
-          await sql`UPDATE users SET start_date = ${data.startDate}, is_paused = false, paused_at = NULL WHERE id = ${userId}`;
+          updates.start_date = data.startDate;
+          updates.is_paused = false;
+          updates.paused_at = null;
+        }
+
+        // Utfør én samlet UPDATE hvis det er noe å oppdatere
+        if (Object.keys(updates).length > 0) {
+          // Hent nåværende verdier først for å kunne merge
+          const currentUser = await sql`SELECT diet_plan, workout_plan, step_goal, total_weeks, start_date, is_paused, paused_at FROM users WHERE id = ${userId}`;
+          const current = currentUser[0] || {};
+
+          await sql`
+            UPDATE users SET
+              diet_plan = ${updates.diet_plan !== undefined ? updates.diet_plan : current.diet_plan},
+              workout_plan = ${updates.workout_plan !== undefined ? updates.workout_plan : current.workout_plan},
+              step_goal = ${updates.step_goal !== undefined ? updates.step_goal : current.step_goal},
+              total_weeks = ${updates.total_weeks !== undefined ? updates.total_weeks : current.total_weeks},
+              start_date = ${updates.start_date !== undefined ? updates.start_date : current.start_date},
+              is_paused = ${updates.is_paused !== undefined ? updates.is_paused : current.is_paused},
+              paused_at = ${updates.start_date !== undefined ? null : current.paused_at}
+            WHERE id = ${userId}
+          `;
         }
 
         // PAUSE LOGIKK

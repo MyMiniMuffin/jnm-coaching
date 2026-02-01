@@ -437,36 +437,81 @@
             };
         };
 
-        // --- CACHE LAYER ---
+        // --- CACHE LAYER (med localStorage for persistent cache) ---
+        const CACHE_TTL = 5 * 60 * 1000; // 5 minutter
+        const CACHE_PREFIX = 'jnm_cache_';
+
         const cache = {
             store: {},
+
+            // Last inn fra localStorage ved oppstart
+            init: () => {
+                try {
+                    const keys = Object.keys(localStorage).filter(k => k.startsWith(CACHE_PREFIX));
+                    keys.forEach(key => {
+                        const item = JSON.parse(localStorage.getItem(key));
+                        if (item && Date.now() - item.timestamp < CACHE_TTL) {
+                            cache.store[key.replace(CACHE_PREFIX, '')] = item;
+                        } else {
+                            localStorage.removeItem(key);
+                        }
+                    });
+                } catch (e) {
+                    // localStorage ikke tilgjengelig, fortsett uten
+                }
+            },
+
             get: (key) => {
                 const item = cache.store[key];
                 if (!item) return null;
 
-                // Sjekk om cache har utløpt (5 minutter)
+                // Sjekk om cache har utløpt
                 const now = Date.now();
-                if (now - item.timestamp > 5 * 60 * 1000) {
+                if (now - item.timestamp > CACHE_TTL) {
                     delete cache.store[key];
+                    try { localStorage.removeItem(CACHE_PREFIX + key); } catch (e) {}
                     return null;
                 }
 
                 return item.data;
             },
+
             set: (key, data) => {
-                cache.store[key] = {
+                const item = {
                     data,
                     timestamp: Date.now()
                 };
+                cache.store[key] = item;
+
+                // Lagre til localStorage for persistent cache
+                try {
+                    localStorage.setItem(CACHE_PREFIX + key, JSON.stringify(item));
+                } catch (e) {
+                    // localStorage full eller ikke tilgjengelig
+                }
             },
+
             invalidate: (pattern) => {
-                // Slett cache som matcher pattern (f.eks. 'user-data-*')
+                // Slett cache som matcher pattern
                 Object.keys(cache.store).forEach(key => {
                     if (pattern === '*' || key.includes(pattern)) {
                         delete cache.store[key];
+                        try { localStorage.removeItem(CACHE_PREFIX + key); } catch (e) {}
                     }
                 });
             }
+        };
+
+        // Initialiser cache fra localStorage
+        cache.init();
+
+        // --- DEBOUNCE UTILITY ---
+        const debounce = (fn, delay) => {
+            let timeoutId;
+            return (...args) => {
+                clearTimeout(timeoutId);
+                timeoutId = setTimeout(() => fn(...args), delay);
+            };
         };
 
         // ============================================
@@ -3220,48 +3265,38 @@
                 setCurrentData(prev => ({ ...prev, checkins: [...prev.checkins, entry] }));
             }, [viewingClient]);
             
+            // Ref for å spore pågående lagring og hindre dobbelt-klikk
+            const savingRef = React.useRef(false);
+
             const handleUpdateData = useCallback(async (keyOrObj, value) => {
                 if (!viewingClient) return;
+                if (savingRef.current) return; // Hindre dobbelt-klikk
+                savingRef.current = true;
+
                 let updates = typeof keyOrObj === 'string' ? { [keyOrObj]: value } : keyOrObj;
                 
-                // Håndter periode-spesifikke actions
-                if (updates.action === 'create_period') {
-                    try {
+                try {
+                    // Håndter periode-spesifikke actions
+                    if (updates.action === 'create_period') {
                         await api.createPeriod(viewingClient.id, updates.name, updates.startingWeight, updates.goalWeight);
                         return;
-                    } catch (e) {
-                        alert('Kunne ikke opprette periode: ' + e.message);
-                        return;
-                    }
-                } else if (updates.action === 'end_period') {
-                    try {
+                    } else if (updates.action === 'end_period') {
                         await api.endPeriod(viewingClient.id, updates.periodId);
                         return;
-                    } catch (e) {
-                        alert('Kunne ikke avslutte periode: ' + e.message);
-                        return;
-                    }
-                } else if (updates.action === 'update_period') {
-                    try {
+                    } else if (updates.action === 'update_period') {
                         const { periodId, ...periodUpdates } = updates;
                         await api.updatePeriod(viewingClient.id, periodId, periodUpdates);
                         return;
-                    } catch (e) {
-                        alert('Kunne ikke oppdatere periode: ' + e.message);
-                        return;
                     }
+
+                    // Standard oppdateringer - optimistisk UI
+                    setCurrentData(prev => ({ ...prev, ...updates }));
+                    await api.saveUserData(viewingClient.id, updates);
+                } catch (e) {
+                    alert('Lagring feilet: ' + (e.message || 'Ukjent feil'));
+                } finally {
+                    savingRef.current = false;
                 }
-                
-                // Standard oppdateringer
-                setCurrentData(prev => {
-                    const newData = { ...prev, ...updates };
-                    // Send bare updates til API, ikke hele newData
-                    api.saveUserData(viewingClient.id, updates).catch(() => {
-                        alert('Lagring feilet');
-                        setCurrentData(prev);
-                    });
-                    return newData;
-                });
             }, [viewingClient]);
 
             const handleDeleteCheckin = useCallback(async (checkinId) => {
