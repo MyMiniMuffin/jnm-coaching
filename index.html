@@ -2294,6 +2294,11 @@
                                     <h2 className="text-3xl font-display mt-1">
                                         {userData.isPaused ? 'Pauset' : userData.startDate ? `Uke ${currentWeek}` : 'Kom i gang'}
                                     </h2>
+                                    {userData.startDate && !userData.isPaused && (
+                                        <p className="text-white/40 text-sm mt-1">
+                                            Startet {formatDateNO(userData.startDate)}
+                                        </p>
+                                    )}
                                     {activePeriod && activePeriod.startingWeight && (
                                         <p className="text-white/40 text-sm mt-1">
                                             Startvekt: {formatWeight(activePeriod.startingWeight)} kg
