@@ -1375,14 +1375,21 @@
             }, []);
 
             // Håndter bildeopplasting for coach
+            const [uploadProgress, setUploadProgress] = useState('');
+
             const handleImageUpload = useCallback(async (e) => {
                 const files = Array.from(e.target.files);
                 if (files.length === 0) return;
+                if (files.length > 5) {
+                    alert('Maks 5 bilder om gangen');
+                    return;
+                }
                 setIsUploading(true);
                 try {
-                    for (const file of files) {
+                    for (let i = 0; i < files.length; i++) {
+                        setUploadProgress(`${i + 1} av ${files.length}...`);
                         const reader = new FileReader();
-                        reader.readAsDataURL(file);
+                        reader.readAsDataURL(files[i]);
                         const base64Image = await new Promise((resolve) => {
                             reader.onload = () => resolve(reader.result);
                         });
@@ -1400,6 +1407,7 @@
                     alert('Bildeopplasting feilet');
                 } finally {
                     setIsUploading(false);
+                    setUploadProgress('');
                 }
             }, [onAddGalleryImage, uploadForm]);
 
@@ -1450,7 +1458,7 @@
                 <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
                     <Card className="w-full max-w-sm p-6 animate-scale-in">
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-display">Last opp bilde</h2>
+                            <h2 className="text-xl font-display">Last opp bilder</h2>
                             <button onClick={closeUploadModal} className="text-ink-muted hover:text-ink p-1">
                                 <X size={20} />
                             </button>
@@ -1493,15 +1501,18 @@
 
                             <label className={`flex flex-col items-center justify-center p-8 border-2 border-dashed border-surface-200 rounded-xl cursor-pointer hover:border-surface-300 hover:bg-surface-50 transition-all ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}>
                                 {isUploading ? (
-                                    <Loader2 className="animate-spin text-ink-muted" size={24} />
+                                    <>
+                                        <Loader2 className="animate-spin text-ink-muted" size={24} />
+                                        {uploadProgress && <span className="text-sm text-ink-muted mt-2">Laster opp {uploadProgress}</span>}
+                                    </>
                                 ) : (
                                     <>
                                         <Camera size={24} className="text-ink-muted mb-2" />
-                                        <span className="font-medium text-ink-muted">Velg bilde</span>
-                                        <span className="text-xs text-ink-faint mt-1">JPG, PNG eller HEIC</span>
+                                        <span className="font-medium text-ink-muted">Velg bilder</span>
+                                        <span className="text-xs text-ink-faint mt-1">Maks 5 bilder (JPG, PNG, HEIC)</span>
                                     </>
                                 )}
-                                <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={isUploading} />
+                                <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} disabled={isUploading} />
                             </label>
                         </div>
                     </Card>
