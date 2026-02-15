@@ -2294,11 +2294,14 @@
                                     <h2 className="text-3xl font-display mt-1">
                                         {userData.isPaused ? 'Pauset' : userData.startDate ? `Uke ${currentWeek}` : 'Kom i gang'}
                                     </h2>
-                                    {userData.startDate && !userData.isPaused && (
-                                        <p className="text-white/40 text-sm mt-1">
-                                            Startet {formatDateNO(userData.startDate)}
-                                        </p>
-                                    )}
+                                    {userData.startDate && !userData.isPaused && (() => {
+                                        const endDate = new Date(new Date(userData.startDate).getTime() + (userData.totalWeeks || 12) * 7 * 24 * 60 * 60 * 1000);
+                                        return (
+                                            <p className="text-white/40 text-sm mt-1">
+                                                {formatDateNO(userData.startDate)} → {formatDateNO(endDate.toISOString())}
+                                            </p>
+                                        );
+                                    })()}
                                     {activePeriod && activePeriod.startingWeight && (
                                         <p className="text-white/40 text-sm mt-1">
                                             Startvekt: {formatWeight(activePeriod.startingWeight)} kg
