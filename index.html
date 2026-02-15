@@ -3326,26 +3326,55 @@
 
             const handleAddGalleryImage = useCallback(async (imageUrl, label, date, weight) => {
                 if (!viewingClient) return;
+                // Optimistisk UI — vis bildet umiddelbart
+                const tempId = 'temp_' + Date.now();
+                const optimisticImage = {
+                    id: tempId,
+                    image_url: imageUrl,
+                    label: label || 'Startbilde',
+                    date: date || new Date().toISOString().split('T')[0],
+                    weight: weight || null,
+                    created_at: new Date().toISOString()
+                };
+                setCurrentData(prev => ({
+                    ...prev,
+                    galleryImages: [...(prev.galleryImages || []), optimisticImage]
+                }));
+                // Send til server i bakgrunnen
                 const result = await api.addGalleryImage(viewingClient.id, imageUrl, label, date, weight);
                 if (result.authError) {
                     setShowReauthPrompt(true);
-                    return;
+                    // Fjern optimistisk bilde ved feil
+                    setCurrentData(prev => ({
+                        ...prev,
+                        galleryImages: (prev.galleryImages || []).filter(img => img.id !== tempId)
+                    }));
                 }
-                // Refresh data for å hente ny bildeliste
-                const freshResult = await api.getUserData(viewingClient.id, false);
-                if (freshResult.data) setCurrentData(freshResult.data);
             }, [viewingClient]);
 
             const handleDeleteGalleryImage = useCallback(async (imageId) => {
                 if (!viewingClient) return;
+                // Optimistisk UI — fjern bildet umiddelbart
+                let removedImage;
+                setCurrentData(prev => {
+                    removedImage = (prev.galleryImages || []).find(img => img.id === imageId);
+                    return {
+                        ...prev,
+                        galleryImages: (prev.galleryImages || []).filter(img => img.id !== imageId)
+                    };
+                });
+                // Send til server i bakgrunnen
                 const result = await api.deleteGalleryImage(viewingClient.id, imageId);
                 if (result.authError) {
                     setShowReauthPrompt(true);
-                    return;
+                    // Legg tilbake bildet ved feil
+                    if (removedImage) {
+                        setCurrentData(prev => ({
+                            ...prev,
+                            galleryImages: [...(prev.galleryImages || []), removedImage]
+                        }));
+                    }
                 }
-                // Refresh data for å hente oppdatert bildeliste
-                const freshResult = await api.getUserData(viewingClient.id, false);
-                if (freshResult.data) setCurrentData(freshResult.data);
             }, [viewingClient]);
 
             const handleOpenWeightHistory = useCallback(() => setShowWeightHistory(true), []);
