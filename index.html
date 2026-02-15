@@ -3327,28 +3327,37 @@
             const handleAddGalleryImage = useCallback(async (imageUrl, label, date, weight) => {
                 if (!viewingClient) return;
                 // Optimistisk UI — vis bildet umiddelbart
+                // Formatet må matche det API-en returnerer (url, ikke image_url)
                 const tempId = 'temp_' + Date.now();
                 const optimisticImage = {
                     id: tempId,
-                    image_url: imageUrl,
+                    url: imageUrl,
                     label: label || 'Startbilde',
                     date: date || new Date().toISOString().split('T')[0],
-                    weight: weight || null,
-                    created_at: new Date().toISOString()
+                    weight: weight ? parseFloat(weight) : null,
+                    timestamp: Date.now()
                 };
                 setCurrentData(prev => ({
                     ...prev,
                     galleryImages: [...(prev.galleryImages || []), optimisticImage]
                 }));
                 // Send til server i bakgrunnen
-                const result = await api.addGalleryImage(viewingClient.id, imageUrl, label, date, weight);
-                if (result.authError) {
-                    setShowReauthPrompt(true);
+                try {
+                    const result = await api.addGalleryImage(viewingClient.id, imageUrl, label, date, weight);
+                    if (result.authError) {
+                        setShowReauthPrompt(true);
+                        setCurrentData(prev => ({
+                            ...prev,
+                            galleryImages: (prev.galleryImages || []).filter(img => img.id !== tempId)
+                        }));
+                    }
+                } catch (e) {
                     // Fjern optimistisk bilde ved feil
                     setCurrentData(prev => ({
                         ...prev,
                         galleryImages: (prev.galleryImages || []).filter(img => img.id !== tempId)
                     }));
+                    alert('Kunne ikke lagre bildet');
                 }
             }, [viewingClient]);
 
@@ -3364,16 +3373,26 @@
                     };
                 });
                 // Send til server i bakgrunnen
-                const result = await api.deleteGalleryImage(viewingClient.id, imageId);
-                if (result.authError) {
-                    setShowReauthPrompt(true);
-                    // Legg tilbake bildet ved feil
+                try {
+                    const result = await api.deleteGalleryImage(viewingClient.id, imageId);
+                    if (result.authError) {
+                        setShowReauthPrompt(true);
+                        if (removedImage) {
+                            setCurrentData(prev => ({
+                                ...prev,
+                                galleryImages: [...(prev.galleryImages || []), removedImage]
+                            }));
+                        }
+                    }
+                } catch (e) {
+                    // Rollback ved feil
                     if (removedImage) {
                         setCurrentData(prev => ({
                             ...prev,
                             galleryImages: [...(prev.galleryImages || []), removedImage]
                         }));
                     }
+                    alert('Kunne ikke slette bildet');
                 }
             }, [viewingClient]);
 
