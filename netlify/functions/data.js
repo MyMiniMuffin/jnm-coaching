@@ -1,6 +1,9 @@
 const { neon } = require('@neondatabase/serverless');
 const { requireOwnership } = require('./auth-middleware');
 
+// Gjenbruk SQL-tilkobling mellom warm invocations
+const sql = neon(process.env.NETLIFY_DATABASE_URL);
+
 // Validering av checkin-data
 const validateCheckinData = (data) => {
   const errors = [];
@@ -37,8 +40,6 @@ const validateCheckinData = (data) => {
 };
 
 exports.handler = async (event) => {
-  const sql = neon(process.env.NETLIFY_DATABASE_URL);
-
   try {
     // --- GET: Hent all data ---
     if (event.httpMethod === 'GET') {
@@ -185,87 +186,86 @@ sql`
       }
 
       if (type === 'plan_update') {
-        // Samle alle felter som skal oppdateres i én query for bedre ytelse
-        const updates = {};
-
-        if (data.dietPlan !== undefined) {
-          updates.diet_plan = data.dietPlan;
-        }
-        if (data.workoutPlan !== undefined) {
-          updates.workout_plan = data.workoutPlan;
-        }
-        if (data.stepGoal !== undefined) {
-          const stepGoal = parseInt(data.stepGoal);
-          if (!isNaN(stepGoal) && stepGoal >= 1000 && stepGoal <= 100000) {
-            updates.step_goal = stepGoal;
-          }
-        }
-        if (data.totalWeeks !== undefined) {
-          const totalWeeks = parseInt(data.totalWeeks);
-          if (!isNaN(totalWeeks) && totalWeeks >= 1 && totalWeeks <= 52) {
-            updates.total_weeks = totalWeeks;
-          }
-        }
-
-        // Startdato oppdatering (nullstiller også pause)
-        if (data.startDate !== undefined) {
-          updates.start_date = data.startDate;
-          updates.is_paused = false;
-          updates.paused_at = null;
-        }
-
-        // Utfør én samlet UPDATE hvis det er noe å oppdatere
-        if (Object.keys(updates).length > 0) {
-          // Hent nåværende verdier først for å kunne merge
-          const currentUser = await sql`SELECT diet_plan, workout_plan, step_goal, total_weeks, start_date, is_paused, paused_at FROM users WHERE id = ${userId}`;
-          const current = currentUser[0] || {};
-
-          await sql`
-            UPDATE users SET
-              diet_plan = ${updates.diet_plan !== undefined ? updates.diet_plan : current.diet_plan},
-              workout_plan = ${updates.workout_plan !== undefined ? updates.workout_plan : current.workout_plan},
-              step_goal = ${updates.step_goal !== undefined ? updates.step_goal : current.step_goal},
-              total_weeks = ${updates.total_weeks !== undefined ? updates.total_weeks : current.total_weeks},
-              start_date = ${updates.start_date !== undefined ? updates.start_date : current.start_date},
-              is_paused = ${updates.is_paused !== undefined ? updates.is_paused : current.is_paused},
-              paused_at = ${updates.start_date !== undefined ? null : current.paused_at}
-            WHERE id = ${userId}
-          `;
-        }
-
-        // PAUSE LOGIKK
+        // PAUSE/RESUME håndteres separat for å unngå race conditions
         if (data.action === 'pause') {
           const now = new Date().toISOString();
           await sql`UPDATE users SET is_paused = true, paused_at = ${now} WHERE id = ${userId}`;
-        }
-        
-        // RESUME LOGIKK
-        if (data.action === 'resume') {
+        } else if (data.action === 'resume') {
           const userRes = await sql`SELECT start_date, paused_at FROM users WHERE id = ${userId}`;
           const u = userRes[0];
-          
+
           if (u && u.paused_at && u.start_date) {
             const pauseStart = new Date(u.paused_at);
             const now = new Date();
             const diffTime = now - pauseStart;
-            
+
             const oldStart = new Date(u.start_date);
             const newStart = new Date(oldStart.getTime() + diffTime).toISOString();
-            
+
             await sql`UPDATE users SET start_date = ${newStart}, is_paused = false, paused_at = NULL WHERE id = ${userId}`;
           } else {
             await sql`UPDATE users SET is_paused = false WHERE id = ${userId}`;
           }
+        } else {
+          // Vanlige plan-oppdateringer (ikke pause/resume)
+          const updates = {};
+
+          if (data.dietPlan !== undefined) {
+            updates.diet_plan = data.dietPlan;
+          }
+          if (data.workoutPlan !== undefined) {
+            updates.workout_plan = data.workoutPlan;
+          }
+          if (data.stepGoal !== undefined) {
+            const stepGoal = parseInt(data.stepGoal);
+            if (!isNaN(stepGoal) && stepGoal >= 1000 && stepGoal <= 100000) {
+              updates.step_goal = stepGoal;
+            }
+          }
+          if (data.totalWeeks !== undefined) {
+            const totalWeeks = parseInt(data.totalWeeks);
+            if (!isNaN(totalWeeks) && totalWeeks >= 1 && totalWeeks <= 52) {
+              updates.total_weeks = totalWeeks;
+            }
+          }
+
+          // Startdato oppdatering (nullstiller også pause)
+          if (data.startDate !== undefined) {
+            updates.start_date = data.startDate;
+            updates.is_paused = false;
+            updates.paused_at = null;
+          }
+
+          // Utfør én samlet UPDATE med COALESCE for å unngå ekstra SELECT
+          if (Object.keys(updates).length > 0) {
+            const hasStartDate = updates.start_date !== undefined;
+            await sql`
+              UPDATE users SET
+                diet_plan = COALESCE(${updates.diet_plan !== undefined ? updates.diet_plan : null}, diet_plan),
+                workout_plan = COALESCE(${updates.workout_plan !== undefined ? updates.workout_plan : null}, workout_plan),
+                step_goal = COALESCE(${updates.step_goal !== undefined ? updates.step_goal : null}, step_goal),
+                total_weeks = COALESCE(${updates.total_weeks !== undefined ? updates.total_weeks : null}, total_weeks),
+                start_date = COALESCE(${hasStartDate ? updates.start_date : null}, start_date),
+                is_paused = CASE WHEN ${hasStartDate} THEN false ELSE is_paused END,
+                paused_at = CASE WHEN ${hasStartDate} THEN NULL ELSE paused_at END
+              WHERE id = ${userId}
+            `;
+          }
         }
-      } 
+      }
       
       else if (type === 'new_checkin') {
+        // Valider dato
+        if (!data.date || !/^\d{4}-\d{2}-\d{2}$/.test(data.date) || isNaN(new Date(data.date).getTime())) {
+          return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig dato' }) };
+        }
+
         // Valider checkin-data
         const validationErrors = validateCheckinData(data);
         if (validationErrors.length > 0) {
-          return { 
-            statusCode: 400, 
-            body: JSON.stringify({ error: validationErrors.join(', ') }) 
+          return {
+            statusCode: 400,
+            body: JSON.stringify({ error: validationErrors.join(', ') })
           };
         }
 
@@ -318,7 +318,10 @@ sql`
       }
 
       else if (type === 'mark_checkins_read') {
-        // Marker alle innsjekk for en bruker som lest (kun for coach)
+        // Kun coach kan markere innsjekk som lest
+        if (authResult.role !== 'coach') {
+          return { statusCode: 403, body: JSON.stringify({ error: 'Kun coach kan markere rapporter som lest' }) };
+        }
         await sql`UPDATE checkins SET is_read = true WHERE user_id = ${userId}`;
       }
       
@@ -377,9 +380,11 @@ sql`
         }
         
         const endDate = new Date().toISOString();
-        
-        await sql`UPDATE coaching_periods SET end_date = ${endDate}, is_active = false WHERE id = ${periodId} AND user_id = ${userId}`;
-        await sql`UPDATE users SET current_period_id = NULL WHERE id = ${userId} AND current_period_id = ${periodId}`;
+
+        await Promise.all([
+          sql`UPDATE coaching_periods SET end_date = ${endDate}, is_active = false WHERE id = ${periodId} AND user_id = ${userId}`,
+          sql`UPDATE users SET current_period_id = NULL WHERE id = ${userId} AND current_period_id = ${periodId}`
+        ]);
       }
       
       else if (type === 'update_period') {
@@ -398,20 +403,26 @@ sql`
           return { statusCode: 403, body: JSON.stringify({ error: 'Ingen tilgang til denne perioden' }) };
         }
         
-        // FIKSET: Separate oppdateringer i stedet for dynamisk SQL-bygging
+        // Samle uavhengige oppdateringer og kjør parallelt
+        const queries = [];
+
         if (startingWeight !== undefined) {
-          await sql`UPDATE coaching_periods SET starting_weight = ${parseFloat(startingWeight)} WHERE id = ${periodId} AND user_id = ${userId}`;
-          // Oppdater også users-tabellen hvis dette er aktiv periode
-          await sql`UPDATE users SET starting_weight = ${parseFloat(startingWeight)} WHERE id = ${userId} AND current_period_id = ${periodId}`;
+          const swParsed = parseFloat(startingWeight);
+          queries.push(sql`UPDATE coaching_periods SET starting_weight = ${swParsed} WHERE id = ${periodId} AND user_id = ${userId}`);
+          queries.push(sql`UPDATE users SET starting_weight = ${swParsed} WHERE id = ${userId} AND current_period_id = ${periodId}`);
         }
-        
+
         if (goalWeight !== undefined) {
           const goalVal = goalWeight ? parseFloat(goalWeight) : null;
-          await sql`UPDATE coaching_periods SET goal_weight = ${goalVal} WHERE id = ${periodId} AND user_id = ${userId}`;
+          queries.push(sql`UPDATE coaching_periods SET goal_weight = ${goalVal} WHERE id = ${periodId} AND user_id = ${userId}`);
         }
-        
+
         if (notes !== undefined) {
-          await sql`UPDATE coaching_periods SET notes = ${notes} WHERE id = ${periodId} AND user_id = ${userId}`;
+          queries.push(sql`UPDATE coaching_periods SET notes = ${notes} WHERE id = ${periodId} AND user_id = ${userId}`);
+        }
+
+        if (queries.length > 0) {
+          await Promise.all(queries);
         }
       }
       
@@ -443,6 +454,6 @@ sql`
 
   } catch (error) {
     console.error('Data error:', error);
-    return { statusCode: 500, body: JSON.stringify({ error: 'Serverfeil: ' + error.message }) };
+    return { statusCode: 500, body: JSON.stringify({ error: 'Serverfeil ved databehandling' }) };
   }
 };

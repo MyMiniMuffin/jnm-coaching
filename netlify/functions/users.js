@@ -4,6 +4,9 @@ const { requireAuth } = require('./auth-middleware');
 
 const SALT_ROUNDS = 12;
 
+// Gjenbruk SQL-tilkobling mellom warm invocations
+const sql = neon(process.env.NETLIFY_DATABASE_URL);
+
 // Enkel input-validering
 const validateUserInput = (name, username, password) => {
   const errors = [];
@@ -25,8 +28,6 @@ const validateUserInput = (name, username, password) => {
 };
 
 exports.handler = async (event) => {
-  const sql = neon(process.env.NETLIFY_DATABASE_URL);
-
   // Verifiser autentisering
   const authResult = requireAuth(event);
   if (!authResult.success) {
@@ -123,7 +124,7 @@ exports.handler = async (event) => {
         console.error('Users POST: Feil ved opprettelse av bruker:', postError);
         return {
           statusCode: 500,
-          body: JSON.stringify({ error: 'Feil ved opprettelse av bruker: ' + postError.message })
+          body: JSON.stringify({ error: 'Feil ved opprettelse av bruker' })
         };
       }
     }
@@ -156,8 +157,12 @@ exports.handler = async (event) => {
         return { statusCode: 400, body: JSON.stringify({ error: 'Mangler bruker-ID' }) };
       }
 
-      // Slett brukerens innsjekker først (pga database-regler)
-      await sql`DELETE FROM checkins WHERE user_id = ${id}`;
+      // Slett brukerens relaterte data først (pga database-regler)
+      await Promise.all([
+        sql`DELETE FROM checkins WHERE user_id = ${id}`,
+        sql`DELETE FROM coaching_periods WHERE user_id = ${id}`,
+        sql`DELETE FROM gallery_images WHERE user_id = ${id}`
+      ]);
       await sql`DELETE FROM users WHERE id = ${id}`;
       
       const allUsers = await sql`

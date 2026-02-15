@@ -95,6 +95,8 @@
 
     <!-- Marked Library -->
     <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
+    <!-- DOMPurify for XSS-beskyttelse -->
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
 
     <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone@7.23.5/babel.min.js"></script>
@@ -1028,7 +1030,7 @@
                         </form>
                     </div>
 
-                    <p className="absolute bottom-8 text-ink-faint text-xs">JNM Coaching © 2025</p>
+                    <p className="absolute bottom-8 text-ink-faint text-xs">JNM Coaching © {new Date().getFullYear()}</p>
                 </div>
             );
         });
@@ -1443,71 +1445,73 @@
                 setShowUploadModal(false);
             }, []);
 
+            // Felles upload-modal (brukes i både tom- og normal-visning)
+            const uploadModal = showUploadModal && (
+                <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+                    <Card className="w-full max-w-sm p-6 animate-scale-in">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-xl font-display">Last opp bilde</h2>
+                            <button onClick={closeUploadModal} className="text-ink-muted hover:text-ink p-1">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-ink-muted mb-2">Bildetekst</label>
+                                <input
+                                    type="text"
+                                    value={uploadForm.label}
+                                    onChange={handleLabelChange}
+                                    placeholder="F.eks. Startbilde"
+                                    className="w-full px-4 py-3 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-ink-muted mb-2">Dato</label>
+                                <input
+                                    type="date"
+                                    value={uploadForm.date}
+                                    onChange={handleDateChange}
+                                    className="w-full px-4 py-3 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-ink-muted mb-2">Vekt (kg, valgfritt)</label>
+                                <input
+                                    type="number"
+                                    inputMode="decimal"
+                                    step="0.1"
+                                    value={uploadForm.weight}
+                                    onChange={handleWeightChange}
+                                    placeholder="0.0"
+                                    className="w-full px-4 py-3 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink"
+                                />
+                            </div>
+
+                            <label className={`flex flex-col items-center justify-center p-8 border-2 border-dashed border-surface-200 rounded-xl cursor-pointer hover:border-surface-300 hover:bg-surface-50 transition-all ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                                {isUploading ? (
+                                    <Loader2 className="animate-spin text-ink-muted" size={24} />
+                                ) : (
+                                    <>
+                                        <Camera size={24} className="text-ink-muted mb-2" />
+                                        <span className="font-medium text-ink-muted">Velg bilde</span>
+                                        <span className="text-xs text-ink-faint mt-1">JPG, PNG eller HEIC</span>
+                                    </>
+                                )}
+                                <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={isUploading} />
+                            </label>
+                        </div>
+                    </Card>
+                </div>
+            );
+
             if (allImages.length === 0) {
                 return (
                     <div className="flex flex-col items-center justify-center h-[60vh] animate-fade-in text-center px-6">
-                        {/* Upload Modal */}
-                        {showUploadModal && (
-                            <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-                                <Card className="w-full max-w-sm p-6 animate-scale-in">
-                                    <div className="flex justify-between items-center mb-6">
-                                        <h2 className="text-xl font-display">Last opp bilde</h2>
-                                        <button onClick={closeUploadModal} className="text-ink-muted hover:text-ink p-1">
-                                            <X size={20} />
-                                        </button>
-                                    </div>
-                                    
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-ink-muted mb-2">Bildetekst</label>
-                                            <input 
-                                                type="text"
-                                                value={uploadForm.label}
-                                                onChange={handleLabelChange}
-                                                placeholder="F.eks. Startbilde"
-                                                className="w-full px-4 py-3 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink"
-                                            />
-                                        </div>
-                                        
-                                        <div>
-                                            <label className="block text-sm font-medium text-ink-muted mb-2">Dato</label>
-                                            <input 
-                                                type="date"
-                                                value={uploadForm.date}
-                                                onChange={handleDateChange}
-                                                className="w-full px-4 py-3 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink"
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-medium text-ink-muted mb-2">Vekt (kg, valgfritt)</label>
-                                            <input 
-                                                type="number"
-                                                inputMode="decimal"
-                                                step="0.1"
-                                                value={uploadForm.weight}
-                                                onChange={handleWeightChange}
-                                                placeholder="0.0"
-                                                className="w-full px-4 py-3 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink"
-                                            />
-                                        </div>
-
-                                        <label className={`flex flex-col items-center justify-center p-8 border-2 border-dashed border-surface-200 rounded-xl cursor-pointer hover:border-surface-300 hover:bg-surface-50 transition-all ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}>
-                                            {isUploading ? (
-                                                <Loader2 className="animate-spin text-ink-muted" size={24} />
-                                            ) : (
-                                                <>
-                                                    <Camera size={24} className="text-ink-muted mb-2" />
-                                                    <span className="font-medium text-ink-muted">Velg bilde</span>
-                                                    <span className="text-xs text-ink-faint mt-1">JPG, PNG eller HEIC</span>
-                                                </>
-                                            )}
-                                            <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={isUploading} />
-                                        </label>
-                                    </div>
-                                </Card>
-                            </div>
-                        )}
+                        {uploadModal}
                         <div className="w-16 h-16 bg-surface-100 rounded-2xl flex items-center justify-center text-ink-muted mb-6">
                             <Camera size={32} />
                         </div>
@@ -1524,69 +1528,8 @@
 
             return (
                 <div className="space-y-5 pb-32 animate-slide-up">
-                    {/* Upload Modal */}
-                    {showUploadModal && (
-                        <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-                            <Card className="w-full max-w-sm p-6 animate-scale-in">
-                                <div className="flex justify-between items-center mb-6">
-                                    <h2 className="text-xl font-display">Last opp bilde</h2>
-                                    <button onClick={closeUploadModal} className="text-ink-muted hover:text-ink p-1">
-                                        <X size={20} />
-                                    </button>
-                                </div>
-                                
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-ink-muted mb-2">Bildetekst</label>
-                                        <input 
-                                            type="text"
-                                            value={uploadForm.label}
-                                            onChange={handleLabelChange}
-                                            placeholder="F.eks. Startbilde"
-                                            className="w-full px-4 py-3 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink"
-                                        />
-                                    </div>
-                                    
-                                    <div>
-                                        <label className="block text-sm font-medium text-ink-muted mb-2">Dato</label>
-                                        <input 
-                                            type="date"
-                                            value={uploadForm.date}
-                                            onChange={handleDateChange}
-                                            className="w-full px-4 py-3 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink"
-                                        />
-                                    </div>
+                    {uploadModal}
 
-                                    <div>
-                                        <label className="block text-sm font-medium text-ink-muted mb-2">Vekt (kg, valgfritt)</label>
-                                        <input 
-                                            type="number"
-                                            inputMode="decimal"
-                                            step="0.1"
-                                            value={uploadForm.weight}
-                                            onChange={handleWeightChange}
-                                            placeholder="0.0"
-                                            className="w-full px-4 py-3 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink"
-                                        />
-                                    </div>
-
-                                    <label className={`flex flex-col items-center justify-center p-8 border-2 border-dashed border-surface-200 rounded-xl cursor-pointer hover:border-surface-300 hover:bg-surface-50 transition-all ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}>
-                                        {isUploading ? (
-                                            <Loader2 className="animate-spin text-ink-muted" size={24} />
-                                        ) : (
-                                            <>
-                                                <Camera size={24} className="text-ink-muted mb-2" />
-                                                <span className="font-medium text-ink-muted">Velg bilde</span>
-                                                <span className="text-xs text-ink-faint mt-1">JPG, PNG eller HEIC</span>
-                                            </>
-                                        )}
-                                        <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={isUploading} />
-                                    </label>
-                                </div>
-                            </Card>
-                        </div>
-                    )}
-                    
                     {lightbox.isOpen && (
                         <ImageModal 
                             images={lightbox.images} 
@@ -2518,9 +2461,11 @@
 
             const handleTextChange = useCallback((e) => setText(e.target.value), []);
 
-            // Memoize parsed markdown
+            // Memoize parsed markdown (sanitert med DOMPurify)
             const parsedContent = useMemo(() => {
-                return text ? window.marked.parse(text) : '<p class="text-ink-muted italic text-center py-12">Ingen plan enda</p>';
+                if (!text) return '<p class="text-ink-muted italic text-center py-12">Ingen plan enda</p>';
+                const rawHtml = window.marked.parse(text);
+                return window.DOMPurify ? window.DOMPurify.sanitize(rawHtml) : rawHtml;
             }, [text]);
 
             return (
@@ -2860,32 +2805,24 @@
                         ) : (
                             <div className="space-y-3">
                                 {sortedCheckins.map((entry) => {
-                                    console.log('[CheckinHistory] Processing entry:', entry.id, 'entry.images:', entry.images, 'type:', typeof entry.images);
-
                                     // Sikre at images alltid er en array
                                     let imageArray = [];
                                     if (entry.images) {
-                                        // Hvis det er en streng, prøv å parse den
                                         if (typeof entry.images === 'string') {
                                             try {
                                                 imageArray = JSON.parse(entry.images);
-                                                console.log('[CheckinHistory] Parsed string to array:', imageArray);
                                             } catch (e) {
-                                                console.error('[CheckinHistory] Kunne ikke parse images:', entry.images);
                                                 imageArray = [];
                                             }
                                         } else if (Array.isArray(entry.images)) {
                                             imageArray = entry.images;
-                                            console.log('[CheckinHistory] Already array:', imageArray);
                                         }
                                     } else if (entry.image) {
                                         imageArray = [entry.image];
-                                        console.log('[CheckinHistory] Using legacy image field:', imageArray);
                                     }
 
                                     // Filtrer ut ugyldige verdier
                                     const displayImages = imageArray.filter(img => img && typeof img === 'string' && img.trim() !== '');
-                                    console.log('[CheckinHistory] Final displayImages:', displayImages);
 
                                     return (
                                         <Card key={entry.id} className="p-5 group">
@@ -2939,25 +2876,16 @@
                                             
                                             {displayImages.length > 0 && (
                                                 <div className="flex gap-2 overflow-x-auto hide-scrollbar">
-                                                    {displayImages.map((img, idx) => {
-                                                        const thumbnailUrl = getThumbnail(img);
-                                                        console.log('[DEBUG] Original img:', img);
-                                                        console.log('[DEBUG] Thumbnail URL:', thumbnailUrl);
-                                                        return (
-                                                            <img
-                                                                key={idx}
-                                                                src={thumbnailUrl}
-                                                                loading="lazy"
-                                                                className="w-16 h-16 object-cover rounded-lg cursor-pointer flex-none"
-                                                                alt="Checkin"
-                                                                onClick={() => openLightbox(displayImages, idx)}
-                                                                onError={(e) => {
-                                                                    console.error('[DEBUG] Image failed to load:', thumbnailUrl);
-                                                                    console.error('[DEBUG] Original URL:', img);
-                                                                }}
-                                                            />
-                                                        );
-                                                    })}
+                                                    {displayImages.map((img, idx) => (
+                                                        <img
+                                                            key={idx}
+                                                            src={getThumbnail(img)}
+                                                            loading="lazy"
+                                                            className="w-16 h-16 object-cover rounded-lg cursor-pointer flex-none"
+                                                            alt="Checkin"
+                                                            onClick={() => openLightbox(displayImages, idx)}
+                                                        />
+                                                    ))}
                                                 </div>
                                             )}
                                         </Card>
@@ -3009,7 +2937,7 @@
                                 <form onSubmit={handleFormSubmit} className="space-y-4">
                                     <input required name="name" type="text" placeholder="Fullt navn" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink" />
                                     <input required name="username" type="text" placeholder="Brukernavn" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink" />
-                                    <input required name="password" type="text" placeholder="Passord" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink" />
+                                    <input required name="password" type="password" placeholder="Passord" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink" />
                                     <Button type="submit" size="lg" className="w-full">Opprett utøver</Button>
                                 </form>
                             </Card>
@@ -3301,16 +3229,19 @@
 
             const handleDeleteCheckin = useCallback(async (checkinId) => {
                 if (!viewingClient) return;
-                // Deep copy for korrekt rollback
-                const previousCheckins = [...currentData.checkins];
-                setCurrentData(prev => ({ ...prev, checkins: prev.checkins.filter(c => c.id !== checkinId) }));
-                try { 
-                    await api.deleteCheckin(viewingClient.id, checkinId); 
-                } catch (e) { 
-                    alert('Kunne ikke slette.'); 
-                    setCurrentData(prev => ({ ...prev, checkins: previousCheckins })); 
+                // Bruk functional setState for rollback uten å trenge currentData i dependency
+                let previousCheckins;
+                setCurrentData(prev => {
+                    previousCheckins = prev.checkins;
+                    return { ...prev, checkins: prev.checkins.filter(c => c.id !== checkinId) };
+                });
+                try {
+                    await api.deleteCheckin(viewingClient.id, checkinId);
+                } catch (e) {
+                    alert('Kunne ikke slette.');
+                    setCurrentData(prev => ({ ...prev, checkins: previousCheckins }));
                 }
-            }, [viewingClient, currentData.checkins]);
+            }, [viewingClient]);
 
             const handleClearClient = useCallback(() => {
                 setViewingClient(null);
