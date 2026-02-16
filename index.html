@@ -2211,12 +2211,12 @@
                     if (totalWeeks !== origTotalWeeks) {
                         updates.totalWeeks = parseInt(totalWeeks);
                     }
+                    if (stepGoal !== origStepGoal) {
+                        updates.stepGoal = parseInt(stepGoal);
+                    }
                     if (Object.keys(updates).length > 0) {
                         await onUpdateData(updates);
-                    }
-                    if (stepGoal !== origStepGoal) {
-                        await onUpdateData('stepGoal', parseInt(stepGoal));
-                        if (onRefreshData) await onRefreshData();
+                        if (updates.stepGoal && onRefreshData) await onRefreshData();
                     }
                     onClose();
                 } finally {
