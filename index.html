@@ -1386,19 +1386,21 @@
                 }
                 setIsUploading(true);
                 try {
-                    for (let i = 0; i < files.length; i++) {
-                        setUploadProgress(`${i + 1} av ${files.length}...`);
-                        const reader = new FileReader();
-                        reader.readAsDataURL(files[i]);
-                        const base64Image = await new Promise((resolve) => {
-                            reader.onload = () => resolve(reader.result);
-                        });
-
-                        const result = await api.uploadImage(base64Image);
-                        if (result.authError) {
-                            throw new Error('Autentisering feilet');
-                        }
-                        await onAddGalleryImage(result.data.url, uploadForm.label, uploadForm.date, uploadForm.weight);
+                    setUploadProgress(`Laster opp ${files.length} bilde${files.length > 1 ? 'r' : ''}...`);
+                    const uploadedUrls = await Promise.all(
+                        files.map(async (file) => {
+                            const reader = new FileReader();
+                            reader.readAsDataURL(file);
+                            const base64Image = await new Promise((resolve) => {
+                                reader.onload = () => resolve(reader.result);
+                            });
+                            const result = await api.uploadImage(base64Image);
+                            if (result.authError) throw new Error('Autentisering feilet');
+                            return result.data.url;
+                        })
+                    );
+                    for (const url of uploadedUrls) {
+                        await onAddGalleryImage(url, uploadForm.label, uploadForm.date, uploadForm.weight);
                     }
                     setShowUploadModal(false);
                     setUploadForm({ label: 'Startbilde', date: new Date().toISOString().split('T')[0], weight: '' });
@@ -1979,6 +1981,10 @@
             const periods = userData.periods || [];
             const activePeriod = periods.find(p => p.isActive);
 
+            const handleNameChange = useCallback((e) => setFormData(prev => ({ ...prev, name: e.target.value })), []);
+            const handleStartingWeightChange = useCallback((e) => setFormData(prev => ({ ...prev, startingWeight: e.target.value })), []);
+            const handleGoalWeightChange = useCallback((e) => setFormData(prev => ({ ...prev, goalWeight: e.target.value })), []);
+
             const handleCreate = useCallback(async (e) => {
                 e.preventDefault();
                 if (!formData.startingWeight) {
@@ -2094,7 +2100,7 @@
                                     <input 
                                         type="text"
                                         value={formData.name}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                                        onChange={handleNameChange}
                                         placeholder={`Runde ${periods.length + 1}`}
                                         className="w-full px-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink"
                                     />
@@ -2110,7 +2116,7 @@
                                             step="0.1"
                                             required
                                             value={formData.startingWeight}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, startingWeight: e.target.value }))}
+                                            onChange={handleStartingWeightChange}
                                             placeholder="0.0"
                                             className="w-full pl-12 pr-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink font-medium text-lg"
                                         />
@@ -2124,7 +2130,7 @@
                                         inputMode="decimal"
                                         step="0.1"
                                         value={formData.goalWeight}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, goalWeight: e.target.value }))}
+                                        onChange={handleGoalWeightChange}
                                         placeholder="0.0"
                                         className="w-full px-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink font-medium text-lg"
                                     />
@@ -2241,44 +2247,52 @@
     }
 }, [userData.stepGoal, onUpdateData, onRefreshData]);
 
+            const handleClosePeriodModal = useCallback(() => setShowPeriodModal(false), []);
+
+            const handleCreatePeriod = useCallback(async (name, startingWeight, goalWeight) => {
+                setPeriodLoading(true);
+                try {
+                    await onUpdateData({ action: 'create_period', name, startingWeight, goalWeight });
+                    setShowPeriodModal(false);
+                    if (onRefreshData) await onRefreshData();
+                } finally {
+                    setPeriodLoading(false);
+                }
+            }, [onUpdateData, onRefreshData]);
+
+            const handleEndPeriod = useCallback(async (periodId) => {
+                setPeriodLoading(true);
+                try {
+                    await onUpdateData({ action: 'end_period', periodId });
+                    setShowPeriodModal(false);
+                    if (onRefreshData) await onRefreshData();
+                } finally {
+                    setPeriodLoading(false);
+                }
+            }, [onUpdateData, onRefreshData]);
+
+            const handleUpdatePeriodCb = useCallback(async (periodId, updates) => {
+                setPeriodLoading(true);
+                try {
+                    await onUpdateData({ action: 'update_period', periodId, ...updates });
+                    setShowPeriodModal(false);
+                    if (onRefreshData) await onRefreshData();
+                } finally {
+                    setPeriodLoading(false);
+                }
+            }, [onUpdateData, onRefreshData]);
+
             return (
                 <div className="space-y-5 pb-32 animate-slide-up">
                     {/* Period Management Modal */}
                     {showPeriodModal && (
-                        <PeriodManagementModal 
+                        <PeriodManagementModal
                             userData={userData}
-                            onClose={() => setShowPeriodModal(false)}
+                            onClose={handleClosePeriodModal}
                             isLoading={periodLoading}
-                            onCreatePeriod={async (name, startingWeight, goalWeight) => {
-                                setPeriodLoading(true);
-                                try {
-                                    await onUpdateData({ action: 'create_period', name, startingWeight, goalWeight });
-                                    setShowPeriodModal(false);
-                                    if (onRefreshData) await onRefreshData();
-                                } finally {
-                                    setPeriodLoading(false);
-                                }
-                            }}
-                            onEndPeriod={async (periodId) => {
-                                setPeriodLoading(true);
-                                try {
-                                    await onUpdateData({ action: 'end_period', periodId });
-                                    setShowPeriodModal(false);
-                                    if (onRefreshData) await onRefreshData();
-                                } finally {
-                                    setPeriodLoading(false);
-                                }
-                            }}
-                            onUpdatePeriod={async (periodId, updates) => {
-                                setPeriodLoading(true);
-                                try {
-                                    await onUpdateData({ action: 'update_period', periodId, ...updates });
-                                    setShowPeriodModal(false);
-                                    if (onRefreshData) await onRefreshData();
-                                } finally {
-                                    setPeriodLoading(false);
-                                }
-                            }}
+                            onCreatePeriod={handleCreatePeriod}
+                            onEndPeriod={handleEndPeriod}
+                            onUpdatePeriod={handleUpdatePeriodCb}
                         />
                     )}
 
@@ -2649,6 +2663,17 @@
                 setFormData(prev => ({ ...prev, [field]: value }));
             }, []);
 
+            // Stabile onChange-handlers for å ikke bryte React.memo på SelectField
+            const handleWeightChange = useCallback((e) => updateField('weight', e.target.value), [updateField]);
+            const handleEnergyChange = useCallback((e) => updateField('energy', e.target.value), [updateField]);
+            const handleSleepChange = useCallback((e) => updateField('sleep', e.target.value), [updateField]);
+            const handleAccuracyChange = useCallback((e) => updateField('accuracy', e.target.value), [updateField]);
+            const handleStrengthChange = useCallback((e) => updateField('strengthSessions', e.target.value), [updateField]);
+            const handleCardioChange = useCallback((e) => updateField('cardioSessions', e.target.value), [updateField]);
+            const handleStepsChange = useCallback((e) => updateField('stepsReached', e.target.checked), [updateField]);
+            const handleSupplementsChange = useCallback((e) => updateField('takenSupplements', e.target.checked), [updateField]);
+            const handleCommentChange = useCallback((e) => updateField('comment', e.target.value), [updateField]);
+
             if (step === 'success') {
                 return (
                     <div className="flex flex-col items-center justify-center h-[60vh] animate-scale-in text-center px-6">
@@ -2681,8 +2706,8 @@
                                             inputMode="decimal" 
                                             step="0.1" 
                                             required 
-                                            value={formData.weight} 
-                                            onChange={(e) => updateField('weight', e.target.value)} 
+                                            value={formData.weight}
+                                            onChange={handleWeightChange}
                                             className="w-full pl-12 pr-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink focus:border-ink font-medium text-lg placeholder-ink-faint" 
                                             placeholder="0.0" 
                                         />
@@ -2690,39 +2715,39 @@
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
-                                    <SelectField 
-                                        label="Energi" 
-                                        value={formData.energy} 
-                                        onChange={(e) => updateField('energy', e.target.value)} 
-                                        options={OPTIONS_1_TO_10} 
+                                    <SelectField
+                                        label="Energi"
+                                        value={formData.energy}
+                                        onChange={handleEnergyChange}
+                                        options={OPTIONS_1_TO_10}
                                     />
-                                    <SelectField 
-                                        label="Søvn" 
-                                        value={formData.sleep} 
-                                        onChange={(e) => updateField('sleep', e.target.value)} 
-                                        options={OPTIONS_1_TO_10} 
+                                    <SelectField
+                                        label="Søvn"
+                                        value={formData.sleep}
+                                        onChange={handleSleepChange}
+                                        options={OPTIONS_1_TO_10}
                                     />
                                 </div>
                                 
-                                <SelectField 
+                                <SelectField
                                     label={`Nøyaktighet (${formData.accuracy}/10)`}
-                                    value={formData.accuracy} 
-                                    onChange={(e) => updateField('accuracy', e.target.value)} 
-                                    options={OPTIONS_1_TO_10} 
+                                    value={formData.accuracy}
+                                    onChange={handleAccuracyChange}
+                                    options={OPTIONS_1_TO_10}
                                 />
 
                                 <div className="grid grid-cols-2 gap-4">
-                                    <SelectField 
-                                        label="Styrkeøkter" 
-                                        value={formData.strengthSessions} 
-                                        onChange={(e) => updateField('strengthSessions', e.target.value)} 
-                                        options={OPTIONS_0_TO_7} 
+                                    <SelectField
+                                        label="Styrkeøkter"
+                                        value={formData.strengthSessions}
+                                        onChange={handleStrengthChange}
+                                        options={OPTIONS_0_TO_7}
                                     />
-                                    <SelectField 
-                                        label="Cardio" 
-                                        value={formData.cardioSessions} 
-                                        onChange={(e) => updateField('cardioSessions', e.target.value)} 
-                                        options={OPTIONS_0_TO_7} 
+                                    <SelectField
+                                        label="Cardio"
+                                        value={formData.cardioSessions}
+                                        onChange={handleCardioChange}
+                                        options={OPTIONS_0_TO_7}
                                     />
                                 </div>
 
@@ -2730,8 +2755,8 @@
                                     <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-all ${formData.stepsReached ? 'bg-emerald-50 border-emerald-200' : 'bg-surface-50 border-surface-200'}`}>
                                         <input 
                                             type="checkbox" 
-                                            checked={formData.stepsReached} 
-                                            onChange={(e) => updateField('stepsReached', e.target.checked)} 
+                                            checked={formData.stepsReached}
+                                            onChange={handleStepsChange}
                                             className="w-5 h-5 rounded-md border-surface-300 text-ink focus:ring-ink cursor-pointer" 
                                         />
                                         <div>
@@ -2742,8 +2767,8 @@
                                     <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-all ${formData.takenSupplements ? 'bg-emerald-50 border-emerald-200' : 'bg-surface-50 border-surface-200'}`}>
                                         <input 
                                             type="checkbox" 
-                                            checked={formData.takenSupplements} 
-                                            onChange={(e) => updateField('takenSupplements', e.target.checked)} 
+                                            checked={formData.takenSupplements}
+                                            onChange={handleSupplementsChange}
                                             className="w-5 h-5 rounded-md border-surface-300 text-ink focus:ring-ink cursor-pointer" 
                                         />
                                         <div>
@@ -2756,8 +2781,8 @@
                                 <div>
                                     <InputLabel>Kommentar</InputLabel>
                                     <textarea 
-                                        value={formData.comment} 
-                                        onChange={(e) => updateField('comment', e.target.value)} 
+                                        value={formData.comment}
+                                        onChange={handleCommentChange}
                                         className="w-full px-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl h-28 outline-none resize-none focus:ring-2 focus:ring-ink focus:border-ink" 
                                         placeholder="Hvordan har uken vært?" 
                                     />
@@ -3407,6 +3432,12 @@
             const handleOpenWeightHistory = useCallback(() => setShowWeightHistory(true), []);
             const handleCloseWeightHistory = useCallback(() => setShowWeightHistory(false), []);
 
+            // Memoiser dashboard-data for å unngå re-render når kun galleryImages endres
+            const dashboardUserData = useMemo(() => currentData, [
+                currentData.checkins, currentData.periods, currentData.startDate,
+                currentData.isPaused, currentData.pausedAt, currentData.totalWeeks, currentData.stepGoal
+            ]);
+
             const handleTabChange = useCallback((tab) => {
                 setActiveTab(tab);
                 setShowWeightHistory(false);
@@ -3576,7 +3607,7 @@
                                     showWeightHistory ? (
                                         <WeightProgressView checkins={currentData.checkins} onBack={handleCloseWeightHistory} />
                                     ) : (
-                                        <DashboardView userData={currentData} isCoach={isCoach} onUpdateData={handleUpdateData} onOpenWeightHistory={handleOpenWeightHistory} onRefreshData={handleRefresh} />
+                                        <DashboardView userData={dashboardUserData} isCoach={isCoach} onUpdateData={handleUpdateData} onOpenWeightHistory={handleOpenWeightHistory} onRefreshData={handleRefresh} />
                                     )
                                 ) :
                                 activeTab === 'gallery' ? <GalleryView 
