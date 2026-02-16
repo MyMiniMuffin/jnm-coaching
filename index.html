@@ -2520,7 +2520,6 @@
             const [isEditing, setIsEditing] = useState(false);
             const [isSaving, setIsSaving] = useState(false);
             const [text, setText] = useState(content);
-            const toast = useToast();
             useEffect(() => setText(content), [content]);
 
             const Icon = type === 'diet' ? Utensils : Dumbbell;
@@ -2531,13 +2530,12 @@
                     setIsSaving(true);
                     try {
                         await onSave(text);
-                        toast('Plan lagret');
                     } finally {
                         setIsSaving(false);
                     }
                 }
                 setIsEditing(prev => !prev);
-            }, [isEditing, text, onSave, toast]);
+            }, [isEditing, text, onSave]);
 
             const handleTextChange = useCallback((e) => setText(e.target.value), []);
 
