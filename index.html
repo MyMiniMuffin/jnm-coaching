@@ -2563,11 +2563,6 @@
                                 <div className="w-10 h-10 bg-surface-100 rounded-xl flex items-center justify-center text-ink-muted">
                                     <Footprints size={20} />
                                 </div>
-                                {isCoach && (
-                                    <button onClick={handleOpenPlanSettings} className="text-ink-faint hover:text-ink p-1">
-                                        <Edit2 size={14} />
-                                    </button>
-                                )}
                             </div>
                             <p className="text-xs text-ink-muted uppercase tracking-wide">Ukentlig skrittmål</p>
                             <p className="text-2xl font-semibold mt-1">{(userData.stepGoal || 10000).toLocaleString()}</p>
