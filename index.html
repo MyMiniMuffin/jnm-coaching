@@ -870,6 +870,37 @@
             </div>
         ));
 
+        // --- Toast Notification System ---
+        const ToastContext = React.createContext();
+
+        const ToastProvider = ({ children }) => {
+            const [toasts, setToasts] = useState([]);
+            const show = useCallback((message, type = 'success') => {
+                const id = Date.now();
+                setToasts(prev => [...prev, { id, message, type }]);
+                setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000);
+            }, []);
+            return (
+                <ToastContext.Provider value={show}>
+                    {children}
+                    {toasts.length > 0 && (
+                        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[300] flex flex-col gap-2">
+                            {toasts.map(t => (
+                                <div key={t.id} className={`px-4 py-3 rounded-xl shadow-lg text-sm font-medium animate-slide-up whitespace-nowrap ${
+                                    t.type === 'success' ? 'bg-emerald-600 text-white' :
+                                    t.type === 'error' ? 'bg-red-600 text-white' : 'bg-ink text-white'
+                                }`}>
+                                    {t.type === 'success' && '✓ '}{t.message}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </ToastContext.Provider>
+            );
+        };
+
+        const useToast = () => React.useContext(ToastContext);
+
         const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
             const [index, setIndex] = useState(initialIndex || 0);
             const [loading, setLoading] = useState(true);
@@ -1237,6 +1268,7 @@
 
         // GalleryView - samler alle bilder fra checkins for lett sammenligning
         const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false, onAddGalleryImage, onDeleteGalleryImage }) => {
+            const toast = useToast();
             const [lightbox, setLightbox] = useState({ isOpen: false, images: [], index: 0 });
             const [viewMode, setViewMode] = useState('grid'); // 'grid', 'timeline', eller 'compare'
             const [compareImages, setCompareImages] = useState({ before: null, after: null });
@@ -1404,9 +1436,10 @@
                     }
                     setShowUploadModal(false);
                     setUploadForm({ label: 'Startbilde', date: new Date().toISOString().split('T')[0], weight: '' });
+                    toast(`${uploadedUrls.length} bilde${uploadedUrls.length > 1 ? 'r' : ''} lagt til`);
                 } catch (err) {
                     console.error(err);
-                    alert('Bildeopplasting feilet');
+                    toast('Bildeopplasting feilet', 'error');
                 } finally {
                     setIsUploading(false);
                     setUploadProgress('');
@@ -1975,7 +2008,7 @@
         ];
 
         // --- Period Management Modal ---
-        const PeriodManagementModal = React.memo(({ userData, onClose, onCreatePeriod, onEndPeriod, onUpdatePeriod }) => {
+        const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCreatePeriod, onEndPeriod, onUpdatePeriod }) => {
             const [view, setView] = useState('list'); // 'list' eller 'create'
             const [formData, setFormData] = useState({ name: '', startingWeight: '', goalWeight: '' });
             const periods = userData.periods || [];
@@ -2038,13 +2071,14 @@
                                                     </div>
                                                 )}
                                             </div>
-                                            <Button 
-                                                variant="secondary" 
-                                                size="sm" 
+                                            <Button
+                                                variant="secondary"
+                                                size="sm"
                                                 className="w-full mt-4"
                                                 onClick={() => handleEnd(activePeriod.id)}
+                                                disabled={isLoading}
                                             >
-                                                Avslutt runde
+                                                {isLoading ? <><Loader2 size={14} className="animate-spin" /> Avslutter...</> : 'Avslutt runde'}
                                             </Button>
                                         </div>
                                     </div>
@@ -2140,8 +2174,8 @@
                                     <Button type="button" variant="secondary" size="lg" className="flex-1" onClick={() => setView('list')}>
                                         Avbryt
                                     </Button>
-                                    <Button type="submit" variant="primary" size="lg" className="flex-1">
-                                        <Check size={18} /> Opprett
+                                    <Button type="submit" variant="primary" size="lg" className="flex-1" disabled={isLoading}>
+                                        {isLoading ? <><Loader2 size={18} className="animate-spin" /> Oppretter...</> : <><Check size={18} /> Opprett</>}
                                     </Button>
                                 </div>
                             </form>
@@ -2152,6 +2186,7 @@
         });
 
         const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeightHistory, onRefreshData }) => {
+            const toast = useToast();
             const checkins = userData.checkins || [];
             const periods = userData.periods || [];
             const activePeriod = periods.find(p => p.isActive);
@@ -2255,10 +2290,11 @@
                     await onUpdateData({ action: 'create_period', name, startingWeight, goalWeight });
                     setShowPeriodModal(false);
                     if (onRefreshData) await onRefreshData();
+                    toast('Runde opprettet');
                 } finally {
                     setPeriodLoading(false);
                 }
-            }, [onUpdateData, onRefreshData]);
+            }, [onUpdateData, onRefreshData, toast]);
 
             const handleEndPeriod = useCallback(async (periodId) => {
                 setPeriodLoading(true);
@@ -2266,10 +2302,11 @@
                     await onUpdateData({ action: 'end_period', periodId });
                     setShowPeriodModal(false);
                     if (onRefreshData) await onRefreshData();
+                    toast('Runde avsluttet');
                 } finally {
                     setPeriodLoading(false);
                 }
-            }, [onUpdateData, onRefreshData]);
+            }, [onUpdateData, onRefreshData, toast]);
 
             const handleUpdatePeriodCb = useCallback(async (periodId, updates) => {
                 setPeriodLoading(true);
@@ -2481,16 +2518,26 @@
 
         const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
             const [isEditing, setIsEditing] = useState(false);
+            const [isSaving, setIsSaving] = useState(false);
             const [text, setText] = useState(content);
+            const toast = useToast();
             useEffect(() => setText(content), [content]);
-            
+
             const Icon = type === 'diet' ? Utensils : Dumbbell;
             const title = type === 'diet' ? 'Matplan' : 'Treningsplan';
 
-            const handleToggleEdit = useCallback(() => {
-                if (isEditing) onSave(text);
+            const handleToggleEdit = useCallback(async () => {
+                if (isEditing) {
+                    setIsSaving(true);
+                    try {
+                        await onSave(text);
+                        toast('Plan lagret');
+                    } finally {
+                        setIsSaving(false);
+                    }
+                }
                 setIsEditing(prev => !prev);
-            }, [isEditing, text, onSave]);
+            }, [isEditing, text, onSave, toast]);
 
             const handleTextChange = useCallback((e) => setText(e.target.value), []);
 
@@ -2512,12 +2559,13 @@
                                 <h2 className="font-display text-xl">{title}</h2>
                             </div>
                             {!isReadOnly && (
-                                <Button 
+                                <Button
                                     variant={isEditing ? 'primary' : 'secondary'}
                                     size="sm"
                                     onClick={handleToggleEdit}
+                                    disabled={isSaving}
                                 >
-                                    {isEditing ? <><Check size={16} /> Lagre</> : <><Edit2 size={16} /> Rediger</>}
+                                    {isSaving ? <><Loader2 size={16} className="animate-spin" /> Lagrer...</> : isEditing ? <><Check size={16} /> Lagre</> : <><Edit2 size={16} /> Rediger</>}
                                 </Button>
                             )}
                         </div>
@@ -2653,10 +2701,15 @@
             }, [formData, onNewCheckin]);
 
             // Memoize sorted checkins
-            const sortedCheckins = useMemo(() => 
-                [...checkins].sort((a, b) => b.timestamp - a.timestamp), 
+            const sortedCheckins = useMemo(() =>
+                [...checkins].sort((a, b) => b.timestamp - a.timestamp),
                 [checkins]
             );
+
+            const lastWeight = useMemo(() => {
+                const last = sortedCheckins.find(c => c.weight && parseFloat(c.weight) > 0);
+                return last ? parseFloat(last.weight) : null;
+            }, [sortedCheckins]);
 
             // Form field handlers - memoized
             const updateField = useCallback((field, value) => {
@@ -2712,17 +2765,20 @@
                                             placeholder="0.0" 
                                         />
                                     </div>
+                                    {lastWeight && (
+                                        <p className="text-xs text-ink-muted mt-1.5">Forrige: {formatWeight(lastWeight)} kg</p>
+                                    )}
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <SelectField
-                                        label="Energi"
+                                        label="Energi (1–10)"
                                         value={formData.energy}
                                         onChange={handleEnergyChange}
                                         options={OPTIONS_1_TO_10}
                                     />
                                     <SelectField
-                                        label="Søvn"
+                                        label="Søvnkvalitet (1–10)"
                                         value={formData.sleep}
                                         onChange={handleSleepChange}
                                         options={OPTIONS_1_TO_10}
@@ -3103,7 +3159,8 @@
         const TAB_ORDER = ['dashboard', 'gallery', 'diet', 'workout', 'checkin'];
 
         const App = () => {
-            const [currentUser, setCurrentUser] = useState(null); 
+            const toast = useToast();
+            const [currentUser, setCurrentUser] = useState(null);
             const [activeTab, setActiveTab] = useState('dashboard');
             const [allUsers, setAllUsers] = useState([]);
             const [viewingClient, setViewingClient] = useState(null);
@@ -3276,9 +3333,10 @@
                         setCurrentData(previousData);
                         return;
                     }
+                    toast('Lagret');
                 } catch (e) {
                     if (previousData) setCurrentData(previousData);
-                    alert('Lagring feilet: ' + (e.message || 'Ukjent feil'));
+                    toast('Lagring feilet', 'error');
                 } finally {
                     savingRef.current = false;
                 }
@@ -3642,7 +3700,7 @@
         };
 
         const root = createRoot(document.getElementById('root'));
-        root.render(<App />);
+        root.render(<ToastProvider><App /></ToastProvider>);
     </script>
 </body>
 </html>
