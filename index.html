@@ -2981,7 +2981,7 @@
                                 <form onSubmit={handleFormSubmit} className="space-y-4">
                                     <input required name="name" type="text" placeholder="Fullt navn" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink" />
                                     <input required name="username" type="text" placeholder="Brukernavn" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink" />
-                                    <input required name="password" type="password" placeholder="Passord" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink" />
+                                    <input required name="password" type="password" minLength="6" placeholder="Passord (min. 6 tegn)" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink" />
                                     <Button type="submit" size="lg" className="w-full">Opprett utøver</Button>
                                 </form>
                             </Card>
@@ -3246,25 +3246,38 @@
                 savingRef.current = true;
 
                 let updates = typeof keyOrObj === 'string' ? { [keyOrObj]: value } : keyOrObj;
-                
+                let previousData;
+
                 try {
                     // Håndter periode-spesifikke actions
                     if (updates.action === 'create_period') {
-                        await api.createPeriod(viewingClient.id, updates.name, updates.startingWeight, updates.goalWeight);
+                        const result = await api.createPeriod(viewingClient.id, updates.name, updates.startingWeight, updates.goalWeight);
+                        if (result.authError) { setShowReauthPrompt(true); }
                         return;
                     } else if (updates.action === 'end_period') {
-                        await api.endPeriod(viewingClient.id, updates.periodId);
+                        const result = await api.endPeriod(viewingClient.id, updates.periodId);
+                        if (result.authError) { setShowReauthPrompt(true); }
                         return;
                     } else if (updates.action === 'update_period') {
                         const { periodId, ...periodUpdates } = updates;
-                        await api.updatePeriod(viewingClient.id, periodId, periodUpdates);
+                        const result = await api.updatePeriod(viewingClient.id, periodId, periodUpdates);
+                        if (result.authError) { setShowReauthPrompt(true); }
                         return;
                     }
 
-                    // Standard oppdateringer - optimistisk UI
-                    setCurrentData(prev => ({ ...prev, ...updates }));
-                    await api.saveUserData(viewingClient.id, updates);
+                    // Standard oppdateringer - optimistisk UI med rollback
+                    setCurrentData(prev => {
+                        previousData = prev;
+                        return { ...prev, ...updates };
+                    });
+                    const result = await api.saveUserData(viewingClient.id, updates);
+                    if (result.authError) {
+                        setShowReauthPrompt(true);
+                        setCurrentData(previousData);
+                        return;
+                    }
                 } catch (e) {
+                    if (previousData) setCurrentData(previousData);
                     alert('Lagring feilet: ' + (e.message || 'Ukjent feil'));
                 } finally {
                     savingRef.current = false;
