@@ -2185,12 +2185,166 @@
             );
         });
 
+        // --- Plan Settings Modal (erstatter prompt()-dialoger) ---
+        const PlanSettingsModal = React.memo(({ userData, onClose, onUpdateData, onRefreshData, onOpenPeriodModal }) => {
+            const toast = useToast();
+            const [startDate, setStartDate] = useState(
+                userData.startDate ? new Date(userData.startDate).toISOString().split('T')[0] : ''
+            );
+            const [totalWeeks, setTotalWeeks] = useState(userData.totalWeeks || 12);
+            const [stepGoal, setStepGoal] = useState(userData.stepGoal || 10000);
+            const [isSaving, setIsSaving] = useState(false);
+
+            const origStartDate = userData.startDate ? new Date(userData.startDate).toISOString().split('T')[0] : '';
+            const origTotalWeeks = userData.totalWeeks || 12;
+            const origStepGoal = userData.stepGoal || 10000;
+
+            const hasChanges = startDate !== origStartDate || totalWeeks !== origTotalWeeks || stepGoal !== origStepGoal;
+
+            const handleSave = useCallback(async () => {
+                setIsSaving(true);
+                try {
+                    const updates = {};
+                    if (startDate !== origStartDate) {
+                        updates.startDate = startDate ? new Date(startDate).toISOString() : null;
+                    }
+                    if (totalWeeks !== origTotalWeeks) {
+                        updates.totalWeeks = parseInt(totalWeeks);
+                    }
+                    if (Object.keys(updates).length > 0) {
+                        await onUpdateData(updates);
+                    }
+                    if (stepGoal !== origStepGoal) {
+                        await onUpdateData('stepGoal', parseInt(stepGoal));
+                        if (onRefreshData) await onRefreshData();
+                    }
+                    onClose();
+                } finally {
+                    setIsSaving(false);
+                }
+            }, [startDate, totalWeeks, stepGoal, origStartDate, origTotalWeeks, origStepGoal, onUpdateData, onRefreshData, onClose]);
+
+            const handlePauseResume = useCallback(async () => {
+                setIsSaving(true);
+                try {
+                    if (userData.isPaused) {
+                        await onUpdateData({ action: 'resume' });
+                    } else {
+                        await onUpdateData({ action: 'pause' });
+                    }
+                    onClose();
+                } finally {
+                    setIsSaving(false);
+                }
+            }, [userData.isPaused, onUpdateData, onClose]);
+
+            const handleStartDateChange = useCallback((e) => setStartDate(e.target.value), []);
+            const handleTotalWeeksChange = useCallback((e) => setTotalWeeks(parseInt(e.target.value) || ''), []);
+            const handleStepGoalChange = useCallback((e) => setStepGoal(parseInt(e.target.value) || ''), []);
+
+            return (
+                <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+                    <Card className="w-full max-w-md p-6 max-h-[80vh] overflow-y-auto animate-scale-in">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-xl font-display">Plan-innstillinger</h2>
+                            <button onClick={onClose} className="text-ink-muted hover:text-ink p-1">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="space-y-5">
+                            <div>
+                                <InputLabel>Startdato</InputLabel>
+                                <div className="relative">
+                                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" size={18} />
+                                    <input
+                                        type="date"
+                                        value={startDate}
+                                        onChange={handleStartDateChange}
+                                        className="w-full pl-12 pr-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink font-medium"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <InputLabel>Antall uker</InputLabel>
+                                <input
+                                    type="number"
+                                    inputMode="numeric"
+                                    min="1"
+                                    max="52"
+                                    value={totalWeeks}
+                                    onChange={handleTotalWeeksChange}
+                                    className="w-full px-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink font-medium"
+                                />
+                            </div>
+
+                            <div>
+                                <InputLabel>Ukentlig skrittmål</InputLabel>
+                                <div className="relative">
+                                    <Footprints className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" size={18} />
+                                    <input
+                                        type="number"
+                                        inputMode="numeric"
+                                        min="1000"
+                                        max="100000"
+                                        step="1000"
+                                        value={stepGoal}
+                                        onChange={handleStepGoalChange}
+                                        className="w-full pl-12 pr-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink font-medium"
+                                    />
+                                </div>
+                            </div>
+
+                            {userData.startDate && (
+                                <Button
+                                    variant="secondary"
+                                    size="lg"
+                                    className="w-full"
+                                    onClick={handlePauseResume}
+                                    disabled={isSaving}
+                                >
+                                    {userData.isPaused
+                                        ? <><Play size={18} /> Gjenoppta plan</>
+                                        : <><Pause size={18} /> Pause plan</>
+                                    }
+                                </Button>
+                            )}
+
+                            <Button
+                                variant="secondary"
+                                size="lg"
+                                className="w-full"
+                                onClick={onOpenPeriodModal}
+                            >
+                                <Activity size={18} /> Administrer runder <ArrowRight size={16} />
+                            </Button>
+
+                            <Button
+                                variant="primary"
+                                size="lg"
+                                className="w-full"
+                                onClick={handleSave}
+                                disabled={isSaving || !hasChanges}
+                            >
+                                {isSaving
+                                    ? <><Loader2 size={18} className="animate-spin" /> Lagrer...</>
+                                    : <><Check size={18} /> Lagre endringer</>
+                                }
+                            </Button>
+                        </div>
+                    </Card>
+                </div>
+            );
+        });
+
         const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeightHistory, onRefreshData }) => {
             const toast = useToast();
             const checkins = userData.checkins || [];
             const periods = userData.periods || [];
             const activePeriod = periods.find(p => p.isActive);
             const [showPeriodModal, setShowPeriodModal] = useState(false);
+            const [showPlanSettings, setShowPlanSettings] = useState(false);
             const [periodLoading, setPeriodLoading] = useState(false);
             
             // Memoize sorterte checkins og lastCheckin
@@ -2249,40 +2403,13 @@
             // Memoize dagens quote
             const todayQuote = useMemo(() => QUOTES[new Date().getDay() % QUOTES.length], []);
 
-            const handlePlanSettings = useCallback(async () => {
-                if (!isCoach) return;
-                const choice = prompt(`Plan-innstillinger:\n\n1. Sett startdato\n2. Endre antall uker\n3. ${userData.isPaused ? 'Fortsett plan' : 'Pause plan'}\n4. Administrer runder`);
-                if (choice === '1') {
-                    const dateStr = prompt("Startdato (YYYY-MM-DD):", new Date().toISOString().split('T')[0]);
-                    if (dateStr) await onUpdateData({ startDate: new Date(dateStr).toISOString() });
-                } else if (choice === '2') {
-                    const weeks = prompt("Totalt antall uker:", userData.totalWeeks || 12);
-                    if (weeks) await onUpdateData('totalWeeks', parseInt(weeks));
-                } else if (choice === '3') {
-                    if (userData.isPaused) {
-                        if(confirm("Gjenoppta plan?")) await onUpdateData({ action: 'resume' });
-                    } else {
-                        if(confirm("Sett plan på pause?")) await onUpdateData({ action: 'pause' });
-                    }
-                } else if (choice === '4') {
-                    setShowPeriodModal(true);
-                }
-            }, [isCoach, userData.isPaused, userData.totalWeeks, onUpdateData]);
-
-            const handleEditGoal = useCallback(async () => {
-    const input = prompt("Nytt ukentlig skrittmål:", userData.stepGoal || 10000);
-    if (input && !isNaN(parseInt(input))) {
-        const newGoal = parseInt(input);
-        if (newGoal < 1000 || newGoal > 100000) {
-            alert('Skrittmål må være mellom 1 000 og 100 000');
-            return;
-        }
-        await onUpdateData('stepGoal', newGoal);
-        if (onRefreshData) await onRefreshData();
-    }
-}, [userData.stepGoal, onUpdateData, onRefreshData]);
-
+            const handleOpenPlanSettings = useCallback(() => setShowPlanSettings(true), []);
+            const handleClosePlanSettings = useCallback(() => setShowPlanSettings(false), []);
             const handleClosePeriodModal = useCallback(() => setShowPeriodModal(false), []);
+            const handleOpenPeriodFromSettings = useCallback(() => {
+                setShowPlanSettings(false);
+                setShowPeriodModal(true);
+            }, []);
 
             const handleCreatePeriod = useCallback(async (name, startingWeight, goalWeight) => {
                 setPeriodLoading(true);
@@ -2333,6 +2460,17 @@
                         />
                     )}
 
+                    {/* Plan Settings Modal */}
+                    {showPlanSettings && (
+                        <PlanSettingsModal
+                            userData={userData}
+                            onClose={handleClosePlanSettings}
+                            onUpdateData={onUpdateData}
+                            onRefreshData={onRefreshData}
+                            onOpenPeriodModal={handleOpenPeriodFromSettings}
+                        />
+                    )}
+
                     {/* Hero Card */}
                     <div className="p-6 bg-ink text-white rounded-2xl relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-3xl transform translate-x-10 -translate-y-10" />
@@ -2361,8 +2499,8 @@
                                     )}
                                 </div>
                                 {isCoach && (
-                                    <button 
-                                        onClick={handlePlanSettings}
+                                    <button
+                                        onClick={handleOpenPlanSettings}
                                         className="p-2 rounded-lg hover:bg-white/10 text-white/60 transition-colors"
                                     >
                                         <Edit2 size={18} />
@@ -2426,7 +2564,7 @@
                                     <Footprints size={20} />
                                 </div>
                                 {isCoach && (
-                                    <button onClick={handleEditGoal} className="text-ink-faint hover:text-ink p-1">
+                                    <button onClick={handleOpenPlanSettings} className="text-ink-faint hover:text-ink p-1">
                                         <Edit2 size={14} />
                                     </button>
                                 )}
