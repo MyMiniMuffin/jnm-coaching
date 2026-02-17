@@ -870,6 +870,16 @@
             </div>
         ));
 
+        // --- Escape-tast hook for modaler ---
+        const useEscapeKey = (onClose, active = true) => {
+            useEffect(() => {
+                if (!active) return;
+                const handler = (e) => { if (e.key === 'Escape') onClose(); };
+                document.addEventListener('keydown', handler);
+                return () => document.removeEventListener('keydown', handler);
+            }, [onClose, active]);
+        };
+
         // --- Toast Notification System ---
         const ToastContext = React.createContext();
 
@@ -902,6 +912,7 @@
         const useToast = () => React.useContext(ToastContext);
 
         const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
+            useEscapeKey(onClose);
             const [index, setIndex] = useState(initialIndex || 0);
             const [loading, setLoading] = useState(true);
 
@@ -1493,13 +1504,15 @@
                 setShowUploadModal(false);
             }, []);
 
+            useEscapeKey(closeUploadModal, showUploadModal);
+
             // Felles upload-modal (brukes i både tom- og normal-visning)
             const uploadModal = showUploadModal && (
                 <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
                     <Card className="w-full max-w-sm p-6 animate-scale-in">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-xl font-display">Last opp bilder</h2>
-                            <button onClick={closeUploadModal} className="text-ink-muted hover:text-ink p-1">
+                            <button onClick={closeUploadModal} className="text-ink-muted hover:text-ink p-2">
                                 <X size={20} />
                             </button>
                         </div>
@@ -2014,6 +2027,7 @@
 
         // --- Period Management Modal ---
         const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCreatePeriod, onEndPeriod, onUpdatePeriod }) => {
+            useEscapeKey(onClose);
             const [view, setView] = useState('list'); // 'list' eller 'create'
             const [formData, setFormData] = useState({ name: '', startingWeight: '', goalWeight: '' });
             const periods = userData.periods || [];
@@ -2045,7 +2059,7 @@
                     <Card className="w-full max-w-md p-6 max-h-[80vh] overflow-y-auto animate-scale-in">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-xl font-display">Coaching-runder</h2>
-                            <button onClick={onClose} className="text-ink-muted hover:text-ink p-1">
+                            <button onClick={onClose} className="text-ink-muted hover:text-ink p-2">
                                 <X size={20} />
                             </button>
                         </div>
@@ -2192,6 +2206,7 @@
 
         // --- Plan Settings Modal (erstatter prompt()-dialoger) ---
         const PlanSettingsModal = React.memo(({ userData, onClose, onUpdateData, onRefreshData, onOpenPeriodModal }) => {
+            useEscapeKey(onClose);
             const toast = useToast();
             const [startDate, setStartDate] = useState(
                 userData.startDate ? new Date(userData.startDate).toISOString().split('T')[0] : ''
@@ -2241,7 +2256,7 @@
                     <Card className="w-full max-w-md p-6 max-h-[80vh] overflow-y-auto animate-scale-in">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-xl font-display">Plan-innstillinger</h2>
-                            <button onClick={onClose} className="text-ink-muted hover:text-ink p-1">
+                            <button onClick={onClose} className="text-ink-muted hover:text-ink p-2">
                                 <X size={20} />
                             </button>
                         </div>
@@ -3022,7 +3037,13 @@
                         <p className="text-xs text-ink-muted uppercase tracking-wide mb-4 px-1">Tidligere rapporter</p>
                         
                         {sortedCheckins.length === 0 ? (
-                            <div className="text-center text-ink-muted py-12 font-display italic">Ingen historikk enda</div>
+                            <div className="text-center py-12">
+                                <div className="w-14 h-14 bg-surface-100 rounded-2xl flex items-center justify-center text-ink-muted mx-auto mb-4">
+                                    <Activity size={24} />
+                                </div>
+                                <p className="text-ink-muted font-display text-lg italic mb-1">Ingen rapporter enda</p>
+                                <p className="text-ink-faint text-sm">Fyll ut skjemaet over for å sende din første ukesrapport</p>
+                            </div>
                         ) : (
                             <div className="space-y-3">
                                 {sortedCheckins.map((entry) => {
@@ -3122,6 +3143,8 @@
         const CoachDashboard = React.memo(({ user, allUsers, onSelectClient, onAddClient, onDeleteClient, onArchiveClient }) => {
             const [showModal, setShowModal] = useState(false);
             const [showArchived, setShowArchived] = useState(false);
+            const closeModal = useCallback(() => setShowModal(false), []);
+            useEscapeKey(closeModal, showModal);
             
             // Memoize filtrerte lister
             const { activeClients, archivedClients, totalAthletes } = useMemo(() => ({
@@ -3151,7 +3174,7 @@
                             <Card className="w-full max-w-sm p-6 animate-scale-in">
                                 <div className="flex justify-between items-center mb-6">
                                     <h2 className="text-xl font-display">Ny utøver</h2>
-                                    <button onClick={closeModal} className="text-ink-muted hover:text-ink p-1">
+                                    <button onClick={closeModal} className="text-ink-muted hover:text-ink p-2">
                                         <X size={20} />
                                     </button>
                                 </div>
@@ -3213,9 +3236,12 @@
                     {/* Client List */}
                     <div className="space-y-2">
                         {displayedClients.length === 0 ? (
-                            <div className="text-center py-12 text-ink-muted">
-                                <p className="font-display italic">{showArchived ? 'Ingen arkiverte utøvere' : 'Ingen aktive utøvere'}</p>
-                                {!showArchived && <p className="text-sm mt-2">Trykk "Ny" for å legge til en utøver</p>}
+                            <div className="text-center py-12">
+                                <div className="w-14 h-14 bg-surface-100 rounded-2xl flex items-center justify-center text-ink-muted mx-auto mb-4">
+                                    <User size={24} />
+                                </div>
+                                <p className="text-ink-muted font-display text-lg italic mb-1">{showArchived ? 'Ingen arkiverte utøvere' : 'Ingen utøvere enda'}</p>
+                                {!showArchived && <p className="text-ink-faint text-sm">Trykk «Ny» for å legge til din første utøver</p>}
                             </div>
                         ) : (
                             displayedClients.map(client => (
