@@ -854,7 +854,7 @@
 
         const Button = React.memo(({ children, variant = 'primary', size = 'md', className = '', ...props }) => (
             <button 
-                className={`font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 ${BUTTON_VARIANTS[variant]} ${BUTTON_SIZES[size]} ${className}`}
+                className={`font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${BUTTON_VARIANTS[variant]} ${BUTTON_SIZES[size]} ${className}`}
                 {...props}
             >
                 {children}
@@ -1224,7 +1224,7 @@
                         </Card>
                         <Card className="p-5">
                             <p className="text-xs text-ink-muted uppercase tracking-wide mb-1">Nåværende</p>
-                            <p className="text-2xl font-semibold">{formatWeight(last.weight)} kg</p>
+                            <p className="text-2xl font-semibold tabular-nums">{formatWeight(last.weight)} kg</p>
                         </Card>
                     </div>
 
@@ -2557,7 +2557,7 @@
                                 <ChevronRight size={16} className="text-ink-faint" />
                             </div>
                             <p className="text-xs text-ink-muted uppercase tracking-wide">Siste vekt</p>
-                            <p className="text-2xl font-semibold mt-1">
+                            <p className="text-2xl font-semibold mt-1 tabular-nums">
                                 {lastCheckin ? formatWeight(lastCheckin.weight) : '-'}
                                 <span className="text-sm font-normal text-ink-muted ml-1">kg</span>
                             </p>
@@ -2581,7 +2581,7 @@
                             <Card className="divide-y divide-surface-100">
                                 <div className="p-4 flex justify-between items-center">
                                     <span className="text-ink-muted">Nøyaktighet</span>
-                                    <Badge>{lastCheckin.accuracy}/10</Badge>
+                                    <Badge className={parseInt(lastCheckin.accuracy) >= 8 ? 'bg-emerald-100 text-emerald-700' : parseInt(lastCheckin.accuracy) >= 5 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}>{lastCheckin.accuracy}/10</Badge>
                                 </div>
                                 <div className="p-4 flex justify-between items-center">
                                     <span className="text-ink-muted">Styrke / Cardio</span>
@@ -2622,11 +2622,11 @@
                                         <div className="text-[10px] text-ink-muted uppercase tracking-wide mt-1">Cardio</div>
                                     </div>
                                     <div>
-                                        <div className="text-2xl font-semibold text-ink">{stats.stepsHit}/{stats.totalCheckins}</div>
+                                        <div className="text-2xl font-semibold text-ink tabular-nums">{stats.stepsHit}/{stats.totalCheckins}</div>
                                         <div className="text-[10px] text-ink-muted uppercase tracking-wide mt-1">Skrittmål</div>
                                     </div>
                                     <div>
-                                        <div className="text-2xl font-semibold text-ink">{stats.avgAccuracy}</div>
+                                        <div className="text-2xl font-semibold text-ink tabular-nums">{stats.avgAccuracy}</div>
                                         <div className="text-[10px] text-ink-muted uppercase tracking-wide mt-1">Snitt nøyakt.</div>
                                     </div>
                                 </div>
@@ -2634,7 +2634,7 @@
                                 {stats.weightChange && (
                                     <div className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl ${parseFloat(stats.weightChange) < 0 ? 'bg-emerald-50 text-emerald-700' : parseFloat(stats.weightChange) > 0 ? 'bg-surface-100 text-ink' : 'bg-surface-100 text-ink-muted'}`}>
                                         {parseFloat(stats.weightChange) < 0 ? <TrendingDown size={18} /> : parseFloat(stats.weightChange) > 0 ? <TrendingUp size={18} /> : <Minus size={18} />}
-                                        <span className="font-medium">
+                                        <span className="font-medium tabular-nums">
                                             {parseFloat(stats.weightChange) > 0 ? '+' : ''}{stats.weightChange.replace('.', ',')} kg total endring
                                         </span>
                                     </div>
@@ -3082,14 +3082,14 @@
                                                             <Trash2 size={16} />
                                                         </button>
                                                     )}
-                                                    <Badge>{formatWeight(entry.weight)} kg</Badge>
+                                                    <Badge className="tabular-nums">{formatWeight(entry.weight)} kg</Badge>
                                                 </div>
                                             </div>
                                             
                                             <div className="grid grid-cols-3 gap-2 text-xs mb-4">
-                                                <div className="bg-surface-50 p-3 rounded-lg text-center">
+                                                <div className={`p-3 rounded-lg text-center ${parseInt(entry.accuracy) >= 8 ? 'bg-emerald-50' : parseInt(entry.accuracy) >= 5 ? 'bg-amber-50' : 'bg-red-50'}`}>
                                                     <p className="text-ink-faint mb-1">Nøyaktighet</p>
-                                                    <p className="font-semibold">{entry.accuracy}/10</p>
+                                                    <p className={`font-semibold ${parseInt(entry.accuracy) >= 8 ? 'text-emerald-700' : parseInt(entry.accuracy) >= 5 ? 'text-amber-700' : 'text-red-700'}`}>{entry.accuracy}/10</p>
                                                 </div>
                                                 <div className="bg-surface-50 p-3 rounded-lg text-center">
                                                     <p className="text-ink-faint mb-1">Styrke / Cardio</p>
@@ -3261,7 +3261,11 @@
                                         </div>
                                         <div>
                                             <p className="font-medium">{client.name}</p>
-                                            <p className="text-sm text-ink-muted">@{client.username}</p>
+                                            <p className="text-sm text-ink-muted">
+                                                {client.lastCheckinDate
+                                                    ? `Siste rapport: ${new Date(client.lastCheckinDate).toLocaleDateString('no-NO', { day: 'numeric', month: 'short' })}`
+                                                    : 'Ingen rapporter ennå'}
+                                            </p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-1">

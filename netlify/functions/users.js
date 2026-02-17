@@ -54,7 +54,8 @@ exports.handler = async (event) => {
           u.role,
           u.start_date,
           u.is_archived,
-          COALESCE(COUNT(c.id) FILTER (WHERE c.is_read = false), 0)::integer as "unreadCheckins"
+          COALESCE(COUNT(c.id) FILTER (WHERE c.is_read = false), 0)::integer as "unreadCheckins",
+          MAX(c.date) as "lastCheckinDate"
         FROM users u
         LEFT JOIN checkins c ON c.user_id = u.id
         GROUP BY u.id, u.username, u.name, u.role, u.start_date, u.is_archived
