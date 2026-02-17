@@ -1431,12 +1431,17 @@
                             return result.data.url;
                         })
                     );
-                    for (const url of uploadedUrls) {
-                        await onAddGalleryImage(url, uploadForm.label, uploadForm.date, uploadForm.weight);
-                    }
+                    // Lukk modal umiddelbart — optimistisk UI i onAddGalleryImage viser bildene
+                    const { label, date, weight } = uploadForm;
                     setShowUploadModal(false);
                     setUploadForm({ label: 'Startbilde', date: new Date().toISOString().split('T')[0], weight: '' });
+                    setIsUploading(false);
+                    setUploadProgress('');
                     toast(`${uploadedUrls.length} bilde${uploadedUrls.length > 1 ? 'r' : ''} lagt til`);
+                    // Lagre til server i bakgrunnen (optimistisk UI allerede vist)
+                    for (const url of uploadedUrls) {
+                        await onAddGalleryImage(url, label, date, weight);
+                    }
                 } catch (err) {
                     console.error(err);
                     toast('Bildeopplasting feilet', 'error');
