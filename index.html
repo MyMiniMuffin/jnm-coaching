@@ -2193,7 +2193,6 @@
             );
             const [totalWeeks, setTotalWeeks] = useState(userData.totalWeeks || 12);
             const [stepGoal, setStepGoal] = useState(userData.stepGoal || 10000);
-            const [isSaving, setIsSaving] = useState(false);
 
             const origStartDate = userData.startDate ? new Date(userData.startDate).toISOString().split('T')[0] : '';
             const origTotalWeeks = userData.totalWeeks || 12;
@@ -2202,39 +2201,29 @@
             const hasChanges = startDate !== origStartDate || totalWeeks !== origTotalWeeks || stepGoal !== origStepGoal;
 
             const handleSave = useCallback(async () => {
-                setIsSaving(true);
-                try {
-                    const updates = {};
-                    if (startDate !== origStartDate) {
-                        updates.startDate = startDate ? new Date(startDate).toISOString() : null;
-                    }
-                    if (totalWeeks !== origTotalWeeks) {
-                        updates.totalWeeks = parseInt(totalWeeks);
-                    }
-                    if (stepGoal !== origStepGoal) {
-                        updates.stepGoal = parseInt(stepGoal);
-                    }
-                    if (Object.keys(updates).length > 0) {
-                        await onUpdateData(updates);
-                        if (updates.stepGoal && onRefreshData) await onRefreshData();
-                    }
-                    onClose();
-                } finally {
-                    setIsSaving(false);
+                const updates = {};
+                if (startDate !== origStartDate) {
+                    updates.startDate = startDate ? new Date(startDate).toISOString() : null;
+                }
+                if (totalWeeks !== origTotalWeeks) {
+                    updates.totalWeeks = parseInt(totalWeeks);
+                }
+                if (stepGoal !== origStepGoal) {
+                    updates.stepGoal = parseInt(stepGoal);
+                }
+                onClose();
+                if (Object.keys(updates).length > 0) {
+                    await onUpdateData(updates);
+                    if (updates.stepGoal && onRefreshData) await onRefreshData();
                 }
             }, [startDate, totalWeeks, stepGoal, origStartDate, origTotalWeeks, origStepGoal, onUpdateData, onRefreshData, onClose]);
 
             const handlePauseResume = useCallback(async () => {
-                setIsSaving(true);
-                try {
-                    if (userData.isPaused) {
-                        await onUpdateData({ action: 'resume' });
-                    } else {
-                        await onUpdateData({ action: 'pause' });
-                    }
-                    onClose();
-                } finally {
-                    setIsSaving(false);
+                onClose();
+                if (userData.isPaused) {
+                    await onUpdateData({ action: 'resume' });
+                } else {
+                    await onUpdateData({ action: 'pause' });
                 }
             }, [userData.isPaused, onUpdateData, onClose]);
 
@@ -2302,7 +2291,6 @@
                                     size="lg"
                                     className="w-full"
                                     onClick={handlePauseResume}
-                                    disabled={isSaving}
                                 >
                                     {userData.isPaused
                                         ? <><Play size={18} /> Gjenoppta plan</>
@@ -2325,12 +2313,9 @@
                                 size="lg"
                                 className="w-full"
                                 onClick={handleSave}
-                                disabled={isSaving || !hasChanges}
+                                disabled={!hasChanges}
                             >
-                                {isSaving
-                                    ? <><Loader2 size={18} className="animate-spin" /> Lagrer...</>
-                                    : <><Check size={18} /> Lagre endringer</>
-                                }
+                                <Check size={18} /> Lagre endringer
                             </Button>
                         </div>
                     </Card>
@@ -3450,6 +3435,30 @@
                         const { periodId, ...periodUpdates } = updates;
                         const result = await api.updatePeriod(viewingClient.id, periodId, periodUpdates);
                         if (result.authError) { setShowReauthPrompt(true); }
+                        return;
+                    } else if (updates.action === 'pause') {
+                        // Optimistisk UI for pause
+                        setCurrentData(prev => {
+                            previousData = prev;
+                            return { ...prev, isPaused: true, pausedAt: new Date().toISOString() };
+                        });
+                        const result = await api.saveUserData(viewingClient.id, updates);
+                        if (result.authError) {
+                            setShowReauthPrompt(true);
+                            setCurrentData(previousData);
+                        }
+                        return;
+                    } else if (updates.action === 'resume') {
+                        // Optimistisk UI for resume
+                        setCurrentData(prev => {
+                            previousData = prev;
+                            return { ...prev, isPaused: false, pausedAt: null };
+                        });
+                        const result = await api.saveUserData(viewingClient.id, updates);
+                        if (result.authError) {
+                            setShowReauthPrompt(true);
+                            setCurrentData(previousData);
+                        }
                         return;
                     }
 
