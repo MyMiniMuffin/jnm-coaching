@@ -3143,9 +3143,7 @@
         const CoachDashboard = React.memo(({ user, allUsers, onSelectClient, onAddClient, onDeleteClient, onArchiveClient }) => {
             const [showModal, setShowModal] = useState(false);
             const [showArchived, setShowArchived] = useState(false);
-            const closeModal = useCallback(() => setShowModal(false), []);
-            useEscapeKey(closeModal, showModal);
-            
+
             // Memoize filtrerte lister
             const { activeClients, archivedClients, totalAthletes } = useMemo(() => ({
                 activeClients: allUsers.filter(u => u.role === 'athlete' && !u.is_archived),
@@ -3157,6 +3155,7 @@
 
             const closeModal = useCallback(() => setShowModal(false), []);
             const openModal = useCallback(() => setShowModal(true), []);
+            useEscapeKey(closeModal, showModal);
             const showActive = useCallback(() => setShowArchived(false), []);
             const showArchivedClients = useCallback(() => setShowArchived(true), []);
 
