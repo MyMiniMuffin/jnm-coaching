@@ -2578,29 +2578,43 @@
                     {lastCheckin && (
                         <div>
                             <p className="text-xs text-ink-muted uppercase tracking-wide mb-3 px-1">Siste rapport</p>
-                            <Card className="divide-y divide-surface-100">
-                                <div className="p-4 flex justify-between items-center">
-                                    <span className="text-ink-muted">Nøyaktighet</span>
-                                    <Badge className={parseInt(lastCheckin.accuracy) >= 8 ? 'bg-emerald-100 text-emerald-700' : parseInt(lastCheckin.accuracy) >= 5 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}>{lastCheckin.accuracy}/10</Badge>
-                                </div>
-                                <div className="p-4 flex justify-between items-center">
-                                    <span className="text-ink-muted">Styrke / Cardio</span>
-                                    <div className="flex gap-2">
-                                        <Badge><Dumbbell size={12} /> {lastCheckin.strengthSessions}</Badge>
-                                        <Badge><Activity size={12} /> {lastCheckin.cardioSessions || 0}</Badge>
+                            <Card className="p-4">
+                                <div className="grid grid-cols-5 gap-2 text-center">
+                                    <div>
+                                        <div className={`rounded-lg py-2 ${parseInt(lastCheckin.accuracy) >= 8 ? 'bg-emerald-50' : parseInt(lastCheckin.accuracy) >= 5 ? 'bg-amber-50' : 'bg-red-50'}`}>
+                                            <p className={`text-lg font-semibold tabular-nums ${parseInt(lastCheckin.accuracy) >= 8 ? 'text-emerald-700' : parseInt(lastCheckin.accuracy) >= 5 ? 'text-amber-700' : 'text-red-700'}`}>{lastCheckin.accuracy}</p>
+                                        </div>
+                                        <p className="text-[10px] text-ink-muted mt-1.5">Nøyakt.</p>
+                                    </div>
+                                    <div>
+                                        <div className={`rounded-lg py-2 ${parseInt(lastCheckin.energy) >= 8 ? 'bg-emerald-50' : parseInt(lastCheckin.energy) >= 5 ? 'bg-amber-50' : 'bg-red-50'}`}>
+                                            <p className={`text-lg font-semibold tabular-nums ${parseInt(lastCheckin.energy) >= 8 ? 'text-emerald-700' : parseInt(lastCheckin.energy) >= 5 ? 'text-amber-700' : 'text-red-700'}`}>{lastCheckin.energy}</p>
+                                        </div>
+                                        <p className="text-[10px] text-ink-muted mt-1.5">Energi</p>
+                                    </div>
+                                    <div>
+                                        <div className={`rounded-lg py-2 ${parseInt(lastCheckin.sleep) >= 8 ? 'bg-emerald-50' : parseInt(lastCheckin.sleep) >= 5 ? 'bg-amber-50' : 'bg-red-50'}`}>
+                                            <p className={`text-lg font-semibold tabular-nums ${parseInt(lastCheckin.sleep) >= 8 ? 'text-emerald-700' : parseInt(lastCheckin.sleep) >= 5 ? 'text-amber-700' : 'text-red-700'}`}>{lastCheckin.sleep}</p>
+                                        </div>
+                                        <p className="text-[10px] text-ink-muted mt-1.5">Søvn</p>
+                                    </div>
+                                    <div>
+                                        <div className="rounded-lg py-2 bg-surface-50">
+                                            <p className="text-lg font-semibold tabular-nums text-ink">{lastCheckin.strengthSessions}</p>
+                                        </div>
+                                        <p className="text-[10px] text-ink-muted mt-1.5">Styrke</p>
+                                    </div>
+                                    <div>
+                                        <div className="rounded-lg py-2 bg-surface-50">
+                                            <p className="text-lg font-semibold tabular-nums text-ink">{lastCheckin.cardioSessions || 0}</p>
+                                        </div>
+                                        <p className="text-[10px] text-ink-muted mt-1.5">Cardio</p>
                                     </div>
                                 </div>
-                                <div className="p-4 flex justify-between items-center">
-                                    <span className="text-ink-muted">Energi / Søvn</span>
-                                    <div className="flex gap-2">
-                                        <Badge><Zap size={12} /> {lastCheckin.energy}</Badge>
-                                        <Badge><Moon size={12} /> {lastCheckin.sleep}</Badge>
-                                    </div>
-                                </div>
-                                <div className="p-4 flex justify-between items-center">
-                                    <span className="text-ink-muted">Skrittmål</span>
+                                <div className="mt-3 flex justify-center">
                                     <Badge variant={lastCheckin.stepsReached ? 'success' : 'muted'}>
-                                        {lastCheckin.stepsReached ? <><Check size={12} /> Oppnådd</> : 'Ikke nådd'}
+                                        <Footprints size={12} />
+                                        {lastCheckin.stepsReached ? 'Skrittmål nådd' : 'Under skrittmål'}
                                     </Badge>
                                 </div>
                             </Card>
@@ -3086,18 +3100,26 @@
                                                 </div>
                                             </div>
                                             
-                                            <div className="grid grid-cols-3 gap-2 text-xs mb-4">
-                                                <div className={`p-3 rounded-lg text-center ${parseInt(entry.accuracy) >= 8 ? 'bg-emerald-50' : parseInt(entry.accuracy) >= 5 ? 'bg-amber-50' : 'bg-red-50'}`}>
-                                                    <p className="text-ink-faint mb-1">Nøyaktighet</p>
-                                                    <p className={`font-semibold ${parseInt(entry.accuracy) >= 8 ? 'text-emerald-700' : parseInt(entry.accuracy) >= 5 ? 'text-amber-700' : 'text-red-700'}`}>{entry.accuracy}/10</p>
+                                            <div className="grid grid-cols-5 gap-1.5 text-xs mb-4">
+                                                <div className={`py-2 rounded-lg text-center ${parseInt(entry.accuracy) >= 8 ? 'bg-emerald-50' : parseInt(entry.accuracy) >= 5 ? 'bg-amber-50' : 'bg-red-50'}`}>
+                                                    <p className={`font-semibold tabular-nums ${parseInt(entry.accuracy) >= 8 ? 'text-emerald-700' : parseInt(entry.accuracy) >= 5 ? 'text-amber-700' : 'text-red-700'}`}>{entry.accuracy}</p>
+                                                    <p className="text-[9px] text-ink-faint mt-0.5">Nøyakt.</p>
                                                 </div>
-                                                <div className="bg-surface-50 p-3 rounded-lg text-center">
-                                                    <p className="text-ink-faint mb-1">Styrke / Cardio</p>
-                                                    <p className="font-semibold">{entry.strengthSessions} / {entry.cardioSessions || 0}</p>
+                                                <div className={`py-2 rounded-lg text-center ${parseInt(entry.energy) >= 8 ? 'bg-emerald-50' : parseInt(entry.energy) >= 5 ? 'bg-amber-50' : 'bg-red-50'}`}>
+                                                    <p className={`font-semibold tabular-nums ${parseInt(entry.energy) >= 8 ? 'text-emerald-700' : parseInt(entry.energy) >= 5 ? 'text-amber-700' : 'text-red-700'}`}>{entry.energy}</p>
+                                                    <p className="text-[9px] text-ink-faint mt-0.5">Energi</p>
                                                 </div>
-                                                <div className="bg-surface-50 p-3 rounded-lg text-center">
-                                                    <p className="text-ink-faint mb-1">Energi / Søvn</p>
-                                                    <p className="font-semibold">{entry.energy} / {entry.sleep}</p>
+                                                <div className={`py-2 rounded-lg text-center ${parseInt(entry.sleep) >= 8 ? 'bg-emerald-50' : parseInt(entry.sleep) >= 5 ? 'bg-amber-50' : 'bg-red-50'}`}>
+                                                    <p className={`font-semibold tabular-nums ${parseInt(entry.sleep) >= 8 ? 'text-emerald-700' : parseInt(entry.sleep) >= 5 ? 'text-amber-700' : 'text-red-700'}`}>{entry.sleep}</p>
+                                                    <p className="text-[9px] text-ink-faint mt-0.5">Søvn</p>
+                                                </div>
+                                                <div className="py-2 rounded-lg text-center bg-surface-50">
+                                                    <p className="font-semibold tabular-nums text-ink">{entry.strengthSessions}</p>
+                                                    <p className="text-[9px] text-ink-faint mt-0.5">Styrke</p>
+                                                </div>
+                                                <div className="py-2 rounded-lg text-center bg-surface-50">
+                                                    <p className="font-semibold tabular-nums text-ink">{entry.cardioSessions || 0}</p>
+                                                    <p className="text-[9px] text-ink-faint mt-0.5">Cardio</p>
                                                 </div>
                                             </div>
 
