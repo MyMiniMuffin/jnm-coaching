@@ -3263,7 +3263,7 @@
                                             <p className="font-medium">{client.name}</p>
                                             <p className="text-sm text-ink-muted">
                                                 {client.lastCheckinDate
-                                                    ? `Siste rapport: ${new Date(client.lastCheckinDate).toLocaleDateString('no-NO', { day: 'numeric', month: 'short' })}`
+                                                    ? `Siste rapport: ${new Date(client.lastCheckinDate + 'T00:00:00').toLocaleDateString('no-NO', { day: 'numeric', month: 'short' })}`
                                                     : 'Ingen rapporter ennå'}
                                             </p>
                                         </div>
