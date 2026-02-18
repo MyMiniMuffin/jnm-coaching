@@ -2611,10 +2611,14 @@
                                         <p className="text-[10px] text-ink-muted mt-1.5">Cardio</p>
                                     </div>
                                 </div>
-                                <div className="mt-3 flex justify-center">
+                                <div className="mt-3 flex justify-center gap-2">
                                     <Badge variant={lastCheckin.stepsReached ? 'success' : 'muted'}>
                                         <Footprints size={12} />
-                                        {lastCheckin.stepsReached ? 'Skrittmål nådd' : 'Under skrittmål'}
+                                        {lastCheckin.stepsReached ? 'Skrittmål' : 'Under mål'}
+                                    </Badge>
+                                    <Badge variant={lastCheckin.takenSupplements ? 'success' : 'muted'}>
+                                        {lastCheckin.takenSupplements ? <Check size={12} /> : <X size={12} />}
+                                        Tilskudd
                                     </Badge>
                                 </div>
                             </Card>
