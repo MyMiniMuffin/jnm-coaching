@@ -123,8 +123,9 @@ sql`
           imageList = [c.image_url]; 
         }
 
+        const { image_url, ...rest } = c;
         return {
-          ...c,
+          ...rest,
           timestamp: new Date(c.timestamp).getTime(),
           images: imageList
         };
@@ -236,16 +237,20 @@ sql`
             updates.paused_at = null;
           }
 
-          // Utfør én samlet UPDATE med COALESCE for å unngå ekstra SELECT
+          // Utfør én samlet UPDATE med CASE for å kun oppdatere felter som ble sendt
           if (Object.keys(updates).length > 0) {
             const hasStartDate = updates.start_date !== undefined;
+            const hasDiet = updates.diet_plan !== undefined;
+            const hasWorkout = updates.workout_plan !== undefined;
+            const hasStepGoal = updates.step_goal !== undefined;
+            const hasTotalWeeks = updates.total_weeks !== undefined;
             await sql`
               UPDATE users SET
-                diet_plan = COALESCE(${updates.diet_plan !== undefined ? updates.diet_plan : null}, diet_plan),
-                workout_plan = COALESCE(${updates.workout_plan !== undefined ? updates.workout_plan : null}, workout_plan),
-                step_goal = COALESCE(${updates.step_goal !== undefined ? updates.step_goal : null}, step_goal),
-                total_weeks = COALESCE(${updates.total_weeks !== undefined ? updates.total_weeks : null}, total_weeks),
-                start_date = COALESCE(${hasStartDate ? updates.start_date : null}, start_date),
+                diet_plan = CASE WHEN ${hasDiet} THEN ${hasDiet ? updates.diet_plan : null} ELSE diet_plan END,
+                workout_plan = CASE WHEN ${hasWorkout} THEN ${hasWorkout ? updates.workout_plan : null} ELSE workout_plan END,
+                step_goal = CASE WHEN ${hasStepGoal} THEN ${hasStepGoal ? updates.step_goal : null} ELSE step_goal END,
+                total_weeks = CASE WHEN ${hasTotalWeeks} THEN ${hasTotalWeeks ? updates.total_weeks : null} ELSE total_weeks END,
+                start_date = CASE WHEN ${hasStartDate} THEN ${hasStartDate ? updates.start_date : null} ELSE start_date END,
                 is_paused = CASE WHEN ${hasStartDate} THEN false ELSE is_paused END,
                 paused_at = CASE WHEN ${hasStartDate} THEN NULL ELSE paused_at END
               WHERE id = ${userId}

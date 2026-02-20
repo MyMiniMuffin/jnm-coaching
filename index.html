@@ -2600,7 +2600,7 @@
                                     </div>
                                     <div>
                                         <div className="rounded-lg py-2 bg-surface-50">
-                                            <p className="text-lg font-semibold tabular-nums text-ink">{lastCheckin.strengthSessions}</p>
+                                            <p className="text-lg font-semibold tabular-nums text-ink">{lastCheckin.strengthSessions || 0}</p>
                                         </div>
                                         <p className="text-[10px] text-ink-muted mt-1.5">Styrke</p>
                                     </div>
@@ -3118,7 +3118,7 @@
                                                     <p className="text-[9px] text-ink-faint mt-0.5">Søvn</p>
                                                 </div>
                                                 <div className="py-2 rounded-lg text-center bg-surface-50">
-                                                    <p className="font-semibold tabular-nums text-ink">{entry.strengthSessions}</p>
+                                                    <p className="font-semibold tabular-nums text-ink">{entry.strengthSessions || 0}</p>
                                                     <p className="text-[9px] text-ink-faint mt-0.5">Styrke</p>
                                                 </div>
                                                 <div className="py-2 rounded-lg text-center bg-surface-50">
@@ -3463,7 +3463,11 @@
 
             const handleNewCheckin = useCallback(async (entry) => {
                 if (!viewingClient) return;
-                await api.submitCheckin(viewingClient.id, entry);
+                const result = await api.submitCheckin(viewingClient.id, entry);
+                if (result.authError) {
+                    setShowReauthPrompt(true);
+                    return;
+                }
                 setCurrentData(prev => ({ ...prev, checkins: [...prev.checkins, entry] }));
             }, [viewingClient]);
             
@@ -3548,7 +3552,11 @@
                     return { ...prev, checkins: prev.checkins.filter(c => c.id !== checkinId) };
                 });
                 try {
-                    await api.deleteCheckin(viewingClient.id, checkinId);
+                    const result = await api.deleteCheckin(viewingClient.id, checkinId);
+                    if (result.authError) {
+                        setShowReauthPrompt(true);
+                        setCurrentData(prev => ({ ...prev, checkins: previousCheckins }));
+                    }
                 } catch (e) {
                     alert('Kunne ikke slette.');
                     setCurrentData(prev => ({ ...prev, checkins: previousCheckins }));

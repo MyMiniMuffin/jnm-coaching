@@ -116,9 +116,14 @@ exports.handler = async (event) => {
         console.log('Users POST: Bruker opprettet suksessfullt');
 
         const allUsers = await sql`
-          SELECT id, username, name, role, start_date, is_archived
-          FROM users
-          ORDER BY name ASC
+          SELECT
+            u.id, u.username, u.name, u.role, u.start_date, u.is_archived,
+            COALESCE(COUNT(c.id) FILTER (WHERE c.is_read = false), 0)::integer as "unreadCheckins",
+            MAX(c.date)::text as "lastCheckinDate"
+          FROM users u
+          LEFT JOIN checkins c ON c.user_id = u.id
+          GROUP BY u.id, u.username, u.name, u.role, u.start_date, u.is_archived
+          ORDER BY u.name ASC
         `;
         return { statusCode: 200, body: JSON.stringify(allUsers) };
       } catch (postError) {
@@ -143,9 +148,14 @@ exports.handler = async (event) => {
       }
 
       const allUsers = await sql`
-        SELECT id, username, name, role, start_date, is_archived 
-        FROM users 
-        ORDER BY name ASC
+        SELECT
+          u.id, u.username, u.name, u.role, u.start_date, u.is_archived,
+          COALESCE(COUNT(c.id) FILTER (WHERE c.is_read = false), 0)::integer as "unreadCheckins",
+          MAX(c.date)::text as "lastCheckinDate"
+        FROM users u
+        LEFT JOIN checkins c ON c.user_id = u.id
+        GROUP BY u.id, u.username, u.name, u.role, u.start_date, u.is_archived
+        ORDER BY u.name ASC
       `;
       return { statusCode: 200, body: JSON.stringify(allUsers) };
     }
@@ -167,9 +177,14 @@ exports.handler = async (event) => {
       await sql`DELETE FROM users WHERE id = ${id}`;
       
       const allUsers = await sql`
-        SELECT id, username, name, role, start_date, is_archived 
-        FROM users 
-        ORDER BY name ASC
+        SELECT
+          u.id, u.username, u.name, u.role, u.start_date, u.is_archived,
+          COALESCE(COUNT(c.id) FILTER (WHERE c.is_read = false), 0)::integer as "unreadCheckins",
+          MAX(c.date)::text as "lastCheckinDate"
+        FROM users u
+        LEFT JOIN checkins c ON c.user_id = u.id
+        GROUP BY u.id, u.username, u.name, u.role, u.start_date, u.is_archived
+        ORDER BY u.name ASC
       `;
       return { statusCode: 200, body: JSON.stringify(allUsers) };
     }
