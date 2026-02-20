@@ -3185,10 +3185,10 @@
             const showActive = useCallback(() => setShowArchived(false), []);
             const showArchivedClients = useCallback(() => setShowArchived(true), []);
 
-            const handleFormSubmit = useCallback((e) => {
+            const handleFormSubmit = useCallback(async (e) => {
                 e.preventDefault();
                 const fd = new FormData(e.target);
-                onAddClient(Object.fromEntries(fd));
+                await onAddClient(Object.fromEntries(fd));
                 setShowModal(false);
             }, [onAddClient]);
 
@@ -3596,10 +3596,14 @@
                 // Marker alle innsjekk som lest når coach åpner klienten
                 if (client.unreadCheckins > 0) {
                     try {
-                        await api.markCheckinsRead(client.id);
-                        setAllUsers(prev => prev.map(u =>
-                            u.id === client.id ? { ...u, unreadCheckins: 0 } : u
-                        ));
+                        const result = await api.markCheckinsRead(client.id);
+                        if (result.authError) {
+                            setShowReauthPrompt(true);
+                        } else {
+                            setAllUsers(prev => prev.map(u =>
+                                u.id === client.id ? { ...u, unreadCheckins: 0 } : u
+                            ));
+                        }
                     } catch (e) {
                         console.error('Kunne ikke markere innsjekk som lest:', e);
                     }
@@ -3607,30 +3611,42 @@
             }, []);
 
             const handleAddClient = useCallback(async (u) => {
-                const result = await api.createUser({...u, id: Date.now().toString(), role:'athlete'});
-                if (result.authError) {
-                    setShowReauthPrompt(true);
-                    return;
+                try {
+                    const result = await api.createUser({...u, id: Date.now().toString(), role:'athlete'});
+                    if (result.authError) {
+                        setShowReauthPrompt(true);
+                        return;
+                    }
+                    if (result.data) setAllUsers(result.data);
+                } catch (e) {
+                    toast(e.message || 'Feil ved opprettelse av utøver', 'error');
                 }
-                if (result.data) setAllUsers(result.data);
             }, []);
 
             const handleDeleteClient = useCallback(async (id) => {
-                const result = await api.deleteUser(id);
-                if (result.authError) {
-                    setShowReauthPrompt(true);
-                    return;
+                try {
+                    const result = await api.deleteUser(id);
+                    if (result.authError) {
+                        setShowReauthPrompt(true);
+                        return;
+                    }
+                    if (result.data) setAllUsers(result.data);
+                } catch (e) {
+                    toast(e.message || 'Feil ved sletting av utøver', 'error');
                 }
-                if (result.data) setAllUsers(result.data);
             }, []);
 
             const handleArchiveClient = useCallback(async (id, archive) => {
-                const result = await api.archiveUser(id, archive);
-                if (result.authError) {
-                    setShowReauthPrompt(true);
-                    return;
+                try {
+                    const result = await api.archiveUser(id, archive);
+                    if (result.authError) {
+                        setShowReauthPrompt(true);
+                        return;
+                    }
+                    if (result.data) setAllUsers(result.data);
+                } catch (e) {
+                    toast(e.message || 'Feil ved arkivering', 'error');
                 }
-                if (result.data) setAllUsers(result.data);
             }, []);
 
             const handleAddGalleryImage = useCallback(async (imageUrl, label, date, weight) => {
