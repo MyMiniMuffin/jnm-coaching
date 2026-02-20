@@ -3364,36 +3364,32 @@
                         }
                     }
                     
-                    // 2. Hent oppdatert brukerliste i bakgrunnen
-                    try {
-                        const result = await api.getUsers();
-                        
-                        if (result.networkError) {
-                            console.log('[Init] Nettverksfeil - bruker cached session');
-                            // Behold session ved nettverksfeil - ikke gjør noe
-                        } else if (result.authError) {
-                            console.warn('[Init] Auth-feil fra API');
-                            if (sessionUser) {
-                                // Vis prompt i stedet for auto-logout
-                                setShowReauthPrompt(true);
-                            }
-                        } else {
-                            setAllUsers(result.data || []);
-                            
-                            // Oppdater currentUser med ferske data hvis mulig
-                            if (sessionUser && result.data) {
-                                const freshUser = result.data.find(u => u.id === sessionUser.id);
-                                if (freshUser) {
-                                    console.log('[Init] Oppdaterte brukerdata fra API');
-                                    setCurrentUser(freshUser);
+                    // 2. Hent oppdatert brukerliste (kun for coach — atleter trenger den ikke)
+                    if (!sessionUser || sessionUser.role === 'coach') {
+                        try {
+                            const result = await api.getUsers();
+
+                            if (result.networkError) {
+                                console.log('[Init] Nettverksfeil - bruker cached session');
+                            } else if (result.authError) {
+                                console.warn('[Init] Auth-feil fra API');
+                                if (sessionUser) {
+                                    setShowReauthPrompt(true);
                                 }
-                                // VIKTIG: Ikke slett session hvis bruker ikke finnes i listen
-                                // Det kan være midlertidig nettverksfeil
+                            } else {
+                                setAllUsers(result.data || []);
+
+                                if (sessionUser && result.data) {
+                                    const freshUser = result.data.find(u => u.id === sessionUser.id);
+                                    if (freshUser) {
+                                        console.log('[Init] Oppdaterte brukerdata fra API');
+                                        setCurrentUser(freshUser);
+                                    }
+                                }
                             }
+                        } catch (e) {
+                            console.error('[Init] Feil:', e);
                         }
-                    } catch (e) {
-                        console.error('[Init] Feil:', e);
-                        // Ved feil: Behold eksisterende session
                     }
                     
                     setIsLoading(false);
@@ -3468,7 +3464,10 @@
                     setShowReauthPrompt(true);
                     return;
                 }
-                setCurrentData(prev => ({ ...prev, checkins: [...prev.checkins, entry] }));
+                setCurrentData(prev => ({
+                    ...prev,
+                    checkins: [...prev.checkins, { ...entry, periodId: prev.currentPeriodId, isRead: false }]
+                }));
             }, [viewingClient]);
             
             // Ref for å spore pågående lagring og hindre dobbelt-klikk
@@ -3543,6 +3542,9 @@
                 }
             }, [viewingClient]);
 
+            const handleSaveDietPlan = useCallback((val) => handleUpdateData('dietPlan', val), [handleUpdateData]);
+            const handleSaveWorkoutPlan = useCallback((val) => handleUpdateData('workoutPlan', val), [handleUpdateData]);
+
             const handleDeleteCheckin = useCallback(async (checkinId) => {
                 if (!viewingClient) return;
                 // Bruk functional setState for rollback uten å trenge currentData i dependency
@@ -3593,20 +3595,16 @@
                 setViewingClient(client);
                 setIsClientLoading(false);
 
-                // Marker alle innsjekk som lest når coach åpner klienten
+                // Marker alle innsjekk som lest (fire-and-forget, blokkerer ikke UI)
                 if (client.unreadCheckins > 0) {
-                    try {
-                        const result = await api.markCheckinsRead(client.id);
-                        if (result.authError) {
-                            setShowReauthPrompt(true);
-                        } else {
-                            setAllUsers(prev => prev.map(u =>
-                                u.id === client.id ? { ...u, unreadCheckins: 0 } : u
-                            ));
-                        }
-                    } catch (e) {
+                    setAllUsers(prev => prev.map(u =>
+                        u.id === client.id ? { ...u, unreadCheckins: 0 } : u
+                    ));
+                    api.markCheckinsRead(client.id).then(result => {
+                        if (result.authError) setShowReauthPrompt(true);
+                    }).catch(e => {
                         console.error('Kunne ikke markere innsjekk som lest:', e);
-                    }
+                    });
                 }
             }, []);
 
@@ -3909,8 +3907,8 @@
                                     onAddGalleryImage={handleAddGalleryImage}
                                     onDeleteGalleryImage={handleDeleteGalleryImage}
                                 /> :
-                                activeTab === 'diet' ? <PlanSection type="diet" content={currentData.dietPlan} onSave={(val) => handleUpdateData('dietPlan', val)} isReadOnly={!isCoach} /> :
-                                activeTab === 'workout' ? <PlanSection type="workout" content={currentData.workoutPlan} onSave={(val) => handleUpdateData('workoutPlan', val)} isReadOnly={!isCoach} /> :
+                                activeTab === 'diet' ? <PlanSection type="diet" content={currentData.dietPlan} onSave={handleSaveDietPlan} isReadOnly={!isCoach} /> :
+                                activeTab === 'workout' ? <PlanSection type="workout" content={currentData.workoutPlan} onSave={handleSaveWorkoutPlan} isReadOnly={!isCoach} /> :
                                 <CheckInView checkins={currentData.checkins} onNewCheckin={handleNewCheckin} onDelete={handleDeleteCheckin} isReadOnly={isCoach} stepGoal={currentData.stepGoal} />}
                             </>
                         )}

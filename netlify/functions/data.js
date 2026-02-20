@@ -55,45 +55,35 @@ exports.handler = async (event) => {
         return { statusCode: authResult.statusCode, body: authResult.body };
       }
 
-      // Sjekk om coaching_periods-tabellen eksisterer
-      let periods = [];
-      try {
-        periods = await sql`
+      // Kjør alle 4 queries parallelt for å minimere latens
+      const [periods, galleryImages, userResult, checkins] = await Promise.all([
+        sql`
           SELECT id, name, start_date as "startDate", end_date as "endDate",
                  starting_weight as "startingWeight", goal_weight as "goalWeight",
                  is_active as "isActive", notes
           FROM coaching_periods
           WHERE user_id = ${userId}
           ORDER BY start_date DESC
-        `;
-      } catch (e) {
-        // Tabellen eksisterer kanskje ikke ennå - ignorer feilen
-        console.log('coaching_periods table may not exist yet:', e.message);
-        periods = [];
-      }
-
-      // Sjekk om gallery_images-tabellen eksisterer
-      let galleryImages = [];
-      try {
-        galleryImages = await sql`
+        `.catch(e => {
+          console.log('coaching_periods table may not exist yet:', e.message);
+          return [];
+        }),
+        sql`
           SELECT id, image_url, label, date, weight, created_at as timestamp
           FROM gallery_images
           WHERE user_id = ${userId}
           ORDER BY date ASC, created_at ASC
-        `;
-      } catch (e) {
-        console.log('gallery_images table may not exist yet:', e.message);
-        galleryImages = [];
-      }
-
-      const [userResult, checkins] = await Promise.all([
+        `.catch(e => {
+          console.log('gallery_images table may not exist yet:', e.message);
+          return [];
+        }),
         sql`
           SELECT diet_plan, workout_plan, step_goal, total_weeks, start_date, is_paused, paused_at,
                  current_period_id, starting_weight
-          FROM users 
+          FROM users
           WHERE id = ${userId}
         `,
-sql`
+        sql`
           SELECT
             id, date, weight, sleep, energy, accuracy,
             strength_sessions as "strengthSessions",
