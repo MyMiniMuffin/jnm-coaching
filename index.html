@@ -1429,7 +1429,7 @@
                 }
                 setIsUploading(true);
                 try {
-                    setUploadProgress(`Laster opp ${files.length} bilde${files.length > 1 ? 'r' : ''}...`);
+                    setUploadProgress(`${files.length} bilde${files.length > 1 ? 'r' : ''}...`);
                     const uploadedUrls = await Promise.all(
                         files.map(async (file) => {
                             const reader = new FileReader();
