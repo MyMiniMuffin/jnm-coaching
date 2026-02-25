@@ -78,6 +78,7 @@ exports.handler = async (event) => {
     // Returner brukerinfo og token (UTEN passord)
     return {
       statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         id: user.id,
         username: user.username,

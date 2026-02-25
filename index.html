@@ -1432,10 +1432,11 @@
                     setUploadProgress(`${files.length} bilde${files.length > 1 ? 'r' : ''}...`);
                     const uploadedUrls = await Promise.all(
                         files.map(async (file) => {
-                            const reader = new FileReader();
-                            reader.readAsDataURL(file);
-                            const base64Image = await new Promise((resolve) => {
+                            const base64Image = await new Promise((resolve, reject) => {
+                                const reader = new FileReader();
                                 reader.onload = () => resolve(reader.result);
+                                reader.onerror = () => reject(new Error('Kunne ikke lese fil: ' + file.name));
+                                reader.readAsDataURL(file);
                             });
                             const result = await api.uploadImage(base64Image);
                             if (result.authError) throw new Error('Autentisering feilet');
@@ -2226,10 +2227,12 @@
                     updates.startDate = startDate ? new Date(startDate).toISOString() : null;
                 }
                 if (totalWeeks !== origTotalWeeks) {
-                    updates.totalWeeks = parseInt(totalWeeks);
+                    const parsed = parseInt(totalWeeks, 10);
+                    if (!isNaN(parsed) && parsed >= 1) updates.totalWeeks = parsed;
                 }
                 if (stepGoal !== origStepGoal) {
-                    updates.stepGoal = parseInt(stepGoal);
+                    const parsed = parseInt(stepGoal, 10);
+                    if (!isNaN(parsed) && parsed >= 1000) updates.stepGoal = parsed;
                 }
                 onClose();
                 if (Object.keys(updates).length > 0) {
@@ -2248,8 +2251,14 @@
             }, [userData.isPaused, onUpdateData, onClose]);
 
             const handleStartDateChange = useCallback((e) => setStartDate(e.target.value), []);
-            const handleTotalWeeksChange = useCallback((e) => setTotalWeeks(parseInt(e.target.value) || ''), []);
-            const handleStepGoalChange = useCallback((e) => setStepGoal(parseInt(e.target.value) || ''), []);
+            const handleTotalWeeksChange = useCallback((e) => {
+                const val = e.target.value;
+                setTotalWeeks(val === '' ? '' : (parseInt(val, 10) || ''));
+            }, []);
+            const handleStepGoalChange = useCallback((e) => {
+                const val = e.target.value;
+                setStepGoal(val === '' ? '' : (parseInt(val, 10) || ''));
+            }, []);
 
             return (
                 <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
@@ -2800,10 +2809,11 @@
                 try {
                     const uploadPromises = files.map(async (file) => {
                         console.log('[CheckIn] Leser fil:', file.name, 'størrelse:', file.size);
-                        const reader = new FileReader();
-                        reader.readAsDataURL(file);
-                        const base64Image = await new Promise((resolve) => {
+                        const base64Image = await new Promise((resolve, reject) => {
+                            const reader = new FileReader();
                             reader.onload = () => resolve(reader.result);
+                            reader.onerror = () => reject(new Error('Kunne ikke lese fil: ' + file.name));
+                            reader.readAsDataURL(file);
                         });
                         console.log('[CheckIn] Base64-lengde:', base64Image.length);
 
@@ -2983,7 +2993,7 @@
                                         />
                                         <div>
                                             <p className="font-medium">Kosttilskudd tatt</p>
-                                            <p className="text-sm text-ink-muted">Dagens dose</p>
+                                            <p className="text-sm text-ink-muted">Tatt jevnlig denne uken</p>
                                         </div>
                                     </label>
                                 </div>
@@ -3093,9 +3103,9 @@
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     {isReadOnly && (
-                                                        <button 
-                                                            onClick={() => { if(confirm('Slett denne rapporten?')) onDelete(entry.id); }} 
-                                                            className="opacity-0 group-hover:opacity-100 transition-opacity p-2 text-ink-faint hover:text-red-500"
+                                                        <button
+                                                            onClick={() => { if(confirm('Slett denne rapporten?')) onDelete(entry.id); }}
+                                                            className="p-2 text-ink-faint hover:text-red-500 transition-colors"
                                                         >
                                                             <Trash2 size={16} />
                                                         </button>
@@ -3293,20 +3303,20 @@
                                     </div>
                                     <div className="flex items-center gap-1">
                                         {/* Arkiver/Gjenopprett knapp */}
-                                        <button 
-                                            onClick={(e) => { 
-                                                e.stopPropagation(); 
-                                                onArchiveClient(client.id, !client.is_archived); 
-                                            }} 
-                                            className="opacity-0 group-hover:opacity-100 transition-opacity p-2 text-ink-faint hover:text-ink"
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onArchiveClient(client.id, !client.is_archived);
+                                            }}
+                                            className="p-2 text-ink-faint hover:text-ink transition-colors"
                                             title={client.is_archived ? 'Gjenopprett' : 'Arkiver'}
                                         >
                                             {client.is_archived ? <Play size={18} /> : <Pause size={18} />}
                                         </button>
                                         {/* Slett knapp */}
-                                        <button 
-                                            onClick={(e) => { e.stopPropagation(); if(confirm('Slett utøver permanent?')) onDeleteClient(client.id); }} 
-                                            className="opacity-0 group-hover:opacity-100 transition-opacity p-2 text-ink-faint hover:text-red-500"
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); if(confirm('Slett utøver permanent?')) onDeleteClient(client.id); }}
+                                            className="p-2 text-ink-faint hover:text-red-500 transition-colors"
                                         >
                                             <Trash2 size={18} />
                                         </button>

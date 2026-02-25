@@ -22,7 +22,7 @@ const verifyToken = (event) => {
   }
 
   if (!authHeader.startsWith('Bearer ')) {
-    console.error('Auth middleware: Authorization header har ikke Bearer prefix:', authHeader.substring(0, 20));
+    console.error('Auth middleware: Authorization header har ikke Bearer prefix');
     return {
       success: false,
       statusCode: 401,
@@ -84,7 +84,7 @@ const requireOwnership = (event, requestedUserId) => {
     return authResult;
   }
 
-  const requestedId = parseInt(requestedUserId);
+  const requestedId = parseInt(requestedUserId, 10);
 
   if (authResult.userId !== requestedId && authResult.role !== 'coach') {
     return {

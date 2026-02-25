@@ -63,6 +63,7 @@ exports.handler = async (event) => {
 
     return {
       statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         url: result.secure_url,
         publicId: result.public_id
@@ -72,18 +73,11 @@ exports.handler = async (event) => {
   } catch (error) {
     console.error('Upload error:', error);
 
-    // Gi mer spesifikk feilmelding
-    let errorMessage = 'Feil under opplasting av bilde';
-    if (error.message) {
-      errorMessage += ': ' + error.message;
-    }
-    if (error.http_code) {
-      errorMessage += ' (HTTP ' + error.http_code + ')';
-    }
-
+    // Returner generisk feilmelding til klient (full feil logges over)
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: errorMessage })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: 'Feil under opplasting av bilde. Prøv igjen.' })
     };
   }
 };

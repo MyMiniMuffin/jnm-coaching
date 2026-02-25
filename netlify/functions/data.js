@@ -1,6 +1,11 @@
 const { neon } = require('@neondatabase/serverless');
 const { requireOwnership } = require('./auth-middleware');
 
+// Sjekk at database-URL er satt
+if (!process.env.NETLIFY_DATABASE_URL) {
+  throw new Error('NETLIFY_DATABASE_URL miljøvariabel er ikke satt');
+}
+
 // Gjenbruk SQL-tilkobling mellom warm invocations
 const sql = neon(process.env.NETLIFY_DATABASE_URL);
 
@@ -201,10 +206,18 @@ exports.handler = async (event) => {
           // Vanlige plan-oppdateringer (ikke pause/resume)
           const updates = {};
 
+          // Lengdebegrensning på tekstfelt
+          const MAX_PLAN_LENGTH = 50000;
           if (data.dietPlan !== undefined) {
+            if (typeof data.dietPlan === 'string' && data.dietPlan.length > MAX_PLAN_LENGTH) {
+              return { statusCode: 400, body: JSON.stringify({ error: 'Matplan er for lang (maks 50 000 tegn)' }) };
+            }
             updates.diet_plan = data.dietPlan;
           }
           if (data.workoutPlan !== undefined) {
+            if (typeof data.workoutPlan === 'string' && data.workoutPlan.length > MAX_PLAN_LENGTH) {
+              return { statusCode: 400, body: JSON.stringify({ error: 'Treningsplan er for lang (maks 50 000 tegn)' }) };
+            }
             updates.workout_plan = data.workoutPlan;
           }
           if (data.stepGoal !== undefined) {
@@ -220,8 +233,14 @@ exports.handler = async (event) => {
             }
           }
 
-          // Startdato oppdatering (nullstiller også pause)
+          // Startdato oppdatering (nullstiller også pause) — valider format
           if (data.startDate !== undefined) {
+            if (data.startDate !== null) {
+              const d = new Date(data.startDate);
+              if (isNaN(d.getTime())) {
+                return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig startdato' }) };
+              }
+            }
             updates.start_date = data.startDate;
             updates.is_paused = false;
             updates.paused_at = null;
@@ -262,6 +281,11 @@ exports.handler = async (event) => {
             statusCode: 400,
             body: JSON.stringify({ error: validationErrors.join(', ') })
           };
+        }
+
+        // Lengdebegrensning på kommentar
+        if (data.comment && typeof data.comment === 'string' && data.comment.length > 5000) {
+          return { statusCode: 400, body: JSON.stringify({ error: 'Kommentar er for lang (maks 5 000 tegn)' }) };
         }
 
         const cardio = parseInt(data.cardioSessions) || 0;
@@ -323,39 +347,58 @@ exports.handler = async (event) => {
       else if (type === 'create_period') {
         // Opprett ny coaching-periode
         const { name, startingWeight, goalWeight } = data;
+
+        // Valider input
+        const periodName = (name && typeof name === 'string') ? name.trim().substring(0, 200) : '';
+        if (!periodName) {
+          return { statusCode: 400, body: JSON.stringify({ error: 'Mangler navn på runde' }) };
+        }
+        const sw = parseFloat(startingWeight);
+        if (isNaN(sw) || sw < 20 || sw > 500) {
+          return { statusCode: 400, body: JSON.stringify({ error: 'Startvekt må være mellom 20 og 500 kg' }) };
+        }
+        const gw = goalWeight ? parseFloat(goalWeight) : null;
+        if (gw !== null && (isNaN(gw) || gw < 20 || gw > 500)) {
+          return { statusCode: 400, body: JSON.stringify({ error: 'Målvekt må være mellom 20 og 500 kg' }) };
+        }
+
         const startDate = new Date().toISOString();
-        
-        // Deaktiver tidligere perioder for denne brukeren
-        await sql`UPDATE coaching_periods SET is_active = false WHERE user_id = ${userId}`;
-        
-        // Opprett ny periode
-        const result = await sql`
-          INSERT INTO coaching_periods (user_id, name, start_date, starting_weight, goal_weight, is_active)
-          VALUES (${userId}, ${name}, ${startDate}, ${parseFloat(startingWeight)}, ${goalWeight ? parseFloat(goalWeight) : null}, true)
-          RETURNING id
-        `;
-        
-        const newPeriodId = result[0].id;
-        
-        // Oppdater brukerens aktive periode og startvekt
-        await sql`UPDATE users SET current_period_id = ${newPeriodId}, starting_weight = ${parseFloat(startingWeight)} WHERE id = ${userId}`;
-        
-        // Returner den nye perioden
-        return {
-          statusCode: 200,
-          body: JSON.stringify({ 
-            success: true, 
-            periodId: newPeriodId,
-            period: {
-              id: newPeriodId,
-              name,
-              startDate,
-              startingWeight: parseFloat(startingWeight),
-              goalWeight: goalWeight ? parseFloat(goalWeight) : null,
-              isActive: true
-            }
-          })
-        };
+
+        // Bruk transaksjon for å unngå inkonsistent tilstand
+        await sql`BEGIN`;
+        try {
+          await sql`UPDATE coaching_periods SET is_active = false WHERE user_id = ${userId}`;
+
+          const result = await sql`
+            INSERT INTO coaching_periods (user_id, name, start_date, starting_weight, goal_weight, is_active)
+            VALUES (${userId}, ${periodName}, ${startDate}, ${sw}, ${gw}, true)
+            RETURNING id
+          `;
+
+          const newPeriodId = result[0].id;
+
+          await sql`UPDATE users SET current_period_id = ${newPeriodId}, starting_weight = ${sw} WHERE id = ${userId}`;
+          await sql`COMMIT`;
+
+          return {
+            statusCode: 200,
+            body: JSON.stringify({
+              success: true,
+              periodId: newPeriodId,
+              period: {
+                id: newPeriodId,
+                name: periodName,
+                startDate,
+                startingWeight: sw,
+                goalWeight: gw,
+                isActive: true
+              }
+            })
+          };
+        } catch (txError) {
+          await sql`ROLLBACK`.catch(() => {});
+          throw txError;
+        }
       }
       
       else if (type === 'end_period') {
@@ -413,6 +456,9 @@ exports.handler = async (event) => {
         }
 
         if (notes !== undefined) {
+          if (typeof notes === 'string' && notes.length > 10000) {
+            return { statusCode: 400, body: JSON.stringify({ error: 'Notater er for lange (maks 10 000 tegn)' }) };
+          }
           queries.push(sql`UPDATE coaching_periods SET notes = ${notes} WHERE id = ${periodId} AND user_id = ${userId}`);
         }
 
@@ -425,8 +471,16 @@ exports.handler = async (event) => {
         if (!data.imageUrl) {
           return { statusCode: 400, body: JSON.stringify({ error: 'Mangler bilde-URL' }) };
         }
-        const label = data.label || 'Startbilde';
+        // Valider at URL er en gyldig HTTPS-URL (hindrer javascript: og andre skadelige URIer)
+        if (typeof data.imageUrl !== 'string' || !data.imageUrl.startsWith('https://')) {
+          return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig bilde-URL' }) };
+        }
+        const label = (data.label && typeof data.label === 'string') ? data.label.substring(0, 200) : 'Startbilde';
+        // Valider dato (samme mønster som new_checkin)
         const date = data.date || new Date().toISOString().split('T')[0];
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || isNaN(new Date(date).getTime())) {
+          return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig dato' }) };
+        }
         const weight = data.weight ? parseFloat(data.weight) : null;
         
         await sql`
@@ -442,7 +496,7 @@ exports.handler = async (event) => {
         await sql`DELETE FROM gallery_images WHERE id = ${data.imageId} AND user_id = ${userId}`;
       }
 
-      return { statusCode: 200, body: JSON.stringify({ success: true }) };
+      return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ success: true }) };
     }
 
     return { statusCode: 405, body: 'Method Not Allowed' };

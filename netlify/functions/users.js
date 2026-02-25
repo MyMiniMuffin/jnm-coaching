@@ -4,6 +4,11 @@ const { requireAuth } = require('./auth-middleware');
 
 const SALT_ROUNDS = 12;
 
+// Sjekk at database-URL er satt
+if (!process.env.NETLIFY_DATABASE_URL) {
+  throw new Error('NETLIFY_DATABASE_URL miljøvariabel er ikke satt');
+}
+
 // Gjenbruk SQL-tilkobling mellom warm invocations
 const sql = neon(process.env.NETLIFY_DATABASE_URL);
 
@@ -107,10 +112,13 @@ exports.handler = async (event) => {
         console.log('Users POST: Hasher passord...');
         const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
+        // Valider rolle - kun 'coach' eller 'athlete' er gyldige
+        const validRole = ['coach', 'athlete'].includes(role) ? role : 'athlete';
+
         console.log('Users POST: Setter inn ny bruker i database...');
         await sql`
           INSERT INTO users (name, username, password, role)
-          VALUES (${name.trim()}, ${normalizedUsername}, ${hashedPassword}, ${role || 'athlete'})
+          VALUES (${name.trim()}, ${normalizedUsername}, ${hashedPassword}, ${validRole})
         `;
 
         console.log('Users POST: Bruker opprettet suksessfullt');
@@ -125,7 +133,7 @@ exports.handler = async (event) => {
           GROUP BY u.id, u.username, u.name, u.role, u.start_date, u.is_archived
           ORDER BY u.name ASC
         `;
-        return { statusCode: 200, body: JSON.stringify(allUsers) };
+        return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(allUsers) };
       } catch (postError) {
         console.error('Users POST: Feil ved opprettelse av bruker:', postError);
         return {
@@ -138,9 +146,15 @@ exports.handler = async (event) => {
     // OPPDATERE BRUKER (PATCH) - For arkivering etc.
     if (event.httpMethod === 'PATCH') {
       const { id, is_archived } = JSON.parse(event.body);
-      
+
       if (!id) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Mangler bruker-ID' }) };
+      }
+
+      // Hindre at coach endrer andre coaches
+      const targetUser = await sql`SELECT role FROM users WHERE id = ${id}`;
+      if (targetUser.length > 0 && targetUser[0].role === 'coach') {
+        return { statusCode: 403, body: JSON.stringify({ error: 'Kan ikke endre en annen coach' }) };
       }
 
       if (typeof is_archived === 'boolean') {
@@ -157,15 +171,26 @@ exports.handler = async (event) => {
         GROUP BY u.id, u.username, u.name, u.role, u.start_date, u.is_archived
         ORDER BY u.name ASC
       `;
-      return { statusCode: 200, body: JSON.stringify(allUsers) };
+      return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(allUsers) };
     }
 
     // SLETTE BRUKER (DELETE)
     if (event.httpMethod === 'DELETE') {
       const { id } = JSON.parse(event.body);
-      
+
       if (!id) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Mangler bruker-ID' }) };
+      }
+
+      // Hindre at coach sletter seg selv
+      if (parseInt(id) === authResult.userId) {
+        return { statusCode: 403, body: JSON.stringify({ error: 'Du kan ikke slette din egen bruker' }) };
+      }
+
+      // Hindre at coach sletter andre coaches
+      const targetUser = await sql`SELECT role FROM users WHERE id = ${id}`;
+      if (targetUser.length > 0 && targetUser[0].role === 'coach') {
+        return { statusCode: 403, body: JSON.stringify({ error: 'Kan ikke slette en annen coach' }) };
       }
 
       // Slett brukerens relaterte data først (pga database-regler)
@@ -186,7 +211,7 @@ exports.handler = async (event) => {
         GROUP BY u.id, u.username, u.name, u.role, u.start_date, u.is_archived
         ORDER BY u.name ASC
       `;
-      return { statusCode: 200, body: JSON.stringify(allUsers) };
+      return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(allUsers) };
     }
 
     return { statusCode: 405, body: 'Method Not Allowed' };
