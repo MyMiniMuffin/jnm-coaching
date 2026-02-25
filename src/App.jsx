@@ -1,0 +1,3749 @@
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { createRoot } from 'react-dom/client';
+import { 
+  Home, Utensils, Dumbbell, ClipboardCheck, Camera, Save, ChevronRight, ChevronLeft,
+  TrendingUp, TrendingDown, Minus, User, Briefcase, LogOut, ArrowRight, Plus, 
+  X, Trash2, Footprints, Edit2, Check, Moon, Zap, Scale, Loader2, AlertCircle, 
+  Calendar, Pause, Play, Activity, Eye, ChevronDown
+} from 'lucide-react';
+
+import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
+import { marked } from 'marked';
+import DOMPurify from 'dompurify';
+
+// --- CONFIG ---
+const APP_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='160' fill='%23171717'/%3E%3Cpath d='M256 96c0 88.4 71.6 160 160 160-88.4 0-160 71.6-160 160 0-88.4-71.6-160-160-160 88.4 0 160-71.6 160-160z' fill='%23FAFAF9'/%3E%3C/svg%3E";
+
+// ============================================
+// SESSION MANAGEMENT v3 - FIKSET FOR PWA
+// ============================================
+
+const SESSION_KEY = 'jnm_session';
+const SESSION_TIMEOUT_MS = 30 * 24 * 60 * 60 * 1000; // 30 dager
+
+// Lagre session med all nødvendig info
+const saveSession = (userData) => {
+    try {
+        const sessionData = {
+            user: {
+                id: userData.id,
+                username: userData.username,
+                name: userData.name,
+                role: userData.role
+            },
+            token: userData.token,
+            expiresAt: Date.now() + SESSION_TIMEOUT_MS,
+            savedAt: Date.now()
+        };
+        localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
+        console.log('[Session] Lagret for:', userData.username);
+    } catch (e) {
+        console.error('[Session] Lagringsfeil:', e);
+    }
+};
+
+// Hent session - ROBUST versjon som IKKE sletter ved feil
+const getSession = () => {
+    try {
+        const data = localStorage.getItem(SESSION_KEY);
+        if (!data) {
+            console.log('[Session] Ingen session funnet');
+            return null;
+        }
+        
+        const session = JSON.parse(data);
+        
+        // Sjekk utløpstid
+        if (session.expiresAt && Date.now() > session.expiresAt) {
+            console.log('[Session] Utløpt, sletter');
+            localStorage.removeItem(SESSION_KEY);
+            return null;
+        }
+        
+        // Returner brukerdata - håndter både gammelt og nytt format
+        const user = session.user || (session.id ? session : null);
+        if (user) {
+            console.log('[Session] Gyldig session:', user.username);
+        }
+        return user;
+    } catch (e) {
+        console.error('[Session] Parse-feil:', e);
+        // VIKTIG: Ikke slett ved parse-feil - kan være midlertidig
+        return null;
+    }
+};
+
+// Hent token
+const getToken = () => {
+    try {
+        const data = localStorage.getItem(SESSION_KEY);
+        if (!data) return null;
+        const session = JSON.parse(data);
+        return session.token || null;
+    } catch (e) {
+        console.error('[Session] Token-feil:', e);
+        return null;
+    }
+};
+
+// Slett session - KUN ved eksplisitt utlogging
+const clearSession = () => {
+    console.log('[Session] Eksplisitt sletting');
+    localStorage.removeItem(SESSION_KEY);
+};
+
+// Sjekk om vi har gyldig session (for visibility change)
+const hasValidSession = () => {
+    return getSession() !== null && getToken() !== null;
+};
+
+if (marked) {
+    marked.setOptions({ breaks: true, gfm: true });
+}
+
+// --- KONFETTI SYSTEM ---
+const createConfetti = () => {
+    const container = document.createElement('div');
+    container.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:9999;overflow:hidden';
+    document.body.appendChild(container);
+
+    const colors = ['#171717', '#525252', '#A3A3A3', '#16A34A', '#FAFAF9'];
+    const shapes = ['circle', 'square'];
+    
+    for (let i = 0; i < 60; i++) {
+        const confetti = document.createElement('div');
+        const size = Math.random() * 10 + 6;
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        const shape = shapes[Math.floor(Math.random() * shapes.length)];
+        const startX = Math.random() * window.innerWidth;
+        const drift = (Math.random() - 0.5) * 200;
+        
+        confetti.style.cssText = `
+            position:absolute;
+            width:${size}px;
+            height:${size}px;
+            background:${color};
+            border-radius:${shape === 'circle' ? '50%' : '2px'};
+            left:${startX}px;
+            top:-20px;
+            opacity:1;
+            transform:rotate(${Math.random() * 360}deg);
+        `;
+        
+        container.appendChild(confetti);
+        
+        const duration = Math.random() * 1500 + 2000;
+        const delay = Math.random() * 300;
+        
+        confetti.animate([
+            { transform: `translateY(0) translateX(0) rotate(0deg)`, opacity: 1 },
+            { transform: `translateY(${window.innerHeight + 100}px) translateX(${drift}px) rotate(${Math.random() * 720}deg)`, opacity: 0 }
+        ], {
+            duration,
+            delay,
+            easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+            fill: 'forwards'
+        });
+    }
+
+    setTimeout(() => container.remove(), 3500);
+};
+
+// --- SWIPE HOOK ---
+const useSwipe = (onSwipeLeft, onSwipeRight, options = {}) => {
+    const { threshold = 50, enabled = true } = options;
+    const touchStart = React.useRef(null);
+    const touchEnd = React.useRef(null);
+
+    const onTouchStart = useCallback((e) => {
+        if (!enabled) return;
+        touchEnd.current = null;
+        touchStart.current = e.targetTouches[0].clientX;
+    }, [enabled]);
+
+    const onTouchMove = useCallback((e) => {
+        if (!enabled) return;
+        touchEnd.current = e.targetTouches[0].clientX;
+    }, [enabled]);
+
+    const onTouchEnd = useCallback(() => {
+        if (!enabled || !touchStart.current || !touchEnd.current) return;
+        const distance = touchStart.current - touchEnd.current;
+        const isLeftSwipe = distance > threshold;
+        const isRightSwipe = distance < -threshold;
+        
+        if (isLeftSwipe && onSwipeLeft) onSwipeLeft();
+        if (isRightSwipe && onSwipeRight) onSwipeRight();
+        
+        touchStart.current = null;
+        touchEnd.current = null;
+    }, [enabled, threshold, onSwipeLeft, onSwipeRight]);
+
+    return { onTouchStart, onTouchMove, onTouchEnd };
+};
+
+// --- PULL TO REFRESH HOOK ---
+const usePullToRefresh = (onRefresh, options = {}) => {
+    const { threshold = 80, enabled = true } = options;
+    const [pulling, setPulling] = useState(false);
+    const [pullDistance, setPullDistance] = useState(0);
+    const [refreshing, setRefreshing] = useState(false);
+    const startY = React.useRef(null);
+    const containerRef = React.useRef(null);
+
+    const handleTouchStart = useCallback((e) => {
+        if (!enabled || refreshing) return;
+        const scrollTop = window.scrollY || document.documentElement.scrollTop;
+        if (scrollTop <= 0) {
+            startY.current = e.touches[0].clientY;
+            setPulling(true);
+        }
+    }, [enabled, refreshing]);
+
+    const handleTouchMove = useCallback((e) => {
+        if (!pulling || !startY.current || refreshing) return;
+        const currentY = e.touches[0].clientY;
+        const distance = Math.max(0, (currentY - startY.current) * 0.5);
+        setPullDistance(Math.min(distance, threshold * 1.5));
+    }, [pulling, refreshing, threshold]);
+
+    const handleTouchEnd = useCallback(async () => {
+        if (!pulling) return;
+        
+        if (pullDistance >= threshold && onRefresh) {
+            setRefreshing(true);
+            try {
+                await onRefresh();
+            } finally {
+                setRefreshing(false);
+            }
+        }
+        
+        setPulling(false);
+        setPullDistance(0);
+        startY.current = null;
+    }, [pulling, pullDistance, threshold, onRefresh]);
+
+    const pullIndicator = useMemo(() => {
+        if (pullDistance <= 0 && !refreshing) return null;
+        
+        return (
+            <div 
+                className="fixed left-0 right-0 flex justify-center z-50 transition-transform duration-200"
+                style={{ 
+                    top: 'calc(env(safe-area-inset-top, 0px) + 60px)',
+                    transform: `translateY(${refreshing ? 20 : pullDistance - 40}px)`,
+                    opacity: refreshing ? 1 : Math.min(pullDistance / threshold, 1)
+                }}
+            >
+                <div className={`bg-ink text-white px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 shadow-lg ${refreshing ? 'animate-pulse' : ''}`}>
+                    <Loader2 size={16} className={refreshing ? 'animate-spin' : ''} style={{ transform: `rotate(${pullDistance * 3}deg)` }} />
+                    {refreshing ? 'Oppdaterer...' : pullDistance >= threshold ? 'Slipp for å oppdatere' : 'Dra ned...'}
+                </div>
+            </div>
+        );
+    }, [pullDistance, refreshing, threshold]);
+
+    return {
+        containerRef,
+        handlers: {
+            onTouchStart: handleTouchStart,
+            onTouchMove: handleTouchMove,
+            onTouchEnd: handleTouchEnd
+        },
+        pullIndicator,
+        refreshing
+    };
+};
+
+// --- CACHE LAYER (med localStorage for persistent cache) ---
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutter
+const CACHE_PREFIX = 'jnm_cache_';
+
+const cache = {
+    store: {},
+
+    // Last inn fra localStorage ved oppstart
+    init: () => {
+        try {
+            const keys = Object.keys(localStorage).filter(k => k.startsWith(CACHE_PREFIX));
+            keys.forEach(key => {
+                const item = JSON.parse(localStorage.getItem(key));
+                if (item && Date.now() - item.timestamp < CACHE_TTL) {
+                    cache.store[key.replace(CACHE_PREFIX, '')] = item;
+                } else {
+                    localStorage.removeItem(key);
+                }
+            });
+        } catch (e) {
+            // localStorage ikke tilgjengelig, fortsett uten
+        }
+    },
+
+    get: (key) => {
+        const item = cache.store[key];
+        if (!item) return null;
+
+        // Sjekk om cache har utløpt
+        const now = Date.now();
+        if (now - item.timestamp > CACHE_TTL) {
+            delete cache.store[key];
+            try { localStorage.removeItem(CACHE_PREFIX + key); } catch (e) {}
+            return null;
+        }
+
+        return item.data;
+    },
+
+    set: (key, data) => {
+        const item = {
+            data,
+            timestamp: Date.now()
+        };
+        cache.store[key] = item;
+
+        // Lagre til localStorage for persistent cache
+        try {
+            localStorage.setItem(CACHE_PREFIX + key, JSON.stringify(item));
+        } catch (e) {
+            // localStorage full eller ikke tilgjengelig
+        }
+    },
+
+    invalidate: (pattern) => {
+        // Slett cache som matcher pattern
+        Object.keys(cache.store).forEach(key => {
+            if (pattern === '*' || key.includes(pattern)) {
+                delete cache.store[key];
+                try { localStorage.removeItem(CACHE_PREFIX + key); } catch (e) {}
+            }
+        });
+    }
+};
+
+// Initialiser cache fra localStorage
+cache.init();
+
+// --- DEBOUNCE UTILITY ---
+const debounce = (fn, delay) => {
+    let timeoutId;
+    return (...args) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => fn(...args), delay);
+    };
+};
+
+// ============================================
+// API LAYER v3 - FIKSET: Ingen auto-logout
+// ============================================
+
+const getAuthHeaders = () => {
+    const token = getToken();
+    const headers = {
+        'Content-Type': 'application/json'
+    };
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
+};
+
+const api = {
+    getUsers: async () => {
+        try {
+            const res = await fetch('/.netlify/functions/users', {
+                headers: getAuthHeaders()
+            });
+            if (res.status === 401) {
+                console.warn('[API] 401 ved getUsers - returnerer authError');
+                return { authError: true, data: [] };
+            }
+            if (!res.ok) throw new Error('Kunne ikke hente brukere');
+            const data = await res.json();
+            return { authError: false, data };
+        } catch (e) {
+            console.error('[API] getUsers feil:', e);
+            return { authError: false, data: [], networkError: true };
+        }
+    },
+    createUser: async (newUser) => {
+        console.log('[API] Oppretter ny bruker:', newUser.name);
+        const res = await fetch('/.netlify/functions/users', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(newUser)
+        });
+        if (res.status === 401) {
+            console.warn('[API] 401 ved createUser');
+            return { authError: true };
+        }
+        if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            console.error('[API] Feil ved opprettelse:', errorData);
+            throw new Error(errorData.error || 'Feil ved opprettelse');
+        }
+        const result = await res.json();
+        console.log('[API] Bruker opprettet suksessfullt');
+        return { authError: false, data: result };
+    },
+    deleteUser: async (userId) => {
+        const res = await fetch('/.netlify/functions/users', {
+            method: 'DELETE',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ id: userId })
+        });
+        if (res.status === 401) {
+            console.warn('[API] 401 ved deleteUser');
+            return { authError: true };
+        }
+        if (!res.ok) throw new Error('Feil ved sletting');
+        return { authError: false, data: await res.json() };
+    },
+    archiveUser: async (userId, archive) => {
+        const res = await fetch('/.netlify/functions/users', {
+            method: 'PATCH',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ id: userId, is_archived: archive })
+        });
+        if (res.status === 401) {
+            console.warn('[API] 401 ved archiveUser');
+            return { authError: true };
+        }
+        if (!res.ok) throw new Error('Feil ved arkivering');
+        return { authError: false, data: await res.json() };
+    },
+    getUserData: async (userId, useCache = true) => {
+        const cacheKey = `user-data-${userId}`;
+
+        // Sjekk cache først
+        if (useCache) {
+            const cached = cache.get(cacheKey);
+            if (cached) return { authError: false, data: cached };
+        }
+
+        try {
+            const res = await fetch(`/.netlify/functions/data?id=${userId}`, {
+                headers: getAuthHeaders()
+            });
+            if (res.status === 401) {
+                console.warn('[API] 401 ved getUserData');
+                return { authError: true };
+            }
+            if (!res.ok) throw new Error('Feil ved henting av data');
+
+            const data = await res.json();
+            cache.set(cacheKey, data);
+            return { authError: false, data };
+        } catch (e) {
+            console.error('[API] getUserData feil:', e);
+            return { authError: false, networkError: true };
+        }
+    },
+    saveUserData: async (userId, data) => {
+        const res = await fetch('/.netlify/functions/data', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ userId, type: 'plan_update', data })
+        });
+        if (res.status === 401) {
+            console.warn('[API] 401 ved saveUserData');
+            return { authError: true };
+        }
+        if (!res.ok) throw new Error('Lagring feilet');
+        cache.invalidate(`user-data-${userId}`);
+        return { authError: false, data };
+    },
+    submitCheckin: async (userId, entry) => {
+        const payload = JSON.stringify({ userId, type: 'new_checkin', data: entry });
+        const res = await fetch('/.netlify/functions/data', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: payload
+        });
+        if (res.status === 401) {
+            console.warn('[API] 401 ved submitCheckin');
+            return { authError: true };
+        }
+        if (!res.ok) {
+            const errorText = await res.text();
+            throw new Error(errorText || 'Innsending feilet');
+        }
+        cache.invalidate(`user-data-${userId}`);
+        return { authError: false };
+    },
+    deleteCheckin: async (userId, checkinId) => {
+        const res = await fetch('/.netlify/functions/data', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ userId, type: 'delete_checkin', data: { checkinId } })
+        });
+        if (res.status === 401) {
+            console.warn('[API] 401 ved deleteCheckin');
+            return { authError: true };
+        }
+        if (!res.ok) throw new Error('Sletting feilet');
+        cache.invalidate(`user-data-${userId}`);
+        return { authError: false };
+    },
+    markCheckinsRead: async (userId) => {
+        const res = await fetch('/.netlify/functions/data', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ userId, type: 'mark_checkins_read', data: {} })
+        });
+        if (res.status === 401) {
+            console.warn('[API] 401 ved markCheckinsRead');
+            return { authError: true };
+        }
+        if (!res.ok) throw new Error('Kunne ikke markere som lest');
+        cache.invalidate(`user-data-${userId}`);
+        return { authError: false };
+    },
+    createPeriod: async (userId, name, startingWeight, goalWeight = null) => {
+        const res = await fetch('/.netlify/functions/data', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ userId, type: 'create_period', data: { name, startingWeight, goalWeight } })
+        });
+        if (res.status === 401) {
+            console.warn('[API] 401 ved createPeriod');
+            return { authError: true };
+        }
+        if (!res.ok) throw new Error('Kunne ikke opprette periode');
+        cache.invalidate(`user-data-${userId}`);
+        return { authError: false };
+    },
+    endPeriod: async (userId, periodId) => {
+        const res = await fetch('/.netlify/functions/data', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ userId, type: 'end_period', data: { periodId } })
+        });
+        if (res.status === 401) {
+            console.warn('[API] 401 ved endPeriod');
+            return { authError: true };
+        }
+        if (!res.ok) throw new Error('Kunne ikke avslutte periode');
+        cache.invalidate(`user-data-${userId}`);
+        return { authError: false };
+    },
+    updatePeriod: async (userId, periodId, updates) => {
+        const res = await fetch('/.netlify/functions/data', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ userId, type: 'update_period', data: { periodId, ...updates } })
+        });
+        if (res.status === 401) {
+            console.warn('[API] 401 ved updatePeriod');
+            return { authError: true };
+        }
+        if (!res.ok) throw new Error('Kunne ikke oppdatere periode');
+        cache.invalidate(`user-data-${userId}`);
+        return { authError: false };
+    },
+    addGalleryImage: async (userId, imageUrl, label, date, weight) => {
+        const res = await fetch('/.netlify/functions/data', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ userId, type: 'add_gallery_image', data: { imageUrl, label, date, weight } })
+        });
+        if (res.status === 401) {
+            console.warn('[API] 401 ved addGalleryImage');
+            return { authError: true };
+        }
+        if (!res.ok) throw new Error('Kunne ikke legge til bilde');
+        cache.invalidate(`user-data-${userId}`);
+        return { authError: false };
+    },
+    deleteGalleryImage: async (userId, imageId) => {
+        const res = await fetch('/.netlify/functions/data', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ userId, type: 'delete_gallery_image', data: { imageId } })
+        });
+        if (res.status === 401) {
+            console.warn('[API] 401 ved deleteGalleryImage');
+            return { authError: true };
+        }
+        if (!res.ok) throw new Error('Kunne ikke slette bilde');
+        cache.invalidate(`user-data-${userId}`);
+        return { authError: false };
+    },
+    uploadImage: async (base64Image) => {
+        const res = await fetch('/.netlify/functions/upload', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ image: base64Image })
+        });
+        if (res.status === 401) {
+            console.warn('[API] 401 ved uploadImage');
+            return { authError: true };
+        }
+        if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Opplasting feilet');
+        }
+        return { authError: false, data: await res.json() };
+    },
+    login: async (username, password) => {
+        const res = await fetch('/.netlify/functions/auth', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+        if (res.status === 401) return null;
+        if (!res.ok) throw new Error('Login feilet');
+        return await res.json();
+    }
+};
+
+// --- Helpers ---
+const formatWeight = (val) => (!val ? '-' : parseFloat(val).toFixed(1).replace('.', ','));
+
+const formatDateNO = (dateString) => {
+    if (!dateString) return '';
+    // Håndter Date-objekter
+    if (dateString instanceof Date) {
+        const day = String(dateString.getDate()).padStart(2, '0');
+        const month = String(dateString.getMonth() + 1).padStart(2, '0');
+        const year = dateString.getFullYear();
+        return `${day}.${month}.${year}`;
+    }
+    // Håndter timestamps (tall)
+    if (typeof dateString === 'number') {
+        const date = new Date(dateString);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}.${month}.${year}`;
+    }
+    // Håndter strenger
+    const datePart = String(dateString).split('T')[0];
+    if (datePart.includes('-')) {
+        const [year, month, day] = datePart.split('-');
+        return `${day}.${month}.${year}`;
+    }
+    return datePart;
+};
+
+const getThumbnail = (url) => {
+    if (!url || typeof url !== 'string') return url;
+    if (!url.includes('cloudinary.com')) return url;
+    return url.replace('/upload/', '/upload/w_200,h_200,c_fill,q_auto,f_auto/');
+};
+
+const getFullSizeImage = (url) => {
+    if (!url || typeof url !== 'string') return url;
+    if (!url.includes('cloudinary.com')) return url;
+    return url.replace('/upload/', '/upload/w_1280,c_limit,q_auto,f_auto/');
+};
+
+// --- Components (memoized for performance) ---
+
+const Skeleton = React.memo(({ className }) => (
+    <div className={`bg-surface-200 animate-pulse rounded-2xl ${className}`} />
+));
+
+const BADGE_VARIANTS = {
+    default: 'bg-surface-200 text-ink',
+    success: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+    warning: 'bg-amber-50 text-amber-700 border border-amber-200',
+    muted: 'bg-surface-100 text-ink-muted',
+};
+
+const Badge = React.memo(({ children, variant = 'default', className = '' }) => (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full ${BADGE_VARIANTS[variant]} ${className}`}>
+        {children}
+    </span>
+));
+
+const BUTTON_VARIANTS = {
+    primary: 'bg-ink text-surface-50 hover:bg-accent-hover active:scale-[0.98]',
+    secondary: 'bg-surface-100 text-ink hover:bg-surface-200 active:scale-[0.98]',
+    ghost: 'text-ink-muted hover:text-ink hover:bg-surface-100',
+    danger: 'bg-red-50 text-red-600 hover:bg-red-100',
+};
+const BUTTON_SIZES = {
+    sm: 'px-3 py-1.5 text-sm',
+    md: 'px-4 py-2.5 text-sm',
+    lg: 'px-6 py-3.5 text-base',
+};
+
+const Button = React.memo(({ children, variant = 'primary', size = 'md', className = '', ...props }) => (
+    <button 
+        className={`font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${BUTTON_VARIANTS[variant]} ${BUTTON_SIZES[size]} ${className}`}
+        {...props}
+    >
+        {children}
+    </button>
+));
+
+const Card = React.memo(({ children, className = "", interactive = false, ...props }) => (
+    <div 
+        className={`bg-white rounded-2xl border border-surface-200 ${interactive ? 'hover:border-surface-300 hover:shadow-sm cursor-pointer transition-all' : ''} ${className}`} 
+        {...props}
+    >
+        {children}
+    </div>
+));
+
+// --- Escape-tast hook for modaler ---
+const useEscapeKey = (onClose, active = true) => {
+    useEffect(() => {
+        if (!active) return;
+        const handler = (e) => { if (e.key === 'Escape') onClose(); };
+        document.addEventListener('keydown', handler);
+        return () => document.removeEventListener('keydown', handler);
+    }, [onClose, active]);
+};
+
+// --- Toast Notification System ---
+const ToastContext = React.createContext();
+
+const ToastProvider = ({ children }) => {
+    const [toasts, setToasts] = useState([]);
+    const show = useCallback((message, type = 'success') => {
+        const id = Date.now();
+        setToasts(prev => [...prev, { id, message, type }]);
+        setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000);
+    }, []);
+    return (
+        <ToastContext.Provider value={show}>
+            {children}
+            {toasts.length > 0 && (
+                <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[300] flex flex-col gap-2">
+                    {toasts.map(t => (
+                        <div key={t.id} className={`px-4 py-3 rounded-xl shadow-lg text-sm font-medium animate-slide-up whitespace-nowrap ${
+                            t.type === 'success' ? 'bg-emerald-600 text-white' :
+                            t.type === 'error' ? 'bg-red-600 text-white' : 'bg-ink text-white'
+                        }`}>
+                            {t.type === 'success' && '✓ '}{t.message}
+                        </div>
+                    ))}
+                </div>
+            )}
+        </ToastContext.Provider>
+    );
+};
+
+const useToast = () => React.useContext(ToastContext);
+
+const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
+    useEscapeKey(onClose);
+    const [index, setIndex] = useState(initialIndex || 0);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => { document.body.style.overflow = 'unset'; };
+    }, []);
+
+    if (!images || images.length === 0) return null;
+
+    const currentImage = images[index];
+    const hasNext = index < images.length - 1;
+    const hasPrev = index > 0;
+
+    const handleNext = (e) => { 
+        if(e) e.stopPropagation(); 
+        if (hasNext) {
+            setLoading(true);
+            setIndex(index + 1); 
+        }
+    };
+    const handlePrev = (e) => { 
+        if(e) e.stopPropagation(); 
+        if (hasPrev) {
+            setLoading(true);
+            setIndex(index - 1); 
+        }
+    };
+
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'ArrowRight' && hasNext) handleNext();
+            if (e.key === 'ArrowLeft' && hasPrev) handlePrev();
+            if (e.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [hasNext, hasPrev, onClose, handleNext, handlePrev]);
+
+    return (
+        <div className="fixed inset-0 z-[100] bg-ink/95 flex items-center justify-center animate-fade-in">
+            <button onClick={onClose} className="absolute right-4 text-white/60 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors z-[120]" style={{ top: 'calc(env(safe-area-inset-top, 20px) + 12px)' }}>
+                <X size={28} />
+            </button>
+            
+            <div className="relative w-full h-full flex items-center justify-center">
+                <TransformWrapper 
+                    key={index} 
+                    initialScale={1} 
+                    minScale={0.5} 
+                    maxScale={4} 
+                    centerOnInit={true}
+                >
+                    <TransformComponent wrapperStyle={{ width: "100%", height: "100%" }} contentStyle={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        {loading && (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <Loader2 className="text-white animate-spin" size={32} />
+                            </div>
+                        )}
+                        <img 
+                            src={getFullSizeImage(currentImage)} 
+                            onLoad={() => setLoading(false)}
+                            className={`max-w-full max-h-[90vh] object-contain select-none transition-opacity duration-300 ${loading ? 'opacity-0' : 'opacity-100'}`} 
+                            alt="Fullskjerm" 
+                        />
+                    </TransformComponent>
+                </TransformWrapper>
+                
+                {hasPrev && (
+                    <button onClick={handlePrev} className="absolute left-4 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all z-[110]">
+                        <ChevronLeft size={28} />
+                    </button>
+                )}
+                {hasNext && (
+                    <button onClick={handleNext} className="absolute right-4 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all z-[110]">
+                        <ChevronRight size={28} />
+                    </button>
+                )}
+                {images.length > 1 && (
+                    <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/80 font-medium bg-white/10 px-4 py-2 rounded-full text-sm z-[110]">
+                        {index + 1} / {images.length}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+});
+
+const LoginScreen = React.memo(({ onLogin }) => {
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        setError('');
+        setIsLoading(true);
+        try {
+            const user = await api.login(username, password);
+            if (user) onLogin(user);
+            else setError('Feil brukernavn eller passord');
+        } catch (err) {
+            setError('Serverfeil. Prøv igjen.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-surface-50 relative animate-fade-in">
+            <div className="text-center mb-12">
+                <div className="w-20 h-20 mx-auto mb-8">
+                    <img src={APP_ICON} alt="Logo" className="w-full h-full" />
+                </div>
+                <h1 className="text-3xl font-display text-ink mb-2">JNM Coaching</h1>
+                <p className="text-ink-muted">Logg inn for å fortsette</p>
+            </div>
+
+            <div className="w-full max-w-sm">
+                <form onSubmit={handleLogin} className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-ink-muted mb-2">Brukernavn</label>
+                        <input 
+                            type="text" 
+                            value={username} 
+                            onChange={(e) => setUsername(e.target.value)} 
+                            className="w-full px-4 py-3.5 bg-white border border-surface-200 rounded-xl focus:ring-2 focus:ring-ink focus:border-ink outline-none transition-all" 
+                            placeholder="Skriv inn brukernavn" 
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-ink-muted mb-2">Passord</label>
+                        <input 
+                            type="password" 
+                            value={password} 
+                            onChange={(e) => setPassword(e.target.value)} 
+                            className="w-full px-4 py-3.5 bg-white border border-surface-200 rounded-xl focus:ring-2 focus:ring-ink focus:border-ink outline-none transition-all" 
+                            placeholder="••••••••" 
+                        />
+                    </div>
+
+                    {error && (
+                        <div className="flex items-center gap-2 text-red-600 bg-red-50 border border-red-100 px-4 py-3 rounded-xl text-sm">
+                            <AlertCircle size={16} />
+                            {error}
+                        </div>
+                    )}
+
+                    <Button type="submit" disabled={isLoading} size="lg" className="w-full mt-6">
+                        {isLoading ? (
+                            <Loader2 className="animate-spin" size={20} />
+                        ) : (
+                            <>Logg inn <ArrowRight size={18} /></>
+                        )}
+                    </Button>
+                </form>
+            </div>
+
+            <p className="absolute bottom-8 text-ink-faint text-xs">JNM Coaching © {new Date().getFullYear()}</p>
+        </div>
+    );
+});
+
+// ReauthPrompt - vises når token har utløpt
+const ReauthPrompt = React.memo(({ onReauth, onLogout }) => (
+    <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-fade-in">
+        <Card className="w-full max-w-sm p-6 animate-scale-in text-center">
+            <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-600 mx-auto mb-4">
+                <AlertCircle size={32} />
+            </div>
+            <h2 className="text-xl font-display mb-2">Sesjonen har utløpt</h2>
+            <p className="text-ink-muted mb-6">Vennligst logg inn på nytt for å fortsette.</p>
+            <div className="flex gap-3">
+                <Button variant="secondary" size="lg" className="flex-1" onClick={onLogout}>
+                    Avbryt
+                </Button>
+                <Button variant="primary" size="lg" className="flex-1" onClick={onReauth}>
+                    Logg inn
+                </Button>
+            </div>
+        </Card>
+    </div>
+));
+
+const NAV_ITEMS = [
+    { id: 'dashboard', label: 'Hjem', icon: Home },
+    { id: 'gallery', label: 'Galleri', icon: Camera },
+    { id: 'diet', label: 'Mat', icon: Utensils },
+    { id: 'workout', label: 'Trening', icon: Dumbbell },
+    { id: 'checkin', label: 'Rapport', icon: ClipboardCheck },
+];
+
+const Navigation = React.memo(({ activeTab, setActiveTab }) => {
+    const handleTabClick = useCallback((id) => {
+        setActiveTab(id);
+        window.scrollTo({ top: 0, behavior: 'instant' });
+    }, [setActiveTab]);
+
+    return (
+        <div className="fixed bottom-0 left-0 right-0 glass-nav z-50 border-t border-surface-200"> 
+            <div className="flex justify-around items-center h-16 max-w-md mx-auto">
+                {NAV_ITEMS.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = activeTab === item.id;
+                    return (
+                        <button 
+                            key={item.id} 
+                            onClick={() => handleTabClick(item.id)} 
+                            className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-all active:scale-90 ${isActive ? 'text-ink' : 'text-ink-faint'}`}
+                        >
+                            <Icon size={22} strokeWidth={isActive ? 2 : 1.5} />
+                            <span className={`text-[10px] font-medium ${isActive ? 'text-ink' : 'text-ink-faint'}`}>{item.label}</span>
+                        </button>
+                    );
+                })}
+            </div>
+            {/* Safe area spacer for iPhone home indicator */}
+            <div className="safe-area-pb" />
+        </div>
+    );
+});
+
+const Header = React.memo(({ title, user, viewingClient, onLogout, onClearClient }) => (
+    <header className="bg-surface-50/95 backdrop-blur-md sticky top-0 z-40 border-b border-surface-200">
+        {/* Safe area spacer for iPhone Dynamic Island/notch */}
+        <div className="safe-area-pt" />
+        <div className="flex justify-between items-center max-w-md mx-auto px-5 py-4">
+            <div>
+                <h1 className="text-xl font-display text-ink">{title}</h1>
+                <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-xs text-ink-muted flex items-center gap-1">
+                        {user.role === 'coach' ? <Briefcase size={12} /> : <User size={12} />}
+                        {user.name}
+                    </span>
+                    {viewingClient && (
+                        <Badge variant="muted" className="text-[10px]">
+                            <ChevronRight size={10} /> {viewingClient.name}
+                        </Badge>
+                    )}
+                </div>
+            </div>
+            {viewingClient ? (
+                <Button variant="secondary" size="sm" onClick={onClearClient}>Lukk</Button>
+            ) : (
+                <button onClick={onLogout} className="text-ink-faint hover:text-ink p-2 rounded-xl hover:bg-surface-100 transition-colors">
+                    <LogOut size={20} />
+                </button>
+            )}
+        </div>
+    </header>
+));
+
+// --- Views ---
+
+const WeightProgressView = React.memo(({ checkins, onBack }) => {
+    // OPTIMALISERING: Memoize filtrering og sortering
+    const validCheckins = useMemo(() => 
+        checkins.filter(c => c.weight && parseFloat(c.weight) > 0).sort((a, b) => a.timestamp - b.timestamp),
+        [checkins]
+    );
+    
+    // OPTIMALISERING: Reverser en gang i stedet for i hver map-iterasjon
+    const reversedCheckins = useMemo(() => [...validCheckins].reverse(), [validCheckins]);
+
+    if (validCheckins.length === 0) return (
+        <div className="flex flex-col items-center justify-center h-[60vh] animate-fade-in text-center px-6">
+            <p className="text-ink-muted font-display text-lg italic mb-6">Ingen vektdata enda</p>
+            <Button variant="secondary" onClick={onBack}>Tilbake</Button>
+        </div>
+    );
+
+    const first = validCheckins[0];
+    const last = validCheckins[validCheckins.length - 1];
+    const totalChange = (parseFloat(last.weight) - parseFloat(first.weight)).toFixed(1);
+    const isDown = parseFloat(totalChange) < 0;
+    const isSame = parseFloat(totalChange) === 0;
+
+    const width = 300;
+    const height = 140;
+    const padding = 16;
+    const weights = validCheckins.map(c => parseFloat(c.weight));
+    const minW = Math.min(...weights) - 0.5;
+    const maxW = Math.max(...weights) + 0.5;
+    const timestamps = validCheckins.map(c => c.timestamp);
+    const minT = Math.min(...timestamps);
+    const maxT = Math.max(...timestamps);
+
+    const points = validCheckins.map(c => {
+        const x = minT === maxT ? width / 2 : ((c.timestamp - minT) / (maxT - minT)) * (width - 2 * padding) + padding;
+        const y = minW === maxW ? height / 2 : height - padding - ((parseFloat(c.weight) - minW) / (maxW - minW)) * (height - 2 * padding);
+        return `${x},${y}`;
+    }).join(' ');
+
+    return (
+        <div className="space-y-6 animate-slide-up pb-32">
+            <button onClick={onBack} className="flex items-center gap-2 text-ink-muted hover:text-ink transition-colors">
+                <ChevronLeft size={20} />
+                <span className="text-sm font-medium">Tilbake</span>
+            </button>
+
+            <div className="grid grid-cols-2 gap-4">
+                <Card className="p-5">
+                    <p className="text-xs text-ink-muted uppercase tracking-wide mb-1">Endring</p>
+                    <div className={`text-2xl font-semibold flex items-center gap-2 ${isDown ? 'text-emerald-600' : isSame ? 'text-ink-muted' : 'text-ink'}`}>
+                        {totalChange > 0 ? '+' : ''}{totalChange.replace('.', ',')} kg
+                        {isDown ? <TrendingDown size={20} /> : isSame ? <Minus size={20} /> : <TrendingUp size={20} />}
+                    </div>
+                </Card>
+                <Card className="p-5">
+                    <p className="text-xs text-ink-muted uppercase tracking-wide mb-1">Nåværende</p>
+                    <p className="text-2xl font-semibold tabular-nums">{formatWeight(last.weight)} kg</p>
+                </Card>
+            </div>
+
+            {validCheckins.length > 1 && (
+                <Card className="p-4">
+                    <p className="text-xs text-ink-muted uppercase tracking-wide mb-3">Utvikling</p>
+                    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-32">
+                        <defs>
+                            <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
+                                <stop offset="0%" stopColor="#A3A3A3" />
+                                <stop offset="100%" stopColor="#171717" />
+                            </linearGradient>
+                        </defs>
+                        <polyline fill="none" stroke="url(#lineGradient)" strokeWidth="2" points={points} strokeLinecap="round" strokeLinejoin="round" />
+                        {validCheckins.map((c, i) => {
+                            const x = minT === maxT ? width / 2 : ((c.timestamp - minT) / (maxT - minT)) * (width - 2 * padding) + padding;
+                            const y = minW === maxW ? height / 2 : height - padding - ((parseFloat(c.weight) - minW) / (maxW - minW)) * (height - 2 * padding);
+                            return <circle key={i} cx={x} cy={y} r="4" fill="#FAFAF9" stroke="#171717" strokeWidth="2" />
+                        })}
+                    </svg>
+                </Card>
+            )}
+
+            <div className="space-y-2">
+                <p className="text-xs text-ink-muted uppercase tracking-wide px-1">Historikk</p>
+                {reversedCheckins.map((entry, i) => {
+                    const prev = reversedCheckins[i+1];
+                    const change = prev ? (parseFloat(entry.weight) - parseFloat(prev.weight)) : 0;
+                    
+                    return (
+                        <Card key={entry.id} className="p-4 flex justify-between items-center">
+                            <div>
+                                <p className="font-medium">{formatDateNO(entry.date)}</p>
+                                <p className="text-xs text-ink-muted">{new Date(entry.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                {prev && change !== 0 && (
+                                    <Badge variant={change < 0 ? 'success' : 'muted'}>
+                                        {change < 0 ? <TrendingDown size={12}/> : <TrendingUp size={12}/>}
+                                        {change > 0 ? '+' : ''}{change.toFixed(1).replace('.', ',')}
+                                    </Badge>
+                                )}
+                                <span className="font-semibold text-lg tabular-nums">{formatWeight(entry.weight)}</span>
+                            </div>
+                        </Card>
+                    )
+                })}
+            </div>
+        </div>
+    );
+});
+
+// GalleryView - samler alle bilder fra checkins for lett sammenligning
+const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false, onAddGalleryImage, onDeleteGalleryImage }) => {
+    const toast = useToast();
+    const [lightbox, setLightbox] = useState({ isOpen: false, images: [], index: 0 });
+    const [viewMode, setViewMode] = useState('grid'); // 'grid', 'timeline', eller 'compare'
+    const [compareImages, setCompareImages] = useState({ before: null, after: null });
+    const [selectingFor, setSelectingFor] = useState(null); // 'before' eller 'after'
+    const [fullscreenCompare, setFullscreenCompare] = useState(false);
+    const [showUploadModal, setShowUploadModal] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
+    const [uploadForm, setUploadForm] = useState({ label: 'Startbilde', date: new Date().toISOString().split('T')[0], weight: '' });
+
+    // Samle alle bilder med metadata, sortert fra nyeste til eldste
+    const allImages = useMemo(() => {
+        const images = [];
+        
+        // Hjelpefunksjon for å parse dato trygt
+        const parseDate = (dateValue) => {
+            if (!dateValue) return null;
+            // Hvis det allerede er et tall (timestamp)
+            if (typeof dateValue === 'number') return dateValue;
+            // Hvis det er en Date
+            if (dateValue instanceof Date) return dateValue.getTime();
+            // Hvis det er en streng
+            if (typeof dateValue === 'string') {
+                // Prøv å parse direkte
+                const parsed = new Date(dateValue);
+                if (!isNaN(parsed.getTime())) return parsed.getTime();
+            }
+            return null;
+        };
+        
+        // Legg til gallery-bilder (coach-opplastet)
+        galleryImages.forEach(img => {
+            // Bruk date-feltet for sortering
+            const dateTimestamp = parseDate(img.date);
+            const sortDate = dateTimestamp || img.timestamp;
+            
+            images.push({
+                url: img.url,
+                date: img.date,
+                timestamp: img.timestamp,
+                sortDate: sortDate,
+                weight: img.weight || null,
+                label: img.label,
+                isGalleryImage: true,
+                galleryImageId: img.id
+            });
+        });
+        
+        // Legg til checkin-bilder - bruk timestamp direkte
+        checkins.forEach(checkin => {
+            // Sikre at images alltid er en array
+            let imageArray = [];
+            if (checkin.images) {
+                // Hvis det er en streng, prøv å parse den
+                if (typeof checkin.images === 'string') {
+                    try {
+                        imageArray = JSON.parse(checkin.images);
+                    } catch (e) {
+                        console.error('[allImages] Kunne ikke parse images:', checkin.images);
+                        imageArray = [];
+                    }
+                } else if (Array.isArray(checkin.images)) {
+                    imageArray = checkin.images;
+                }
+            } else if (checkin.image) {
+                imageArray = [checkin.image];
+            }
+
+            // Filtrer ut ugyldige verdier og legg til i images array
+            const checkinImages = imageArray.filter(img => img && typeof img === 'string' && img.trim() !== '');
+
+            checkinImages.forEach(img => {
+                images.push({
+                    url: img,
+                    date: checkin.date,
+                    timestamp: checkin.timestamp,
+                    sortDate: checkin.timestamp,
+                    weight: checkin.weight,
+                    checkinId: checkin.id,
+                    isGalleryImage: false
+                });
+            });
+        });
+        
+        // Sorter alle bilder etter sortDate, nyeste først
+        return images.sort((a, b) => b.sortDate - a.sortDate);
+    }, [checkins, galleryImages]);
+
+    // Grupper bilder etter måned for timeline-visning
+    const imagesByMonth = useMemo(() => {
+        const grouped = {};
+        allImages.forEach(img => {
+            const date = new Date(img.sortDate);
+            const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            const monthLabel = date.toLocaleDateString('no-NO', { month: 'long', year: 'numeric' });
+            
+            if (!grouped[monthKey]) {
+                grouped[monthKey] = { label: monthLabel, images: [] };
+            }
+            grouped[monthKey].images.push(img);
+        });
+        return Object.entries(grouped).sort((a, b) => b[0].localeCompare(a[0]));
+    }, [allImages]);
+
+    const closeLightbox = useCallback(() => {
+        setLightbox(prev => ({ ...prev, isOpen: false }));
+    }, []);
+
+    const openLightbox = useCallback((index) => {
+        if (selectingFor) return; // Ikke åpne lightbox når vi velger bilder
+        setLightbox({ isOpen: true, images: allImages.map(img => img.url), index });
+    }, [allImages, selectingFor]);
+
+    const handleImageClick = useCallback((img, idx) => {
+        if (selectingFor) {
+            setCompareImages(prev => ({ ...prev, [selectingFor]: img }));
+            setSelectingFor(null);
+        } else {
+            openLightbox(idx);
+        }
+    }, [selectingFor, openLightbox]);
+
+    const startCompare = useCallback(() => {
+        // Auto-velg eldste og nyeste bilde som standard
+        if (allImages.length >= 2) {
+            const oldest = allImages[allImages.length - 1];
+            const newest = allImages[0];
+            setCompareImages({ before: oldest, after: newest });
+        }
+        setViewMode('compare');
+    }, [allImages]);
+
+    const clearCompare = useCallback(() => {
+        setCompareImages({ before: null, after: null });
+        setSelectingFor(null);
+        setViewMode('grid');
+    }, []);
+
+    // Håndter bildeopplasting for coach
+    const [uploadProgress, setUploadProgress] = useState('');
+
+    const handleImageUpload = useCallback(async (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+        if (files.length > 5) {
+            alert('Maks 5 bilder om gangen');
+            return;
+        }
+        setIsUploading(true);
+        try {
+            setUploadProgress(`${files.length} bilde${files.length > 1 ? 'r' : ''}...`);
+            const uploadedUrls = await Promise.all(
+                files.map(async (file) => {
+                    const base64Image = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = () => reject(new Error('Kunne ikke lese fil: ' + file.name));
+                        reader.readAsDataURL(file);
+                    });
+                    const result = await api.uploadImage(base64Image);
+                    if (result.authError) throw new Error('Autentisering feilet');
+                    return result.data.url;
+                })
+            );
+            // Lukk modal umiddelbart — optimistisk UI i onAddGalleryImage viser bildene
+            const { label, date, weight } = uploadForm;
+            setShowUploadModal(false);
+            setUploadForm({ label: 'Startbilde', date: new Date().toISOString().split('T')[0], weight: '' });
+            setIsUploading(false);
+            setUploadProgress('');
+            toast(`${uploadedUrls.length} bilde${uploadedUrls.length > 1 ? 'r' : ''} lagt til`);
+            // Lagre til server i bakgrunnen (optimistisk UI allerede vist)
+            for (const url of uploadedUrls) {
+                await onAddGalleryImage(url, label, date, weight);
+            }
+        } catch (err) {
+            console.error(err);
+            toast('Bildeopplasting feilet', 'error');
+        } finally {
+            setIsUploading(false);
+            setUploadProgress('');
+        }
+    }, [onAddGalleryImage, uploadForm]);
+
+    const handleDeleteGalleryImage = useCallback(async (imageId) => {
+        if (confirm('Slett dette bildet?')) {
+            try {
+                await onDeleteGalleryImage(imageId);
+            } catch (err) {
+                console.error(err);
+                alert('Kunne ikke slette bildet');
+            }
+        }
+    }, [onDeleteGalleryImage]);
+
+    // Beregn vektendring mellom valgte bilder
+    const weightDiff = useMemo(() => {
+        if (!compareImages.before?.weight || !compareImages.after?.weight) return null;
+        const diff = parseFloat(compareImages.after.weight) - parseFloat(compareImages.before.weight);
+        return diff.toFixed(1);
+    }, [compareImages]);
+
+    // Beregn dager mellom bildene
+    const daysDiff = useMemo(() => {
+        if (!compareImages.before?.sortDate || !compareImages.after?.sortDate) return null;
+        const diff = Math.abs(compareImages.after.sortDate - compareImages.before.sortDate);
+        return Math.round(diff / (1000 * 60 * 60 * 24));
+    }, [compareImages]);
+
+    // Memoized input handlers for upload form
+    const handleLabelChange = useCallback((e) => {
+        setUploadForm(prev => ({ ...prev, label: e.target.value }));
+    }, []);
+
+    const handleDateChange = useCallback((e) => {
+        setUploadForm(prev => ({ ...prev, date: e.target.value }));
+    }, []);
+
+    const handleWeightChange = useCallback((e) => {
+        setUploadForm(prev => ({ ...prev, weight: e.target.value }));
+    }, []);
+
+    const closeUploadModal = useCallback(() => {
+        setShowUploadModal(false);
+    }, []);
+
+    useEscapeKey(closeUploadModal, showUploadModal);
+
+    // Felles upload-modal (brukes i både tom- og normal-visning)
+    const uploadModal = showUploadModal && (
+        <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+            <Card className="w-full max-w-sm p-6 animate-scale-in">
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-display">Last opp bilder</h2>
+                    <button onClick={closeUploadModal} className="text-ink-muted hover:text-ink p-2">
+                        <X size={20} />
+                    </button>
+                </div>
+
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-ink-muted mb-2">Bildetekst</label>
+                        <input
+                            type="text"
+                            value={uploadForm.label}
+                            onChange={handleLabelChange}
+                            placeholder="F.eks. Startbilde"
+                            className="w-full px-4 py-3 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-ink-muted mb-2">Dato</label>
+                        <input
+                            type="date"
+                            value={uploadForm.date}
+                            onChange={handleDateChange}
+                            className="w-full px-4 py-3 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-ink-muted mb-2">Vekt (kg, valgfritt)</label>
+                        <input
+                            type="number"
+                            inputMode="decimal"
+                            step="0.1"
+                            value={uploadForm.weight}
+                            onChange={handleWeightChange}
+                            placeholder="0.0"
+                            className="w-full px-4 py-3 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink"
+                        />
+                    </div>
+
+                    <label className={`flex flex-col items-center justify-center p-8 border-2 border-dashed border-surface-200 rounded-xl cursor-pointer hover:border-surface-300 hover:bg-surface-50 transition-all ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                        {isUploading ? (
+                            <>
+                                <Loader2 className="animate-spin text-ink-muted" size={24} />
+                                {uploadProgress && <span className="text-sm text-ink-muted mt-2">Laster opp {uploadProgress}</span>}
+                            </>
+                        ) : (
+                            <>
+                                <Camera size={24} className="text-ink-muted mb-2" />
+                                <span className="font-medium text-ink-muted">Velg bilder</span>
+                                <span className="text-xs text-ink-faint mt-1">Maks 5 bilder (JPG, PNG, HEIC)</span>
+                            </>
+                        )}
+                        <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} disabled={isUploading} />
+                    </label>
+                </div>
+            </Card>
+        </div>
+    );
+
+    if (allImages.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center h-[60vh] animate-fade-in text-center px-6">
+                {uploadModal}
+                <div className="w-16 h-16 bg-surface-100 rounded-2xl flex items-center justify-center text-ink-muted mb-6">
+                    <Camera size={32} />
+                </div>
+                <p className="text-ink-muted font-display text-lg italic mb-2">Ingen bilder enda</p>
+                <p className="text-ink-faint text-sm mb-6">Bilder fra ukesrapporter vil vises her</p>
+                {isCoach && onAddGalleryImage && (
+                    <Button variant="primary" size="md" onClick={() => setShowUploadModal(true)}>
+                        <Plus size={18} /> Last opp startbilde
+                    </Button>
+                )}
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-5 pb-32 animate-slide-up">
+            {uploadModal}
+
+            {lightbox.isOpen && (
+                <ImageModal 
+                    images={lightbox.images} 
+                    initialIndex={lightbox.index} 
+                    onClose={closeLightbox} 
+                />
+            )}
+
+            {/* Fullskjerm sammenligning */}
+            {fullscreenCompare && compareImages.before && compareImages.after && (
+                <div className="fixed inset-0 z-[100] bg-ink flex flex-col animate-fade-in">
+                    {/* Header */}
+                    <div className="safe-area-pt">
+                        <div className="flex justify-between items-center p-4">
+                            <div className="text-white">
+                                <p className="text-sm text-white/60">Sammenligning</p>
+                                <p className="font-medium">{daysDiff} dager</p>
+                            </div>
+                            <button 
+                                onClick={() => setFullscreenCompare(false)} 
+                                className="text-white/60 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors"
+                            >
+                                <X size={28} />
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Bilder side-by-side med zoom */}
+                    <div className="flex-1 flex overflow-hidden">
+                        {/* Før */}
+                        <div className="flex-1 relative overflow-hidden">
+                            <TransformWrapper
+                                initialScale={1}
+                                minScale={0.5}
+                                maxScale={4}
+                                centerOnInit={true}
+                            >
+                                <TransformComponent
+                                    wrapperStyle={{ width: "100%", height: "100%" }}
+                                    contentStyle={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}
+                                >
+                                    <img 
+                                        src={getFullSizeImage(compareImages.before.url)} 
+                                        className="max-w-full max-h-full object-contain"
+                                        alt="Før"
+                                    />
+                                </TransformComponent>
+                            </TransformWrapper>
+                            <div className="absolute top-4 left-4 bg-black/50 text-white px-3 py-1.5 rounded-full text-sm font-medium backdrop-blur-sm pointer-events-none">
+                                FØR
+                            </div>
+                            <div className="absolute bottom-4 left-4 right-4 bg-black/50 backdrop-blur-sm rounded-xl p-3 pointer-events-none">
+                                <p className="text-white font-medium">{formatDateNO(compareImages.before.date)}</p>
+                                {compareImages.before.weight && (
+                                    <p className="text-white/70 text-sm">{formatWeight(compareImages.before.weight)} kg</p>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Skillelinje */}
+                        <div className="w-0.5 bg-white/20" />
+
+                        {/* Etter */}
+                        <div className="flex-1 relative overflow-hidden">
+                            <TransformWrapper
+                                initialScale={1}
+                                minScale={0.5}
+                                maxScale={4}
+                                centerOnInit={true}
+                            >
+                                <TransformComponent
+                                    wrapperStyle={{ width: "100%", height: "100%" }}
+                                    contentStyle={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}
+                                >
+                                    <img 
+                                        src={getFullSizeImage(compareImages.after.url)} 
+                                        className="max-w-full max-h-full object-contain"
+                                        alt="Etter"
+                                    />
+                                </TransformComponent>
+                            </TransformWrapper>
+                            <div className="absolute top-4 right-4 bg-black/50 text-white px-3 py-1.5 rounded-full text-sm font-medium backdrop-blur-sm pointer-events-none">
+                                ETTER
+                            </div>
+                            <div className="absolute bottom-4 left-4 right-4 bg-black/50 backdrop-blur-sm rounded-xl p-3 pointer-events-none">
+                                <p className="text-white font-medium">{formatDateNO(compareImages.after.date)}</p>
+                                {compareImages.after.weight && (
+                                    <p className="text-white/70 text-sm">{formatWeight(compareImages.after.weight)} kg</p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Footer med statistikk */}
+                    <div className="p-4 safe-area-pb">
+                        <div className="flex items-center justify-center gap-4">
+                            {weightDiff && (
+                                <div className={`flex items-center gap-2 py-2 px-4 rounded-full ${parseFloat(weightDiff) < 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-white'}`}>
+                                    {parseFloat(weightDiff) < 0 ? <TrendingDown size={18} /> : parseFloat(weightDiff) > 0 ? <TrendingUp size={18} /> : <Minus size={18} />}
+                                    <span className="font-semibold">
+                                        {parseFloat(weightDiff) > 0 ? '+' : ''}{weightDiff.replace('.', ',')} kg
+                                    </span>
+                                </div>
+                            )}
+                            <div className="bg-white/10 text-white/60 py-2 px-4 rounded-full text-sm">
+                                Knip for å zoome
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Header med visningsvalg */}
+            <div className="flex justify-between items-center">
+                <div>
+                    <h2 className="font-display text-xl">
+                        {viewMode === 'compare' ? 'Sammenlign' : 'Fremgangsgalleri'}
+                    </h2>
+                    <p className="text-sm text-ink-muted">
+                        {viewMode === 'compare' ? 'Velg bilder å sammenligne' : `${allImages.length} bilder`}
+                    </p>
+                </div>
+                <div className="flex items-center gap-2">
+                    {isCoach && onAddGalleryImage && viewMode !== 'compare' && (
+                        <Button variant="primary" size="sm" onClick={() => setShowUploadModal(true)}>
+                            <Plus size={16} />
+                        </Button>
+                    )}
+                    {viewMode !== 'compare' ? (
+                        <div className="flex gap-1 bg-surface-100 p-1 rounded-lg">
+                            <button
+                                onClick={() => setViewMode('grid')}
+                                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-ink' : 'text-ink-muted'}`}
+                            >
+                                Rutenett
+                            </button>
+                            <button
+                                onClick={() => setViewMode('timeline')}
+                                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === 'timeline' ? 'bg-white shadow-sm text-ink' : 'text-ink-muted'}`}
+                            >
+                                Tidslinje
+                            </button>
+                        </div>
+                    ) : (
+                        <Button variant="secondary" size="sm" onClick={clearCompare}>
+                            <X size={16} /> Lukk
+                        </Button>
+                    )}
+                </div>
+            </div>
+
+            {/* Sammenlign-modus */}
+            {viewMode === 'compare' && (
+                <div className="space-y-4">
+                    {/* Sammenligning side-by-side */}
+                    <div className="grid grid-cols-2 gap-3">
+                        {/* Før-bilde */}
+                        <div className="space-y-2">
+                            <p className="text-xs font-medium text-ink-muted uppercase tracking-wide text-center">Før</p>
+                            <div 
+                                className={`relative aspect-[3/4] rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${selectingFor === 'before' ? 'border-ink ring-2 ring-ink/20' : 'border-surface-200'}`}
+                                onClick={() => setSelectingFor(selectingFor === 'before' ? null : 'before')}
+                            >
+                                {compareImages.before ? (
+                                    <>
+                                        <img 
+                                            src={getFullSizeImage(compareImages.before.url)} 
+                                            className="w-full h-full object-cover"
+                                            alt="Før"
+                                        />
+                                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-ink/80 to-transparent p-3">
+                                            <p className="text-white text-sm font-medium">{formatDateNO(compareImages.before.date)}</p>
+                                            {compareImages.before.weight && (
+                                                <p className="text-white/70 text-xs">{formatWeight(compareImages.before.weight)} kg</p>
+                                            )}
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-surface-100">
+                                        <Plus size={24} className="text-ink-muted mb-2" />
+                                        <p className="text-sm text-ink-muted">Velg bilde</p>
+                                    </div>
+                                )}
+                                {selectingFor === 'before' && (
+                                    <div className="absolute inset-0 bg-ink/10 flex items-center justify-center">
+                                        <span className="bg-ink text-white px-3 py-1.5 rounded-full text-sm font-medium">
+                                            Velger...
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Etter-bilde */}
+                        <div className="space-y-2">
+                            <p className="text-xs font-medium text-ink-muted uppercase tracking-wide text-center">Etter</p>
+                            <div 
+                                className={`relative aspect-[3/4] rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${selectingFor === 'after' ? 'border-ink ring-2 ring-ink/20' : 'border-surface-200'}`}
+                                onClick={() => setSelectingFor(selectingFor === 'after' ? null : 'after')}
+                            >
+                                {compareImages.after ? (
+                                    <>
+                                        <img 
+                                            src={getFullSizeImage(compareImages.after.url)} 
+                                            className="w-full h-full object-cover"
+                                            alt="Etter"
+                                        />
+                                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-ink/80 to-transparent p-3">
+                                            <p className="text-white text-sm font-medium">{formatDateNO(compareImages.after.date)}</p>
+                                            {compareImages.after.weight && (
+                                                <p className="text-white/70 text-xs">{formatWeight(compareImages.after.weight)} kg</p>
+                                            )}
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-surface-100">
+                                        <Plus size={24} className="text-ink-muted mb-2" />
+                                        <p className="text-sm text-ink-muted">Velg bilde</p>
+                                    </div>
+                                )}
+                                {selectingFor === 'after' && (
+                                    <div className="absolute inset-0 bg-ink/10 flex items-center justify-center">
+                                        <span className="bg-ink text-white px-3 py-1.5 rounded-full text-sm font-medium">
+                                            Velger...
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Statistikk */}
+                    {compareImages.before && compareImages.after && (
+                        <Card className="p-4">
+                            <div className="grid grid-cols-2 gap-4 text-center">
+                                <div>
+                                    <p className="text-xs text-ink-muted uppercase tracking-wide mb-1">Tidsperiode</p>
+                                    <p className="text-lg font-semibold">{daysDiff} dager</p>
+                                </div>
+                                {weightDiff && (
+                                    <div>
+                                        <p className="text-xs text-ink-muted uppercase tracking-wide mb-1">Vektendring</p>
+                                        <p className={`text-lg font-semibold flex items-center justify-center gap-1 ${parseFloat(weightDiff) < 0 ? 'text-emerald-600' : parseFloat(weightDiff) > 0 ? 'text-ink' : 'text-ink-muted'}`}>
+                                            {parseFloat(weightDiff) > 0 ? '+' : ''}{weightDiff.replace('.', ',')} kg
+                                            {parseFloat(weightDiff) < 0 ? <TrendingDown size={18} /> : parseFloat(weightDiff) > 0 ? <TrendingUp size={18} /> : null}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        </Card>
+                    )}
+
+                    {/* Fullskjerm-knapp */}
+                    {compareImages.before && compareImages.after && (
+                        <Button 
+                            variant="primary" 
+                            size="md" 
+                            className="w-full"
+                            onClick={() => setFullscreenCompare(true)}
+                        >
+                            <Eye size={18} /> Se i fullskjerm
+                        </Button>
+                    )}
+
+                    {/* Instruksjon eller bildevelger */}
+                    {selectingFor && (
+                        <Card className="p-3 bg-ink text-white">
+                            <p className="text-sm text-center">
+                                👆 Trykk på et bilde nedenfor for å velge som "{selectingFor === 'before' ? 'før' : 'etter'}"-bilde
+                            </p>
+                        </Card>
+                    )}
+
+                    {/* Bilderutenett for valg */}
+                    <div>
+                        <p className="text-xs text-ink-muted uppercase tracking-wide mb-3">Velg bilder</p>
+                        <div className="grid grid-cols-4 gap-1.5">
+                            {allImages.map((img, idx) => {
+                                const isSelected = compareImages.before?.url === img.url || compareImages.after?.url === img.url;
+                                const isBefore = compareImages.before?.url === img.url;
+                                return (
+                                    <div 
+                                        key={`${img.checkinId}-${idx}`}
+                                        className={`relative aspect-square cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${isSelected ? 'border-ink' : 'border-transparent'} ${selectingFor ? 'hover:scale-105' : ''}`}
+                                        onClick={() => handleImageClick(img, idx)}
+                                    >
+                                        <img 
+                                            src={getThumbnail(img.url)} 
+                                            loading="lazy"
+                                            className="w-full h-full object-cover"
+                                            alt={`Fremgang ${formatDateNO(img.date)}`}
+                                        />
+                                        {isSelected && (
+                                            <div className="absolute top-1 right-1 bg-ink text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
+                                                {isBefore ? 'FØR' : 'ETTER'}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {viewMode === 'grid' && (
+                /* Grid-visning - kompakt oversikt */
+                <div className="grid grid-cols-3 gap-1.5">
+                    {allImages.map((img, idx) => (
+                        <div 
+                            key={img.isGalleryImage ? `gallery-${img.galleryImageId}` : `${img.checkinId}-${idx}`}
+                            className="relative aspect-square cursor-pointer group"
+                            onClick={() => handleImageClick(img, idx)}
+                        >
+                            <img 
+                                src={getThumbnail(img.url)} 
+                                loading="lazy"
+                                className="w-full h-full object-cover rounded-lg"
+                                alt={img.label || `Fremgang ${formatDateNO(img.date)}`}
+                            />
+                            {/* Label badge for gallery-bilder */}
+                            {img.isGalleryImage && img.label && (
+                                <div className="absolute top-1.5 left-1.5 bg-ink/80 text-white text-[10px] font-medium px-2 py-0.5 rounded-full backdrop-blur-sm">
+                                    {img.label}
+                                </div>
+                            )}
+                            {/* Slett-knapp for coach på gallery-bilder - alltid synlig */}
+                            {isCoach && img.isGalleryImage && onDeleteGalleryImage && (
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); handleDeleteGalleryImage(img.galleryImageId); }}
+                                    className="absolute top-1.5 right-1.5 bg-red-500 text-white p-1.5 rounded-full shadow-lg active:scale-95 transition-transform z-10"
+                                >
+                                    <X size={14} />
+                                </button>
+                            )}
+                            <div className="absolute inset-0 bg-gradient-to-t from-ink/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
+                                <div className="absolute bottom-2 left-2 right-2">
+                                    <p className="text-white text-xs font-medium">{formatDateNO(img.date)}</p>
+                                    {img.weight && (
+                                        <p className="text-white/70 text-[10px]">{formatWeight(img.weight)} kg</p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {viewMode === 'timeline' && (
+                /* Timeline-visning - gruppert etter måned */
+                <div className="space-y-6">
+                    {imagesByMonth.map(([monthKey, { label, images }]) => (
+                        <div key={monthKey}>
+                            <div className="flex items-center gap-3 mb-3">
+                                <h3 className="text-sm font-medium text-ink-muted capitalize">{label}</h3>
+                                <div className="flex-1 h-px bg-surface-200" />
+                                <span className="text-xs text-ink-faint">{images.length} bilder</span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-1.5">
+                                {images.map((img, idx) => {
+                                    const globalIndex = allImages.findIndex(i => i.url === img.url && i.timestamp === img.timestamp);
+                                    return (
+                                        <div 
+                                            key={img.isGalleryImage ? `gallery-${img.galleryImageId}` : `${img.checkinId}-${idx}`}
+                                            className="relative aspect-square cursor-pointer group"
+                                            onClick={() => handleImageClick(img, globalIndex)}
+                                        >
+                                            <img 
+                                                src={getThumbnail(img.url)} 
+                                                loading="lazy"
+                                                className="w-full h-full object-cover rounded-lg"
+                                                alt={img.label || `Fremgang ${formatDateNO(img.date)}`}
+                                            />
+                                            {/* Label badge for gallery-bilder */}
+                                            {img.isGalleryImage && img.label && (
+                                                <div className="absolute top-1.5 left-1.5 bg-ink/80 text-white text-[10px] font-medium px-2 py-0.5 rounded-full backdrop-blur-sm">
+                                                    {img.label}
+                                                </div>
+                                            )}
+                                            {/* Slett-knapp for coach på gallery-bilder - alltid synlig */}
+                                            {isCoach && img.isGalleryImage && onDeleteGalleryImage && (
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleDeleteGalleryImage(img.galleryImageId); }}
+                                                    className="absolute top-1.5 right-1.5 bg-red-500 text-white p-1.5 rounded-full shadow-lg active:scale-95 transition-transform z-10"
+                                                >
+                                                    <X size={14} />
+                                                </button>
+                                            )}
+                                            <div className="absolute inset-0 bg-gradient-to-t from-ink/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
+                                                <div className="absolute bottom-2 left-2 right-2">
+                                                    <p className="text-white text-xs font-medium">{formatDateNO(img.date)}</p>
+                                                    {img.weight && (
+                                                        <p className="text-white/70 text-[10px]">{formatWeight(img.weight)} kg</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Sammenlign-knapp */}
+            {viewMode !== 'compare' && allImages.length >= 2 && (
+                <Button 
+                    variant="secondary" 
+                    size="lg" 
+                    className="w-full"
+                    onClick={startCompare}
+                >
+                    <ArrowRight size={18} className="rotate-90" />
+                    Sammenlign før/etter
+                </Button>
+            )}
+        </div>
+    );
+});
+
+// Motiverende sitater - statisk, flyttes utenfor komponenten
+const QUOTES = [
+    { text: "Små steg hver dag fører til store resultater.", author: "Ukjent" },
+    { text: "Du trenger ikke være perfekt, bare konsistent.", author: "Ukjent" },
+    { text: "Kroppen oppnår det sinnet tror på.", author: "Ukjent" },
+    { text: "Fremgang, ikke perfeksjon.", author: "Ukjent" },
+    { text: "Den eneste dårlige treningen er den som ikke ble gjort.", author: "Ukjent" },
+    { text: "Disiplin er broen mellom mål og resultater.", author: "Jim Rohn" },
+];
+
+// --- Period Management Modal ---
+const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCreatePeriod, onEndPeriod, onUpdatePeriod }) => {
+    useEscapeKey(onClose);
+    const [view, setView] = useState('list'); // 'list' eller 'create'
+    const [formData, setFormData] = useState({ name: '', startingWeight: '', goalWeight: '' });
+    const periods = userData.periods || [];
+    const activePeriod = periods.find(p => p.isActive);
+
+    const handleNameChange = useCallback((e) => setFormData(prev => ({ ...prev, name: e.target.value })), []);
+    const handleStartingWeightChange = useCallback((e) => setFormData(prev => ({ ...prev, startingWeight: e.target.value })), []);
+    const handleGoalWeightChange = useCallback((e) => setFormData(prev => ({ ...prev, goalWeight: e.target.value })), []);
+
+    const handleCreate = useCallback(async (e) => {
+        e.preventDefault();
+        if (!formData.startingWeight) {
+            alert('Startvekt er påkrevd');
+            return;
+        }
+        await onCreatePeriod(formData.name || `Runde ${periods.length + 1}`, formData.startingWeight, formData.goalWeight || null);
+        onClose();
+    }, [formData, periods.length, onCreatePeriod, onClose]);
+
+    const handleEnd = useCallback(async (periodId) => {
+        if (confirm('Avslutt denne runden? Du kan starte en ny runde etterpå.')) {
+            await onEndPeriod(periodId);
+            onClose();
+        }
+    }, [onEndPeriod, onClose]);
+
+    return (
+        <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+            <Card className="w-full max-w-md p-6 max-h-[80vh] overflow-y-auto animate-scale-in">
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-display">Coaching-runder</h2>
+                    <button onClick={onClose} className="text-ink-muted hover:text-ink p-2">
+                        <X size={20} />
+                    </button>
+                </div>
+
+                {view === 'list' ? (
+                    <div className="space-y-4">
+                        {/* Aktiv periode */}
+                        {activePeriod && (
+                            <div className="mb-6">
+                                <p className="text-xs text-ink-muted uppercase tracking-wide mb-3">Aktiv runde</p>
+                                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                                    <div className="flex justify-between items-start mb-3">
+                                        <div>
+                                            <p className="font-semibold text-ink">{activePeriod.name}</p>
+                                            <p className="text-sm text-ink-muted">Startet {formatDateNO(activePeriod.startDate)}</p>
+                                        </div>
+                                        <Badge variant="success">Aktiv</Badge>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3 text-sm">
+                                        <div>
+                                            <p className="text-ink-faint">Startvekt</p>
+                                            <p className="font-semibold">{activePeriod.startingWeight ? formatWeight(activePeriod.startingWeight) + ' kg' : 'Ikke satt'}</p>
+                                        </div>
+                                        {activePeriod.goalWeight && (
+                                            <div>
+                                                <p className="text-ink-faint">Målvekt</p>
+                                                <p className="font-semibold">{formatWeight(activePeriod.goalWeight)} kg</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        className="w-full mt-4"
+                                        onClick={() => handleEnd(activePeriod.id)}
+                                        disabled={isLoading}
+                                    >
+                                        {isLoading ? <><Loader2 size={14} className="animate-spin" /> Avslutter...</> : 'Avslutt runde'}
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Tidligere perioder */}
+                        {periods.filter(p => !p.isActive).length > 0 && (
+                            <div>
+                                <p className="text-xs text-ink-muted uppercase tracking-wide mb-3">Tidligere runder</p>
+                                <div className="space-y-2">
+                                    {periods.filter(p => !p.isActive).map(period => (
+                                        <div key={period.id} className="p-4 bg-surface-50 rounded-xl">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <div>
+                                                    <p className="font-medium">{period.name}</p>
+                                                    <p className="text-xs text-ink-muted">
+                                                        {formatDateNO(period.startDate)} - {period.endDate ? formatDateNO(period.endDate) : 'Pågår'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-2 text-xs">
+                                                {period.startingWeight && (
+                                                    <Badge variant="muted">
+                                                        Start: {formatWeight(period.startingWeight)} kg
+                                                    </Badge>
+                                                )}
+                                                {period.goalWeight && (
+                                                    <Badge variant="muted">
+                                                        Mål: {formatWeight(period.goalWeight)} kg
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Start ny runde knapp */}
+                        <Button 
+                            variant="primary" 
+                            size="lg" 
+                            className="w-full"
+                            onClick={() => setView('create')}
+                        >
+                            <Plus size={18} /> Start ny runde
+                        </Button>
+                    </div>
+                ) : (
+                    <form onSubmit={handleCreate} className="space-y-4">
+                        <div>
+                            <InputLabel>Navn på runde</InputLabel>
+                            <input 
+                                type="text"
+                                value={formData.name}
+                                onChange={handleNameChange}
+                                placeholder={`Runde ${periods.length + 1}`}
+                                className="w-full px-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink"
+                            />
+                        </div>
+                        
+                        <div>
+                            <InputLabel>Startvekt (kg) *</InputLabel>
+                            <div className="relative">
+                                <Scale className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" size={18} />
+                                <input 
+                                    type="number"
+                                    inputMode="decimal"
+                                    step="0.1"
+                                    required
+                                    value={formData.startingWeight}
+                                    onChange={handleStartingWeightChange}
+                                    placeholder="0.0"
+                                    className="w-full pl-12 pr-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink font-medium text-lg"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <InputLabel>Målvekt (kg, valgfritt)</InputLabel>
+                            <input 
+                                type="number"
+                                inputMode="decimal"
+                                step="0.1"
+                                value={formData.goalWeight}
+                                onChange={handleGoalWeightChange}
+                                placeholder="0.0"
+                                className="w-full px-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink font-medium text-lg"
+                            />
+                        </div>
+
+                        <div className="flex gap-2 pt-2">
+                            <Button type="button" variant="secondary" size="lg" className="flex-1" onClick={() => setView('list')}>
+                                Avbryt
+                            </Button>
+                            <Button type="submit" variant="primary" size="lg" className="flex-1" disabled={isLoading}>
+                                {isLoading ? <><Loader2 size={18} className="animate-spin" /> Oppretter...</> : <><Check size={18} /> Opprett</>}
+                            </Button>
+                        </div>
+                    </form>
+                )}
+            </Card>
+        </div>
+    );
+});
+
+// --- Plan Settings Modal (erstatter prompt()-dialoger) ---
+const PlanSettingsModal = React.memo(({ userData, onClose, onUpdateData, onRefreshData, onOpenPeriodModal }) => {
+    useEscapeKey(onClose);
+    const toast = useToast();
+    const [startDate, setStartDate] = useState(
+        userData.startDate ? new Date(userData.startDate).toISOString().split('T')[0] : ''
+    );
+    const [totalWeeks, setTotalWeeks] = useState(userData.totalWeeks || 12);
+    const [stepGoal, setStepGoal] = useState(userData.stepGoal || 10000);
+
+    const origStartDate = userData.startDate ? new Date(userData.startDate).toISOString().split('T')[0] : '';
+    const origTotalWeeks = userData.totalWeeks || 12;
+    const origStepGoal = userData.stepGoal || 10000;
+
+    const hasChanges = startDate !== origStartDate || totalWeeks !== origTotalWeeks || stepGoal !== origStepGoal;
+
+    const handleSave = useCallback(async () => {
+        const updates = {};
+        if (startDate !== origStartDate) {
+            updates.startDate = startDate ? new Date(startDate).toISOString() : null;
+        }
+        if (totalWeeks !== origTotalWeeks) {
+            const parsed = parseInt(totalWeeks, 10);
+            if (!isNaN(parsed) && parsed >= 1) updates.totalWeeks = parsed;
+        }
+        if (stepGoal !== origStepGoal) {
+            const parsed = parseInt(stepGoal, 10);
+            if (!isNaN(parsed) && parsed >= 1000) updates.stepGoal = parsed;
+        }
+        onClose();
+        if (Object.keys(updates).length > 0) {
+            await onUpdateData(updates);
+            if (updates.stepGoal && onRefreshData) await onRefreshData();
+        }
+    }, [startDate, totalWeeks, stepGoal, origStartDate, origTotalWeeks, origStepGoal, onUpdateData, onRefreshData, onClose]);
+
+    const handlePauseResume = useCallback(async () => {
+        onClose();
+        if (userData.isPaused) {
+            await onUpdateData({ action: 'resume' });
+        } else {
+            await onUpdateData({ action: 'pause' });
+        }
+    }, [userData.isPaused, onUpdateData, onClose]);
+
+    const handleStartDateChange = useCallback((e) => setStartDate(e.target.value), []);
+    const handleTotalWeeksChange = useCallback((e) => {
+        const val = e.target.value;
+        setTotalWeeks(val === '' ? '' : (parseInt(val, 10) || ''));
+    }, []);
+    const handleStepGoalChange = useCallback((e) => {
+        const val = e.target.value;
+        setStepGoal(val === '' ? '' : (parseInt(val, 10) || ''));
+    }, []);
+
+    return (
+        <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+            <Card className="w-full max-w-md p-6 max-h-[80vh] overflow-y-auto overflow-x-hidden animate-scale-in">
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-display">Plan-innstillinger</h2>
+                    <button onClick={onClose} className="text-ink-muted hover:text-ink p-2">
+                        <X size={20} />
+                    </button>
+                </div>
+
+                <div className="space-y-5">
+                    <div>
+                        <InputLabel>Startdato</InputLabel>
+                        <div className="relative">
+                            <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" size={18} />
+                            <input
+                                type="date"
+                                value={startDate}
+                                onChange={handleStartDateChange}
+                                className="w-full min-w-0 pl-12 pr-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink font-medium appearance-none"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <InputLabel>Antall uker</InputLabel>
+                        <input
+                            type="number"
+                            inputMode="numeric"
+                            min="1"
+                            max="52"
+                            value={totalWeeks}
+                            onChange={handleTotalWeeksChange}
+                            className="w-full px-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink font-medium"
+                        />
+                    </div>
+
+                    <div>
+                        <InputLabel>Ukentlig skrittmål</InputLabel>
+                        <div className="relative">
+                            <Footprints className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" size={18} />
+                            <input
+                                type="number"
+                                inputMode="numeric"
+                                min="1000"
+                                max="100000"
+                                step="1000"
+                                value={stepGoal}
+                                onChange={handleStepGoalChange}
+                                className="w-full pl-12 pr-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink font-medium"
+                            />
+                        </div>
+                    </div>
+
+                    {userData.startDate && (
+                        <Button
+                            variant="secondary"
+                            size="lg"
+                            className="w-full"
+                            onClick={handlePauseResume}
+                        >
+                            {userData.isPaused
+                                ? <><Play size={18} /> Gjenoppta plan</>
+                                : <><Pause size={18} /> Pause plan</>
+                            }
+                        </Button>
+                    )}
+
+                    <Button
+                        variant="secondary"
+                        size="lg"
+                        className="w-full"
+                        onClick={onOpenPeriodModal}
+                    >
+                        <Activity size={18} /> Administrer runder <ArrowRight size={16} />
+                    </Button>
+
+                    <Button
+                        variant="primary"
+                        size="lg"
+                        className="w-full"
+                        onClick={handleSave}
+                        disabled={!hasChanges}
+                    >
+                        <Check size={18} /> Lagre endringer
+                    </Button>
+                </div>
+            </Card>
+        </div>
+    );
+});
+
+const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeightHistory, onRefreshData }) => {
+    const toast = useToast();
+    const checkins = userData.checkins || [];
+    const periods = userData.periods || [];
+    const activePeriod = periods.find(p => p.isActive);
+    const [showPeriodModal, setShowPeriodModal] = useState(false);
+    const [showPlanSettings, setShowPlanSettings] = useState(false);
+    const [periodLoading, setPeriodLoading] = useState(false);
+    
+    // Memoize sorterte checkins og lastCheckin
+    const { sortedCheckins, lastCheckin } = useMemo(() => {
+        const sorted = [...checkins].sort((a, b) => b.timestamp - a.timestamp);
+        return { sortedCheckins: sorted, lastCheckin: sorted.length > 0 ? sorted[0] : null };
+    }, [checkins]);
+
+    // Memoize week calculation
+    const { currentWeek, progress } = useMemo(() => {
+        if (!userData.startDate) return { currentWeek: 0, progress: 0 };
+        const start = new Date(userData.startDate);
+        const end = userData.isPaused && userData.pausedAt ? new Date(userData.pausedAt) : new Date();
+        const diffTime = Math.max(0, end - start);
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        const week = Math.floor(diffDays / 7);
+        const prog = Math.min((week / (userData.totalWeeks || 12)) * 100, 100);
+        return { currentWeek: week, progress: prog };
+    }, [userData.startDate, userData.isPaused, userData.pausedAt, userData.totalWeeks]);
+
+    // Beregn statistikk fra alle innsjekker
+    const stats = useMemo(() => {
+        if (checkins.length === 0) return null;
+        
+        const totalStrength = checkins.reduce((sum, c) => sum + (parseInt(c.strengthSessions) || 0), 0);
+        const totalCardio = checkins.reduce((sum, c) => sum + (parseInt(c.cardioSessions) || 0), 0);
+        const stepsHit = checkins.filter(c => c.stepsReached).length;
+        const avgAccuracy = (checkins.reduce((sum, c) => sum + (parseInt(c.accuracy) || 0), 0) / checkins.length).toFixed(1);
+        
+        // Vektendring - bruk aktivt periodestartsvekt hvis tilgjengelig
+        let weightChange = null;
+        let periodCheckins = checkins;
+        
+        // Filtrer checkins til kun de fra aktiv periode
+        if (activePeriod && activePeriod.id) {
+            periodCheckins = checkins.filter(c => c.periodId === activePeriod.id);
+        }
+        
+        const validWeights = periodCheckins.filter(c => c.weight && parseFloat(c.weight) > 0).sort((a, b) => a.timestamp - b.timestamp);
+        
+        if (validWeights.length >= 1 && activePeriod?.startingWeight) {
+            // Beregn fra rundens startvekt til siste vekt
+            const startWeight = parseFloat(activePeriod.startingWeight);
+            const lastWeight = parseFloat(validWeights[validWeights.length - 1].weight);
+            weightChange = (lastWeight - startWeight).toFixed(1);
+        } else if (validWeights.length >= 2) {
+            // Fallback: første til siste checkin
+            const first = parseFloat(validWeights[0].weight);
+            const last = parseFloat(validWeights[validWeights.length - 1].weight);
+            weightChange = (last - first).toFixed(1);
+        }
+        
+        return { totalStrength, totalCardio, stepsHit, avgAccuracy, weightChange, totalCheckins: checkins.length, periodCheckins: periodCheckins.length };
+    }, [checkins, activePeriod]);
+
+    // Memoize dagens quote
+    const todayQuote = useMemo(() => QUOTES[new Date().getDay() % QUOTES.length], []);
+
+    const handleOpenPlanSettings = useCallback(() => setShowPlanSettings(true), []);
+    const handleClosePlanSettings = useCallback(() => setShowPlanSettings(false), []);
+    const handleClosePeriodModal = useCallback(() => setShowPeriodModal(false), []);
+    const handleOpenPeriodFromSettings = useCallback(() => {
+        setShowPlanSettings(false);
+        setShowPeriodModal(true);
+    }, []);
+
+    const handleCreatePeriod = useCallback(async (name, startingWeight, goalWeight) => {
+        setPeriodLoading(true);
+        try {
+            await onUpdateData({ action: 'create_period', name, startingWeight, goalWeight });
+            setShowPeriodModal(false);
+            if (onRefreshData) await onRefreshData();
+            toast('Runde opprettet');
+        } finally {
+            setPeriodLoading(false);
+        }
+    }, [onUpdateData, onRefreshData, toast]);
+
+    const handleEndPeriod = useCallback(async (periodId) => {
+        setPeriodLoading(true);
+        try {
+            await onUpdateData({ action: 'end_period', periodId });
+            setShowPeriodModal(false);
+            if (onRefreshData) await onRefreshData();
+            toast('Runde avsluttet');
+        } finally {
+            setPeriodLoading(false);
+        }
+    }, [onUpdateData, onRefreshData, toast]);
+
+    const handleUpdatePeriodCb = useCallback(async (periodId, updates) => {
+        setPeriodLoading(true);
+        try {
+            await onUpdateData({ action: 'update_period', periodId, ...updates });
+            setShowPeriodModal(false);
+            if (onRefreshData) await onRefreshData();
+        } finally {
+            setPeriodLoading(false);
+        }
+    }, [onUpdateData, onRefreshData]);
+
+    return (
+        <div className="space-y-5 pb-32 animate-slide-up">
+            {/* Period Management Modal */}
+            {showPeriodModal && (
+                <PeriodManagementModal
+                    userData={userData}
+                    onClose={handleClosePeriodModal}
+                    isLoading={periodLoading}
+                    onCreatePeriod={handleCreatePeriod}
+                    onEndPeriod={handleEndPeriod}
+                    onUpdatePeriod={handleUpdatePeriodCb}
+                />
+            )}
+
+            {/* Plan Settings Modal */}
+            {showPlanSettings && (
+                <PlanSettingsModal
+                    userData={userData}
+                    onClose={handleClosePlanSettings}
+                    onUpdateData={onUpdateData}
+                    onRefreshData={onRefreshData}
+                    onOpenPeriodModal={handleOpenPeriodFromSettings}
+                />
+            )}
+
+            {/* Hero Card */}
+            <div className="p-6 bg-ink text-white rounded-2xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-3xl transform translate-x-10 -translate-y-10" />
+                <div className="relative z-10">
+                    <div className="flex justify-between items-start mb-4">
+                        <div>
+                            <p className="text-white/60 text-sm">
+                                {activePeriod ? activePeriod.name : (userData.isPaused ? 'Plan på pause' : userData.startDate ? 'Din fremgang' : 'Velkommen')}
+                            </p>
+                            <h2 className="text-3xl font-display mt-1">
+                                {userData.isPaused ? 'Pauset' : userData.startDate ? `Uke ${currentWeek}` : 'Kom i gang'}
+                            </h2>
+                            {userData.startDate && !userData.isPaused && (() => {
+                                const endDate = new Date(new Date(userData.startDate).getTime() + (userData.totalWeeks || 12) * 7 * 24 * 60 * 60 * 1000);
+                                return (
+                                    <p className="text-white/40 text-sm mt-1">
+                                        {formatDateNO(userData.startDate)} → {formatDateNO(endDate.toISOString())}
+                                    </p>
+                                );
+                            })()}
+                            {activePeriod && activePeriod.startingWeight && (
+                                <p className="text-white/40 text-sm mt-1">
+                                    Startvekt: {formatWeight(activePeriod.startingWeight)} kg
+                                    {activePeriod.goalWeight && ` → Mål: ${formatWeight(activePeriod.goalWeight)} kg`}
+                                </p>
+                            )}
+                        </div>
+                        {isCoach && (
+                            <button
+                                onClick={handleOpenPlanSettings}
+                                className="p-2 rounded-lg hover:bg-white/10 text-white/60 transition-colors"
+                            >
+                                <Edit2 size={18} />
+                            </button>
+                        )}
+                    </div>
+
+                    {userData.startDate && !userData.isPaused && (
+                        <div className="space-y-2">
+                            <div className="flex justify-between text-sm">
+                                <span className="text-white/60">Fremdrift</span>
+                                <span className="font-medium">{Math.round(progress)}%</span>
+                            </div>
+                            <div className="h-2 bg-white/20 rounded-full overflow-hidden">
+                                <div 
+                                    className="h-full bg-white rounded-full transition-all duration-500" 
+                                    style={{ width: `${progress}%` }}
+                                />
+                            </div>
+                            <p className="text-white/40 text-xs text-right">{userData.totalWeeks || 12} uker totalt</p>
+                        </div>
+                    )}
+
+                    {!userData.startDate && (
+                        <p className="text-white/60 text-sm">
+                            {isCoach ? 'Trykk på blyanten for å sette startdato' : 'Venter på at coach setter opp planen'}
+                        </p>
+                    )}
+
+                    {userData.isPaused && (
+                        <p className="text-white/60 text-sm">
+                            {isCoach ? 'Trykk på blyanten for å gjenoppta' : 'Planen er satt på pause'}
+                        </p>
+                    )}
+                </div>
+            </div>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-2 gap-4">
+                <Card 
+                    className="p-5 group"
+                    interactive
+                    onClick={onOpenWeightHistory}
+                >
+                    <div className="flex justify-between items-start mb-3">
+                        <div className="w-10 h-10 bg-surface-100 rounded-xl flex items-center justify-center text-ink-muted group-hover:bg-surface-200 transition-colors">
+                            <Scale size={20} />
+                        </div>
+                        <ChevronRight size={16} className="text-ink-faint" />
+                    </div>
+                    <p className="text-xs text-ink-muted uppercase tracking-wide">Siste vekt</p>
+                    <p className="text-2xl font-semibold mt-1 tabular-nums">
+                        {lastCheckin ? formatWeight(lastCheckin.weight) : '-'}
+                        <span className="text-sm font-normal text-ink-muted ml-1">kg</span>
+                    </p>
+                </Card>
+
+                <Card className="p-5 relative">
+                    <div className="flex justify-between items-start mb-3">
+                        <div className="w-10 h-10 bg-surface-100 rounded-xl flex items-center justify-center text-ink-muted">
+                            <Footprints size={20} />
+                        </div>
+                    </div>
+                    <p className="text-xs text-ink-muted uppercase tracking-wide">Ukentlig skrittmål</p>
+                    <p className="text-2xl font-semibold mt-1">{(userData.stepGoal || 10000).toLocaleString()}</p>
+                </Card>
+            </div>
+
+            {/* Last Report */}
+            {lastCheckin && (
+                <div>
+                    <p className="text-xs text-ink-muted uppercase tracking-wide mb-3 px-1">Siste rapport</p>
+                    <Card className="p-4">
+                        <div className="grid grid-cols-5 gap-2 text-center">
+                            <div>
+                                <div className={`rounded-lg py-2 ${parseInt(lastCheckin.accuracy) >= 8 ? 'bg-emerald-50' : parseInt(lastCheckin.accuracy) >= 5 ? 'bg-amber-50' : 'bg-red-50'}`}>
+                                    <p className={`text-lg font-semibold tabular-nums ${parseInt(lastCheckin.accuracy) >= 8 ? 'text-emerald-700' : parseInt(lastCheckin.accuracy) >= 5 ? 'text-amber-700' : 'text-red-700'}`}>{lastCheckin.accuracy}</p>
+                                </div>
+                                <p className="text-[10px] text-ink-muted mt-1.5">Nøyakt.</p>
+                            </div>
+                            <div>
+                                <div className={`rounded-lg py-2 ${parseInt(lastCheckin.energy) >= 8 ? 'bg-emerald-50' : parseInt(lastCheckin.energy) >= 5 ? 'bg-amber-50' : 'bg-red-50'}`}>
+                                    <p className={`text-lg font-semibold tabular-nums ${parseInt(lastCheckin.energy) >= 8 ? 'text-emerald-700' : parseInt(lastCheckin.energy) >= 5 ? 'text-amber-700' : 'text-red-700'}`}>{lastCheckin.energy}</p>
+                                </div>
+                                <p className="text-[10px] text-ink-muted mt-1.5">Energi</p>
+                            </div>
+                            <div>
+                                <div className={`rounded-lg py-2 ${parseInt(lastCheckin.sleep) >= 8 ? 'bg-emerald-50' : parseInt(lastCheckin.sleep) >= 5 ? 'bg-amber-50' : 'bg-red-50'}`}>
+                                    <p className={`text-lg font-semibold tabular-nums ${parseInt(lastCheckin.sleep) >= 8 ? 'text-emerald-700' : parseInt(lastCheckin.sleep) >= 5 ? 'text-amber-700' : 'text-red-700'}`}>{lastCheckin.sleep}</p>
+                                </div>
+                                <p className="text-[10px] text-ink-muted mt-1.5">Søvn</p>
+                            </div>
+                            <div>
+                                <div className="rounded-lg py-2 bg-surface-50">
+                                    <p className="text-lg font-semibold tabular-nums text-ink">{lastCheckin.strengthSessions || 0}</p>
+                                </div>
+                                <p className="text-[10px] text-ink-muted mt-1.5">Styrke</p>
+                            </div>
+                            <div>
+                                <div className="rounded-lg py-2 bg-surface-50">
+                                    <p className="text-lg font-semibold tabular-nums text-ink">{lastCheckin.cardioSessions || 0}</p>
+                                </div>
+                                <p className="text-[10px] text-ink-muted mt-1.5">Cardio</p>
+                            </div>
+                        </div>
+                        <div className="mt-3 flex justify-center gap-2">
+                            <Badge variant={lastCheckin.stepsReached ? 'success' : 'muted'}>
+                                <Footprints size={12} />
+                                {lastCheckin.stepsReached ? 'Skrittmål' : 'Under mål'}
+                            </Badge>
+                            <Badge variant={lastCheckin.takenSupplements ? 'success' : 'muted'}>
+                                {lastCheckin.takenSupplements ? <Check size={12} /> : <X size={12} />}
+                                Tilskudd
+                            </Badge>
+                        </div>
+                    </Card>
+                </div>
+            )}
+
+            {/* Totaloversikt - kun hvis det finnes data */}
+            {stats && (
+                <div>
+                    <p className="text-xs text-ink-muted uppercase tracking-wide mb-3 px-1">Din reise så langt</p>
+                    <Card className="p-5">
+                        <div className="grid grid-cols-4 gap-3 text-center mb-5">
+                            <div>
+                                <div className="text-2xl font-semibold text-ink">{stats.totalStrength}</div>
+                                <div className="text-[10px] text-ink-muted uppercase tracking-wide mt-1">Styrkeøkter</div>
+                            </div>
+                            <div>
+                                <div className="text-2xl font-semibold text-ink">{stats.totalCardio}</div>
+                                <div className="text-[10px] text-ink-muted uppercase tracking-wide mt-1">Cardio</div>
+                            </div>
+                            <div>
+                                <div className="text-2xl font-semibold text-ink tabular-nums">{stats.stepsHit}/{stats.totalCheckins}</div>
+                                <div className="text-[10px] text-ink-muted uppercase tracking-wide mt-1">Skrittmål</div>
+                            </div>
+                            <div>
+                                <div className="text-2xl font-semibold text-ink tabular-nums">{stats.avgAccuracy}</div>
+                                <div className="text-[10px] text-ink-muted uppercase tracking-wide mt-1">Snitt nøyakt.</div>
+                            </div>
+                        </div>
+                        
+                        {stats.weightChange && (
+                            <div className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl ${parseFloat(stats.weightChange) < 0 ? 'bg-emerald-50 text-emerald-700' : parseFloat(stats.weightChange) > 0 ? 'bg-surface-100 text-ink' : 'bg-surface-100 text-ink-muted'}`}>
+                                {parseFloat(stats.weightChange) < 0 ? <TrendingDown size={18} /> : parseFloat(stats.weightChange) > 0 ? <TrendingUp size={18} /> : <Minus size={18} />}
+                                <span className="font-medium tabular-nums">
+                                    {parseFloat(stats.weightChange) > 0 ? '+' : ''}{stats.weightChange.replace('.', ',')} kg total endring
+                                </span>
+                            </div>
+                        )}
+                    </Card>
+                </div>
+            )}
+
+            {/* Dagens motivasjon */}
+            <Card className="p-6 bg-gradient-to-br from-surface-50 to-surface-100 border-dashed">
+                <div className="text-center">
+                    <p className="font-display text-lg text-ink italic leading-relaxed">"{todayQuote.text}"</p>
+                    <p className="text-xs text-ink-muted mt-3">- {todayQuote.author}</p>
+                </div>
+            </Card>
+        </div>
+    );
+});
+
+const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
+    const [isEditing, setIsEditing] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [text, setText] = useState(content);
+    useEffect(() => setText(content), [content]);
+
+    const Icon = type === 'diet' ? Utensils : Dumbbell;
+    const title = type === 'diet' ? 'Matplan' : 'Treningsplan';
+
+    const handleToggleEdit = useCallback(async () => {
+        if (isEditing) {
+            setIsSaving(true);
+            try {
+                await onSave(text);
+            } finally {
+                setIsSaving(false);
+            }
+        }
+        setIsEditing(prev => !prev);
+    }, [isEditing, text, onSave]);
+
+    const handleTextChange = useCallback((e) => setText(e.target.value), []);
+
+    // Memoize parsed markdown (sanitert med DOMPurify)
+    const parsedContent = useMemo(() => {
+        if (!text) return '<p class="text-ink-muted italic text-center py-12">Ingen plan enda</p>';
+        const rawHtml = marked.parse(text);
+        return DOMPurify.sanitize(rawHtml);
+    }, [text]);
+
+    return (
+        <div className="space-y-5 pb-32 animate-slide-up">
+            <Card className="overflow-hidden">
+                <div className="flex justify-between items-center p-5 border-b border-surface-100">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-surface-100 rounded-xl flex items-center justify-center text-ink-muted">
+                            <Icon size={20} />
+                        </div>
+                        <h2 className="font-display text-xl">{title}</h2>
+                    </div>
+                    {!isReadOnly && (
+                        <Button
+                            variant={isEditing ? 'primary' : 'secondary'}
+                            size="sm"
+                            onClick={handleToggleEdit}
+                            disabled={isSaving}
+                        >
+                            {isSaving ? <><Loader2 size={16} className="animate-spin" /> Lagrer...</> : isEditing ? <><Check size={16} /> Lagre</> : <><Edit2 size={16} /> Rediger</>}
+                        </Button>
+                    )}
+                </div>
+
+                <div className="p-5">
+                    {isEditing && !isReadOnly ? (
+                        <textarea 
+                            value={text} 
+                            onChange={handleTextChange} 
+                            className="w-full min-h-[60vh] p-4 bg-surface-50 rounded-xl border border-surface-200 focus:ring-2 focus:ring-ink focus:border-ink outline-none text-ink font-mono text-sm leading-relaxed resize-none" 
+                            placeholder="Skriv planen her..."
+                        />
+                    ) : (
+                        <div 
+                            className="prose prose-sm max-w-none" 
+                            dangerouslySetInnerHTML={{ __html: parsedContent }} 
+                        />
+                    )}
+                </div>
+            </Card>
+        </div>
+    );
+});
+
+// Flytt sub-komponenter utenfor CheckInView for å unngå re-deklarering
+const InputLabel = React.memo(({ children }) => (
+    <label className="block text-sm font-medium text-ink-muted mb-2">{children}</label>
+));
+
+const SelectField = React.memo(({ label, value, onChange, options }) => (
+    <div>
+        <InputLabel>{label}</InputLabel>
+        <div className="relative">
+            <select 
+                value={value} 
+                onChange={onChange} 
+                className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl appearance-none focus:ring-2 focus:ring-ink focus:border-ink outline-none font-medium cursor-pointer"
+            >
+                {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" size={18} />
+        </div>
+    </div>
+));
+
+// Pre-generate options arrays outside component
+const OPTIONS_1_TO_10 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+const OPTIONS_0_TO_7 = [0, 1, 2, 3, 4, 5, 6, 7];
+const INITIAL_FORM_DATA = {
+    weight: '', sleep: 5, energy: 5, accuracy: 10,
+    strengthSessions: 0, cardioSessions: 0,
+    stepsReached: false, takenSupplements: false,
+    comment: '', images: []
+};
+
+const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, stepGoal, hideForm = false }) => {
+    const [step, setStep] = useState('form');
+    const [lightbox, setLightbox] = useState({ isOpen: false, images: [], index: 0 });
+    const [isCompressing, setIsCompressing] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [formData, setFormData] = useState(INITIAL_FORM_DATA);
+
+    const closeLightbox = useCallback(() => {
+        setLightbox(prev => ({ ...prev, isOpen: false }));
+    }, []);
+
+    const openLightbox = useCallback((images, index) => {
+        setLightbox({ isOpen: true, images, index });
+    }, []);
+
+    const handleImageUpload = useCallback(async (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+        setIsCompressing(true);
+        setErrorMessage('');
+        console.log('[CheckIn] Starter opplasting av', files.length, 'bilder');
+        try {
+            const uploadPromises = files.map(async (file) => {
+                console.log('[CheckIn] Leser fil:', file.name, 'størrelse:', file.size);
+                const base64Image = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = () => reject(new Error('Kunne ikke lese fil: ' + file.name));
+                    reader.readAsDataURL(file);
+                });
+                console.log('[CheckIn] Base64-lengde:', base64Image.length);
+
+                const result = await api.uploadImage(base64Image);
+                if (result.authError) {
+                    throw new Error('Autentisering feilet');
+                }
+                console.log('[CheckIn] Opplasting fullført:', result.data.url);
+                return result.data.url;
+            });
+            const uploadedUrls = await Promise.all(uploadPromises);
+            setFormData(prev => ({ ...prev, images: [...prev.images, ...uploadedUrls] }));
+            console.log('[CheckIn] Alle bilder lastet opp!');
+        } catch (err) {
+            console.error('[CheckIn] Bildeopplasting feilet:', err);
+            setErrorMessage("Bildeopplasting feilet: " + (err.message || 'Ukjent feil'));
+        } finally {
+            setIsCompressing(false);
+        }
+    }, []);
+
+    const removeImage = useCallback((indexToRemove) => {
+        setFormData(prev => ({ ...prev, images: prev.images.filter((_, index) => index !== indexToRemove) }));
+    }, []);
+
+    const handleSubmit = useCallback(async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        setErrorMessage('');
+        try {
+            const newEntry = { 
+                id: Date.now(), 
+                date: new Date().toISOString().split('T')[0], 
+                timestamp: Date.now(), 
+                ...formData 
+            };
+            await onNewCheckin(newEntry);
+            setStep('success');
+            createConfetti(); // 🎉 Konfetti!
+            setTimeout(() => {
+                setStep('form');
+                setFormData(INITIAL_FORM_DATA);
+            }, 2500);
+        } catch (error) {
+            setErrorMessage('Feil: ' + error.message);
+        } finally {
+            setIsSubmitting(false);
+        }
+    }, [formData, onNewCheckin]);
+
+    // Memoize sorted checkins
+    const sortedCheckins = useMemo(() =>
+        [...checkins].sort((a, b) => b.timestamp - a.timestamp),
+        [checkins]
+    );
+
+    const lastWeight = useMemo(() => {
+        const last = sortedCheckins.find(c => c.weight && parseFloat(c.weight) > 0);
+        return last ? parseFloat(last.weight) : null;
+    }, [sortedCheckins]);
+
+    // Form field handlers - memoized
+    const updateField = useCallback((field, value) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+    }, []);
+
+    // Stabile onChange-handlers for å ikke bryte React.memo på SelectField
+    const handleWeightChange = useCallback((e) => updateField('weight', e.target.value), [updateField]);
+    const handleEnergyChange = useCallback((e) => updateField('energy', e.target.value), [updateField]);
+    const handleSleepChange = useCallback((e) => updateField('sleep', e.target.value), [updateField]);
+    const handleAccuracyChange = useCallback((e) => updateField('accuracy', e.target.value), [updateField]);
+    const handleStrengthChange = useCallback((e) => updateField('strengthSessions', e.target.value), [updateField]);
+    const handleCardioChange = useCallback((e) => updateField('cardioSessions', e.target.value), [updateField]);
+    const handleStepsChange = useCallback((e) => updateField('stepsReached', e.target.checked), [updateField]);
+    const handleSupplementsChange = useCallback((e) => updateField('takenSupplements', e.target.checked), [updateField]);
+    const handleCommentChange = useCallback((e) => updateField('comment', e.target.value), [updateField]);
+
+    if (step === 'success') {
+        return (
+            <div className="flex flex-col items-center justify-center h-[60vh] animate-scale-in text-center px-6">
+                <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 mb-6">
+                    <Check size={32} strokeWidth={2.5} />
+                </div>
+                <h2 className="text-2xl font-display mb-2">Rapport sendt</h2>
+                <p className="text-ink-muted">Oppdateringen din er lagret</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-5 pb-32 animate-slide-up">
+            {lightbox.isOpen && (
+                <ImageModal images={lightbox.images} initialIndex={lightbox.index} onClose={closeLightbox} />
+            )}
+
+            {!isReadOnly && !hideForm && (
+                <form onSubmit={handleSubmit} className="space-y-5">
+                    <Card className="p-5 space-y-5">
+                        <h3 className="font-display text-lg">Ny ukesrapport</h3>
+                        
+                        <div>
+                            <InputLabel>Vekt (kg)</InputLabel>
+                            <div className="relative">
+                                <Scale className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" size={18} />
+                                <input 
+                                    type="number" 
+                                    inputMode="decimal" 
+                                    step="0.1" 
+                                    required 
+                                    value={formData.weight}
+                                    onChange={handleWeightChange}
+                                    className="w-full pl-12 pr-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink focus:border-ink font-medium text-lg placeholder-ink-faint" 
+                                    placeholder="0.0" 
+                                />
+                            </div>
+                            {lastWeight && (
+                                <p className="text-xs text-ink-muted mt-1.5">Forrige: {formatWeight(lastWeight)} kg</p>
+                            )}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <SelectField
+                                label="Energi (1–10)"
+                                value={formData.energy}
+                                onChange={handleEnergyChange}
+                                options={OPTIONS_1_TO_10}
+                            />
+                            <SelectField
+                                label="Søvnkvalitet (1–10)"
+                                value={formData.sleep}
+                                onChange={handleSleepChange}
+                                options={OPTIONS_1_TO_10}
+                            />
+                        </div>
+                        
+                        <SelectField
+                            label={`Nøyaktighet (${formData.accuracy}/10)`}
+                            value={formData.accuracy}
+                            onChange={handleAccuracyChange}
+                            options={OPTIONS_1_TO_10}
+                        />
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <SelectField
+                                label="Styrkeøkter"
+                                value={formData.strengthSessions}
+                                onChange={handleStrengthChange}
+                                options={OPTIONS_0_TO_7}
+                            />
+                            <SelectField
+                                label="Cardio"
+                                value={formData.cardioSessions}
+                                onChange={handleCardioChange}
+                                options={OPTIONS_0_TO_7}
+                            />
+                        </div>
+
+                        <div className="space-y-3">
+                            <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-all ${formData.stepsReached ? 'bg-emerald-50 border-emerald-200' : 'bg-surface-50 border-surface-200'}`}>
+                                <input 
+                                    type="checkbox" 
+                                    checked={formData.stepsReached}
+                                    onChange={handleStepsChange}
+                                    className="w-5 h-5 rounded-md border-surface-300 text-ink focus:ring-ink cursor-pointer" 
+                                />
+                                <div>
+                                    <p className="font-medium">Skrittmål oppnådd</p>
+                                    <p className="text-sm text-ink-muted">{stepGoal?.toLocaleString() || '10 000'} skritt</p>
+                                </div>
+                            </label>
+                            <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-all ${formData.takenSupplements ? 'bg-emerald-50 border-emerald-200' : 'bg-surface-50 border-surface-200'}`}>
+                                <input 
+                                    type="checkbox" 
+                                    checked={formData.takenSupplements}
+                                    onChange={handleSupplementsChange}
+                                    className="w-5 h-5 rounded-md border-surface-300 text-ink focus:ring-ink cursor-pointer" 
+                                />
+                                <div>
+                                    <p className="font-medium">Kosttilskudd tatt</p>
+                                    <p className="text-sm text-ink-muted">Tatt jevnlig denne uken</p>
+                                </div>
+                            </label>
+                        </div>
+
+                        <div>
+                            <InputLabel>Kommentar</InputLabel>
+                            <textarea 
+                                value={formData.comment}
+                                onChange={handleCommentChange}
+                                className="w-full px-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl h-28 outline-none resize-none focus:ring-2 focus:ring-ink focus:border-ink" 
+                                placeholder="Hvordan har uken vært?" 
+                            />
+                        </div>
+                    </Card>
+
+                    {/* Image Upload */}
+                    <Card className="p-5">
+                        {formData.images.length > 0 && (
+                            <div className="grid grid-cols-4 gap-2 mb-4">
+                                {formData.images.map((img, idx) => (
+                                    <div key={idx} className="relative aspect-square">
+                                        <img 
+                                            src={getThumbnail(img)} 
+                                            className="w-full h-full object-cover rounded-lg cursor-pointer" 
+                                            alt="Preview" 
+                                            onClick={() => setLightbox({ isOpen: true, images: formData.images, index: idx })} 
+                                        />
+                                        <button 
+                                            type="button" 
+                                            onClick={() => removeImage(idx)} 
+                                            className="absolute -top-1.5 -right-1.5 bg-ink text-white p-1 rounded-full"
+                                        >
+                                            <X size={12} />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        <label className={`flex flex-col items-center justify-center p-8 border-2 border-dashed border-surface-200 rounded-xl cursor-pointer hover:border-surface-300 hover:bg-surface-50 transition-all ${isCompressing ? 'opacity-50 pointer-events-none' : ''}`}>
+                            {isCompressing ? (
+                                <Loader2 className="animate-spin text-ink-muted" size={24} />
+                            ) : (
+                                <>
+                                    <Camera size={24} className="text-ink-muted mb-2" />
+                                    <span className="font-medium text-ink-muted">Last opp bilder</span>
+                                </>
+                            )}
+                            <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
+                        </label>
+                    </Card>
+
+                    {errorMessage && (
+                        <div className="flex items-center gap-3 bg-red-50 border border-red-100 text-red-700 px-4 py-3 rounded-xl text-sm">
+                            <AlertCircle size={18} />
+                            {errorMessage}
+                        </div>
+                    )}
+
+                    <Button type="submit" size="lg" className="w-full" disabled={isSubmitting || isCompressing}>
+                        {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />} 
+                        {isSubmitting ? 'Sender...' : 'Send rapport'}
+                    </Button>
+                </form>
+            )}
+
+            {/* History */}
+            <div className={!isReadOnly && !hideForm ? "pt-8 border-t border-surface-200" : ""}>
+                <p className="text-xs text-ink-muted uppercase tracking-wide mb-4 px-1">Tidligere rapporter</p>
+                
+                {sortedCheckins.length === 0 ? (
+                    <div className="text-center py-12">
+                        <div className="w-14 h-14 bg-surface-100 rounded-2xl flex items-center justify-center text-ink-muted mx-auto mb-4">
+                            <Activity size={24} />
+                        </div>
+                        <p className="text-ink-muted font-display text-lg italic mb-1">Ingen rapporter enda</p>
+                        <p className="text-ink-faint text-sm">Fyll ut skjemaet over for å sende din første ukesrapport</p>
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        {sortedCheckins.map((entry) => {
+                            // Sikre at images alltid er en array
+                            let imageArray = [];
+                            if (entry.images) {
+                                if (typeof entry.images === 'string') {
+                                    try {
+                                        imageArray = JSON.parse(entry.images);
+                                    } catch (e) {
+                                        imageArray = [];
+                                    }
+                                } else if (Array.isArray(entry.images)) {
+                                    imageArray = entry.images;
+                                }
+                            } else if (entry.image) {
+                                imageArray = [entry.image];
+                            }
+
+                            // Filtrer ut ugyldige verdier
+                            const displayImages = imageArray.filter(img => img && typeof img === 'string' && img.trim() !== '');
+
+                            return (
+                                <Card key={entry.id} className="p-5 group">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div>
+                                            <p className="font-medium">{formatDateNO(entry.date)}</p>
+                                            <p className="text-xs text-ink-muted">{new Date(entry.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            {isReadOnly && (
+                                                <button
+                                                    onClick={() => { if(confirm('Slett denne rapporten?')) onDelete(entry.id); }}
+                                                    className="p-2 text-ink-faint hover:text-red-500 transition-colors"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            )}
+                                            <Badge className="tabular-nums">{formatWeight(entry.weight)} kg</Badge>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-5 gap-1.5 text-xs mb-4">
+                                        <div className={`py-2 rounded-lg text-center ${parseInt(entry.accuracy) >= 8 ? 'bg-emerald-50' : parseInt(entry.accuracy) >= 5 ? 'bg-amber-50' : 'bg-red-50'}`}>
+                                            <p className={`font-semibold tabular-nums ${parseInt(entry.accuracy) >= 8 ? 'text-emerald-700' : parseInt(entry.accuracy) >= 5 ? 'text-amber-700' : 'text-red-700'}`}>{entry.accuracy}</p>
+                                            <p className="text-[9px] text-ink-faint mt-0.5">Nøyakt.</p>
+                                        </div>
+                                        <div className={`py-2 rounded-lg text-center ${parseInt(entry.energy) >= 8 ? 'bg-emerald-50' : parseInt(entry.energy) >= 5 ? 'bg-amber-50' : 'bg-red-50'}`}>
+                                            <p className={`font-semibold tabular-nums ${parseInt(entry.energy) >= 8 ? 'text-emerald-700' : parseInt(entry.energy) >= 5 ? 'text-amber-700' : 'text-red-700'}`}>{entry.energy}</p>
+                                            <p className="text-[9px] text-ink-faint mt-0.5">Energi</p>
+                                        </div>
+                                        <div className={`py-2 rounded-lg text-center ${parseInt(entry.sleep) >= 8 ? 'bg-emerald-50' : parseInt(entry.sleep) >= 5 ? 'bg-amber-50' : 'bg-red-50'}`}>
+                                            <p className={`font-semibold tabular-nums ${parseInt(entry.sleep) >= 8 ? 'text-emerald-700' : parseInt(entry.sleep) >= 5 ? 'text-amber-700' : 'text-red-700'}`}>{entry.sleep}</p>
+                                            <p className="text-[9px] text-ink-faint mt-0.5">Søvn</p>
+                                        </div>
+                                        <div className="py-2 rounded-lg text-center bg-surface-50">
+                                            <p className="font-semibold tabular-nums text-ink">{entry.strengthSessions || 0}</p>
+                                            <p className="text-[9px] text-ink-faint mt-0.5">Styrke</p>
+                                        </div>
+                                        <div className="py-2 rounded-lg text-center bg-surface-50">
+                                            <p className="font-semibold tabular-nums text-ink">{entry.cardioSessions || 0}</p>
+                                            <p className="text-[9px] text-ink-faint mt-0.5">Cardio</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex gap-2 mb-4">
+                                        <Badge variant={entry.stepsReached ? 'success' : 'muted'}>
+                                            <Footprints size={12} />
+                                            {entry.stepsReached ? 'Skrittmål' : 'Under mål'}
+                                        </Badge>
+                                        <Badge variant={entry.takenSupplements ? 'success' : 'muted'}>
+                                            {entry.takenSupplements ? <Check size={12} /> : <X size={12} />}
+                                            Tilskudd
+                                        </Badge>
+                                    </div>
+
+                                    {entry.comment && (
+                                        <p className="text-sm text-ink-muted bg-surface-50 p-3 rounded-lg italic mb-4">"{entry.comment}"</p>
+                                    )}
+                                    
+                                    {displayImages.length > 0 && (
+                                        <div className="flex gap-2 overflow-x-auto hide-scrollbar">
+                                            {displayImages.map((img, idx) => (
+                                                <img
+                                                    key={idx}
+                                                    src={getThumbnail(img)}
+                                                    loading="lazy"
+                                                    className="w-16 h-16 object-cover rounded-lg cursor-pointer flex-none"
+                                                    alt="Checkin"
+                                                    onClick={() => openLightbox(displayImages, idx)}
+                                                />
+                                            ))}
+                                        </div>
+                                    )}
+                                </Card>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+});
+
+const CoachDashboard = React.memo(({ user, allUsers, onSelectClient, onAddClient, onDeleteClient, onArchiveClient }) => {
+    const [showModal, setShowModal] = useState(false);
+    const [showArchived, setShowArchived] = useState(false);
+
+    // Memoize filtrerte lister
+    const { activeClients, archivedClients, totalAthletes } = useMemo(() => ({
+        activeClients: allUsers.filter(u => u.role === 'athlete' && !u.is_archived),
+        archivedClients: allUsers.filter(u => u.role === 'athlete' && u.is_archived),
+        totalAthletes: allUsers.filter(u => u.role === 'athlete').length
+    }), [allUsers]);
+
+    const displayedClients = showArchived ? archivedClients : activeClients;
+
+    const closeModal = useCallback(() => setShowModal(false), []);
+    const openModal = useCallback(() => setShowModal(true), []);
+    useEscapeKey(closeModal, showModal);
+    const showActive = useCallback(() => setShowArchived(false), []);
+    const showArchivedClients = useCallback(() => setShowArchived(true), []);
+
+    const handleFormSubmit = useCallback(async (e) => {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        await onAddClient(Object.fromEntries(fd));
+        setShowModal(false);
+    }, [onAddClient]);
+
+    return (
+        <div className="space-y-5 pb-32 animate-slide-up">
+            {showModal && (
+                <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+                    <Card className="w-full max-w-sm p-6 animate-scale-in">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-xl font-display">Ny utøver</h2>
+                            <button onClick={closeModal} className="text-ink-muted hover:text-ink p-2">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <form onSubmit={handleFormSubmit} className="space-y-4">
+                            <input required name="name" type="text" placeholder="Fullt navn" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink" />
+                            <input required name="username" type="text" placeholder="Brukernavn" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink" />
+                            <input required name="password" type="password" minLength="6" placeholder="Passord (min. 6 tegn)" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink" />
+                            <Button type="submit" size="lg" className="w-full">Opprett utøver</Button>
+                        </form>
+                    </Card>
+                </div>
+            )}
+            
+            {/* Hero Stats Card */}
+            <div className="p-6 bg-ink text-white rounded-2xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-3xl transform translate-x-10 -translate-y-10" />
+                <div className="relative z-10">
+                    <p className="text-white/60 text-sm">Velkommen tilbake</p>
+                    <h2 className="text-3xl font-display mt-1">{user.name}</h2>
+                    
+                    <div className="grid grid-cols-3 gap-4 mt-6">
+                        <div className="text-center">
+                            <p className="text-3xl font-semibold">{activeClients.length}</p>
+                            <p className="text-white/50 text-xs uppercase tracking-wide mt-1">Aktive</p>
+                        </div>
+                        <div className="text-center border-x border-white/10">
+                            <p className="text-3xl font-semibold">{archivedClients.length}</p>
+                            <p className="text-white/50 text-xs uppercase tracking-wide mt-1">Arkivert</p>
+                        </div>
+                        <div className="text-center">
+                            <p className="text-3xl font-semibold">{totalAthletes}</p>
+                            <p className="text-white/50 text-xs uppercase tracking-wide mt-1">Totalt</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Toggle og Ny-knapp */}
+            <div className="flex justify-between items-center">
+                <div className="flex gap-2">
+                    <button 
+                        onClick={showActive}
+                        className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${!showArchived ? 'bg-ink text-white' : 'text-ink-muted hover:bg-surface-100'}`}
+                    >
+                        Aktive ({activeClients.length})
+                    </button>
+                    <button 
+                        onClick={showArchivedClients}
+                        className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${showArchived ? 'bg-ink text-white' : 'text-ink-muted hover:bg-surface-100'}`}
+                    >
+                        Arkivert ({archivedClients.length})
+                    </button>
+                </div>
+                <Button variant="primary" size="sm" onClick={openModal}>
+                    <Plus size={16} /> Ny
+                </Button>
+            </div>
+
+            {/* Client List */}
+            <div className="space-y-2">
+                {displayedClients.length === 0 ? (
+                    <div className="text-center py-12">
+                        <div className="w-14 h-14 bg-surface-100 rounded-2xl flex items-center justify-center text-ink-muted mx-auto mb-4">
+                            <User size={24} />
+                        </div>
+                        <p className="text-ink-muted font-display text-lg italic mb-1">{showArchived ? 'Ingen arkiverte utøvere' : 'Ingen utøvere enda'}</p>
+                        {!showArchived && <p className="text-ink-faint text-sm">Trykk «Ny» for å legge til din første utøver</p>}
+                    </div>
+                ) : (
+                    displayedClients.map(client => (
+                        <Card
+                            key={client.id}
+                            className={`p-4 flex items-center justify-between group ${showArchived ? 'opacity-60' : client.unreadCheckins > 0 ? 'border-emerald-300 bg-emerald-50/50' : ''}`}
+                            interactive
+                            onClick={() => onSelectClient(client)}
+                        >
+                            <div className="flex items-center gap-4">
+                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-display text-xl ${showArchived ? 'bg-surface-200 text-ink-muted' : client.unreadCheckins > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-surface-100 text-ink'}`}>
+                                    {client.name.charAt(0)}
+                                </div>
+                                <div>
+                                    <p className="font-medium">{client.name}</p>
+                                    <p className={`text-sm ${client.unreadCheckins > 0 ? 'text-emerald-600 font-medium' : 'text-ink-muted'}`}>
+                                        {client.unreadCheckins > 0
+                                            ? `${client.unreadCheckins} ny${client.unreadCheckins > 1 ? 'e' : ''} rapport${client.unreadCheckins > 1 ? 'er' : ''}`
+                                            : client.lastCheckinDate
+                                                ? `Siste rapport: ${(() => { const d = new Date(client.lastCheckinDate.length === 10 ? client.lastCheckinDate + 'T00:00:00' : client.lastCheckinDate); return isNaN(d) ? client.lastCheckinDate : d.toLocaleDateString('no-NO', { day: 'numeric', month: 'short' }); })()}`
+                                                : 'Ingen rapporter ennå'}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-1">
+                                {/* Arkiver/Gjenopprett knapp */}
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onArchiveClient(client.id, !client.is_archived);
+                                    }}
+                                    className="p-2 text-ink-faint hover:text-ink transition-colors"
+                                    title={client.is_archived ? 'Gjenopprett' : 'Arkiver'}
+                                >
+                                    {client.is_archived ? <Play size={18} /> : <Pause size={18} />}
+                                </button>
+                                {/* Slett knapp */}
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); if(confirm('Slett utøver permanent?')) onDeleteClient(client.id); }}
+                                    className="p-2 text-ink-faint hover:text-red-500 transition-colors"
+                                >
+                                    <Trash2 size={18} />
+                                </button>
+                                <ChevronRight size={18} className="text-ink-faint" />
+                            </div>
+                        </Card>
+                    ))
+                )}
+            </div>
+        </div>
+    );
+});
+
+// Initial data state - definert utenfor komponenten
+const INITIAL_DATA_STATE = {
+    dietPlan: '', workoutPlan: '', stepGoal: 10000,
+    totalWeeks: 12, startDate: null, isPaused: false, pausedAt: null,
+    periods: [], currentPeriodId: null, startingWeight: null, checkins: [],
+    galleryImages: []
+};
+
+// Tab-rekkefølge for swipe-navigasjon
+const TAB_ORDER = ['dashboard', 'gallery', 'diet', 'workout', 'checkin'];
+
+const App = () => {
+    const toast = useToast();
+    const [currentUser, setCurrentUser] = useState(null);
+    const [activeTab, setActiveTab] = useState('dashboard');
+    const [allUsers, setAllUsers] = useState([]);
+    const [viewingClient, setViewingClient] = useState(null);
+    
+    const [isClientLoading, setIsClientLoading] = useState(false);
+    const [showWeightHistory, setShowWeightHistory] = useState(false);
+
+    const [currentData, setCurrentData] = useState(INITIAL_DATA_STATE);
+    const [isLoading, setIsLoading] = useState(true);
+    const [showReauthPrompt, setShowReauthPrompt] = useState(false);
+
+    // ============================================
+    // FIKSET INIT - Bruker cached session først
+    // ============================================
+    useEffect(() => {
+        const init = async () => {
+            console.log('[Init] Starter app...');
+            
+            // 1. Sjekk lokal session FØRST - bruk den umiddelbart
+            const sessionUser = getSession();
+            const token = getToken();
+            
+            if (sessionUser && token) {
+                console.log('[Init] Bruker cached session:', sessionUser.username);
+                setCurrentUser(sessionUser);
+                if (sessionUser.role === 'athlete') {
+                    setViewingClient(sessionUser);
+                }
+            }
+            
+            // 2. Hent oppdatert brukerliste (kun for coach — atleter trenger den ikke)
+            if (!sessionUser || sessionUser.role === 'coach') {
+                try {
+                    const result = await api.getUsers();
+
+                    if (result.networkError) {
+                        console.log('[Init] Nettverksfeil - bruker cached session');
+                    } else if (result.authError) {
+                        console.warn('[Init] Auth-feil fra API');
+                        if (sessionUser) {
+                            setShowReauthPrompt(true);
+                        }
+                    } else {
+                        setAllUsers(result.data || []);
+
+                        if (sessionUser && result.data) {
+                            const freshUser = result.data.find(u => u.id === sessionUser.id);
+                            if (freshUser) {
+                                console.log('[Init] Oppdaterte brukerdata fra API');
+                                setCurrentUser(freshUser);
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error('[Init] Feil:', e);
+                }
+            }
+            
+            setIsLoading(false);
+        };
+        init();
+    }, []);
+
+    // Visibility change handler - sjekk session når app blir synlig
+    useEffect(() => {
+        const handleVisibility = () => {
+            if (document.visibilityState === 'visible' && currentUser) {
+                console.log('[Visibility] App ble synlig, sjekker session');
+                if (!hasValidSession()) {
+                    console.warn('[Visibility] Session borte - viser re-auth prompt');
+                    setShowReauthPrompt(true);
+                }
+            }
+        };
+        
+        document.addEventListener('visibilitychange', handleVisibility);
+        return () => document.removeEventListener('visibilitychange', handleVisibility);
+    }, [currentUser]);
+
+    // Last klientdata - kun for athlete som logger inn direkte
+    useEffect(() => {
+        if (viewingClient && currentUser?.role === 'athlete') {
+            setIsClientLoading(true);
+            api.getUserData(viewingClient.id)
+                .then(result => {
+                    if (result.authError) {
+                        console.warn('[App] Auth-feil ved henting av klientdata');
+                        setShowReauthPrompt(true);
+                    } else if (result.data) {
+                        setCurrentData(result.data);
+                    } else if (result.networkError) {
+                        console.log('[App] Nettverksfeil - bruker cached data');
+                    }
+                })
+                .catch(() => setCurrentData(INITIAL_DATA_STATE))
+                .finally(() => setIsClientLoading(false));
+        }
+    }, [viewingClient, currentUser?.role]);
+
+    const handleLogin = useCallback((user) => {
+        setCurrentUser(user);
+        saveSession(user);
+        setShowReauthPrompt(false);
+        if (user.role === 'athlete') setViewingClient(user);
+    }, []);
+
+    const handleLogout = useCallback(() => {
+        console.log('[App] Bruker logger ut');
+        clearSession();
+        setCurrentUser(null);
+        setViewingClient(null);
+        setShowReauthPrompt(false);
+        setActiveTab('dashboard');
+    }, []);
+
+    const handleReauth = useCallback(() => {
+        console.log('[App] Bruker må logge inn på nytt');
+        clearSession();
+        setCurrentUser(null);
+        setViewingClient(null);
+        setShowReauthPrompt(false);
+    }, []);
+
+    const handleNewCheckin = useCallback(async (entry) => {
+        if (!viewingClient) return;
+        const result = await api.submitCheckin(viewingClient.id, entry);
+        if (result.authError) {
+            setShowReauthPrompt(true);
+            return;
+        }
+        setCurrentData(prev => ({
+            ...prev,
+            checkins: [...prev.checkins, { ...entry, periodId: prev.currentPeriodId, isRead: false }]
+        }));
+    }, [viewingClient]);
+    
+    // Ref for å spore pågående lagring og hindre dobbelt-klikk
+    const savingRef = React.useRef(false);
+
+    const handleUpdateData = useCallback(async (keyOrObj, value) => {
+        if (!viewingClient) return;
+        if (savingRef.current) return; // Hindre dobbelt-klikk
+        savingRef.current = true;
+
+        let updates = typeof keyOrObj === 'string' ? { [keyOrObj]: value } : keyOrObj;
+        let previousData;
+
+        try {
+            // Håndter periode-spesifikke actions
+            if (updates.action === 'create_period') {
+                const result = await api.createPeriod(viewingClient.id, updates.name, updates.startingWeight, updates.goalWeight);
+                if (result.authError) { setShowReauthPrompt(true); }
+                return;
+            } else if (updates.action === 'end_period') {
+                const result = await api.endPeriod(viewingClient.id, updates.periodId);
+                if (result.authError) { setShowReauthPrompt(true); }
+                return;
+            } else if (updates.action === 'update_period') {
+                const { periodId, ...periodUpdates } = updates;
+                const result = await api.updatePeriod(viewingClient.id, periodId, periodUpdates);
+                if (result.authError) { setShowReauthPrompt(true); }
+                return;
+            } else if (updates.action === 'pause') {
+                // Optimistisk UI for pause
+                setCurrentData(prev => {
+                    previousData = prev;
+                    return { ...prev, isPaused: true, pausedAt: new Date().toISOString() };
+                });
+                const result = await api.saveUserData(viewingClient.id, updates);
+                if (result.authError) {
+                    setShowReauthPrompt(true);
+                    setCurrentData(previousData);
+                }
+                return;
+            } else if (updates.action === 'resume') {
+                // Optimistisk UI for resume
+                setCurrentData(prev => {
+                    previousData = prev;
+                    return { ...prev, isPaused: false, pausedAt: null };
+                });
+                const result = await api.saveUserData(viewingClient.id, updates);
+                if (result.authError) {
+                    setShowReauthPrompt(true);
+                    setCurrentData(previousData);
+                }
+                return;
+            }
+
+            // Standard oppdateringer - optimistisk UI med rollback
+            setCurrentData(prev => {
+                previousData = prev;
+                return { ...prev, ...updates };
+            });
+            const result = await api.saveUserData(viewingClient.id, updates);
+            if (result.authError) {
+                setShowReauthPrompt(true);
+                setCurrentData(previousData);
+                return;
+            }
+            toast('Lagret');
+        } catch (e) {
+            if (previousData) setCurrentData(previousData);
+            toast('Lagring feilet', 'error');
+        } finally {
+            savingRef.current = false;
+        }
+    }, [viewingClient]);
+
+    const handleSaveDietPlan = useCallback((val) => handleUpdateData('dietPlan', val), [handleUpdateData]);
+    const handleSaveWorkoutPlan = useCallback((val) => handleUpdateData('workoutPlan', val), [handleUpdateData]);
+
+    const handleDeleteCheckin = useCallback(async (checkinId) => {
+        if (!viewingClient) return;
+        // Bruk functional setState for rollback uten å trenge currentData i dependency
+        let previousCheckins;
+        setCurrentData(prev => {
+            previousCheckins = prev.checkins;
+            return { ...prev, checkins: prev.checkins.filter(c => c.id !== checkinId) };
+        });
+        try {
+            const result = await api.deleteCheckin(viewingClient.id, checkinId);
+            if (result.authError) {
+                setShowReauthPrompt(true);
+                setCurrentData(prev => ({ ...prev, checkins: previousCheckins }));
+            }
+        } catch (e) {
+            alert('Kunne ikke slette.');
+            setCurrentData(prev => ({ ...prev, checkins: previousCheckins }));
+        }
+    }, [viewingClient]);
+
+    const handleClearClient = useCallback(() => {
+        setViewingClient(null);
+        setActiveTab('dashboard');
+    }, []);
+
+    const handleSelectClient = useCallback(async (client) => {
+        setCurrentData(INITIAL_DATA_STATE);
+        setIsClientLoading(true);
+        setShowWeightHistory(false);
+        setActiveTab('dashboard');
+
+        // Hent data FØR vi setter viewingClient for å unngå dobbel henting fra useEffect
+        try {
+            const result = await api.getUserData(client.id, false);
+            if (result.authError) {
+                setShowReauthPrompt(true);
+                setIsClientLoading(false);
+                return;
+            }
+            if (result.data) {
+                setCurrentData(result.data);
+            }
+        } catch (e) {
+            console.error('Kunne ikke hente klientdata:', e);
+        }
+
+        // Sett viewingClient ETTER data er hentet
+        setViewingClient(client);
+        setIsClientLoading(false);
+
+        // Marker alle innsjekk som lest (fire-and-forget, blokkerer ikke UI)
+        if (client.unreadCheckins > 0) {
+            setAllUsers(prev => prev.map(u =>
+                u.id === client.id ? { ...u, unreadCheckins: 0 } : u
+            ));
+            api.markCheckinsRead(client.id).then(result => {
+                if (result.authError) setShowReauthPrompt(true);
+            }).catch(e => {
+                console.error('Kunne ikke markere innsjekk som lest:', e);
+            });
+        }
+    }, []);
+
+    const handleAddClient = useCallback(async (u) => {
+        try {
+            const result = await api.createUser({...u, id: Date.now().toString(), role:'athlete'});
+            if (result.authError) {
+                setShowReauthPrompt(true);
+                return;
+            }
+            if (result.data) setAllUsers(result.data);
+        } catch (e) {
+            toast(e.message || 'Feil ved opprettelse av utøver', 'error');
+        }
+    }, []);
+
+    const handleDeleteClient = useCallback(async (id) => {
+        try {
+            const result = await api.deleteUser(id);
+            if (result.authError) {
+                setShowReauthPrompt(true);
+                return;
+            }
+            if (result.data) setAllUsers(result.data);
+        } catch (e) {
+            toast(e.message || 'Feil ved sletting av utøver', 'error');
+        }
+    }, []);
+
+    const handleArchiveClient = useCallback(async (id, archive) => {
+        try {
+            const result = await api.archiveUser(id, archive);
+            if (result.authError) {
+                setShowReauthPrompt(true);
+                return;
+            }
+            if (result.data) setAllUsers(result.data);
+        } catch (e) {
+            toast(e.message || 'Feil ved arkivering', 'error');
+        }
+    }, []);
+
+    const handleAddGalleryImage = useCallback(async (imageUrl, label, date, weight) => {
+        if (!viewingClient) return;
+        // Optimistisk UI — vis bildet umiddelbart
+        // Formatet må matche det API-en returnerer (url, ikke image_url)
+        const tempId = 'temp_' + Date.now();
+        const optimisticImage = {
+            id: tempId,
+            url: imageUrl,
+            label: label || 'Startbilde',
+            date: date || new Date().toISOString().split('T')[0],
+            weight: weight ? parseFloat(weight) : null,
+            timestamp: Date.now()
+        };
+        setCurrentData(prev => ({
+            ...prev,
+            galleryImages: [...(prev.galleryImages || []), optimisticImage]
+        }));
+        // Send til server i bakgrunnen
+        try {
+            const result = await api.addGalleryImage(viewingClient.id, imageUrl, label, date, weight);
+            if (result.authError) {
+                setShowReauthPrompt(true);
+                setCurrentData(prev => ({
+                    ...prev,
+                    galleryImages: (prev.galleryImages || []).filter(img => img.id !== tempId)
+                }));
+            }
+        } catch (e) {
+            // Fjern optimistisk bilde ved feil
+            setCurrentData(prev => ({
+                ...prev,
+                galleryImages: (prev.galleryImages || []).filter(img => img.id !== tempId)
+            }));
+            alert('Kunne ikke lagre bildet');
+        }
+    }, [viewingClient]);
+
+    const handleDeleteGalleryImage = useCallback(async (imageId) => {
+        if (!viewingClient) return;
+        // Optimistisk UI — fjern bildet umiddelbart
+        let removedImage;
+        setCurrentData(prev => {
+            removedImage = (prev.galleryImages || []).find(img => img.id === imageId);
+            return {
+                ...prev,
+                galleryImages: (prev.galleryImages || []).filter(img => img.id !== imageId)
+            };
+        });
+        // Send til server i bakgrunnen
+        try {
+            const result = await api.deleteGalleryImage(viewingClient.id, imageId);
+            if (result.authError) {
+                setShowReauthPrompt(true);
+                if (removedImage) {
+                    setCurrentData(prev => ({
+                        ...prev,
+                        galleryImages: [...(prev.galleryImages || []), removedImage]
+                    }));
+                }
+            }
+        } catch (e) {
+            // Rollback ved feil
+            if (removedImage) {
+                setCurrentData(prev => ({
+                    ...prev,
+                    galleryImages: [...(prev.galleryImages || []), removedImage]
+                }));
+            }
+            alert('Kunne ikke slette bildet');
+        }
+    }, [viewingClient]);
+
+    const handleOpenWeightHistory = useCallback(() => setShowWeightHistory(true), []);
+    const handleCloseWeightHistory = useCallback(() => setShowWeightHistory(false), []);
+
+    // Memoiser dashboard-data for å unngå re-render når kun galleryImages endres
+    const dashboardUserData = useMemo(() => currentData, [
+        currentData.checkins, currentData.periods, currentData.startDate,
+        currentData.isPaused, currentData.pausedAt, currentData.totalWeeks, currentData.stepGoal
+    ]);
+
+    const handleTabChange = useCallback((tab) => {
+        setActiveTab(tab);
+        setShowWeightHistory(false);
+    }, []);
+
+    // Swipe og pull-to-refresh hooks MÅ være før alle returns
+    const currentTabIndex = TAB_ORDER.indexOf(activeTab);
+    
+    const handleSwipeLeft = useCallback(() => {
+        if (currentTabIndex < TAB_ORDER.length - 1 && !showWeightHistory) {
+            setActiveTab(TAB_ORDER[currentTabIndex + 1]);
+            window.scrollTo({ top: 0, behavior: 'instant' });
+        }
+    }, [currentTabIndex, showWeightHistory]);
+
+    const handleSwipeRight = useCallback(() => {
+        if (currentTabIndex > 0 && !showWeightHistory) {
+            setActiveTab(TAB_ORDER[currentTabIndex - 1]);
+            window.scrollTo({ top: 0, behavior: 'instant' });
+        }
+    }, [currentTabIndex, showWeightHistory]);
+
+    const swipeHandlers = useSwipe(handleSwipeLeft, handleSwipeRight, { 
+        threshold: 60, 
+        enabled: !isClientLoading && !showWeightHistory && !!viewingClient
+    });
+
+    const handleRefresh = useCallback(async () => {
+        if (viewingClient) {
+            const result = await api.getUserData(viewingClient.id, false);
+            if (result.authError) {
+                setShowReauthPrompt(true);
+            } else if (result.data) {
+                setCurrentData(result.data);
+            }
+        }
+    }, [viewingClient]);
+
+    const { handlers: pullHandlers, pullIndicator } = usePullToRefresh(handleRefresh, { 
+        enabled: !isClientLoading && !!viewingClient 
+    });
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-surface-50">
+                <Loader2 className="animate-spin text-ink-muted mb-4" size={32} />
+                <p className="text-ink-muted font-medium">Laster...</p>
+            </div>
+        );
+    }
+
+    if (!currentUser) return <LoginScreen onLogin={handleLogin} />;
+    
+    const isCoach = currentUser.role === 'coach';
+    const isArchived = currentUser.is_archived && !isCoach;
+
+    // Arkivert bruker - begrenset tilgang
+    if (isArchived) {
+        return (
+            <div className="max-w-md mx-auto min-h-screen bg-surface-50">
+                {showReauthPrompt && <ReauthPrompt onReauth={handleReauth} onLogout={handleLogout} />}
+                <Header title="Konto pauset" user={currentUser} onLogout={handleLogout} />
+                <main className="p-4">
+                    <div className="flex flex-col items-center justify-center min-h-[70vh] text-center px-6 animate-fade-in">
+                        <div className="w-20 h-20 bg-surface-100 rounded-2xl flex items-center justify-center text-ink-muted mb-6">
+                            <Pause size={40} />
+                        </div>
+                        <h2 className="text-2xl font-display text-ink mb-3">Kontoen er pauset</h2>
+                        <p className="text-ink-muted leading-relaxed mb-8">
+                            Din konto er for øyeblikket satt på pause av coachen din. 
+                            Du kan fortsatt se historikken din, men kan ikke sende inn nye rapporter.
+                        </p>
+                        
+                        <div className="w-full space-y-3">
+                            <Button 
+                                variant="secondary" 
+                                size="lg" 
+                                className="w-full"
+                                onClick={() => setActiveTab('history')}
+                            >
+                                <Eye size={18} /> Se historikk
+                            </Button>
+                            <Button 
+                                variant="ghost" 
+                                size="lg" 
+                                className="w-full"
+                                onClick={handleLogout}
+                            >
+                                <LogOut size={18} /> Logg ut
+                            </Button>
+                        </div>
+                    </div>
+
+                    {activeTab === 'history' && (
+                        <div className="fixed inset-0 bg-surface-50 z-50 overflow-auto">
+                            <div className="sticky top-0 bg-surface-50/95 backdrop-blur-md border-b border-surface-200 px-4 py-4 flex items-center gap-3">
+                                <button onClick={() => setActiveTab('dashboard')} className="p-2 hover:bg-surface-100 rounded-xl">
+                                    <ChevronLeft size={24} />
+                                </button>
+                                <h2 className="text-xl font-display">Din historikk</h2>
+                            </div>
+                            <div className="p-4 pb-8">
+                                <CheckInView 
+                                    checkins={currentData.checkins} 
+                                    onNewCheckin={() => {}} 
+                                    onDelete={() => {}} 
+                                    isReadOnly={true} 
+                                    stepGoal={currentData.stepGoal}
+                                    hideForm={true}
+                                />
+                            </div>
+                        </div>
+                    )}
+                </main>
+            </div>
+        );
+    }
+
+    if (isCoach && !viewingClient) {
+        return (
+            <div className="max-w-md mx-auto min-h-screen bg-surface-50">
+                {showReauthPrompt && <ReauthPrompt onReauth={handleReauth} onLogout={handleLogout} />}
+                <Header title="Oversikt" user={currentUser} onLogout={handleLogout} />
+                <main className="p-4">
+                    <CoachDashboard 
+                        user={currentUser} 
+                        allUsers={allUsers} 
+                        onSelectClient={handleSelectClient} 
+                        onAddClient={handleAddClient} 
+                        onDeleteClient={handleDeleteClient}
+                        onArchiveClient={handleArchiveClient}
+                    />
+                </main>
+            </div>
+        );
+    }
+
+    const tabTitles = { dashboard: 'Hjem', gallery: 'Galleri', diet: 'Matplan', workout: 'Trening', checkin: 'Rapport' };
+
+    return (
+        <div 
+            className="max-w-md mx-auto min-h-screen bg-surface-50"
+            {...swipeHandlers}
+            {...pullHandlers}
+        >
+            {showReauthPrompt && <ReauthPrompt onReauth={handleReauth} onLogout={handleLogout} />}
+            {pullIndicator}
+            <Header 
+                title={tabTitles[activeTab]} 
+                user={currentUser} 
+                viewingClient={isCoach ? viewingClient : null} 
+                onLogout={handleLogout} 
+                onClearClient={handleClearClient} 
+            />
+            <main className="p-4">
+                {isClientLoading ? (
+                    <div className="space-y-4 pt-4">
+                        <Skeleton className="h-40 w-full" />
+                        <div className="grid grid-cols-2 gap-4">
+                            <Skeleton className="h-32 w-full" />
+                            <Skeleton className="h-32 w-full" />
+                        </div>
+                    </div>
+                ) : (
+                    <>
+                        {activeTab === 'dashboard' ? (
+                            showWeightHistory ? (
+                                <WeightProgressView checkins={currentData.checkins} onBack={handleCloseWeightHistory} />
+                            ) : (
+                                <DashboardView userData={dashboardUserData} isCoach={isCoach} onUpdateData={handleUpdateData} onOpenWeightHistory={handleOpenWeightHistory} onRefreshData={handleRefresh} />
+                            )
+                        ) :
+                        activeTab === 'gallery' ? <GalleryView 
+                            checkins={currentData.checkins} 
+                            galleryImages={currentData.galleryImages || []}
+                            isCoach={isCoach}
+                            onAddGalleryImage={handleAddGalleryImage}
+                            onDeleteGalleryImage={handleDeleteGalleryImage}
+                        /> :
+                        activeTab === 'diet' ? <PlanSection type="diet" content={currentData.dietPlan} onSave={handleSaveDietPlan} isReadOnly={!isCoach} /> :
+                        activeTab === 'workout' ? <PlanSection type="workout" content={currentData.workoutPlan} onSave={handleSaveWorkoutPlan} isReadOnly={!isCoach} /> :
+                        <CheckInView checkins={currentData.checkins} onNewCheckin={handleNewCheckin} onDelete={handleDeleteCheckin} isReadOnly={isCoach} stepGoal={currentData.stepGoal} />}
+                    </>
+                )}
+            </main>
+            <Navigation activeTab={activeTab} setActiveTab={handleTabChange} />
+        </div>
+    );
+};
+
+const root = createRoot(document.getElementById('root'));
+root.render(<ToastProvider><App /></ToastProvider>);
