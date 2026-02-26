@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>JNM Coaching</title>
-    
+
     <!-- PWA: Meta Tags for Mobile -->
     <meta name="theme-color" content="#171717">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -19,149 +19,20 @@
 
     <!-- FAVICON for browser tabs -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='160' fill='%23171717'/%3E%3Cpath d='M256 96c0 88.4 71.6 160 160 160-88.4 0-160 71.6-160 160 0-88.4-71.6-160-160-160 88.4 0 160-71.6 160-160z' fill='%23FAFAF9'/%3E%3C/svg%3E">
-    
+
     <!-- Apple Touch Icons - PNG required for iOS -->
     <link rel="apple-touch-icon" href="/icon-192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/icon-192.png">
     <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png">
 
-    <!-- Tailwind CSS with Typography Plugin -->
-    <script src="https://cdn.tailwindcss.com/3.4.1?plugins=typography"></script>
-    
-    <!-- Custom Tailwind Configuration -->
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Outfit', 'system-ui', 'sans-serif'],
-                        display: ['Instrument Serif', 'Georgia', 'serif'],
-                    },
-                    colors: {
-                        surface: {
-                            50: '#FAFAF9',
-                            100: '#F5F5F4',
-                            200: '#E7E5E4',
-                            300: '#D6D3D1',
-                        },
-                        ink: {
-                            DEFAULT: '#171717',
-                            muted: '#525252',
-                            faint: '#A3A3A3',
-                        },
-                        accent: {
-                            DEFAULT: '#171717',
-                            hover: '#262626',
-                        },
-                        success: '#16A34A',
-                        warning: '#CA8A04',
-                        error: '#DC2626',
-                    },
-                    animation: {
-                        'fade-in': 'fadeIn 0.4s ease-out',
-                        'slide-up': 'slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
-                        'scale-in': 'scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                    },
-                    keyframes: {
-                        fadeIn: {
-                            'from': { opacity: '0' },
-                            'to': { opacity: '1' }
-                        },
-                        slideUp: {
-                            'from': { opacity: '0', transform: 'translateY(16px)' },
-                            'to': { opacity: '1', transform: 'translateY(0)' }
-                        },
-                        scaleIn: {
-                            'from': { opacity: '0', transform: 'scale(0.96)' },
-                            'to': { opacity: '1', transform: 'scale(1)' }
-                        }
-                    },
-                    typography: (theme) => ({
-                        DEFAULT: {
-                            css: {
-                                color: theme('colors.ink.DEFAULT'),
-                                a: { color: theme('colors.ink.DEFAULT'), textDecoration: 'underline' },
-                                h1: { fontFamily: theme('fontFamily.display'), fontWeight: '400' },
-                                h2: { fontFamily: theme('fontFamily.display'), fontWeight: '400' },
-                                h3: { fontFamily: theme('fontFamily.display'), fontWeight: '400' },
-                                strong: { fontWeight: '600' },
-                            },
-                        },
-                    }),
-                }
-            }
-        }
-    </script>
-
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@300;400;500;600;700&display=swap');
-
-        * {
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        body {
-            overscroll-behavior-y: none;
-            font-family: 'Outfit', system-ui, sans-serif;
-            background-color: #FAFAF9;
-            color: #171717;
-            letter-spacing: -0.01em;
-        }
-
-        .font-display {
-            font-family: 'Instrument Serif', Georgia, serif;
-        }
-
-        .safe-area-pb { padding-bottom: env(safe-area-inset-bottom); }
-        .safe-area-pt { padding-top: env(safe-area-inset-top); }
-        
-        input[type="checkbox"]:checked {
-            background-color: #171717;
-            border-color: #171717;
-        }
-
-        .glass-nav {
-            background: rgba(250, 250, 249, 0.85);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-        }
-        
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-        .prose p { margin-bottom: 1em; line-height: 1.7; }
-        .prose h1 { font-size: 1.75em; margin-top: 1.5em; margin-bottom: 0.5em; }
-        .prose h2 { font-size: 1.375em; margin-top: 1.5em; margin-bottom: 0.5em; }
-        .prose ul { list-style-type: disc; padding-left: 1.5em; }
-        .prose li { margin-bottom: 0.5em; }
-
-        /* Subtle grain texture */
-        .grain::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-            opacity: 0.03;
-            pointer-events: none;
-        }
-
-        /* Custom focus states */
-        input:focus, textarea:focus, select:focus, button:focus-visible {
-            outline: none;
-            box-shadow: 0 0 0 2px #171717;
-        }
-
-        /* Smooth number input */
-        input[type="number"]::-webkit-inner-spin-button,
-        input[type="number"]::-webkit-outer-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-    </style>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="text-ink select-none antialiased">
     <div id="root"></div>
 
-    <script type="module" src="/src/App.jsx"></script>
+    <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>
