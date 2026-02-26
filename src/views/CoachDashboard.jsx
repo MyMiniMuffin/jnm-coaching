@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { Plus, X, Loader2, Trash2, Pause, Play, User } from 'lucide-react';
+import { Plus, X, Loader2, Trash2, Pause, Play, User, ChevronRight } from 'lucide-react';
 import { Card, Badge, Button } from '../components/ui';
 import { useEscapeKey } from '../hooks';
 import { formatDateNO } from '../lib/formatters';

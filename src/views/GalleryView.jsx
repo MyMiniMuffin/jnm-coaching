@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Camera, X, Trash2, Loader2, Plus, Check, Eye, ChevronLeft, ChevronRight, Scale } from 'lucide-react';
+import { Camera, X, Trash2, Loader2, Plus, Check, Eye, ChevronLeft, ChevronRight, Scale, ArrowRight, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { Card, Badge, Button, InputLabel } from '../components/ui';
 import ImageModal from '../components/ImageModal';
