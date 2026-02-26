@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Utensils, Dumbbell, Edit2, X, Save, Loader2, Check } from 'lucide-react';
+import { Utensils, Dumbbell, Edit2, Loader2, Check } from 'lucide-react';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { Card, Button } from '../components/ui';

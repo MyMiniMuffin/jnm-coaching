@@ -1,11 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { X, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
-import { useEscapeKey } from '../hooks';
 import { getFullSizeImage } from '../lib/formatters';
 
 const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
-    useEscapeKey(onClose);
     const [index, setIndex] = useState(initialIndex || 0);
     const [loading, setLoading] = useState(true);
 
@@ -20,30 +18,27 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
     const hasNext = index < images.length - 1;
     const hasPrev = index > 0;
 
-    const handleNext = (e) => {
+    const handleNext = useCallback((e) => {
         if(e) e.stopPropagation();
-        if (hasNext) {
-            setLoading(true);
-            setIndex(index + 1);
-        }
-    };
-    const handlePrev = (e) => {
+        setLoading(true);
+        setIndex(prev => Math.min(prev + 1, images.length - 1));
+    }, [images.length]);
+
+    const handlePrev = useCallback((e) => {
         if(e) e.stopPropagation();
-        if (hasPrev) {
-            setLoading(true);
-            setIndex(index - 1);
-        }
-    };
+        setLoading(true);
+        setIndex(prev => Math.max(prev - 1, 0));
+    }, []);
 
     useEffect(() => {
         const handleKeyDown = (e) => {
-            if (e.key === 'ArrowRight' && hasNext) handleNext();
-            if (e.key === 'ArrowLeft' && hasPrev) handlePrev();
-            if (e.key === 'Escape') onClose();
+            if (e.key === 'ArrowRight') handleNext();
+            else if (e.key === 'ArrowLeft') handlePrev();
+            else if (e.key === 'Escape') onClose();
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [hasNext, hasPrev, onClose, handleNext, handlePrev]);
+    }, [onClose, handleNext, handlePrev]);
 
     return (
         <div className="fixed inset-0 z-[100] bg-ink/95 flex items-center justify-center animate-fade-in">

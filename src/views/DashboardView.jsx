@@ -190,7 +190,6 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
 // --- Plan Settings Modal (erstatter prompt()-dialoger) ---
 const PlanSettingsModal = React.memo(({ userData, onClose, onUpdateData, onRefreshData, onOpenPeriodModal }) => {
     useEscapeKey(onClose);
-    const toast = useToast();
     const [startDate, setStartDate] = useState(
         userData.startDate ? new Date(userData.startDate).toISOString().split('T')[0] : ''
     );
