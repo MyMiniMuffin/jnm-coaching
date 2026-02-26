@@ -57,6 +57,20 @@ input:focus, textarea:focus, select:focus, button:focus-visible {
     box-shadow: 0 0 0 2px #171717;
 }
 
+/* View transition — subtil fade ved tab-bytte */
+.view-enter {
+    animation: viewEnter 0.2s ease-out;
+}
+@keyframes viewEnter {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Nav pill indicator */
+.nav-pill {
+    transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
 /* Smooth number input */
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {

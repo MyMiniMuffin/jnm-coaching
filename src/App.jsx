@@ -25,12 +25,73 @@ const GalleryView = React.lazy(() => import('./views/GalleryView'));
 const PlanSection = React.lazy(() => import('./views/PlanSection'));
 const CheckInView = React.lazy(() => import('./views/CheckInView'));
 
-// Fallback for lazy-loaded views
-const ViewFallback = () => (
-    <div className="flex items-center justify-center py-20">
-        <Loader2 className="animate-spin text-ink-muted" size={24} />
-    </div>
-);
+// View-spesifikke skeleton loading states
+const ViewSkeleton = ({ tab }) => {
+    if (tab === 'gallery') return (
+        <div className="space-y-4 animate-pulse">
+            <div className="flex gap-2">
+                {[1,2,3].map(i => <div key={i} className="h-8 w-20 bg-surface-200 rounded-full" />)}
+            </div>
+            <div className="grid grid-cols-3 gap-1.5">
+                {[1,2,3,4,5,6].map(i => <div key={i} className="aspect-square bg-surface-200 rounded-xl" />)}
+            </div>
+        </div>
+    );
+    if (tab === 'diet' || tab === 'workout') return (
+        <div className="animate-pulse">
+            <div className="bg-white rounded-2xl border border-surface-200 overflow-hidden">
+                <div className="p-5 border-b border-surface-100 flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-surface-200 rounded-xl" />
+                        <div className="h-6 w-24 bg-surface-200 rounded-lg" />
+                    </div>
+                    <div className="h-8 w-20 bg-surface-200 rounded-xl" />
+                </div>
+                <div className="p-5 space-y-3">
+                    <div className="h-4 bg-surface-200 rounded w-full" />
+                    <div className="h-4 bg-surface-200 rounded w-5/6" />
+                    <div className="h-4 bg-surface-200 rounded w-4/6" />
+                    <div className="h-4 bg-surface-200 rounded w-full" />
+                    <div className="h-4 bg-surface-200 rounded w-3/6" />
+                </div>
+            </div>
+        </div>
+    );
+    if (tab === 'checkin') return (
+        <div className="space-y-4 animate-pulse">
+            <div className="bg-white rounded-2xl border border-surface-200 p-5 space-y-4">
+                <div className="h-6 w-32 bg-surface-200 rounded-lg" />
+                <div className="h-12 bg-surface-200 rounded-xl" />
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="h-20 bg-surface-200 rounded-xl" />
+                    <div className="h-20 bg-surface-200 rounded-xl" />
+                </div>
+                <div className="h-12 bg-surface-200 rounded-xl" />
+            </div>
+        </div>
+    );
+    // Dashboard default
+    return (
+        <div className="space-y-4 animate-pulse">
+            <div className="h-40 bg-surface-200 rounded-2xl" />
+            <div className="grid grid-cols-2 gap-4">
+                <div className="h-32 bg-surface-200 rounded-2xl" />
+                <div className="h-32 bg-surface-200 rounded-2xl" />
+            </div>
+            <div className="h-24 bg-surface-200 rounded-2xl" />
+        </div>
+    );
+};
+
+// Prefetch alle views i bakgrunnen når browser er idle
+const prefetchViews = () => {
+    import('./views/DashboardView');
+    import('./views/GalleryView');
+    import('./views/CheckInView');
+    import('./views/PlanSection');
+    import('./views/WeightProgressView');
+    import('./views/CoachDashboard');
+};
 
 const App = () => {
     const toast = useToast();
@@ -96,6 +157,15 @@ const App = () => {
             setIsLoading(false);
         };
         init();
+    }, []);
+
+    // Prefetch view-chunks når appen er lastet (gjør tab-bytte instant)
+    useEffect(() => {
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(prefetchViews);
+        } else {
+            setTimeout(prefetchViews, 2000);
+        }
     }, []);
 
     // Visibility change handler - sjekk session når app blir synlig
@@ -583,24 +653,26 @@ const App = () => {
                         </div>
                     </div>
                 ) : (
-                    <Suspense fallback={<ViewFallback />}>
-                        {activeTab === 'dashboard' ? (
-                            showWeightHistory ? (
-                                <WeightProgressView checkins={currentData.checkins} onBack={handleCloseWeightHistory} />
-                            ) : (
-                                <DashboardView userData={dashboardUserData} isCoach={isCoach} onUpdateData={handleUpdateData} onOpenWeightHistory={handleOpenWeightHistory} onRefreshData={handleRefresh} />
-                            )
-                        ) :
-                        activeTab === 'gallery' ? <GalleryView
-                            checkins={currentData.checkins}
-                            galleryImages={currentData.galleryImages || []}
-                            isCoach={isCoach}
-                            onAddGalleryImage={handleAddGalleryImage}
-                            onDeleteGalleryImage={handleDeleteGalleryImage}
-                        /> :
-                        activeTab === 'diet' ? <PlanSection type="diet" content={currentData.dietPlan} onSave={handleSaveDietPlan} isReadOnly={!isCoach} /> :
-                        activeTab === 'workout' ? <PlanSection type="workout" content={currentData.workoutPlan} onSave={handleSaveWorkoutPlan} isReadOnly={!isCoach} /> :
-                        <CheckInView checkins={currentData.checkins} onNewCheckin={handleNewCheckin} onDelete={handleDeleteCheckin} isReadOnly={isCoach} stepGoal={currentData.stepGoal} />}
+                    <Suspense fallback={<ViewSkeleton tab={activeTab} />}>
+                        <div key={activeTab} className="view-enter">
+                            {activeTab === 'dashboard' ? (
+                                showWeightHistory ? (
+                                    <WeightProgressView checkins={currentData.checkins} onBack={handleCloseWeightHistory} />
+                                ) : (
+                                    <DashboardView userData={dashboardUserData} isCoach={isCoach} onUpdateData={handleUpdateData} onOpenWeightHistory={handleOpenWeightHistory} onRefreshData={handleRefresh} />
+                                )
+                            ) :
+                            activeTab === 'gallery' ? <GalleryView
+                                checkins={currentData.checkins}
+                                galleryImages={currentData.galleryImages || []}
+                                isCoach={isCoach}
+                                onAddGalleryImage={handleAddGalleryImage}
+                                onDeleteGalleryImage={handleDeleteGalleryImage}
+                            /> :
+                            activeTab === 'diet' ? <PlanSection type="diet" content={currentData.dietPlan} onSave={handleSaveDietPlan} isReadOnly={!isCoach} /> :
+                            activeTab === 'workout' ? <PlanSection type="workout" content={currentData.workoutPlan} onSave={handleSaveWorkoutPlan} isReadOnly={!isCoach} /> :
+                            <CheckInView checkins={currentData.checkins} onNewCheckin={handleNewCheckin} onDelete={handleDeleteCheckin} isReadOnly={isCoach} stepGoal={currentData.stepGoal} />}
+                        </div>
                     </Suspense>
                 )}
             </main>
