@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import {
-  Check, Camera, X, Trash2, Loader2, Moon, Zap, Scale,
-  Dumbbell, Activity, Footprints, ChevronLeft, AlertCircle, Save
+  Check, Camera, X, Trash2, Loader2, Scale,
+  Activity, Footprints, AlertCircle, Save
 } from 'lucide-react';
 import { Card, Badge, Button, InputLabel, SelectField } from '../components/ui';
 import ImageModal from '../components/ImageModal';

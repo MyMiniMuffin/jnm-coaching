@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Utensils, Dumbbell, Edit2, Loader2, Check } from 'lucide-react';
+import { Utensils, Dumbbell, Pencil, Loader2, Check } from 'lucide-react';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { Card, Button } from '../components/ui';
+
+// Konfigurer marked (kun brukt her)
+marked.setOptions({ breaks: true, gfm: true });
 
 const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
     const [isEditing, setIsEditing] = useState(false);
@@ -51,7 +54,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                             onClick={handleToggleEdit}
                             disabled={isSaving}
                         >
-                            {isSaving ? <><Loader2 size={16} className="animate-spin" /> Lagrer...</> : isEditing ? <><Check size={16} /> Lagre</> : <><Edit2 size={16} /> Rediger</>}
+                            {isSaving ? <><Loader2 size={16} className="animate-spin" /> Lagrer...</> : isEditing ? <><Check size={16} /> Lagre</> : <><Pencil size={16} /> Rediger</>}
                         </Button>
                     )}
                 </div>

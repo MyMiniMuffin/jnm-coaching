@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { Loader2, Pause, Eye, LogOut, ChevronLeft } from 'lucide-react';
 
 // Lib
@@ -9,7 +9,7 @@ import { INITIAL_DATA_STATE, TAB_ORDER } from './lib/config';
 // Hooks
 import { useSwipe, usePullToRefresh } from './hooks';
 
-// Components
+// Components (eagerly loaded — small and used everywhere)
 import { Skeleton, Button } from './components/ui';
 import { useToast } from './components/Toast';
 import LoginScreen from './components/LoginScreen';
@@ -17,13 +17,20 @@ import ReauthPrompt from './components/ReauthPrompt';
 import Header from './components/Header';
 import Navigation from './components/Navigation';
 
-// Views
-import CoachDashboard from './views/CoachDashboard';
-import DashboardView from './views/DashboardView';
-import WeightProgressView from './views/WeightProgressView';
-import GalleryView from './views/GalleryView';
-import PlanSection from './views/PlanSection';
-import CheckInView from './views/CheckInView';
+// Views (lazy loaded — each gets its own chunk)
+const CoachDashboard = React.lazy(() => import('./views/CoachDashboard'));
+const DashboardView = React.lazy(() => import('./views/DashboardView'));
+const WeightProgressView = React.lazy(() => import('./views/WeightProgressView'));
+const GalleryView = React.lazy(() => import('./views/GalleryView'));
+const PlanSection = React.lazy(() => import('./views/PlanSection'));
+const CheckInView = React.lazy(() => import('./views/CheckInView'));
+
+// Fallback for lazy-loaded views
+const ViewFallback = () => (
+    <div className="flex items-center justify-center py-20">
+        <Loader2 className="animate-spin text-ink-muted" size={24} />
+    </div>
+);
 
 const App = () => {
     const toast = useToast();
@@ -510,14 +517,16 @@ const App = () => {
                                 <h2 className="text-xl font-display">Din historikk</h2>
                             </div>
                             <div className="p-4 pb-8">
-                                <CheckInView
-                                    checkins={currentData.checkins}
-                                    onNewCheckin={() => {}}
-                                    onDelete={() => {}}
-                                    isReadOnly={true}
-                                    stepGoal={currentData.stepGoal}
-                                    hideForm={true}
-                                />
+                                <Suspense fallback={<ViewFallback />}>
+                                    <CheckInView
+                                        checkins={currentData.checkins}
+                                        onNewCheckin={() => {}}
+                                        onDelete={() => {}}
+                                        isReadOnly={true}
+                                        stepGoal={currentData.stepGoal}
+                                        hideForm={true}
+                                    />
+                                </Suspense>
                             </div>
                         </div>
                     )}
@@ -532,14 +541,16 @@ const App = () => {
                 {showReauthPrompt && <ReauthPrompt onReauth={handleReauth} onLogout={handleLogout} />}
                 <Header title="Oversikt" user={currentUser} onLogout={handleLogout} />
                 <main className="p-4">
-                    <CoachDashboard
-                        user={currentUser}
-                        allUsers={allUsers}
-                        onSelectClient={handleSelectClient}
-                        onAddClient={handleAddClient}
-                        onDeleteClient={handleDeleteClient}
-                        onArchiveClient={handleArchiveClient}
-                    />
+                    <Suspense fallback={<ViewFallback />}>
+                        <CoachDashboard
+                            user={currentUser}
+                            allUsers={allUsers}
+                            onSelectClient={handleSelectClient}
+                            onAddClient={handleAddClient}
+                            onDeleteClient={handleDeleteClient}
+                            onArchiveClient={handleArchiveClient}
+                        />
+                    </Suspense>
                 </main>
             </div>
         );
@@ -572,7 +583,7 @@ const App = () => {
                         </div>
                     </div>
                 ) : (
-                    <>
+                    <Suspense fallback={<ViewFallback />}>
                         {activeTab === 'dashboard' ? (
                             showWeightHistory ? (
                                 <WeightProgressView checkins={currentData.checkins} onBack={handleCloseWeightHistory} />
@@ -590,7 +601,7 @@ const App = () => {
                         activeTab === 'diet' ? <PlanSection type="diet" content={currentData.dietPlan} onSave={handleSaveDietPlan} isReadOnly={!isCoach} /> :
                         activeTab === 'workout' ? <PlanSection type="workout" content={currentData.workoutPlan} onSave={handleSaveWorkoutPlan} isReadOnly={!isCoach} /> :
                         <CheckInView checkins={currentData.checkins} onNewCheckin={handleNewCheckin} onDelete={handleDeleteCheckin} isReadOnly={isCoach} stepGoal={currentData.stepGoal} />}
-                    </>
+                    </Suspense>
                 )}
             </main>
             <Navigation activeTab={activeTab} setActiveTab={handleTabChange} />

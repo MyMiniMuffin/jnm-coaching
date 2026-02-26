@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import {
-  Scale, Footprints, Edit2, ChevronRight, TrendingUp, TrendingDown, Minus,
+  Scale, Footprints, Pencil, ChevronRight, TrendingUp, TrendingDown, Minus,
   X, Plus, Check, Loader2, Calendar, Pause, Play, Activity, ArrowRight
 } from 'lucide-react';
 import { Card, Badge, Button, InputLabel } from '../components/ui';
@@ -498,7 +498,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                                 onClick={handleOpenPlanSettings}
                                 className="p-2 rounded-lg hover:bg-white/10 text-white/60 transition-colors"
                             >
-                                <Edit2 size={18} />
+                                <Pencil size={18} />
                             </button>
                         )}
                     </div>

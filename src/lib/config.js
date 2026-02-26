@@ -1,13 +1,7 @@
-import { marked } from 'marked';
 import { Home, Utensils, Dumbbell, ClipboardCheck, Camera } from 'lucide-react';
 
 // --- APP CONFIG ---
 export const APP_ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='160' fill='%23171717'/%3E%3Cpath d='M256 96c0 88.4 71.6 160 160 160-88.4 0-160 71.6-160 160 0-88.4-71.6-160-160-160 88.4 0 160-71.6 160-160z' fill='%23FAFAF9'/%3E%3C/svg%3E";
-
-// Marked config
-if (marked) {
-    marked.setOptions({ breaks: true, gfm: true });
-}
 
 // Navigation items
 export const NAV_ITEMS = [
