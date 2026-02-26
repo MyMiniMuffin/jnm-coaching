@@ -309,7 +309,7 @@ const App = () => {
         } finally {
             savingRef.current = false;
         }
-    }, [viewingClient]);
+    }, [viewingClient, toast]);
 
     const handleSaveDietPlan = useCallback((val) => handleUpdateData('dietPlan', val), [handleUpdateData]);
     const handleSaveWorkoutPlan = useCallback((val) => handleUpdateData('workoutPlan', val), [handleUpdateData]);
@@ -384,7 +384,7 @@ const App = () => {
         } catch (e) {
             toast(e.message || 'Feil ved opprettelse av utøver', 'error');
         }
-    }, []);
+    }, [toast]);
 
     const handleDeleteClient = useCallback(async (id) => {
         try {
@@ -397,7 +397,7 @@ const App = () => {
         } catch (e) {
             toast(e.message || 'Feil ved sletting av utøver', 'error');
         }
-    }, []);
+    }, [toast]);
 
     const handleArchiveClient = useCallback(async (id, archive) => {
         try {
@@ -410,7 +410,7 @@ const App = () => {
         } catch (e) {
             toast(e.message || 'Feil ved arkivering', 'error');
         }
-    }, []);
+    }, [toast]);
 
     const handleAddGalleryImage = useCallback(async (imageUrl, label, date, weight) => {
         if (!viewingClient) return;

@@ -12,17 +12,11 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
         return () => { document.body.style.overflow = 'unset'; };
     }, []);
 
-    if (!images || images.length === 0) return null;
-
-    const currentImage = images[index];
-    const hasNext = index < images.length - 1;
-    const hasPrev = index > 0;
-
     const handleNext = useCallback((e) => {
         if(e) e.stopPropagation();
         setLoading(true);
-        setIndex(prev => Math.min(prev + 1, images.length - 1));
-    }, [images.length]);
+        setIndex(prev => Math.min(prev + 1, (images?.length || 1) - 1));
+    }, [images?.length]);
 
     const handlePrev = useCallback((e) => {
         if(e) e.stopPropagation();
@@ -31,6 +25,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
     }, []);
 
     useEffect(() => {
+        if (!images || images.length === 0) return;
         const handleKeyDown = (e) => {
             if (e.key === 'ArrowRight') handleNext();
             else if (e.key === 'ArrowLeft') handlePrev();
@@ -38,7 +33,13 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [onClose, handleNext, handlePrev]);
+    }, [images, onClose, handleNext, handlePrev]);
+
+    if (!images || images.length === 0) return null;
+
+    const currentImage = images[index];
+    const hasNext = index < images.length - 1;
+    const hasPrev = index > 0;
 
     return (
         <div className="fixed inset-0 z-[100] bg-ink/95 flex items-center justify-center animate-fade-in">
