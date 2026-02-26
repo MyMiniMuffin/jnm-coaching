@@ -16,10 +16,10 @@ const Navigation = React.memo(({ activeTab, setActiveTab }) => {
 
     return (
         <div className="fixed bottom-0 left-0 right-0 glass-nav z-50 border-t border-surface-200">
-            <div className="relative flex justify-around items-center h-16 max-w-md mx-auto">
+            <div className="relative grid grid-cols-5 h-16 max-w-md mx-auto">
                 {/* Glidende pill-indikator */}
                 <div
-                    className="absolute top-1.5 bottom-1.5 rounded-xl bg-surface-100 nav-pill pointer-events-none"
+                    className="absolute top-2 bottom-2 rounded-xl bg-surface-100 nav-pill pointer-events-none"
                     style={pillStyle}
                 />
 
@@ -30,15 +30,14 @@ const Navigation = React.memo(({ activeTab, setActiveTab }) => {
                         <button
                             key={item.id}
                             onClick={() => handleTabClick(item.id)}
-                            className={`relative z-10 flex flex-col items-center justify-center w-full h-full gap-1 transition-all duration-200 active:scale-90 ${isActive ? 'text-ink' : 'text-ink-faint'}`}
+                            className={`relative z-10 flex flex-col items-center justify-center gap-1 transition-colors duration-200 active:scale-90 ${isActive ? 'text-ink' : 'text-ink-faint'}`}
                         >
                             <Icon size={22} strokeWidth={isActive ? 2 : 1.5} />
-                            <span className={`text-[10px] transition-all duration-200 ${isActive ? 'font-semibold text-ink' : 'font-medium text-ink-faint'}`}>{item.label}</span>
+                            <span className={`text-[10px] ${isActive ? 'font-semibold text-ink' : 'font-medium text-ink-faint'}`}>{item.label}</span>
                         </button>
                     );
                 })}
             </div>
-            {/* Safe area spacer for iPhone home indicator */}
             <div className="safe-area-pb" />
         </div>
     );
