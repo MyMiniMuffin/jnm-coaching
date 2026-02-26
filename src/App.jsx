@@ -587,7 +587,7 @@ const App = () => {
                                 <h2 className="text-xl font-display">Din historikk</h2>
                             </div>
                             <div className="p-4 pb-8">
-                                <Suspense fallback={<ViewFallback />}>
+                                <Suspense fallback={<ViewSkeleton />}>
                                     <CheckInView
                                         checkins={currentData.checkins}
                                         onNewCheckin={() => {}}
@@ -611,7 +611,7 @@ const App = () => {
                 {showReauthPrompt && <ReauthPrompt onReauth={handleReauth} onLogout={handleLogout} />}
                 <Header title="Oversikt" user={currentUser} onLogout={handleLogout} />
                 <main className="p-4">
-                    <Suspense fallback={<ViewFallback />}>
+                    <Suspense fallback={<ViewSkeleton />}>
                         <CoachDashboard
                             user={currentUser}
                             allUsers={allUsers}
