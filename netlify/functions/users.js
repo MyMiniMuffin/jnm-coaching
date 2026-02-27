@@ -60,7 +60,7 @@ exports.handler = async (event) => {
           u.start_date,
           u.is_archived,
           COALESCE(COUNT(c.id) FILTER (WHERE c.is_read = false), 0)::integer as "unreadCheckins",
-          LEFT(MAX(c.date)::text, 10) as "lastCheckinDate"
+          (SELECT LEFT(c2.date::text, 10) FROM checkins c2 WHERE c2.user_id = u.id ORDER BY c2.created_at DESC LIMIT 1) as "lastCheckinDate"
         FROM users u
         LEFT JOIN checkins c ON c.user_id = u.id
         GROUP BY u.id, u.username, u.name, u.role, u.start_date, u.is_archived
@@ -80,7 +80,13 @@ exports.handler = async (event) => {
     // LAGE NY BRUKER (POST)
     if (event.httpMethod === 'POST') {
       try {
-        const { name, username, password, role } = JSON.parse(event.body);
+        let parsed;
+        try {
+          parsed = JSON.parse(event.body || '');
+        } catch (e) {
+          return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig JSON i request body' }) };
+        }
+        const { name, username, password, role } = parsed;
 
         console.log('Users POST: Oppretter ny bruker:', { name, username, role });
 
@@ -127,7 +133,7 @@ exports.handler = async (event) => {
           SELECT
             u.id, u.username, u.name, u.role, u.start_date, u.is_archived,
             COALESCE(COUNT(c.id) FILTER (WHERE c.is_read = false), 0)::integer as "unreadCheckins",
-            LEFT(MAX(c.date)::text, 10) as "lastCheckinDate"
+            (SELECT LEFT(c2.date::text, 10) FROM checkins c2 WHERE c2.user_id = u.id ORDER BY c2.created_at DESC LIMIT 1) as "lastCheckinDate"
           FROM users u
           LEFT JOIN checkins c ON c.user_id = u.id
           GROUP BY u.id, u.username, u.name, u.role, u.start_date, u.is_archived
@@ -145,7 +151,13 @@ exports.handler = async (event) => {
 
     // OPPDATERE BRUKER (PATCH) - For arkivering etc.
     if (event.httpMethod === 'PATCH') {
-      const { id, is_archived } = JSON.parse(event.body);
+      let parsed;
+      try {
+        parsed = JSON.parse(event.body || '');
+      } catch (e) {
+        return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig JSON i request body' }) };
+      }
+      const { id, is_archived } = parsed;
 
       if (!id) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Mangler bruker-ID' }) };
@@ -165,7 +177,7 @@ exports.handler = async (event) => {
         SELECT
           u.id, u.username, u.name, u.role, u.start_date, u.is_archived,
           COALESCE(COUNT(c.id) FILTER (WHERE c.is_read = false), 0)::integer as "unreadCheckins",
-          LEFT(MAX(c.date)::text, 10) as "lastCheckinDate"
+          (SELECT LEFT(c2.date::text, 10) FROM checkins c2 WHERE c2.user_id = u.id ORDER BY c2.created_at DESC LIMIT 1) as "lastCheckinDate"
         FROM users u
         LEFT JOIN checkins c ON c.user_id = u.id
         GROUP BY u.id, u.username, u.name, u.role, u.start_date, u.is_archived
@@ -176,14 +188,20 @@ exports.handler = async (event) => {
 
     // SLETTE BRUKER (DELETE)
     if (event.httpMethod === 'DELETE') {
-      const { id } = JSON.parse(event.body);
+      let parsed;
+      try {
+        parsed = JSON.parse(event.body || '');
+      } catch (e) {
+        return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig JSON i request body' }) };
+      }
+      const { id } = parsed;
 
       if (!id) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Mangler bruker-ID' }) };
       }
 
       // Hindre at coach sletter seg selv
-      if (parseInt(id) === authResult.userId) {
+      if (parseInt(id, 10) === parseInt(authResult.userId, 10)) {
         return { statusCode: 403, body: JSON.stringify({ error: 'Du kan ikke slette din egen bruker' }) };
       }
 
@@ -205,7 +223,7 @@ exports.handler = async (event) => {
         SELECT
           u.id, u.username, u.name, u.role, u.start_date, u.is_archived,
           COALESCE(COUNT(c.id) FILTER (WHERE c.is_read = false), 0)::integer as "unreadCheckins",
-          LEFT(MAX(c.date)::text, 10) as "lastCheckinDate"
+          (SELECT LEFT(c2.date::text, 10) FROM checkins c2 WHERE c2.user_id = u.id ORDER BY c2.created_at DESC LIMIT 1) as "lastCheckinDate"
         FROM users u
         LEFT JOIN checkins c ON c.user_id = u.id
         GROUP BY u.id, u.username, u.name, u.role, u.start_date, u.is_archived

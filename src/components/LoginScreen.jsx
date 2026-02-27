@@ -45,6 +45,8 @@ const LoginScreen = React.memo(({ onLogin }) => {
                             onChange={(e) => setUsername(e.target.value)}
                             className="w-full px-4 py-3.5 bg-white border border-surface-200 rounded-xl focus:ring-2 focus:ring-ink focus:border-ink outline-none transition-all"
                             placeholder="Skriv inn brukernavn"
+                            autoFocus
+                            autoComplete="username"
                         />
                     </div>
                     <div>
@@ -55,6 +57,7 @@ const LoginScreen = React.memo(({ onLogin }) => {
                             onChange={(e) => setPassword(e.target.value)}
                             className="w-full px-4 py-3.5 bg-white border border-surface-200 rounded-xl focus:ring-2 focus:ring-ink focus:border-ink outline-none transition-all"
                             placeholder="••••••••"
+                            autoComplete="current-password"
                         />
                     </div>
 

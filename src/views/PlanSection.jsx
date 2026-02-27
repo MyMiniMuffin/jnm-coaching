@@ -61,10 +61,11 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
 
                 <div className="p-5">
                     {isEditing && !isReadOnly ? (
-                        <textarea 
-                            value={text} 
-                            onChange={handleTextChange} 
-                            className="w-full min-h-[60vh] p-4 bg-surface-50 rounded-xl border border-surface-200 focus:ring-2 focus:ring-ink focus:border-ink outline-none text-ink font-mono text-sm leading-relaxed resize-none" 
+                        <textarea
+                            value={text}
+                            onChange={handleTextChange}
+                            autoFocus
+                            className="w-full min-h-[60vh] p-4 bg-surface-50 rounded-xl border border-surface-200 focus:ring-2 focus:ring-ink focus:border-ink outline-none text-ink font-mono text-sm leading-relaxed resize-none"
                             placeholder="Skriv planen her..."
                         />
                     ) : (

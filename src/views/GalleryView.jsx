@@ -4,6 +4,7 @@ import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { Card, Badge, Button, InputLabel } from '../components/ui';
 import ImageModal from '../components/ImageModal';
 import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/ConfirmDialog';
 import { useEscapeKey } from '../hooks';
 import { api } from '../lib/api';
 import { formatDateNO, formatWeight, getThumbnail, getFullSizeImage } from '../lib/formatters';
@@ -11,6 +12,7 @@ import { formatDateNO, formatWeight, getThumbnail, getFullSizeImage } from '../l
 // GalleryView - samler alle bilder fra checkins for lett sammenligning
 const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false, onAddGalleryImage, onDeleteGalleryImage }) => {
     const toast = useToast();
+    const confirmDialog = useConfirm();
     const [lightbox, setLightbox] = useState({ isOpen: false, images: [], index: 0 });
     const [viewMode, setViewMode] = useState('grid'); // 'grid', 'timeline', eller 'compare'
     const [compareImages, setCompareImages] = useState({ before: null, after: null });
@@ -155,7 +157,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
         const files = Array.from(e.target.files);
         if (files.length === 0) return;
         if (files.length > 5) {
-            alert('Maks 5 bilder om gangen');
+            toast('Maks 5 bilder om gangen', 'error');
             return;
         }
         setIsUploading(true);
@@ -195,15 +197,15 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
     }, [onAddGalleryImage, uploadForm]);
 
     const handleDeleteGalleryImage = useCallback(async (imageId) => {
-        if (confirm('Slett dette bildet?')) {
+        if (await confirmDialog('Slett dette bildet fra galleriet?', { title: 'Slett bilde', confirmText: 'Slett', destructive: true })) {
             try {
                 await onDeleteGalleryImage(imageId);
             } catch (err) {
                 console.error(err);
-                alert('Kunne ikke slette bildet');
+                toast('Kunne ikke slette bildet', 'error');
             }
         }
-    }, [onDeleteGalleryImage]);
+    }, [onDeleteGalleryImage, confirmDialog, toast]);
 
     // Beregn vektendring mellom valgte bilder
     const weightDiff = useMemo(() => {
@@ -244,7 +246,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
             <Card className="w-full max-w-sm p-6 animate-scale-in">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-display">Last opp bilder</h2>
-                    <button onClick={closeUploadModal} className="text-ink-muted hover:text-ink p-2">
+                    <button onClick={closeUploadModal} aria-label="Lukk" className="text-ink-muted hover:text-ink p-2">
                         <X size={20} />
                     </button>
                 </div>
@@ -344,8 +346,9 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                                 <p className="text-sm text-white/60">Sammenligning</p>
                                 <p className="font-medium">{daysDiff} dager</p>
                             </div>
-                            <button 
-                                onClick={() => setFullscreenCompare(false)} 
+                            <button
+                                onClick={() => setFullscreenCompare(false)}
+                                aria-label="Lukk fullskjerm"
                                 className="text-white/60 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors"
                             >
                                 <X size={28} />
@@ -656,6 +659,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                             {isCoach && img.isGalleryImage && onDeleteGalleryImage && (
                                 <button
                                     onClick={(e) => { e.stopPropagation(); handleDeleteGalleryImage(img.galleryImageId); }}
+                                    aria-label="Slett bilde"
                                     className="absolute top-1.5 right-1.5 bg-red-500 text-white p-1.5 rounded-full shadow-lg active:scale-95 transition-transform z-10"
                                 >
                                     <X size={14} />

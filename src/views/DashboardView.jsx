@@ -5,25 +5,28 @@ import {
 } from 'lucide-react';
 import { Card, Badge, Button, InputLabel } from '../components/ui';
 import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/ConfirmDialog';
 import { useEscapeKey } from '../hooks';
 import { formatDateNO, formatWeight } from '../lib/formatters';
 import { QUOTES } from '../lib/config';
 
 const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCreatePeriod, onEndPeriod, onUpdatePeriod }) => {
     useEscapeKey(onClose);
+    const confirmDialog = useConfirm();
     const [view, setView] = useState('list'); // 'list' eller 'create'
     const [formData, setFormData] = useState({ name: '', startingWeight: '', goalWeight: '' });
+    const [weightError, setWeightError] = useState('');
     const periods = userData.periods || [];
     const activePeriod = periods.find(p => p.isActive);
 
     const handleNameChange = useCallback((e) => setFormData(prev => ({ ...prev, name: e.target.value })), []);
-    const handleStartingWeightChange = useCallback((e) => setFormData(prev => ({ ...prev, startingWeight: e.target.value })), []);
+    const handleStartingWeightChange = useCallback((e) => { setFormData(prev => ({ ...prev, startingWeight: e.target.value })); setWeightError(''); }, []);
     const handleGoalWeightChange = useCallback((e) => setFormData(prev => ({ ...prev, goalWeight: e.target.value })), []);
 
     const handleCreate = useCallback(async (e) => {
         e.preventDefault();
         if (!formData.startingWeight) {
-            alert('Startvekt er påkrevd');
+            setWeightError('Startvekt er påkrevd');
             return;
         }
         await onCreatePeriod(formData.name || `Runde ${periods.length + 1}`, formData.startingWeight, formData.goalWeight || null);
@@ -31,18 +34,18 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
     }, [formData, periods.length, onCreatePeriod, onClose]);
 
     const handleEnd = useCallback(async (periodId) => {
-        if (confirm('Avslutt denne runden? Du kan starte en ny runde etterpå.')) {
+        if (await confirmDialog('Avslutt denne runden? Du kan starte en ny runde etterpå.', { title: 'Avslutt runde', confirmText: 'Avslutt' })) {
             await onEndPeriod(periodId);
             onClose();
         }
-    }, [onEndPeriod, onClose]);
+    }, [onEndPeriod, onClose, confirmDialog]);
 
     return (
         <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
             <Card className="w-full max-w-md p-6 max-h-[80vh] overflow-y-auto animate-scale-in">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-display">Coaching-runder</h2>
-                    <button onClick={onClose} className="text-ink-muted hover:text-ink p-2">
+                    <button onClick={onClose} aria-label="Lukk" className="text-ink-muted hover:text-ink p-2">
                         <X size={20} />
                     </button>
                 </div>
@@ -154,9 +157,10 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                     value={formData.startingWeight}
                                     onChange={handleStartingWeightChange}
                                     placeholder="0.0"
-                                    className="w-full pl-12 pr-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink font-medium text-lg"
+                                    className={`w-full pl-12 pr-4 py-3.5 bg-surface-50 border rounded-xl outline-none focus:ring-2 focus:ring-ink font-medium text-lg ${weightError ? 'border-red-300' : 'border-surface-200'}`}
                                 />
                             </div>
+                            {weightError && <p className="text-red-600 text-xs mt-1.5">{weightError}</p>}
                         </div>
 
                         <div>
@@ -246,7 +250,7 @@ const PlanSettingsModal = React.memo(({ userData, onClose, onUpdateData, onRefre
             <Card className="w-full max-w-md p-6 max-h-[80vh] overflow-y-auto overflow-x-hidden animate-scale-in">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-display">Plan-innstillinger</h2>
-                    <button onClick={onClose} className="text-ink-muted hover:text-ink p-2">
+                    <button onClick={onClose} aria-label="Lukk" className="text-ink-muted hover:text-ink p-2">
                         <X size={20} />
                     </button>
                 </div>

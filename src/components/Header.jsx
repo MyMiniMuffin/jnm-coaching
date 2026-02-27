@@ -24,7 +24,7 @@ const Header = React.memo(({ title, user, viewingClient, onLogout, onClearClient
             {viewingClient ? (
                 <Button variant="secondary" size="sm" onClick={onClearClient}>Lukk</Button>
             ) : (
-                <button onClick={onLogout} className="text-ink-faint hover:text-ink p-2 rounded-xl hover:bg-surface-100 transition-colors">
+                <button onClick={onLogout} aria-label="Logg ut" className="text-ink-faint hover:text-ink p-2 rounded-xl hover:bg-surface-100 transition-colors">
                     <LogOut size={20} />
                 </button>
             )}

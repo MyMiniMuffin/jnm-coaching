@@ -16,7 +16,13 @@ exports.handler = async (event) => {
 
   try {
     const sql = neon(process.env.NETLIFY_DATABASE_URL);
-    const { username, password } = JSON.parse(event.body);
+    let parsed;
+    try {
+      parsed = JSON.parse(event.body || '');
+    } catch (e) {
+      return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig JSON i request body' }) };
+    }
+    const { username, password } = parsed;
 
     // Validering av input
     if (!username || !password || typeof username !== 'string' || typeof password !== 'string') {
@@ -36,10 +42,10 @@ exports.handler = async (event) => {
 
     if (result.length === 0) {
       // Timing-safe: Kjør en dummy bcrypt-sammenligning for å unngå timing attacks
-      await bcrypt.compare(password, '$2a$12$000000000000000000000000000000000000000000000000000000');
-      return { 
-        statusCode: 401, 
-        body: JSON.stringify({ error: 'Feil brukernavn eller passord' }) 
+      await bcrypt.compare(password, '$2b$12$LJ3m4ys3Lf5BAoSMTGCOfu0YBhlNpEYKnbBbGFN0vBcPRnSQljV3e');
+      return {
+        statusCode: 401,
+        body: JSON.stringify({ error: 'Feil brukernavn eller passord' })
       };
     }
 

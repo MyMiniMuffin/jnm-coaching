@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
 import { Loader2, Pause, Eye, LogOut, ChevronLeft } from 'lucide-react';
 
 // Lib
@@ -102,6 +102,7 @@ const App = () => {
 
     const [isClientLoading, setIsClientLoading] = useState(false);
     const [showWeightHistory, setShowWeightHistory] = useState(false);
+    const selectClientRef = useRef(0);
 
     const [currentData, setCurrentData] = useState(INITIAL_DATA_STATE);
     const [isLoading, setIsLoading] = useState(true);
@@ -328,7 +329,7 @@ const App = () => {
                 setCurrentData(prev => ({ ...prev, checkins: previousCheckins }));
             }
         } catch (e) {
-            alert('Kunne ikke slette.');
+            toast('Kunne ikke slette rapporten', 'error');
             setCurrentData(prev => ({ ...prev, checkins: previousCheckins }));
         }
     }, [viewingClient]);
@@ -339,13 +340,16 @@ const App = () => {
     }, []);
 
     const handleSelectClient = useCallback(async (client) => {
+        const requestId = ++selectClientRef.current;
         setCurrentData(INITIAL_DATA_STATE);
+        setViewingClient(client);
         setIsClientLoading(true);
         setShowWeightHistory(false);
         setActiveTab('dashboard');
 
         try {
             const result = await api.getUserData(client.id, false);
+            if (requestId !== selectClientRef.current) return; // Avbrutt av nyere klikk
             if (result.authError) {
                 setShowReauthPrompt(true);
                 setIsClientLoading(false);
@@ -355,10 +359,10 @@ const App = () => {
                 setCurrentData(result.data);
             }
         } catch (e) {
+            if (requestId !== selectClientRef.current) return;
             console.error('Kunne ikke hente klientdata:', e);
         }
 
-        setViewingClient(client);
         setIsClientLoading(false);
 
         if (client.unreadCheckins > 0) {
@@ -441,7 +445,7 @@ const App = () => {
                 ...prev,
                 galleryImages: (prev.galleryImages || []).filter(img => img.id !== tempId)
             }));
-            alert('Kunne ikke lagre bildet');
+            toast('Kunne ikke lagre bildet', 'error');
         }
     }, [viewingClient]);
 
@@ -473,7 +477,7 @@ const App = () => {
                     galleryImages: [...(prev.galleryImages || []), removedImage]
                 }));
             }
-            alert('Kunne ikke slette bildet');
+            toast('Kunne ikke slette bildet', 'error');
         }
     }, [viewingClient]);
 

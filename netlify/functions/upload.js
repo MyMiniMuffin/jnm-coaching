@@ -29,7 +29,13 @@ exports.handler = async (event) => {
       };
     }
 
-    const { image } = JSON.parse(event.body);
+    let parsed;
+    try {
+      parsed = JSON.parse(event.body || '');
+    } catch (e) {
+      return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig JSON i request body' }) };
+    }
+    const { image } = parsed;
 
     if (!image) {
       return {

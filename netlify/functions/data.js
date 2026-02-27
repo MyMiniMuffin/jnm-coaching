@@ -168,7 +168,12 @@ exports.handler = async (event) => {
 
     // --- POST: Handlinger ---
     if (event.httpMethod === 'POST') {
-      const body = JSON.parse(event.body);
+      let body;
+      try {
+        body = JSON.parse(event.body || '');
+      } catch (e) {
+        return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig JSON i request body' }) };
+      }
       const { userId, type, data } = body;
 
       if (!userId) {
@@ -341,6 +346,11 @@ exports.handler = async (event) => {
         if (authResult.role !== 'coach') {
           return { statusCode: 403, body: JSON.stringify({ error: 'Kun coach kan markere rapporter som lest' }) };
         }
+        // Verifiser at target-bruker er en utøver, ikke en annen coach
+        const targetUser = await sql`SELECT role FROM users WHERE id = ${userId}`;
+        if (targetUser.length === 0 || targetUser[0].role !== 'athlete') {
+          return { statusCode: 400, body: JSON.stringify({ error: 'Kan bare markere rapporter for utøvere' }) };
+        }
         await sql`UPDATE checkins SET is_read = true WHERE user_id = ${userId}`;
       }
       
@@ -396,7 +406,9 @@ exports.handler = async (event) => {
             })
           };
         } catch (txError) {
-          await sql`ROLLBACK`.catch(() => {});
+          await sql`ROLLBACK`.catch(rollbackErr => {
+            console.error('Rollback feilet:', rollbackErr);
+          });
           throw txError;
         }
       }

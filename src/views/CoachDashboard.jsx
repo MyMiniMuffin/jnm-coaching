@@ -1,12 +1,15 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { Plus, X, Trash2, Pause, Play, User, ChevronRight } from 'lucide-react';
+import { Plus, X, Trash2, Pause, Play, User, ChevronRight, Loader2 } from 'lucide-react';
 import { Card, Badge, Button } from '../components/ui';
 import { useEscapeKey } from '../hooks';
+import { useConfirm } from '../components/ConfirmDialog';
 import { formatDateNO } from '../lib/formatters';
 
 const CoachDashboard = React.memo(({ user, allUsers, onSelectClient, onAddClient, onDeleteClient, onArchiveClient }) => {
     const [showModal, setShowModal] = useState(false);
     const [showArchived, setShowArchived] = useState(false);
+    const [isCreating, setIsCreating] = useState(false);
+    const confirm = useConfirm();
 
     // Memoize filtrerte lister
     const { activeClients, archivedClients, totalAthletes } = useMemo(() => ({
@@ -25,10 +28,27 @@ const CoachDashboard = React.memo(({ user, allUsers, onSelectClient, onAddClient
 
     const handleFormSubmit = useCallback(async (e) => {
         e.preventDefault();
-        const fd = new FormData(e.target);
-        await onAddClient(Object.fromEntries(fd));
-        setShowModal(false);
+        setIsCreating(true);
+        try {
+            const fd = new FormData(e.target);
+            await onAddClient(Object.fromEntries(fd));
+            e.target.reset();
+            setShowModal(false);
+        } finally {
+            setIsCreating(false);
+        }
     }, [onAddClient]);
+
+    const handleDelete = useCallback(async (e, clientId) => {
+        e.stopPropagation();
+        if (await confirm('Er du sikker på at du vil slette denne utøveren permanent?', {
+            title: 'Slett utøver',
+            confirmText: 'Slett',
+            destructive: true
+        })) {
+            onDeleteClient(clientId);
+        }
+    }, [confirm, onDeleteClient]);
 
     return (
         <div className="space-y-5 pb-32 animate-slide-up">
@@ -37,27 +57,29 @@ const CoachDashboard = React.memo(({ user, allUsers, onSelectClient, onAddClient
                     <Card className="w-full max-w-sm p-6 animate-scale-in">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-xl font-display">Ny utøver</h2>
-                            <button onClick={closeModal} className="text-ink-muted hover:text-ink p-2">
+                            <button onClick={closeModal} aria-label="Lukk" className="text-ink-muted hover:text-ink p-2">
                                 <X size={20} />
                             </button>
                         </div>
                         <form onSubmit={handleFormSubmit} className="space-y-4">
-                            <input required name="name" type="text" placeholder="Fullt navn" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink" />
-                            <input required name="username" type="text" placeholder="Brukernavn" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink" />
-                            <input required name="password" type="password" minLength="6" placeholder="Passord (min. 6 tegn)" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink" />
-                            <Button type="submit" size="lg" className="w-full">Opprett utøver</Button>
+                            <input required name="name" type="text" placeholder="Fullt navn" autoFocus className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink" />
+                            <input required name="username" type="text" placeholder="Brukernavn" autoComplete="off" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink" />
+                            <input required name="password" type="password" minLength="6" placeholder="Passord (min. 6 tegn)" autoComplete="new-password" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink" />
+                            <Button type="submit" size="lg" className="w-full" disabled={isCreating}>
+                                {isCreating ? <><Loader2 size={18} className="animate-spin" /> Oppretter...</> : 'Opprett utøver'}
+                            </Button>
                         </form>
                     </Card>
                 </div>
             )}
-            
+
             {/* Hero Stats Card */}
             <div className="p-6 bg-ink text-white rounded-2xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-3xl transform translate-x-10 -translate-y-10" />
                 <div className="relative z-10">
                     <p className="text-white/60 text-sm">Velkommen tilbake</p>
                     <h2 className="text-3xl font-display mt-1">{user.name}</h2>
-                    
+
                     <div className="grid grid-cols-3 gap-4 mt-6">
                         <div className="text-center">
                             <p className="text-3xl font-semibold">{activeClients.length}</p>
@@ -78,13 +100,13 @@ const CoachDashboard = React.memo(({ user, allUsers, onSelectClient, onAddClient
             {/* Toggle og Ny-knapp */}
             <div className="flex justify-between items-center">
                 <div className="flex gap-2">
-                    <button 
+                    <button
                         onClick={showActive}
                         className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${!showArchived ? 'bg-ink text-white' : 'text-ink-muted hover:bg-surface-100'}`}
                     >
                         Aktive ({activeClients.length})
                     </button>
-                    <button 
+                    <button
                         onClick={showArchivedClients}
                         className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${showArchived ? 'bg-ink text-white' : 'text-ink-muted hover:bg-surface-100'}`}
                     >
@@ -137,14 +159,16 @@ const CoachDashboard = React.memo(({ user, allUsers, onSelectClient, onAddClient
                                         onArchiveClient(client.id, !client.is_archived);
                                     }}
                                     className="p-2 text-ink-faint hover:text-ink transition-colors"
+                                    aria-label={client.is_archived ? 'Gjenopprett' : 'Arkiver'}
                                     title={client.is_archived ? 'Gjenopprett' : 'Arkiver'}
                                 >
                                     {client.is_archived ? <Play size={18} /> : <Pause size={18} />}
                                 </button>
                                 {/* Slett knapp */}
                                 <button
-                                    onClick={(e) => { e.stopPropagation(); if(confirm('Slett utøver permanent?')) onDeleteClient(client.id); }}
+                                    onClick={(e) => handleDelete(e, client.id)}
                                     className="p-2 text-ink-faint hover:text-red-500 transition-colors"
+                                    aria-label="Slett utøver"
                                 >
                                     <Trash2 size={18} />
                                 </button>

@@ -86,6 +86,14 @@ const requireOwnership = (event, requestedUserId) => {
 
   const requestedId = parseInt(requestedUserId, 10);
 
+  if (isNaN(requestedId) || requestedId <= 0) {
+    return {
+      success: false,
+      statusCode: 400,
+      body: JSON.stringify({ error: 'Ugyldig bruker-ID format' })
+    };
+  }
+
   if (authResult.userId !== requestedId && authResult.role !== 'coach') {
     return {
       success: false,

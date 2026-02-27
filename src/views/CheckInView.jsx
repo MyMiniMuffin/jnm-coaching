@@ -6,6 +6,7 @@ import {
 import { Card, Badge, Button, InputLabel, SelectField } from '../components/ui';
 import ImageModal from '../components/ImageModal';
 import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/ConfirmDialog';
 import { api } from '../lib/api';
 import { createConfetti } from '../lib/confetti';
 import { formatDateNO, formatWeight, getThumbnail } from '../lib/formatters';
@@ -18,6 +19,7 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
     const [errorMessage, setErrorMessage] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState(INITIAL_FORM_DATA);
+    const confirmDialog = useConfirm();
 
     const closeLightbox = useCallback(() => {
         setLightbox(prev => ({ ...prev, isOpen: false }));
@@ -248,12 +250,13 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
                                             alt="Preview" 
                                             onClick={() => setLightbox({ isOpen: true, images: formData.images, index: idx })} 
                                         />
-                                        <button 
-                                            type="button" 
-                                            onClick={() => removeImage(idx)} 
-                                            className="absolute -top-1.5 -right-1.5 bg-ink text-white p-1 rounded-full"
+                                        <button
+                                            type="button"
+                                            onClick={() => removeImage(idx)}
+                                            aria-label="Fjern bilde"
+                                            className="absolute -top-1.5 -right-1.5 bg-ink text-white p-1.5 rounded-full"
                                         >
-                                            <X size={12} />
+                                            <X size={14} />
                                         </button>
                                     </div>
                                 ))}
@@ -329,9 +332,10 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
                                             <p className="text-xs text-ink-muted">{new Date(entry.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            {isReadOnly && (
+                                            {!isReadOnly && onDelete && (
                                                 <button
-                                                    onClick={() => { if(confirm('Slett denne rapporten?')) onDelete(entry.id); }}
+                                                    onClick={async () => { if(await confirmDialog('Slett denne rapporten?', { title: 'Slett rapport', confirmText: 'Slett', destructive: true })) onDelete(entry.id); }}
+                                                    aria-label="Slett rapport"
                                                     className="p-2 text-ink-faint hover:text-red-500 transition-colors"
                                                 >
                                                     <Trash2 size={16} />
