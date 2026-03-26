@@ -3,6 +3,31 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 const SALT_ROUNDS = 12;
+
+// In-memory rate limiting (per serverless instance)
+const loginAttempts = new Map();
+const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutter
+const MAX_ATTEMPTS = 10; // maks forsøk per vindu
+
+const checkRateLimit = (key) => {
+  const now = Date.now();
+  const entry = loginAttempts.get(key);
+  if (!entry || now - entry.firstAttempt > RATE_LIMIT_WINDOW) {
+    loginAttempts.set(key, { count: 1, firstAttempt: now });
+    return true;
+  }
+  entry.count++;
+  return entry.count <= MAX_ATTEMPTS;
+};
+
+// Rydd opp gamle entries periodisk
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of loginAttempts) {
+    if (now - entry.firstAttempt > RATE_LIMIT_WINDOW) loginAttempts.delete(key);
+  }
+}, 5 * 60 * 1000);
+
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
   throw new Error('JWT_SECRET miljøvariabel er ikke satt');
@@ -11,10 +36,19 @@ const JWT_EXPIRES_IN = '30d';
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' };
+    return { statusCode: 405, body: JSON.stringify({ error: 'Metode ikke tillatt' }) };
   }
 
   try {
+    // Rate limiting basert på IP
+    const clientIp = event.headers['x-forwarded-for']?.split(',')[0]?.trim() || event.headers['client-ip'] || 'unknown';
+    if (!checkRateLimit(clientIp)) {
+      return {
+        statusCode: 429,
+        body: JSON.stringify({ error: 'For mange innloggingsforsøk. Prøv igjen om noen minutter.' })
+      };
+    }
+
     const sql = neon(process.env.NETLIFY_DATABASE_URL);
     let parsed;
     try {

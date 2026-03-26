@@ -43,7 +43,8 @@ const LoginScreen = React.memo(({ onLogin }) => {
                             type="text"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
-                            className="w-full px-4 py-3.5 bg-white border border-surface-200 rounded-xl focus:ring-2 focus:ring-ink focus:border-ink outline-none transition-all"
+                            disabled={isLoading}
+                            className="w-full px-4 py-3.5 bg-white border border-surface-200 rounded-xl focus:ring-2 focus:ring-ink focus:border-ink outline-none transition-all disabled:opacity-50"
                             placeholder="Skriv inn brukernavn"
                             autoFocus
                             autoComplete="username"
@@ -55,7 +56,8 @@ const LoginScreen = React.memo(({ onLogin }) => {
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="w-full px-4 py-3.5 bg-white border border-surface-200 rounded-xl focus:ring-2 focus:ring-ink focus:border-ink outline-none transition-all"
+                            disabled={isLoading}
+                            className="w-full px-4 py-3.5 bg-white border border-surface-200 rounded-xl focus:ring-2 focus:ring-ink focus:border-ink outline-none transition-all disabled:opacity-50"
                             placeholder="••••••••"
                             autoComplete="current-password"
                         />

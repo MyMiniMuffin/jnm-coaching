@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Card, Button } from './ui';
 import { AlertTriangle } from 'lucide-react';
+import { useFocusTrap } from '../hooks';
 
 const ConfirmContext = React.createContext();
 
@@ -23,12 +24,14 @@ export const ConfirmProvider = ({ children }) => {
         setState(null);
     }, [state]);
 
+    const focusTrapRef = useFocusTrap(!!state);
+
     return (
         <ConfirmContext.Provider value={confirm}>
             {children}
             {state && (
                 <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-fade-in" onClick={handleCancel}>
-                    <Card className="w-full max-w-sm p-6 animate-scale-in" onClick={e => e.stopPropagation()}>
+                    <Card ref={focusTrapRef} className="w-full max-w-sm p-6 animate-scale-in" onClick={e => e.stopPropagation()}>
                         <div className="flex items-start gap-4 mb-5">
                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${state.destructive ? 'bg-red-50 text-red-600' : 'bg-surface-100 text-ink-muted'}`}>
                                 <AlertTriangle size={20} />

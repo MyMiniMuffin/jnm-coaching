@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
-import { Loader2, Pause, Eye, LogOut, ChevronLeft } from 'lucide-react';
+import { Loader2, Pause, Eye, LogOut, ChevronLeft, WifiOff } from 'lucide-react';
 
 // Lib
 import { saveSession, getSession, getToken, clearSession, hasValidSession } from './lib/session';
@@ -7,7 +7,7 @@ import { api } from './lib/api';
 import { INITIAL_DATA_STATE, TAB_ORDER } from './lib/config';
 
 // Hooks
-import { useSwipe, usePullToRefresh } from './hooks';
+import { useSwipe, usePullToRefresh, useOnlineStatus } from './hooks';
 
 // Components (eagerly loaded — small and used everywhere)
 import { Skeleton, Button } from './components/ui';
@@ -24,6 +24,40 @@ const WeightProgressView = React.lazy(() => import('./views/WeightProgressView')
 const GalleryView = React.lazy(() => import('./views/GalleryView'));
 const PlanSection = React.lazy(() => import('./views/PlanSection'));
 const CheckInView = React.lazy(() => import('./views/CheckInView'));
+
+// Error Boundary for lazy-loadede views
+class ViewErrorBoundary extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = { hasError: false };
+    }
+    static getDerivedStateFromError() {
+        return { hasError: true };
+    }
+    componentDidCatch(error, info) {
+        console.error('ViewErrorBoundary fanget feil:', error, info);
+    }
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div className="flex flex-col items-center justify-center h-[50vh] text-center px-6">
+                    <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center text-red-500 mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    </div>
+                    <h2 className="text-lg font-display mb-2">Noe gikk galt</h2>
+                    <p className="text-ink-muted text-sm mb-4">Denne visningen kunne ikke lastes.</p>
+                    <button
+                        className="px-4 py-2 bg-ink text-white rounded-xl text-sm font-medium"
+                        onClick={() => this.setState({ hasError: false })}
+                    >
+                        Prøv igjen
+                    </button>
+                </div>
+            );
+        }
+        return this.props.children;
+    }
+}
 
 // View-spesifikke skeleton loading states
 const ViewSkeleton = ({ tab }) => {
@@ -95,6 +129,7 @@ const prefetchViews = () => {
 
 const App = () => {
     const toast = useToast();
+    const isOnline = useOnlineStatus();
     const [currentUser, setCurrentUser] = useState(null);
     const [activeTab, setActiveTab] = useState('dashboard');
     const [allUsers, setAllUsers] = useState([]);
@@ -379,7 +414,7 @@ const App = () => {
 
     const handleAddClient = useCallback(async (u) => {
         try {
-            const result = await api.createUser({...u, id: Date.now().toString(), role:'athlete'});
+            const result = await api.createUser({...u, role:'athlete'});
             if (result.authError) {
                 setShowReauthPrompt(true);
                 return;
@@ -591,7 +626,7 @@ const App = () => {
                                 <h2 className="text-xl font-display">Din historikk</h2>
                             </div>
                             <div className="p-4 pb-8">
-                                <Suspense fallback={<ViewSkeleton />}>
+                                <ViewErrorBoundary><Suspense fallback={<ViewSkeleton />}>
                                     <CheckInView
                                         checkins={currentData.checkins}
                                         onNewCheckin={() => {}}
@@ -600,7 +635,7 @@ const App = () => {
                                         stepGoal={currentData.stepGoal}
                                         hideForm={true}
                                     />
-                                </Suspense>
+                                </Suspense></ViewErrorBoundary>
                             </div>
                         </div>
                     )}
@@ -615,7 +650,7 @@ const App = () => {
                 {showReauthPrompt && <ReauthPrompt onReauth={handleReauth} onLogout={handleLogout} />}
                 <Header title="Oversikt" user={currentUser} onLogout={handleLogout} />
                 <main className="p-4">
-                    <Suspense fallback={<ViewSkeleton />}>
+                    <ViewErrorBoundary><Suspense fallback={<ViewSkeleton />}>
                         <CoachDashboard
                             user={currentUser}
                             allUsers={allUsers}
@@ -624,7 +659,7 @@ const App = () => {
                             onDeleteClient={handleDeleteClient}
                             onArchiveClient={handleArchiveClient}
                         />
-                    </Suspense>
+                    </Suspense></ViewErrorBoundary>
                 </main>
             </div>
         );
@@ -640,6 +675,11 @@ const App = () => {
         >
             {showReauthPrompt && <ReauthPrompt onReauth={handleReauth} onLogout={handleLogout} />}
             {pullIndicator}
+            {!isOnline && (
+                <div className="sticky top-0 z-40 bg-amber-500 text-white text-center text-sm py-2 px-4 flex items-center justify-center gap-2">
+                    <WifiOff size={14} /> Ingen nettilkobling — viser lagrede data
+                </div>
+            )}
             <Header
                 title={tabTitles[activeTab]}
                 user={currentUser}
@@ -657,7 +697,7 @@ const App = () => {
                         </div>
                     </div>
                 ) : (
-                    <Suspense fallback={<ViewSkeleton tab={activeTab} />}>
+                    <ViewErrorBoundary><Suspense fallback={<ViewSkeleton tab={activeTab} />}>
                         <div key={activeTab} className="view-enter">
                             {activeTab === 'dashboard' ? (
                                 showWeightHistory ? (
@@ -677,7 +717,7 @@ const App = () => {
                             activeTab === 'workout' ? <PlanSection type="workout" content={currentData.workoutPlan} onSave={handleSaveWorkoutPlan} isReadOnly={!isCoach} /> :
                             <CheckInView checkins={currentData.checkins} onNewCheckin={handleNewCheckin} onDelete={handleDeleteCheckin} isReadOnly={isCoach} stepGoal={currentData.stepGoal} />}
                         </div>
-                    </Suspense>
+                    </Suspense></ViewErrorBoundary>
                 )}
             </main>
             <Navigation activeTab={activeTab} setActiveTab={handleTabChange} />

@@ -54,13 +54,16 @@ export const cache = {
         }
     },
 
-    invalidate: (pattern) => {
-        // Slett cache som matcher pattern
+    invalidate: (key) => {
+        // Slett spesifikk cache-nøkkel
+        delete cache.store[key];
+        try { localStorage.removeItem(CACHE_PREFIX + key); } catch (e) {}
+    },
+    invalidateAll: () => {
+        // Slett all cache
         Object.keys(cache.store).forEach(key => {
-            if (pattern === '*' || key.includes(pattern)) {
-                delete cache.store[key];
-                try { localStorage.removeItem(CACHE_PREFIX + key); } catch (e) {}
-            }
+            delete cache.store[key];
+            try { localStorage.removeItem(CACHE_PREFIX + key); } catch (e) {}
         });
     }
 };

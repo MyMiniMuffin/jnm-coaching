@@ -5,7 +5,7 @@ import { Card, Badge, Button, InputLabel } from '../components/ui';
 import ImageModal from '../components/ImageModal';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
-import { useEscapeKey } from '../hooks';
+import { useEscapeKey, useFocusTrap } from '../hooks';
 import { api } from '../lib/api';
 import { formatDateNO, formatWeight, getThumbnail, getFullSizeImage } from '../lib/formatters';
 
@@ -184,8 +184,13 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
             setUploadProgress('');
             toast(`${uploadedUrls.length} bilde${uploadedUrls.length > 1 ? 'r' : ''} lagt til`);
             // Lagre til server i bakgrunnen (optimistisk UI allerede vist)
-            for (const url of uploadedUrls) {
-                await onAddGalleryImage(url, label, date, weight);
+            const results = await Promise.allSettled(
+                uploadedUrls.map(url => onAddGalleryImage(url, label, date, weight))
+            );
+            const failed = results.filter(r => r.status === 'rejected');
+            if (failed.length > 0) {
+                console.error('Noen bilder kunne ikke lagres:', failed);
+                toast(`${failed.length} av ${uploadedUrls.length} bilder kunne ikke lagres`, 'error');
             }
         } catch (err) {
             console.error(err);
@@ -239,11 +244,12 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
     }, []);
 
     useEscapeKey(closeUploadModal, showUploadModal);
+    const uploadModalRef = useFocusTrap(showUploadModal);
 
     // Felles upload-modal (brukes i både tom- og normal-visning)
     const uploadModal = showUploadModal && (
         <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-            <Card className="w-full max-w-sm p-6 animate-scale-in">
+            <Card ref={uploadModalRef} className="w-full max-w-sm p-6 animate-scale-in">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-display">Last opp bilder</h2>
                     <button onClick={closeUploadModal} aria-label="Lukk" className="text-ink-muted hover:text-ink p-2">

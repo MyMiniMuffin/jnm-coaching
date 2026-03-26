@@ -12,6 +12,18 @@ if (!process.env.NETLIFY_DATABASE_URL) {
 // Gjenbruk SQL-tilkobling mellom warm invocations
 const sql = neon(process.env.NETLIFY_DATABASE_URL);
 
+// Felles query for å hente formatert brukerliste (unngår duplisering)
+const getFormattedUsersList = () => sql`
+  SELECT
+    u.id, u.username, u.name, u.role, u.start_date, u.is_archived,
+    COALESCE(COUNT(c.id) FILTER (WHERE c.is_read = false), 0)::integer as "unreadCheckins",
+    (SELECT LEFT(c2.date::text, 10) FROM checkins c2 WHERE c2.user_id = u.id ORDER BY c2.created_at DESC LIMIT 1) as "lastCheckinDate"
+  FROM users u
+  LEFT JOIN checkins c ON c.user_id = u.id
+  GROUP BY u.id, u.username, u.name, u.role, u.start_date, u.is_archived
+  ORDER BY u.name ASC
+`;
+
 // Enkel input-validering
 const validateUserInput = (name, username, password) => {
   const errors = [];
@@ -50,22 +62,7 @@ exports.handler = async (event) => {
   try {
     // HENTE BRUKERE (GET)
     if (event.httpMethod === 'GET') {
-      // Én enkelt query med LEFT JOIN i stedet for 2 queries + O(n²) loop
-      const usersWithUnread = await sql`
-        SELECT
-          u.id,
-          u.username,
-          u.name,
-          u.role,
-          u.start_date,
-          u.is_archived,
-          COALESCE(COUNT(c.id) FILTER (WHERE c.is_read = false), 0)::integer as "unreadCheckins",
-          (SELECT LEFT(c2.date::text, 10) FROM checkins c2 WHERE c2.user_id = u.id ORDER BY c2.created_at DESC LIMIT 1) as "lastCheckinDate"
-        FROM users u
-        LEFT JOIN checkins c ON c.user_id = u.id
-        GROUP BY u.id, u.username, u.name, u.role, u.start_date, u.is_archived
-        ORDER BY u.name ASC
-      `;
+      const usersWithUnread = await getFormattedUsersList();
 
       return {
         statusCode: 200,
@@ -129,16 +126,7 @@ exports.handler = async (event) => {
 
         console.log('Users POST: Bruker opprettet suksessfullt');
 
-        const allUsers = await sql`
-          SELECT
-            u.id, u.username, u.name, u.role, u.start_date, u.is_archived,
-            COALESCE(COUNT(c.id) FILTER (WHERE c.is_read = false), 0)::integer as "unreadCheckins",
-            (SELECT LEFT(c2.date::text, 10) FROM checkins c2 WHERE c2.user_id = u.id ORDER BY c2.created_at DESC LIMIT 1) as "lastCheckinDate"
-          FROM users u
-          LEFT JOIN checkins c ON c.user_id = u.id
-          GROUP BY u.id, u.username, u.name, u.role, u.start_date, u.is_archived
-          ORDER BY u.name ASC
-        `;
+        const allUsers = await getFormattedUsersList();
         return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(allUsers) };
       } catch (postError) {
         console.error('Users POST: Feil ved opprettelse av bruker:', postError);
@@ -173,16 +161,7 @@ exports.handler = async (event) => {
         await sql`UPDATE users SET is_archived = ${is_archived} WHERE id = ${id}`;
       }
 
-      const allUsers = await sql`
-        SELECT
-          u.id, u.username, u.name, u.role, u.start_date, u.is_archived,
-          COALESCE(COUNT(c.id) FILTER (WHERE c.is_read = false), 0)::integer as "unreadCheckins",
-          (SELECT LEFT(c2.date::text, 10) FROM checkins c2 WHERE c2.user_id = u.id ORDER BY c2.created_at DESC LIMIT 1) as "lastCheckinDate"
-        FROM users u
-        LEFT JOIN checkins c ON c.user_id = u.id
-        GROUP BY u.id, u.username, u.name, u.role, u.start_date, u.is_archived
-        ORDER BY u.name ASC
-      `;
+      const allUsers = await getFormattedUsersList();
       return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(allUsers) };
     }
 
@@ -219,20 +198,11 @@ exports.handler = async (event) => {
       ]);
       await sql`DELETE FROM users WHERE id = ${id}`;
       
-      const allUsers = await sql`
-        SELECT
-          u.id, u.username, u.name, u.role, u.start_date, u.is_archived,
-          COALESCE(COUNT(c.id) FILTER (WHERE c.is_read = false), 0)::integer as "unreadCheckins",
-          (SELECT LEFT(c2.date::text, 10) FROM checkins c2 WHERE c2.user_id = u.id ORDER BY c2.created_at DESC LIMIT 1) as "lastCheckinDate"
-        FROM users u
-        LEFT JOIN checkins c ON c.user_id = u.id
-        GROUP BY u.id, u.username, u.name, u.role, u.start_date, u.is_archived
-        ORDER BY u.name ASC
-      `;
+      const allUsers = await getFormattedUsersList();
       return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(allUsers) };
     }
 
-    return { statusCode: 405, body: 'Method Not Allowed' };
+    return { statusCode: 405, body: JSON.stringify({ error: 'Metode ikke tillatt' }) };
 
   } catch (error) {
     console.error('Users error:', error);

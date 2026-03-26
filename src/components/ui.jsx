@@ -39,14 +39,15 @@ export const Button = React.memo(({ children, variant = 'primary', size = 'md', 
     </button>
 ));
 
-export const Card = React.memo(({ children, className = "", interactive = false, ...props }) => (
+export const Card = React.memo(React.forwardRef(({ children, className = "", interactive = false, ...props }, ref) => (
     <div
+        ref={ref}
         className={`bg-white rounded-2xl border border-surface-200 ${interactive ? 'hover:border-surface-300 hover:shadow-sm cursor-pointer transition-all' : ''} ${className}`}
         {...props}
     >
         {children}
     </div>
-));
+)));
 
 export const InputLabel = React.memo(({ children }) => (
     <label className="block text-sm font-medium text-ink-muted mb-2">{children}</label>

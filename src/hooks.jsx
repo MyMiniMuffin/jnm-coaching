@@ -108,6 +108,63 @@ export const usePullToRefresh = (onRefresh, options = {}) => {
     };
 };
 
+// --- Online/offline status hook ---
+export const useOnlineStatus = () => {
+    const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
+
+    useEffect(() => {
+        const handleOnline = () => setIsOnline(true);
+        const handleOffline = () => setIsOnline(false);
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, []);
+
+    return isOnline;
+};
+
+// --- Fokus-trapping hook for modaler ---
+export const useFocusTrap = (active = true) => {
+    const ref = React.useRef(null);
+
+    useEffect(() => {
+        if (!active || !ref.current) return;
+        const element = ref.current;
+
+        // Flytt fokus til modal
+        const previouslyFocused = document.activeElement;
+        const focusable = element.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        if (focusable.length > 0) focusable[0].focus();
+
+        const handleKeyDown = (e) => {
+            if (e.key !== 'Tab') return;
+            const focusableEls = element.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+            if (focusableEls.length === 0) return;
+            const first = focusableEls[0];
+            const last = focusableEls[focusableEls.length - 1];
+
+            if (e.shiftKey) {
+                if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+            } else {
+                if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+            if (previouslyFocused && typeof previouslyFocused.focus === 'function') {
+                previouslyFocused.focus();
+            }
+        };
+    }, [active]);
+
+    return ref;
+};
+
 // --- Escape-tast hook for modaler ---
 export const useEscapeKey = (onClose, active = true) => {
     useEffect(() => {

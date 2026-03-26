@@ -58,7 +58,8 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
             console.log('[CheckIn] Alle bilder lastet opp!');
         } catch (err) {
             console.error('[CheckIn] Bildeopplasting feilet:', err);
-            setErrorMessage("Bildeopplasting feilet: " + (err.message || 'Ukjent feil'));
+            console.error('Bildeopplasting feilet:', err);
+            setErrorMessage('Bildeopplasting feilet. Sjekk tilkoblingen og prøv igjen.');
         } finally {
             setIsCompressing(false);
         }
@@ -87,7 +88,8 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
                 setFormData(INITIAL_FORM_DATA);
             }, 2500);
         } catch (error) {
-            setErrorMessage('Feil: ' + error.message);
+            console.error('Checkin-innsending feilet:', error);
+            setErrorMessage('Kunne ikke sende rapporten. Prøv igjen.');
         } finally {
             setIsSubmitting(false);
         }

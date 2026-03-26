@@ -227,15 +227,17 @@ exports.handler = async (event) => {
           }
           if (data.stepGoal !== undefined) {
             const stepGoal = parseInt(data.stepGoal);
-            if (!isNaN(stepGoal) && stepGoal >= 1000 && stepGoal <= 100000) {
-              updates.step_goal = stepGoal;
+            if (isNaN(stepGoal) || stepGoal < 1000 || stepGoal > 100000) {
+              return { statusCode: 400, body: JSON.stringify({ error: 'Skrittmål må være mellom 1 000 og 100 000' }) };
             }
+            updates.step_goal = stepGoal;
           }
           if (data.totalWeeks !== undefined) {
             const totalWeeks = parseInt(data.totalWeeks);
-            if (!isNaN(totalWeeks) && totalWeeks >= 1 && totalWeeks <= 52) {
-              updates.total_weeks = totalWeeks;
+            if (isNaN(totalWeeks) || totalWeeks < 1 || totalWeeks > 52) {
+              return { statusCode: 400, body: JSON.stringify({ error: 'Antall uker må være mellom 1 og 52' }) };
             }
+            updates.total_weeks = totalWeeks;
           }
 
           // Startdato oppdatering (nullstiller også pause) — valider format
@@ -483,9 +485,9 @@ exports.handler = async (event) => {
         if (!data.imageUrl) {
           return { statusCode: 400, body: JSON.stringify({ error: 'Mangler bilde-URL' }) };
         }
-        // Valider at URL er en gyldig HTTPS-URL (hindrer javascript: og andre skadelige URIer)
-        if (typeof data.imageUrl !== 'string' || !data.imageUrl.startsWith('https://')) {
-          return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig bilde-URL' }) };
+        // Valider at URL er en gyldig Cloudinary HTTPS-URL
+        if (typeof data.imageUrl !== 'string' || !data.imageUrl.startsWith('https://res.cloudinary.com/')) {
+          return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig bilde-URL — kun Cloudinary-URLer er tillatt' }) };
         }
         const label = (data.label && typeof data.label === 'string') ? data.label.substring(0, 200) : 'Startbilde';
         // Valider dato (samme mønster som new_checkin)
@@ -511,7 +513,7 @@ exports.handler = async (event) => {
       return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ success: true }) };
     }
 
-    return { statusCode: 405, body: 'Method Not Allowed' };
+    return { statusCode: 405, body: JSON.stringify({ error: 'Metode ikke tillatt' }) };
 
   } catch (error) {
     console.error('Data error:', error);
