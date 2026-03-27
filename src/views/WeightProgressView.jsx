@@ -29,18 +29,27 @@ const WeightProgressView = React.memo(({ checkins, onBack }) => {
     const width = 300;
     const height = 140;
     const padding = 16;
-    const weights = validCheckins.map(c => parseFloat(c.weight));
-    const minW = Math.min(...weights) - 0.5;
-    const maxW = Math.max(...weights) + 0.5;
-    const timestamps = validCheckins.map(c => c.timestamp);
-    const minT = Math.min(...timestamps);
-    const maxT = Math.max(...timestamps);
 
-    const points = validCheckins.map(c => {
-        const x = minT === maxT ? width / 2 : ((c.timestamp - minT) / (maxT - minT)) * (width - 2 * padding) + padding;
-        const y = minW === maxW ? height / 2 : height - padding - ((parseFloat(c.weight) - minW) / (maxW - minW)) * (height - 2 * padding);
-        return `${x},${y}`;
-    }).join(' ');
+    // Memoize tunge beregninger (min/max over alle vekter + SVG-koordinater)
+    const { points, chartPoints } = useMemo(() => {
+        const weights = validCheckins.map(c => parseFloat(c.weight));
+        const minW = Math.min(...weights) - 0.5;
+        const maxW = Math.max(...weights) + 0.5;
+        const timestamps = validCheckins.map(c => c.timestamp);
+        const minT = Math.min(...timestamps);
+        const maxT = Math.max(...timestamps);
+
+        const pts = validCheckins.map(c => {
+            const x = minT === maxT ? width / 2 : ((c.timestamp - minT) / (maxT - minT)) * (width - 2 * padding) + padding;
+            const y = minW === maxW ? height / 2 : height - padding - ((parseFloat(c.weight) - minW) / (maxW - minW)) * (height - 2 * padding);
+            return { x, y };
+        });
+
+        return {
+            points: pts.map(p => `${p.x},${p.y}`).join(' '),
+            chartPoints: pts
+        };
+    }, [validCheckins]);
 
     return (
         <div className="space-y-6 animate-slide-up pb-32">
@@ -74,11 +83,9 @@ const WeightProgressView = React.memo(({ checkins, onBack }) => {
                             </linearGradient>
                         </defs>
                         <polyline fill="none" stroke="url(#lineGradient)" strokeWidth="2" points={points} strokeLinecap="round" strokeLinejoin="round" />
-                        {validCheckins.map((c, i) => {
-                            const x = minT === maxT ? width / 2 : ((c.timestamp - minT) / (maxT - minT)) * (width - 2 * padding) + padding;
-                            const y = minW === maxW ? height / 2 : height - padding - ((parseFloat(c.weight) - minW) / (maxW - minW)) * (height - 2 * padding);
-                            return <circle key={i} cx={x} cy={y} r="4" fill="#FAFAF9" stroke="#171717" strokeWidth="2" />
-                        })}
+                        {chartPoints.map((p, i) => (
+                            <circle key={i} cx={p.x} cy={p.y} r="4" fill="#FAFAF9" stroke="#171717" strokeWidth="2" />
+                        ))}
                     </svg>
                 </Card>
             )}

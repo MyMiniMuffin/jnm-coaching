@@ -1,11 +1,21 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { X, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { getFullSizeImage } from '../lib/formatters';
 
+// Stil-konstanter — opprettes én gang, ikke på hver render
+const WRAPPER_STYLE = { width: "100%", height: "100%" };
+const CONTENT_STYLE = { width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" };
+
 const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
     const [index, setIndex] = useState(initialIndex || 0);
     const [loading, setLoading] = useState(true);
+
+    // Bruk refs for stabile referanser i keydown-listener
+    const indexRef = useRef(index);
+    const onCloseRef = useRef(onClose);
+    indexRef.current = index;
+    onCloseRef.current = onClose;
 
     useEffect(() => {
         document.body.style.overflow = 'hidden';
@@ -24,16 +34,23 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
         setIndex(prev => Math.max(prev - 1, 0));
     }, []);
 
+    // Stabil keydown-listener — bindes kun én gang
     useEffect(() => {
         if (!images || images.length === 0) return;
         const handleKeyDown = (e) => {
-            if (e.key === 'ArrowRight') handleNext();
-            else if (e.key === 'ArrowLeft') handlePrev();
-            else if (e.key === 'Escape') onClose();
+            if (e.key === 'ArrowRight') {
+                setLoading(true);
+                setIndex(prev => Math.min(prev + 1, (images.length || 1) - 1));
+            } else if (e.key === 'ArrowLeft') {
+                setLoading(true);
+                setIndex(prev => Math.max(prev - 1, 0));
+            } else if (e.key === 'Escape') {
+                onCloseRef.current();
+            }
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [images, onClose, handleNext, handlePrev]);
+    }, [images?.length]);
 
     if (!images || images.length === 0) return null;
 
@@ -55,7 +72,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
                     maxScale={4}
                     centerOnInit={true}
                 >
-                    <TransformComponent wrapperStyle={{ width: "100%", height: "100%" }} contentStyle={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <TransformComponent wrapperStyle={WRAPPER_STYLE} contentStyle={CONTENT_STYLE}>
                         {loading && (
                             <div className="absolute inset-0 flex items-center justify-center">
                                 <Loader2 className="text-white animate-spin" size={32} />

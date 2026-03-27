@@ -5,6 +5,14 @@ export default defineConfig({
   plugins: [react()],
   build: {
     outDir: 'dist',
+    // Fjern console.log i produksjon
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true
+      }
+    },
     rollupOptions: {
       output: {
         manualChunks: {

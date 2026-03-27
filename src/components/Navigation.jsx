@@ -1,6 +1,20 @@
 import React, { useCallback, useMemo } from 'react';
 import { NAV_ITEMS } from '../lib/config';
 
+// Memoized knapp — unngår at alle knapper re-rendres ved tab-bytte
+const NavButton = React.memo(({ item, isActive, onClick }) => {
+    const Icon = item.icon;
+    return (
+        <button
+            onClick={() => onClick(item.id)}
+            className={`relative z-10 flex flex-col items-center justify-center gap-1 transition-colors duration-200 active:scale-90 ${isActive ? 'text-ink' : 'text-ink-faint'}`}
+        >
+            <Icon size={22} strokeWidth={isActive ? 2 : 1.5} />
+            <span className={`text-[10px] ${isActive ? 'font-semibold text-ink' : 'font-medium text-ink-faint'}`}>{item.label}</span>
+        </button>
+    );
+});
+
 const Navigation = React.memo(({ activeTab, setActiveTab }) => {
     const activeIndex = NAV_ITEMS.findIndex(item => item.id === activeTab);
 
@@ -23,20 +37,9 @@ const Navigation = React.memo(({ activeTab, setActiveTab }) => {
                     style={pillStyle}
                 />
 
-                {NAV_ITEMS.map((item) => {
-                    const Icon = item.icon;
-                    const isActive = activeTab === item.id;
-                    return (
-                        <button
-                            key={item.id}
-                            onClick={() => handleTabClick(item.id)}
-                            className={`relative z-10 flex flex-col items-center justify-center gap-1 transition-colors duration-200 active:scale-90 ${isActive ? 'text-ink' : 'text-ink-faint'}`}
-                        >
-                            <Icon size={22} strokeWidth={isActive ? 2 : 1.5} />
-                            <span className={`text-[10px] ${isActive ? 'font-semibold text-ink' : 'font-medium text-ink-faint'}`}>{item.label}</span>
-                        </button>
-                    );
-                })}
+                {NAV_ITEMS.map((item) => (
+                    <NavButton key={item.id} item={item} isActive={activeTab === item.id} onClick={handleTabClick} />
+                ))}
             </div>
             <div className="safe-area-pb" />
         </div>

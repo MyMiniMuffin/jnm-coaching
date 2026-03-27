@@ -28,6 +28,14 @@ setInterval(() => {
   }
 }, 5 * 60 * 1000);
 
+// Sjekk at database-URL er satt
+if (!process.env.NETLIFY_DATABASE_URL) {
+  throw new Error('NETLIFY_DATABASE_URL miljøvariabel er ikke satt');
+}
+
+// Gjenbruk SQL-tilkobling mellom warm invocations
+const sql = neon(process.env.NETLIFY_DATABASE_URL);
+
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
   throw new Error('JWT_SECRET miljøvariabel er ikke satt');
@@ -48,8 +56,6 @@ exports.handler = async (event) => {
         body: JSON.stringify({ error: 'For mange innloggingsforsøk. Prøv igjen om noen minutter.' })
       };
     }
-
-    const sql = neon(process.env.NETLIFY_DATABASE_URL);
     let parsed;
     try {
       parsed = JSON.parse(event.body || '');

@@ -100,6 +100,15 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
         return images.sort((a, b) => b.sortDate - a.sortDate);
     }, [checkins, galleryImages]);
 
+    // Bygg url+timestamp → globalIndex map for O(1) oppslag i timeline
+    const imageIndexMap = useMemo(() => {
+        const map = new Map();
+        allImages.forEach((img, idx) => {
+            map.set(`${img.url}|${img.timestamp}`, idx);
+        });
+        return map;
+    }, [allImages]);
+
     // Grupper bilder etter måned for timeline-visning
     const imagesByMonth = useMemo(() => {
         const grouped = {};
@@ -107,7 +116,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
             const date = new Date(img.sortDate);
             const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
             const monthLabel = date.toLocaleDateString('no-NO', { month: 'long', year: 'numeric' });
-            
+
             if (!grouped[monthKey]) {
                 grouped[monthKey] = { label: monthLabel, images: [] };
             }
@@ -696,7 +705,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                             </div>
                             <div className="grid grid-cols-3 gap-1.5">
                                 {images.map((img, idx) => {
-                                    const globalIndex = allImages.findIndex(i => i.url === img.url && i.timestamp === img.timestamp);
+                                    const globalIndex = imageIndexMap.get(`${img.url}|${img.timestamp}`) ?? 0;
                                     return (
                                         <div 
                                             key={img.isGalleryImage ? `gallery-${img.galleryImageId}` : `${img.checkinId}-${idx}`}

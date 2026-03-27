@@ -12,15 +12,25 @@ if (!process.env.NETLIFY_DATABASE_URL) {
 // Gjenbruk SQL-tilkobling mellom warm invocations
 const sql = neon(process.env.NETLIFY_DATABASE_URL);
 
-// Felles query for å hente formatert brukerliste (unngår duplisering)
+// Felles query for å hente formatert brukerliste — én query uten korrelert subquery
 const getFormattedUsersList = () => sql`
   SELECT
     u.id, u.username, u.name, u.role, u.start_date, u.is_archived,
-    COALESCE(COUNT(c.id) FILTER (WHERE c.is_read = false), 0)::integer as "unreadCheckins",
-    (SELECT LEFT(c2.date::text, 10) FROM checkins c2 WHERE c2.user_id = u.id ORDER BY c2.created_at DESC LIMIT 1) as "lastCheckinDate"
+    COALESCE(unread.cnt, 0)::integer as "unreadCheckins",
+    latest.last_date as "lastCheckinDate"
   FROM users u
-  LEFT JOIN checkins c ON c.user_id = u.id
-  GROUP BY u.id, u.username, u.name, u.role, u.start_date, u.is_archived
+  LEFT JOIN (
+    SELECT user_id, COUNT(*) as cnt
+    FROM checkins
+    WHERE is_read = false
+    GROUP BY user_id
+  ) unread ON unread.user_id = u.id
+  LEFT JOIN (
+    SELECT DISTINCT ON (user_id)
+      user_id, LEFT(date::text, 10) as last_date
+    FROM checkins
+    ORDER BY user_id, created_at DESC
+  ) latest ON latest.user_id = u.id
   ORDER BY u.name ASC
 `;
 
