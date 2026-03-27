@@ -96,7 +96,11 @@ export const getAuthHeaders = () => {
 };
 
 export const api = {
-    getUsers: async () => {
+    getUsers: async (useCache = false) => {
+        if (useCache) {
+            const cached = cache.get('users-list');
+            if (cached) return { authError: false, data: cached, fromCache: true };
+        }
         try {
             const res = await fetch('/.netlify/functions/users', {
                 headers: getAuthHeaders()
@@ -107,9 +111,13 @@ export const api = {
             }
             if (!res.ok) throw new Error('Kunne ikke hente brukere');
             const data = await res.json();
+            cache.set('users-list', data);
             return { authError: false, data };
         } catch (e) {
             console.error('[API] getUsers feil:', e);
+            // Fallback til cache ved nettverksfeil
+            const cached = cache.get('users-list');
+            if (cached) return { authError: false, data: cached, fromCache: true };
             return { authError: false, data: [], networkError: true };
         }
     },

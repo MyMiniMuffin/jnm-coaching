@@ -144,7 +144,7 @@ const App = () => {
     const [showReauthPrompt, setShowReauthPrompt] = useState(false);
 
     // ============================================
-    // FIKSET INIT - Bruker cached session først
+    // FIKSET INIT - Vis UI umiddelbart, oppdater i bakgrunn
     // ============================================
     useEffect(() => {
         const init = async () => {
@@ -157,36 +157,54 @@ const App = () => {
             if (sessionUser && token) {
                 console.log('[Init] Bruker cached session:', sessionUser.username);
                 setCurrentUser(sessionUser);
+
                 if (sessionUser.role === 'athlete') {
                     setViewingClient(sessionUser);
+                    // Start datahenting parallelt (unngå ekstra renderingssyklus)
+                    api.getUserData(sessionUser.id).then(result => {
+                        if (result.authError) {
+                            setShowReauthPrompt(true);
+                        } else if (result.data) {
+                            setCurrentData(result.data);
+                        }
+                    }).catch(() => {});
+                }
+
+                if (sessionUser.role === 'coach') {
+                    // Vis cached brukerliste umiddelbart, oppdater i bakgrunn
+                    const cachedResult = await api.getUsers(true);
+                    if (cachedResult.data?.length) {
+                        setAllUsers(cachedResult.data);
+                    }
+
+                    // Vis UI nå — ikke vent på nettverket
+                    setIsLoading(false);
+
+                    // Hent fersk brukerliste i bakgrunn
+                    if (cachedResult.fromCache || !cachedResult.data?.length) {
+                        api.getUsers(false).then(result => {
+                            if (result.authError) {
+                                setShowReauthPrompt(true);
+                            } else if (result.data) {
+                                setAllUsers(result.data);
+                                const freshUser = result.data.find(u => u.id === sessionUser.id);
+                                if (freshUser) setCurrentUser(freshUser);
+                            }
+                        }).catch(() => {});
+                    }
+                    return; // isLoading allerede satt til false
                 }
             }
 
-            // 2. Hent oppdatert brukerliste (kun for coach — atleter trenger den ikke)
-            if (!sessionUser || sessionUser.role === 'coach') {
+            // Ikke-innlogget eller athlete — hent brukerliste for login
+            if (!sessionUser) {
                 try {
                     const result = await api.getUsers();
-
-                    if (result.networkError) {
-                        console.log('[Init] Nettverksfeil - bruker cached session');
-                    } else if (result.authError) {
-                        console.warn('[Init] Auth-feil fra API');
-                        if (sessionUser) {
-                            setShowReauthPrompt(true);
-                        }
-                    } else {
+                    if (!result.networkError && !result.authError) {
                         setAllUsers(result.data || []);
-
-                        if (sessionUser && result.data) {
-                            const freshUser = result.data.find(u => u.id === sessionUser.id);
-                            if (freshUser) {
-                                console.log('[Init] Oppdaterte brukerdata fra API');
-                                setCurrentUser(freshUser);
-                            }
-                        }
                     }
                 } catch (e) {
-                    console.error('[Init] Feil:', e);
+                    // Ikke kritisk for login
                 }
             }
 
@@ -220,9 +238,15 @@ const App = () => {
         return () => document.removeEventListener('visibilitychange', handleVisibility);
     }, [currentUser]);
 
-    // Last klientdata - kun for athlete som logger inn direkte
+    // Last klientdata - kun for athlete som logger inn via login (ikke init)
+    const initDoneRef = useRef(false);
     useEffect(() => {
         if (viewingClient && currentUser?.role === 'athlete') {
+            // Skip første gang — init() henter allerede data
+            if (!initDoneRef.current) {
+                initDoneRef.current = true;
+                return;
+            }
             setIsClientLoading(true);
             api.getUserData(viewingClient.id)
                 .then(result => {
