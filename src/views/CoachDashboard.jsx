@@ -1,14 +1,16 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { Plus, X, Trash2, Pause, Play, User, ChevronRight, Loader2 } from 'lucide-react';
+import { Plus, X, Trash2, Pause, Play, User, ChevronRight, Loader2, KeyRound } from 'lucide-react';
 import { Card, Badge, Button } from '../components/ui';
 import { useEscapeKey } from '../hooks';
 import { useConfirm } from '../components/ConfirmDialog';
 import { formatDateNO } from '../lib/formatters';
 
-const CoachDashboard = React.memo(({ user, allUsers, onSelectClient, onAddClient, onDeleteClient, onArchiveClient }) => {
+const CoachDashboard = React.memo(({ user, allUsers, onSelectClient, onAddClient, onDeleteClient, onArchiveClient, onResetPassword }) => {
     const [showModal, setShowModal] = useState(false);
     const [showArchived, setShowArchived] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
+    const [resetTarget, setResetTarget] = useState(null);
+    const [isResetting, setIsResetting] = useState(false);
     const confirm = useConfirm();
 
     // Memoize filtrerte lister
@@ -50,6 +52,29 @@ const CoachDashboard = React.memo(({ user, allUsers, onSelectClient, onAddClient
         }
     }, [confirm, onDeleteClient]);
 
+    const openResetModal = useCallback((e, client) => {
+        e.stopPropagation();
+        setResetTarget(client);
+    }, []);
+
+    const closeResetModal = useCallback(() => {
+        setResetTarget(null);
+    }, []);
+
+    useEscapeKey(closeResetModal, !!resetTarget);
+
+    const handleResetSubmit = useCallback(async (e) => {
+        e.preventDefault();
+        setIsResetting(true);
+        try {
+            const password = new FormData(e.target).get('password');
+            await onResetPassword(resetTarget.id, password);
+            setResetTarget(null);
+        } finally {
+            setIsResetting(false);
+        }
+    }, [resetTarget, onResetPassword]);
+
     return (
         <div className="space-y-5 pb-32 animate-slide-up">
             {showModal && (
@@ -67,6 +92,27 @@ const CoachDashboard = React.memo(({ user, allUsers, onSelectClient, onAddClient
                             <input required name="password" type="password" minLength="6" placeholder="Passord (min. 6 tegn)" autoComplete="new-password" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink" />
                             <Button type="submit" size="lg" className="w-full" disabled={isCreating}>
                                 {isCreating ? <><Loader2 size={18} className="animate-spin" /> Oppretter...</> : 'Opprett utøver'}
+                            </Button>
+                        </form>
+                    </Card>
+                </div>
+            )}
+
+            {/* Passord-reset modal */}
+            {resetTarget && (
+                <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+                    <Card className="w-full max-w-sm p-6 animate-scale-in">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-xl font-display">Tilbakestill passord</h2>
+                            <button onClick={closeResetModal} aria-label="Lukk" className="text-ink-muted hover:text-ink p-2">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <p className="text-sm text-ink-muted mb-4">Nytt passord for <span className="font-medium text-ink">{resetTarget.name}</span></p>
+                        <form onSubmit={handleResetSubmit} className="space-y-4">
+                            <input required name="password" type="password" minLength="6" placeholder="Nytt passord (min. 6 tegn)" autoFocus autoComplete="new-password" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink" />
+                            <Button type="submit" size="lg" className="w-full" disabled={isResetting}>
+                                {isResetting ? <><Loader2 size={18} className="animate-spin" /> Tilbakestiller...</> : <><KeyRound size={18} /> Tilbakestill passord</>}
                             </Button>
                         </form>
                     </Card>
@@ -163,6 +209,15 @@ const CoachDashboard = React.memo(({ user, allUsers, onSelectClient, onAddClient
                                     title={client.is_archived ? 'Gjenopprett' : 'Arkiver'}
                                 >
                                     {client.is_archived ? <Play size={18} /> : <Pause size={18} />}
+                                </button>
+                                {/* Tilbakestill passord */}
+                                <button
+                                    onClick={(e) => openResetModal(e, client)}
+                                    className="p-2 text-ink-faint hover:text-ink transition-colors"
+                                    aria-label="Tilbakestill passord"
+                                    title="Tilbakestill passord"
+                                >
+                                    <KeyRound size={18} />
                                 </button>
                                 {/* Slett knapp */}
                                 <button

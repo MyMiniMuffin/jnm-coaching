@@ -155,7 +155,7 @@ exports.handler = async (event) => {
       } catch (e) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig JSON i request body' }) };
       }
-      const { id, is_archived } = parsed;
+      const { id, is_archived, new_password } = parsed;
 
       if (!id) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Mangler bruker-ID' }) };
@@ -169,6 +169,15 @@ exports.handler = async (event) => {
 
       if (typeof is_archived === 'boolean') {
         await sql`UPDATE users SET is_archived = ${is_archived} WHERE id = ${id}`;
+      }
+
+      // Passord-reset
+      if (typeof new_password === 'string') {
+        if (new_password.length < 6) {
+          return { statusCode: 400, body: JSON.stringify({ error: 'Passord må være minst 6 tegn' }) };
+        }
+        const hashedPassword = await bcrypt.hash(new_password, SALT_ROUNDS);
+        await sql`UPDATE users SET password = ${hashedPassword} WHERE id = ${id}`;
       }
 
       const allUsers = await getFormattedUsersList();

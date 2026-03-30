@@ -154,6 +154,22 @@ export const api = {
         if (!res.ok) throw new Error('Feil ved sletting');
         return { authError: false, data: await res.json() };
     },
+    resetPassword: async (userId, newPassword) => {
+        const res = await fetch('/.netlify/functions/users', {
+            method: 'PATCH',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ id: userId, new_password: newPassword })
+        });
+        if (res.status === 401) {
+            console.warn('[API] 401 ved resetPassword');
+            return { authError: true };
+        }
+        if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Feil ved tilbakestilling av passord');
+        }
+        return { authError: false };
+    },
     archiveUser: async (userId, archive) => {
         const res = await fetch('/.netlify/functions/users', {
             method: 'PATCH',

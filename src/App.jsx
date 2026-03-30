@@ -462,6 +462,19 @@ const App = () => {
         }
     }, [toast]);
 
+    const handleResetPassword = useCallback(async (id, newPassword) => {
+        try {
+            const result = await api.resetPassword(id, newPassword);
+            if (result.authError) {
+                setShowReauthPrompt(true);
+                return;
+            }
+            toast('Passord tilbakestilt', 'success');
+        } catch (e) {
+            toast(e.message || 'Feil ved tilbakestilling av passord', 'error');
+        }
+    }, [toast]);
+
     const handleArchiveClient = useCallback(async (id, archive) => {
         try {
             const result = await api.archiveUser(id, archive);
@@ -682,6 +695,7 @@ const App = () => {
                             onAddClient={handleAddClient}
                             onDeleteClient={handleDeleteClient}
                             onArchiveClient={handleArchiveClient}
+                            onResetPassword={handleResetPassword}
                         />
                     </Suspense></ViewErrorBoundary>
                 </main>
