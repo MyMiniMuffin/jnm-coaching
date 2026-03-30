@@ -142,7 +142,6 @@ const CoachDashboard = React.memo(({ user, allUsers, onSelectClient, onAddClient
                                 </div>
                                 <div>
                                     <p className="font-medium">{client.name}</p>
-                                    <p className="text-xs text-ink-muted">@{client.username}</p>
                                     <p className={`text-sm ${client.unreadCheckins > 0 ? 'text-emerald-600 font-medium' : 'text-ink-muted'}`}>
                                         {client.unreadCheckins > 0
                                             ? `${client.unreadCheckins} ny${client.unreadCheckins > 1 ? 'e' : ''} rapport${client.unreadCheckins > 1 ? 'er' : ''}`
