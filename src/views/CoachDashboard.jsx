@@ -63,7 +63,7 @@ const CoachDashboard = React.memo(({ user, allUsers, onSelectClient, onAddClient
                         </div>
                         <form onSubmit={handleFormSubmit} className="space-y-4">
                             <input required name="name" type="text" placeholder="Fullt navn" autoFocus className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink" />
-                            <input required name="username" type="text" placeholder="Brukernavn" autoComplete="off" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink" />
+                            <input required name="username" type="text" placeholder="Brukernavn" autoComplete="off" pattern="[a-zA-Z0-9_]+" title="Kun bokstaver, tall og understrek" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink" />
                             <input required name="password" type="password" minLength="6" placeholder="Passord (min. 6 tegn)" autoComplete="new-password" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink" />
                             <Button type="submit" size="lg" className="w-full" disabled={isCreating}>
                                 {isCreating ? <><Loader2 size={18} className="animate-spin" /> Oppretter...</> : 'Opprett utøver'}

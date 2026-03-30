@@ -58,7 +58,6 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
             console.log('[CheckIn] Alle bilder lastet opp!');
         } catch (err) {
             console.error('[CheckIn] Bildeopplasting feilet:', err);
-            console.error('Bildeopplasting feilet:', err);
             setErrorMessage('Bildeopplasting feilet. Sjekk tilkoblingen og prøv igjen.');
         } finally {
             setIsCompressing(false);
@@ -149,15 +148,17 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
                             <InputLabel>Vekt (kg)</InputLabel>
                             <div className="relative">
                                 <Scale className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" size={18} />
-                                <input 
-                                    type="number" 
-                                    inputMode="decimal" 
-                                    step="0.1" 
-                                    required 
+                                <input
+                                    type="number"
+                                    inputMode="decimal"
+                                    step="0.1"
+                                    min="20"
+                                    max="500"
+                                    required
                                     value={formData.weight}
                                     onChange={handleWeightChange}
-                                    className="w-full pl-12 pr-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink focus:border-ink font-medium text-lg placeholder-ink-faint" 
-                                    placeholder="0.0" 
+                                    className="w-full pl-12 pr-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink focus:border-ink font-medium text-lg placeholder-ink-faint"
+                                    placeholder="0.0"
                                 />
                             </div>
                             {lastWeight && (
@@ -231,11 +232,12 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
 
                         <div>
                             <InputLabel>Kommentar</InputLabel>
-                            <textarea 
+                            <textarea
                                 value={formData.comment}
                                 onChange={handleCommentChange}
-                                className="w-full px-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl h-28 outline-none resize-none focus:ring-2 focus:ring-ink focus:border-ink" 
-                                placeholder="Hvordan har uken vært?" 
+                                maxLength={5000}
+                                className="w-full px-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl h-28 outline-none resize-none focus:ring-2 focus:ring-ink focus:border-ink"
+                                placeholder="Hvordan har uken vært?"
                             />
                         </div>
                     </Card>
