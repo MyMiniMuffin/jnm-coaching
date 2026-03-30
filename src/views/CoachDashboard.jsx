@@ -78,8 +78,8 @@ const CoachDashboard = React.memo(({ user, allUsers, onSelectClient, onAddClient
     return (
         <div className="space-y-5 pb-32 animate-slide-up">
             {showModal && (
-                <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-                    <Card className="w-full max-w-sm p-6 animate-scale-in">
+                <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in" onClick={closeModal}>
+                    <Card className="w-full max-w-sm p-6 animate-scale-in" onClick={e => e.stopPropagation()}>
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-xl font-display">Ny utøver</h2>
                             <button onClick={closeModal} aria-label="Lukk" className="text-ink-muted hover:text-ink p-2">
@@ -100,8 +100,8 @@ const CoachDashboard = React.memo(({ user, allUsers, onSelectClient, onAddClient
 
             {/* Passord-reset modal */}
             {resetTarget && (
-                <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-                    <Card className="w-full max-w-sm p-6 animate-scale-in">
+                <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in" onClick={closeResetModal}>
+                    <Card className="w-full max-w-sm p-6 animate-scale-in" onClick={e => e.stopPropagation()}>
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-xl font-display">Tilbakestill passord</h2>
                             <button onClick={closeResetModal} aria-label="Lukk" className="text-ink-muted hover:text-ink p-2">
@@ -198,35 +198,37 @@ const CoachDashboard = React.memo(({ user, allUsers, onSelectClient, onAddClient
                                 </div>
                             </div>
                             <div className="flex items-center gap-1">
-                                {/* Arkiver/Gjenopprett knapp */}
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onArchiveClient(client.id, !client.is_archived);
-                                    }}
-                                    className="p-2 text-ink-faint hover:text-ink transition-colors"
-                                    aria-label={client.is_archived ? 'Gjenopprett' : 'Arkiver'}
-                                    title={client.is_archived ? 'Gjenopprett' : 'Arkiver'}
-                                >
-                                    {client.is_archived ? <Play size={18} /> : <Pause size={18} />}
-                                </button>
-                                {/* Tilbakestill passord */}
-                                <button
-                                    onClick={(e) => openResetModal(e, client)}
-                                    className="p-2 text-ink-faint hover:text-ink transition-colors"
-                                    aria-label="Tilbakestill passord"
-                                    title="Tilbakestill passord"
-                                >
-                                    <KeyRound size={18} />
-                                </button>
-                                {/* Slett knapp */}
-                                <button
-                                    onClick={(e) => handleDelete(e, client.id)}
-                                    className="p-2 text-ink-faint hover:text-red-500 transition-colors"
-                                    aria-label="Slett utøver"
-                                >
-                                    <Trash2 size={18} />
-                                </button>
+                                <div className="flex items-center gap-0.5 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
+                                    {/* Arkiver/Gjenopprett knapp */}
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onArchiveClient(client.id, !client.is_archived);
+                                        }}
+                                        className="p-2 text-ink-faint hover:text-ink transition-colors"
+                                        aria-label={client.is_archived ? 'Gjenopprett' : 'Arkiver'}
+                                        title={client.is_archived ? 'Gjenopprett' : 'Arkiver'}
+                                    >
+                                        {client.is_archived ? <Play size={16} /> : <Pause size={16} />}
+                                    </button>
+                                    {/* Tilbakestill passord */}
+                                    <button
+                                        onClick={(e) => openResetModal(e, client)}
+                                        className="p-2 text-ink-faint hover:text-ink transition-colors"
+                                        aria-label="Tilbakestill passord"
+                                        title="Tilbakestill passord"
+                                    >
+                                        <KeyRound size={16} />
+                                    </button>
+                                    {/* Slett knapp */}
+                                    <button
+                                        onClick={(e) => handleDelete(e, client.id)}
+                                        className="p-2 text-ink-faint hover:text-red-500 transition-colors"
+                                        aria-label="Slett utøver"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
                                 <ChevronRight size={18} className="text-ink-faint" />
                             </div>
                         </Card>

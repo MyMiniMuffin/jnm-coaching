@@ -457,6 +457,7 @@ const App = () => {
                 return;
             }
             if (result.data) setAllUsers(result.data);
+            toast('Utøver slettet');
         } catch (e) {
             toast(e.message || 'Feil ved sletting av utøver', 'error');
         }
@@ -483,6 +484,7 @@ const App = () => {
                 return;
             }
             if (result.data) setAllUsers(result.data);
+            toast(archive ? 'Utøver arkivert' : 'Utøver gjenopprettet');
         } catch (e) {
             toast(e.message || 'Feil ved arkivering', 'error');
         }

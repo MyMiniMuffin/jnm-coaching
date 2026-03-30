@@ -70,7 +70,7 @@ const LoginScreen = React.memo(({ onLogin }) => {
                         </div>
                     )}
 
-                    <Button type="submit" disabled={isLoading} size="lg" className="w-full mt-6">
+                    <Button type="submit" disabled={isLoading || !username.trim() || !password} size="lg" className="w-full mt-6">
                         {isLoading ? (
                             <Loader2 className="animate-spin" size={20} />
                         ) : (
