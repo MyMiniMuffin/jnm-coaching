@@ -37,18 +37,27 @@ exports.handler = async (event) => {
     }
     const { image } = parsed;
 
-    if (!image) {
+    if (!image || typeof image !== 'string') {
       return {
         statusCode: 400,
         body: JSON.stringify({ error: 'Mangler bilde-data' })
       };
     }
 
-    // Valider at det er en base64-encoded bilde
-    if (!image.startsWith('data:image/')) {
+    // Valider at det er en base64-encoded bilde med gyldig MIME-type
+    if (!/^data:image\/(jpeg|jpg|png|webp|gif);base64,/.test(image)) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: 'Ugyldig bildeformat' })
+        body: JSON.stringify({ error: 'Ugyldig bildeformat — kun JPEG, PNG, WebP og GIF er tillatt' })
+      };
+    }
+
+    // Sjekk filstørrelse før sending (~75% av base64-lengde = faktisk filstørrelse)
+    const approxSizeBytes = image.length * 0.75;
+    if (approxSizeBytes > 10485760) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'Bildet er for stort (maks 10 MB)' })
       };
     }
 
@@ -77,7 +86,7 @@ exports.handler = async (event) => {
     };
 
   } catch (error) {
-    console.error('Upload error:', error);
+    console.error('Upload error:', error.message || 'Ukjent feil');
 
     // Returner generisk feilmelding til klient (full feil logges over)
     return {

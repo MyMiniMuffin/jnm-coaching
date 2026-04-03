@@ -167,7 +167,7 @@ const App = () => {
                         } else if (result.data) {
                             setCurrentData(result.data);
                         }
-                    }).catch(() => {});
+                    }).catch(e => console.error('[Init] Feil ved henting av athlete-data:', e));
                 }
 
                 if (sessionUser.role === 'coach') {
@@ -190,7 +190,7 @@ const App = () => {
                                 const freshUser = result.data.find(u => u.id === sessionUser.id);
                                 if (freshUser) setCurrentUser(freshUser);
                             }
-                        }).catch(() => {});
+                        }).catch(e => console.error('[Init] Feil ved henting av brukerliste:', e));
                     }
                     return; // isLoading allerede satt til false
                 }

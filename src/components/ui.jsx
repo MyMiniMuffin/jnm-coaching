@@ -53,18 +53,23 @@ export const InputLabel = React.memo(({ children }) => (
     <label className="block text-sm font-medium text-ink-muted mb-2">{children}</label>
 ));
 
-export const SelectField = React.memo(({ label, value, onChange, options }) => (
-    <div>
-        <InputLabel>{label}</InputLabel>
-        <div className="relative">
-            <select
-                value={value}
-                onChange={onChange}
-                className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl appearance-none focus:ring-2 focus:ring-ink focus:border-ink outline-none font-medium cursor-pointer"
-            >
-                {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-            </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" size={18} />
+let selectFieldCounter = 0;
+export const SelectField = React.memo(({ label, value, onChange, options, id: providedId }) => {
+    const [autoId] = React.useState(() => providedId || `select-field-${++selectFieldCounter}`);
+    return (
+        <div>
+            <label htmlFor={autoId} className="block text-sm font-medium text-ink-muted mb-2">{label}</label>
+            <div className="relative">
+                <select
+                    id={autoId}
+                    value={value}
+                    onChange={onChange}
+                    className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl appearance-none focus:ring-2 focus:ring-ink focus:border-ink outline-none font-medium cursor-pointer"
+                >
+                    {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" size={18} />
+            </div>
         </div>
-    </div>
-));
+    );
+});

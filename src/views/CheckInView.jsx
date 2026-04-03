@@ -53,9 +53,19 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
                 console.log('[CheckIn] Opplasting fullført:', result.data.url);
                 return result.data.url;
             });
-            const uploadedUrls = await Promise.all(uploadPromises);
-            setFormData(prev => ({ ...prev, images: [...prev.images, ...uploadedUrls] }));
-            console.log('[CheckIn] Alle bilder lastet opp!');
+            const results = await Promise.allSettled(uploadPromises);
+            const uploadedUrls = [];
+            const failedCount = results.filter(r => r.status === 'rejected').length;
+            for (const result of results) {
+                if (result.status === 'fulfilled') uploadedUrls.push(result.value);
+            }
+            if (uploadedUrls.length > 0) {
+                setFormData(prev => ({ ...prev, images: [...prev.images, ...uploadedUrls] }));
+            }
+            if (failedCount > 0) {
+                setErrorMessage(`${failedCount} av ${results.length} bilder kunne ikke lastes opp.`);
+            }
+            console.log(`[CheckIn] ${uploadedUrls.length}/${results.length} bilder lastet opp`);
         } catch (err) {
             console.error('[CheckIn] Bildeopplasting feilet:', err);
             setErrorMessage('Bildeopplasting feilet. Sjekk tilkoblingen og prøv igjen.');

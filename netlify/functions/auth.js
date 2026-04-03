@@ -94,6 +94,8 @@ exports.handler = async (event) => {
 
     // Verifiser at passord er hashet (bcrypt-hasher starter med $2a$ eller $2b$)
     if (!storedPassword || !storedPassword.startsWith('$2')) {
+      // Timing-safe: Kjør dummy bcrypt for å unngå at manglende hash avslører brukerstatus
+      await bcrypt.compare(password, '$2b$12$LJ3m4ys3Lf5BAoSMTGCOfu0YBhlNpEYKnbBbGFN0vBcPRnSQljV3e');
       return {
         statusCode: 401,
         body: JSON.stringify({ error: 'Vennligst kontakt administrator for passord-reset' })

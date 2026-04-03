@@ -8,7 +8,8 @@ const WRAPPER_STYLE = { width: "100%", height: "100%" };
 const CONTENT_STYLE = { width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" };
 
 const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
-    const [index, setIndex] = useState(initialIndex || 0);
+    const safeInitialIndex = Math.max(0, Math.min(initialIndex || 0, (images?.length || 1) - 1));
+    const [index, setIndex] = useState(safeInitialIndex);
     const [loading, setLoading] = useState(true);
 
     // Bruk refs for stabile referanser i keydown-listener

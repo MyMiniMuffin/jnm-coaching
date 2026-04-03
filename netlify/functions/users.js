@@ -109,18 +109,6 @@ exports.handler = async (event) => {
 
         const normalizedUsername = username.trim().toLowerCase();
 
-        // Sjekk om brukernavn allerede finnes
-        const existing = await sql`
-          SELECT id FROM users WHERE username = ${normalizedUsername} LIMIT 1
-        `;
-        if (existing.length > 0) {
-          console.error('Users POST: Brukernavn allerede i bruk:', normalizedUsername);
-          return {
-            statusCode: 409,
-            body: JSON.stringify({ error: 'Brukernavnet er allerede i bruk' })
-          };
-        }
-
         // Hash passordet før lagring
         console.log('Users POST: Hasher passord...');
         const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
@@ -129,10 +117,22 @@ exports.handler = async (event) => {
         const validRole = ['coach', 'athlete'].includes(role) ? role : 'athlete';
 
         console.log('Users POST: Setter inn ny bruker i database...');
-        await sql`
-          INSERT INTO users (name, username, password, role)
-          VALUES (${name.trim()}, ${normalizedUsername}, ${hashedPassword}, ${validRole})
-        `;
+        try {
+          await sql`
+            INSERT INTO users (name, username, password, role)
+            VALUES (${name.trim()}, ${normalizedUsername}, ${hashedPassword}, ${validRole})
+          `;
+        } catch (insertError) {
+          // Håndter duplikat brukernavn (unique constraint violation)
+          if (insertError.code === '23505' || (insertError.message && insertError.message.includes('unique'))) {
+            console.error('Users POST: Brukernavn allerede i bruk:', normalizedUsername);
+            return {
+              statusCode: 409,
+              body: JSON.stringify({ error: 'Brukernavnet er allerede i bruk' })
+            };
+          }
+          throw insertError;
+        }
 
         console.log('Users POST: Bruker opprettet suksessfullt');
 
@@ -194,8 +194,8 @@ exports.handler = async (event) => {
       }
       const { id } = parsed;
 
-      if (!id) {
-        return { statusCode: 400, body: JSON.stringify({ error: 'Mangler bruker-ID' }) };
+      if (!id || isNaN(parseInt(id, 10))) {
+        return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig bruker-ID' }) };
       }
 
       // Hindre at coach sletter seg selv

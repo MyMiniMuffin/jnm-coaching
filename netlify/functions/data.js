@@ -376,50 +376,44 @@ exports.handler = async (event) => {
 
         const startDate = new Date().toISOString();
 
-        // Bruk transaksjon for å unngå inkonsistent tilstand
-        await sql`BEGIN`;
-        try {
-          await sql`UPDATE coaching_periods SET is_active = false WHERE user_id = ${userId}`;
+        // Bruk CTE for atomisk operasjon (BEGIN/COMMIT fungerer ikke med Neon HTTP-driver)
+        await sql`UPDATE coaching_periods SET is_active = false WHERE user_id = ${userId}`;
 
-          const result = await sql`
+        const result = await sql`
+          WITH new_period AS (
             INSERT INTO coaching_periods (user_id, name, start_date, starting_weight, goal_weight, is_active)
             VALUES (${userId}, ${periodName}, ${startDate}, ${sw}, ${gw}, true)
             RETURNING id
-          `;
+          )
+          UPDATE users SET current_period_id = (SELECT id FROM new_period), starting_weight = ${sw}
+          WHERE id = ${userId}
+          RETURNING (SELECT id FROM new_period) AS period_id
+        `;
 
-          const newPeriodId = result[0].id;
+        const newPeriodId = result[0].period_id;
 
-          await sql`UPDATE users SET current_period_id = ${newPeriodId}, starting_weight = ${sw} WHERE id = ${userId}`;
-          await sql`COMMIT`;
-
-          return {
-            statusCode: 200,
-            body: JSON.stringify({
-              success: true,
-              periodId: newPeriodId,
-              period: {
-                id: newPeriodId,
-                name: periodName,
-                startDate,
-                startingWeight: sw,
-                goalWeight: gw,
-                isActive: true
-              }
-            })
-          };
-        } catch (txError) {
-          await sql`ROLLBACK`.catch(rollbackErr => {
-            console.error('Rollback feilet:', rollbackErr);
-          });
-          throw txError;
-        }
+        return {
+          statusCode: 200,
+          body: JSON.stringify({
+            success: true,
+            periodId: newPeriodId,
+            period: {
+              id: newPeriodId,
+              name: periodName,
+              startDate,
+              startingWeight: sw,
+              goalWeight: gw,
+              isActive: true
+            }
+          })
+        };
       }
       
       else if (type === 'end_period') {
-        const periodId = data.periodId;
-        
-        if (!periodId) {
-          return { statusCode: 400, body: JSON.stringify({ error: 'Mangler periode-ID' }) };
+        const periodId = parseInt(data.periodId, 10);
+
+        if (!data.periodId || isNaN(periodId)) {
+          return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig periode-ID' }) };
         }
         
         // SIKKERHET: Sjekk at brukeren eier denne perioden
@@ -440,10 +434,11 @@ exports.handler = async (event) => {
       }
       
       else if (type === 'update_period') {
-        const { periodId, startingWeight, goalWeight, notes } = data;
-        
-        if (!periodId) {
-          return { statusCode: 400, body: JSON.stringify({ error: 'Mangler periode-ID' }) };
+        const { startingWeight, goalWeight, notes } = data;
+        const periodId = parseInt(data.periodId, 10);
+
+        if (!data.periodId || isNaN(periodId)) {
+          return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig periode-ID' }) };
         }
         
         // SIKKERHET: Sjekk at brukeren eier denne perioden
@@ -507,7 +502,10 @@ exports.handler = async (event) => {
         if (!data.imageId) {
           return { statusCode: 400, body: JSON.stringify({ error: 'Mangler bilde-ID' }) };
         }
-        await sql`DELETE FROM gallery_images WHERE id = ${data.imageId} AND user_id = ${userId}`;
+        const deleteResult = await sql`DELETE FROM gallery_images WHERE id = ${data.imageId} AND user_id = ${userId} RETURNING id`;
+        if (deleteResult.length === 0) {
+          return { statusCode: 404, body: JSON.stringify({ error: 'Bildet ble ikke funnet eller du har ikke tilgang' }) };
+        }
       }
 
       return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ success: true }) };

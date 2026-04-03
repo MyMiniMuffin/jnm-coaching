@@ -53,7 +53,7 @@ exports.handler = async (event) => {
   }
 
   return {
-    statusCode: checks.summary.allOk ? 200 : 500,
+    statusCode: checks.summary.allOk ? 200 : 503,
     headers: {
       'Content-Type': 'application/json'
     },
