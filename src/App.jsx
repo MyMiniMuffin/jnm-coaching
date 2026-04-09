@@ -770,21 +770,6 @@ const App = () => {
                 onLogout={handleLogout}
                 onClearClient={handleClearClient}
             />
-            {isCoach && viewingClient && (
-                <div className="sticky top-[73px] z-30 bg-surface-50/90 backdrop-blur-md border-b border-surface-200">
-                    <div className="max-w-md mx-auto px-4 py-1.5 flex items-center justify-between gap-3 text-xs">
-                        <div className="min-w-0 flex items-center gap-2">
-                            <span className="uppercase tracking-wide text-ink-faint shrink-0">Coach</span>
-                            <p className="font-medium truncate">
-                                {viewingClient.name} <span className="text-ink-muted font-normal">@{viewingClient.username}</span>
-                            </p>
-                        </div>
-                        <div className="text-right text-ink-muted shrink-0">
-                            {viewingClient.is_archived ? 'Arkivert' : `${(currentData.checkins || []).length} rapport${(currentData.checkins || []).length === 1 ? '' : 'er'}`}
-                        </div>
-                    </div>
-                </div>
-            )}
             <main className="p-4">
                 {isClientLoading ? (
                     <div className="space-y-4 pt-4">
