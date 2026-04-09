@@ -104,11 +104,7 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
         }
     }, [formData, onNewCheckin]);
 
-    // Memoize sorted checkins
-    const sortedCheckins = useMemo(() =>
-        [...checkins].sort((a, b) => b.timestamp - a.timestamp),
-        [checkins]
-    );
+    const sortedCheckins = checkins;
 
     const lastWeight = useMemo(() => {
         const last = sortedCheckins.find(c => c.weight && parseFloat(c.weight) > 0);

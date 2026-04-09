@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { Loader2, Pause, Eye, LogOut, ChevronLeft, WifiOff } from 'lucide-react';
 
 // Lib
 import { saveSession, getSession, getToken, clearSession, hasValidSession } from './lib/session';
 import { api } from './lib/api';
-import { INITIAL_DATA_STATE, TAB_ORDER } from './lib/config';
+import { APP_ICON, INITIAL_DATA_STATE, TAB_ORDER } from './lib/config';
 
 // Hooks
 import { useSwipe, usePullToRefresh, useOnlineStatus } from './hooks';
@@ -301,7 +301,7 @@ const App = () => {
         }
         setCurrentData(prev => ({
             ...prev,
-            checkins: [...prev.checkins, savedCheckin]
+            checkins: [savedCheckin, ...prev.checkins]
         }));
     }, [viewingClient]);
 
@@ -321,15 +321,60 @@ const App = () => {
             if (updates.action === 'create_period') {
                 const result = await api.createPeriod(viewingClient.id, updates.name, updates.startingWeight, updates.goalWeight);
                 if (result.authError) { setShowReauthPrompt(true); }
+                if (result.data?.period) {
+                    const newPeriod = result.data.period;
+                    setCurrentData(prev => ({
+                        ...prev,
+                        periods: [
+                            newPeriod,
+                            ...(prev.periods || []).map(period => ({ ...period, isActive: false }))
+                        ],
+                        currentPeriodId: newPeriod.id,
+                        startingWeight: newPeriod.startingWeight
+                    }));
+                }
                 return;
             } else if (updates.action === 'end_period') {
                 const result = await api.endPeriod(viewingClient.id, updates.periodId);
                 if (result.authError) { setShowReauthPrompt(true); }
+                else {
+                    const endDate = new Date().toISOString();
+                    setCurrentData(prev => ({
+                        ...prev,
+                        periods: (prev.periods || []).map(period =>
+                            period.id === updates.periodId
+                                ? { ...period, isActive: false, endDate }
+                                : period
+                        ),
+                        currentPeriodId: prev.currentPeriodId === updates.periodId ? null : prev.currentPeriodId
+                    }));
+                }
                 return;
             } else if (updates.action === 'update_period') {
                 const { periodId, ...periodUpdates } = updates;
                 const result = await api.updatePeriod(viewingClient.id, periodId, periodUpdates);
                 if (result.authError) { setShowReauthPrompt(true); }
+                else {
+                    setCurrentData(prev => {
+                        const updatedPeriods = (prev.periods || []).map(period =>
+                            period.id === periodId
+                                ? {
+                                    ...period,
+                                    ...(periodUpdates.startingWeight !== undefined ? { startingWeight: parseFloat(periodUpdates.startingWeight) } : {}),
+                                    ...(periodUpdates.goalWeight !== undefined ? { goalWeight: periodUpdates.goalWeight ? parseFloat(periodUpdates.goalWeight) : null } : {}),
+                                    ...(periodUpdates.notes !== undefined ? { notes: periodUpdates.notes } : {})
+                                }
+                                : period
+                        );
+                        return {
+                            ...prev,
+                            periods: updatedPeriods,
+                            startingWeight: prev.currentPeriodId === periodId && periodUpdates.startingWeight !== undefined
+                                ? parseFloat(periodUpdates.startingWeight)
+                                : prev.startingWeight
+                        };
+                    });
+                }
                 return;
             } else if (updates.action === 'pause') {
                 setCurrentData(prev => {
@@ -562,11 +607,6 @@ const App = () => {
     const handleOpenWeightHistory = useCallback(() => setShowWeightHistory(true), []);
     const handleCloseWeightHistory = useCallback(() => setShowWeightHistory(false), []);
 
-    const dashboardUserData = useMemo(() => currentData, [
-        currentData.checkins, currentData.periods, currentData.startDate,
-        currentData.isPaused, currentData.pausedAt, currentData.totalWeeks, currentData.stepGoal
-    ]);
-
     const handleTabChange = useCallback((tab) => {
         setActiveTab(tab);
         setShowWeightHistory(false);
@@ -612,6 +652,9 @@ const App = () => {
     if (isLoading) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center bg-surface-50">
+                <div className="w-20 h-20 mb-5 animate-pulse">
+                    <img src={APP_ICON} alt="JNM Coaching logo" className="w-full h-full" />
+                </div>
                 <Loader2 className="animate-spin text-ink-muted mb-4" size={32} />
                 <p className="text-ink-muted font-medium">Laster...</p>
             </div>
@@ -747,7 +790,7 @@ const App = () => {
                                 showWeightHistory ? (
                                     <WeightProgressView checkins={currentData.checkins} onBack={handleCloseWeightHistory} />
                                 ) : (
-                                    <DashboardView userData={dashboardUserData} isCoach={isCoach} onUpdateData={handleUpdateData} onOpenWeightHistory={handleOpenWeightHistory} onRefreshData={handleRefresh} />
+                                    <DashboardView userData={currentData} isCoach={isCoach} onUpdateData={handleUpdateData} onOpenWeightHistory={handleOpenWeightHistory} />
                                 )
                             ) :
                             activeTab === 'gallery' ? <GalleryView

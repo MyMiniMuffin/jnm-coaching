@@ -192,7 +192,7 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
 });
 
 // --- Plan Settings Modal (erstatter prompt()-dialoger) ---
-const PlanSettingsModal = React.memo(({ userData, onClose, onUpdateData, onRefreshData, onOpenPeriodModal }) => {
+const PlanSettingsModal = React.memo(({ userData, onClose, onUpdateData, onOpenPeriodModal }) => {
     useEscapeKey(onClose);
     const [startDate, setStartDate] = useState(
         userData.startDate ? new Date(userData.startDate).toISOString().split('T')[0] : ''
@@ -222,9 +222,8 @@ const PlanSettingsModal = React.memo(({ userData, onClose, onUpdateData, onRefre
         onClose();
         if (Object.keys(updates).length > 0) {
             await onUpdateData(updates);
-            if (updates.stepGoal && onRefreshData) await onRefreshData();
         }
-    }, [startDate, totalWeeks, stepGoal, origStartDate, origTotalWeeks, origStepGoal, onUpdateData, onRefreshData, onClose]);
+    }, [startDate, totalWeeks, stepGoal, origStartDate, origTotalWeeks, origStepGoal, onUpdateData, onClose]);
 
     const handlePauseResume = useCallback(async () => {
         onClose();
@@ -337,7 +336,7 @@ const PlanSettingsModal = React.memo(({ userData, onClose, onUpdateData, onRefre
     );
 });
 
-const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeightHistory, onRefreshData }) => {
+const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeightHistory }) => {
     const toast = useToast();
     const checkins = userData.checkins || [];
     const periods = userData.periods || [];
@@ -346,11 +345,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
     const [showPlanSettings, setShowPlanSettings] = useState(false);
     const [periodLoading, setPeriodLoading] = useState(false);
     
-    // Memoize sorterte checkins og lastCheckin
-    const { sortedCheckins, lastCheckin } = useMemo(() => {
-        const sorted = [...checkins].sort((a, b) => b.timestamp - a.timestamp);
-        return { sortedCheckins: sorted, lastCheckin: sorted.length > 0 ? sorted[0] : null };
-    }, [checkins]);
+    const lastCheckin = checkins.length > 0 ? checkins[0] : null;
 
     // Memoize week calculation
     const { currentWeek, progress } = useMemo(() => {
@@ -415,35 +410,32 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
         try {
             await onUpdateData({ action: 'create_period', name, startingWeight, goalWeight });
             setShowPeriodModal(false);
-            if (onRefreshData) await onRefreshData();
             toast('Runde opprettet');
         } finally {
             setPeriodLoading(false);
         }
-    }, [onUpdateData, onRefreshData, toast]);
+    }, [onUpdateData, toast]);
 
     const handleEndPeriod = useCallback(async (periodId) => {
         setPeriodLoading(true);
         try {
             await onUpdateData({ action: 'end_period', periodId });
             setShowPeriodModal(false);
-            if (onRefreshData) await onRefreshData();
             toast('Runde avsluttet');
         } finally {
             setPeriodLoading(false);
         }
-    }, [onUpdateData, onRefreshData, toast]);
+    }, [onUpdateData, toast]);
 
     const handleUpdatePeriodCb = useCallback(async (periodId, updates) => {
         setPeriodLoading(true);
         try {
             await onUpdateData({ action: 'update_period', periodId, ...updates });
             setShowPeriodModal(false);
-            if (onRefreshData) await onRefreshData();
         } finally {
             setPeriodLoading(false);
         }
-    }, [onUpdateData, onRefreshData]);
+    }, [onUpdateData]);
 
     return (
         <div className="space-y-5 pb-32 animate-slide-up">
@@ -465,7 +457,6 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                     userData={userData}
                     onClose={handleClosePlanSettings}
                     onUpdateData={onUpdateData}
-                    onRefreshData={onRefreshData}
                     onOpenPeriodModal={handleOpenPeriodFromSettings}
                 />
             )}

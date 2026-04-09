@@ -282,7 +282,7 @@ export const api = {
         }
         if (!res.ok) throw new Error('Kunne ikke opprette periode');
         cache.invalidate(`user-data-${userId}`);
-        return { authError: false };
+        return { authError: false, data: await res.json() };
     },
     endPeriod: async (userId, periodId) => {
         const res = await fetch('/.netlify/functions/data', {
@@ -296,7 +296,7 @@ export const api = {
         }
         if (!res.ok) throw new Error('Kunne ikke avslutte periode');
         cache.invalidate(`user-data-${userId}`);
-        return { authError: false };
+        return { authError: false, data: await res.json() };
     },
     updatePeriod: async (userId, periodId, updates) => {
         const res = await fetch('/.netlify/functions/data', {
@@ -310,7 +310,7 @@ export const api = {
         }
         if (!res.ok) throw new Error('Kunne ikke oppdatere periode');
         cache.invalidate(`user-data-${userId}`);
-        return { authError: false };
+        return { authError: false, data: await res.json() };
     },
     addGalleryImage: async (userId, imageUrl, label, date, weight) => {
         const res = await fetch('/.netlify/functions/data', {

@@ -96,18 +96,11 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
             });
         });
         
-        // Sorter alle bilder etter sortDate, nyeste først
-        return images.sort((a, b) => b.sortDate - a.sortDate);
+        // Sorter alle bilder etter sortDate, nyeste først, og legg ved global index for senere oppslag
+        return images
+            .sort((a, b) => b.sortDate - a.sortDate)
+            .map((img, index) => ({ ...img, globalIndex: index }));
     }, [checkins, galleryImages]);
-
-    // Bygg url+timestamp → globalIndex map for O(1) oppslag i timeline
-    const imageIndexMap = useMemo(() => {
-        const map = new Map();
-        allImages.forEach((img, idx) => {
-            map.set(`${img.url}|${img.timestamp}`, idx);
-        });
-        return map;
-    }, [allImages]);
 
     // Grupper bilder etter måned for timeline-visning
     const imagesByMonth = useMemo(() => {
@@ -705,12 +698,11 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                             </div>
                             <div className="grid grid-cols-3 gap-1.5">
                                 {images.map((img, idx) => {
-                                    const globalIndex = imageIndexMap.get(`${img.url}|${img.timestamp}`) ?? 0;
                                     return (
                                         <div 
                                             key={img.isGalleryImage ? `gallery-${img.galleryImageId}` : `${img.checkinId}-${idx}`}
                                             className="relative aspect-square cursor-pointer group"
-                                            onClick={() => handleImageClick(img, globalIndex)}
+                                            onClick={() => handleImageClick(img, img.globalIndex)}
                                         >
                                             <img 
                                                 src={getThumbnail(img.url)} 

@@ -3,7 +3,6 @@ import { Plus, X, Trash2, Pause, Play, User, ChevronRight, Loader2, KeyRound } f
 import { Card, Badge, Button } from '../components/ui';
 import { useEscapeKey } from '../hooks';
 import { useConfirm } from '../components/ConfirmDialog';
-import { formatDateNO } from '../lib/formatters';
 
 const CoachDashboard = React.memo(({ user, allUsers, onSelectClient, onAddClient, onDeleteClient, onArchiveClient, onResetPassword }) => {
     const [showModal, setShowModal] = useState(false);
@@ -11,6 +10,7 @@ const CoachDashboard = React.memo(({ user, allUsers, onSelectClient, onAddClient
     const [isCreating, setIsCreating] = useState(false);
     const [resetTarget, setResetTarget] = useState(null);
     const [isResetting, setIsResetting] = useState(false);
+    const [pendingClientAction, setPendingClientAction] = useState(null);
     const confirm = useConfirm();
 
     // Memoize filtrerte lister
@@ -48,9 +48,24 @@ const CoachDashboard = React.memo(({ user, allUsers, onSelectClient, onAddClient
             confirmText: 'Slett',
             destructive: true
         })) {
-            onDeleteClient(clientId);
+            setPendingClientAction({ clientId, type: 'delete' });
+            try {
+                await onDeleteClient(clientId);
+            } finally {
+                setPendingClientAction(null);
+            }
         }
     }, [confirm, onDeleteClient]);
+
+    const handleArchiveToggle = useCallback(async (e, client) => {
+        e.stopPropagation();
+        setPendingClientAction({ clientId: client.id, type: client.is_archived ? 'restore' : 'archive' });
+        try {
+            await onArchiveClient(client.id, !client.is_archived);
+        } finally {
+            setPendingClientAction(null);
+        }
+    }, [onArchiveClient]);
 
     const openResetModal = useCallback((e, client) => {
         e.stopPropagation();
@@ -66,12 +81,14 @@ const CoachDashboard = React.memo(({ user, allUsers, onSelectClient, onAddClient
     const handleResetSubmit = useCallback(async (e) => {
         e.preventDefault();
         setIsResetting(true);
+        setPendingClientAction({ clientId: resetTarget.id, type: 'reset' });
         try {
             const password = new FormData(e.target).get('password');
             await onResetPassword(resetTarget.id, password);
             setResetTarget(null);
         } finally {
             setIsResetting(false);
+            setPendingClientAction(null);
         }
     }, [resetTarget, onResetPassword]);
 
@@ -175,12 +192,14 @@ const CoachDashboard = React.memo(({ user, allUsers, onSelectClient, onAddClient
                         {!showArchived && <p className="text-ink-faint text-sm">Trykk «Ny» for å legge til din første utøver</p>}
                     </div>
                 ) : (
-                    displayedClients.map(client => (
+                    displayedClients.map(client => {
+                        const isPending = pendingClientAction?.clientId === client.id;
+                        return (
                         <Card
                             key={client.id}
-                            className={`p-4 flex items-center justify-between group ${showArchived ? 'opacity-60' : client.unreadCheckins > 0 ? 'border-emerald-300 bg-emerald-50/50' : ''}`}
-                            interactive
-                            onClick={() => onSelectClient(client)}
+                            className={`p-4 flex items-center justify-between group ${showArchived ? 'opacity-60' : client.unreadCheckins > 0 ? 'border-emerald-300 bg-emerald-50/50' : ''} ${isPending ? 'pointer-events-none opacity-70' : ''}`}
+                            interactive={!isPending}
+                            onClick={() => !isPending && onSelectClient(client)}
                         >
                             <div className="flex items-center gap-4">
                                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-display text-xl ${showArchived ? 'bg-surface-200 text-ink-muted' : client.unreadCheckins > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-surface-100 text-ink'}`}>
@@ -201,13 +220,11 @@ const CoachDashboard = React.memo(({ user, allUsers, onSelectClient, onAddClient
                                 <div className="flex items-center gap-0.5 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
                                     {/* Arkiver/Gjenopprett knapp */}
                                     <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            onArchiveClient(client.id, !client.is_archived);
-                                        }}
+                                        onClick={(e) => handleArchiveToggle(e, client)}
                                         className="p-2 text-ink-faint hover:text-ink transition-colors"
                                         aria-label={client.is_archived ? 'Gjenopprett' : 'Arkiver'}
                                         title={client.is_archived ? 'Gjenopprett' : 'Arkiver'}
+                                        disabled={isPending}
                                     >
                                         {client.is_archived ? <Play size={16} /> : <Pause size={16} />}
                                     </button>
@@ -217,6 +234,7 @@ const CoachDashboard = React.memo(({ user, allUsers, onSelectClient, onAddClient
                                         className="p-2 text-ink-faint hover:text-ink transition-colors"
                                         aria-label="Tilbakestill passord"
                                         title="Tilbakestill passord"
+                                        disabled={isPending}
                                     >
                                         <KeyRound size={16} />
                                     </button>
@@ -225,14 +243,16 @@ const CoachDashboard = React.memo(({ user, allUsers, onSelectClient, onAddClient
                                         onClick={(e) => handleDelete(e, client.id)}
                                         className="p-2 text-ink-faint hover:text-red-500 transition-colors"
                                         aria-label="Slett utøver"
+                                        disabled={isPending}
                                     >
                                         <Trash2 size={16} />
                                     </button>
                                 </div>
-                                <ChevronRight size={18} className="text-ink-faint" />
+                                {isPending ? <Loader2 size={18} className="text-ink-faint animate-spin" /> : <ChevronRight size={18} className="text-ink-faint" />}
                             </div>
                         </Card>
-                    ))
+                        );
+                    })
                 )}
             </div>
         </div>
