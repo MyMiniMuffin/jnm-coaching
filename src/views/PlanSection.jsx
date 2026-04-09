@@ -11,7 +11,17 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [text, setText] = useState(content);
-    useEffect(() => setText(content), [content]);
+    const [saveState, setSaveState] = useState('idle');
+    useEffect(() => {
+        setText(content);
+        setSaveState('idle');
+    }, [content]);
+
+    useEffect(() => {
+        if (saveState !== 'saved') return;
+        const timeoutId = setTimeout(() => setSaveState('idle'), 1800);
+        return () => clearTimeout(timeoutId);
+    }, [saveState]);
 
     const Icon = type === 'diet' ? Utensils : Dumbbell;
     const title = type === 'diet' ? 'Matplan' : 'Treningsplan';
@@ -19,8 +29,10 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
     const handleToggleEdit = useCallback(async () => {
         if (isEditing) {
             setIsSaving(true);
+            setSaveState('saving');
             try {
                 await onSave(text);
+                setSaveState('saved');
             } finally {
                 setIsSaving(false);
             }
@@ -28,7 +40,10 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
         setIsEditing(prev => !prev);
     }, [isEditing, text, onSave]);
 
-    const handleTextChange = useCallback((e) => setText(e.target.value), []);
+    const handleTextChange = useCallback((e) => {
+        setText(e.target.value);
+        setSaveState('dirty');
+    }, []);
 
     // Memoize parsed markdown (sanitert med DOMPurify)
     const parsedContent = useMemo(() => {
@@ -45,7 +60,14 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                         <div className="w-10 h-10 bg-surface-100 rounded-xl flex items-center justify-center text-ink-muted">
                             <Icon size={20} />
                         </div>
-                        <h2 className="font-display text-xl">{title}</h2>
+                        <div>
+                            <h2 className="font-display text-xl">{title}</h2>
+                            {!isReadOnly && (
+                                <p className="text-xs text-ink-muted mt-0.5">
+                                    {saveState === 'saving' ? 'Lagrer endringer...' : saveState === 'saved' ? 'Lagret' : saveState === 'dirty' ? 'Ulagrede endringer' : 'Klar'}
+                                </p>
+                            )}
+                        </div>
                     </div>
                     {!isReadOnly && (
                         <Button

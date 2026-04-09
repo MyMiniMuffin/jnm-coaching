@@ -527,15 +527,29 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                     )}
 
                     {!userData.startDate && (
-                        <p className="text-white/60 text-sm">
-                            {isCoach ? 'Trykk på blyanten for å sette startdato' : 'Venter på at coach setter opp planen'}
-                        </p>
+                        <div className="space-y-3">
+                            <p className="text-white/60 text-sm">
+                                {isCoach ? 'Sett opp startdato, skrittmål og eventuelt første coaching-runde for å komme i gang.' : 'Venter på at coach setter opp planen din.'}
+                            </p>
+                            {isCoach && (
+                                <Button variant="secondary" size="sm" onClick={handleOpenPlanSettings}>
+                                    <Pencil size={16} /> Sett opp plan
+                                </Button>
+                            )}
+                        </div>
                     )}
 
                     {userData.isPaused && (
-                        <p className="text-white/60 text-sm">
-                            {isCoach ? 'Trykk på blyanten for å gjenoppta' : 'Planen er satt på pause'}
-                        </p>
+                        <div className="space-y-3">
+                            <p className="text-white/60 text-sm">
+                                {isCoach ? 'Planen er pauset. Gjenoppta når dere er klare for å fortsette.' : 'Planen er satt på pause akkurat nå.'}
+                            </p>
+                            {isCoach && (
+                                <Button variant="secondary" size="sm" onClick={handleOpenPlanSettings}>
+                                    <Play size={16} /> Gjenoppta plan
+                                </Button>
+                            )}
+                        </div>
                     )}
                 </div>
             </div>

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   Check, Camera, X, Trash2, Loader2, Scale,
   Activity, Footprints, AlertCircle, Save
@@ -12,7 +12,7 @@ import { createConfetti } from '../lib/confetti';
 import { formatDateNO, formatWeight, getThumbnail } from '../lib/formatters';
 import { OPTIONS_1_TO_10, OPTIONS_0_TO_7, INITIAL_FORM_DATA } from '../lib/config';
 
-const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, stepGoal, hideForm = false }) => {
+const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, stepGoal, hideForm = false, draftKey = 'default' }) => {
     const [step, setStep] = useState('form');
     const [lightbox, setLightbox] = useState({ isOpen: false, images: [], index: 0 });
     const [isCompressing, setIsCompressing] = useState(false);
@@ -20,6 +20,44 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState(INITIAL_FORM_DATA);
     const confirmDialog = useConfirm();
+    const storageKey = `jnm_checkin_draft_${draftKey}`;
+
+    useEffect(() => {
+        if (isReadOnly || hideForm) return;
+        try {
+            const savedDraft = localStorage.getItem(storageKey);
+            if (savedDraft) {
+                const parsedDraft = JSON.parse(savedDraft);
+                setFormData(prev => ({ ...prev, ...parsedDraft }));
+            }
+        } catch (e) {
+            console.error('[CheckIn] Kunne ikke laste utkast:', e);
+        }
+    }, [storageKey, isReadOnly, hideForm]);
+
+    useEffect(() => {
+        if (isReadOnly || hideForm) return;
+        try {
+            if (
+                formData.weight ||
+                formData.comment ||
+                formData.images.length > 0 ||
+                formData.energy !== INITIAL_FORM_DATA.energy ||
+                formData.sleep !== INITIAL_FORM_DATA.sleep ||
+                formData.accuracy !== INITIAL_FORM_DATA.accuracy ||
+                formData.strengthSessions !== INITIAL_FORM_DATA.strengthSessions ||
+                formData.cardioSessions !== INITIAL_FORM_DATA.cardioSessions ||
+                formData.stepsReached !== INITIAL_FORM_DATA.stepsReached ||
+                formData.takenSupplements !== INITIAL_FORM_DATA.takenSupplements
+            ) {
+                localStorage.setItem(storageKey, JSON.stringify(formData));
+            } else {
+                localStorage.removeItem(storageKey);
+            }
+        } catch (e) {
+            console.error('[CheckIn] Kunne ikke lagre utkast:', e);
+        }
+    }, [formData, storageKey, isReadOnly, hideForm]);
 
     const closeLightbox = useCallback(() => {
         setLightbox(prev => ({ ...prev, isOpen: false }));
@@ -90,6 +128,7 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
                 ...formData 
             };
             await onNewCheckin(newEntry);
+            try { localStorage.removeItem(storageKey); } catch (e) {}
             setStep('success');
             createConfetti(); // 🎉 Konfetti!
             setTimeout(() => {
@@ -148,7 +187,12 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
             {!isReadOnly && !hideForm && (
                 <form onSubmit={handleSubmit} className="space-y-5">
                     <Card className="p-5 space-y-5">
-                        <h3 className="font-display text-lg">Ny ukesrapport</h3>
+                        <div className="flex items-center justify-between gap-3">
+                            <h3 className="font-display text-lg">Ny ukesrapport</h3>
+                            <span className="text-xs text-ink-muted">
+                                Utkast lagres automatisk
+                            </span>
+                        </div>
                         
                         <div>
                             <InputLabel>Vekt (kg)</InputLabel>

@@ -770,6 +770,26 @@ const App = () => {
                 onLogout={handleLogout}
                 onClearClient={handleClearClient}
             />
+            {isCoach && viewingClient && (
+                <div className="sticky top-[73px] z-30 bg-surface-50/95 backdrop-blur-md border-b border-surface-200">
+                    <div className="max-w-md mx-auto px-4 py-2.5 flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                            <p className="text-[11px] uppercase tracking-wide text-ink-faint">Coach-visning</p>
+                            <p className="text-sm font-medium truncate">
+                                {viewingClient.name} <span className="text-ink-muted font-normal">@{viewingClient.username}</span>
+                            </p>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-xs text-ink-muted">
+                                {(currentData.checkins || []).length} rapport{(currentData.checkins || []).length === 1 ? '' : 'er'}
+                            </p>
+                            {viewingClient.is_archived && (
+                                <p className="text-[11px] text-amber-600">Arkivert utøver</p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
             <main className="p-4">
                 {isClientLoading ? (
                     <div className="space-y-4 pt-4">
@@ -798,7 +818,7 @@ const App = () => {
                             /> :
                             activeTab === 'diet' ? <PlanSection type="diet" content={currentData.dietPlan} onSave={handleSaveDietPlan} isReadOnly={!isCoach} /> :
                             activeTab === 'workout' ? <PlanSection type="workout" content={currentData.workoutPlan} onSave={handleSaveWorkoutPlan} isReadOnly={!isCoach} /> :
-                            <CheckInView checkins={currentData.checkins} onNewCheckin={handleNewCheckin} onDelete={handleDeleteCheckin} isReadOnly={isCoach} stepGoal={currentData.stepGoal} />}
+                            <CheckInView checkins={currentData.checkins} onNewCheckin={handleNewCheckin} onDelete={handleDeleteCheckin} isReadOnly={isCoach} stepGoal={currentData.stepGoal} draftKey={viewingClient?.id || currentUser?.id || 'default'} />}
                         </div>
                     </Suspense></ViewErrorBoundary>
                 )}
