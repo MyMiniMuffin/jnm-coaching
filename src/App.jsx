@@ -771,21 +771,16 @@ const App = () => {
                 onClearClient={handleClearClient}
             />
             {isCoach && viewingClient && (
-                <div className="sticky top-[73px] z-30 bg-surface-50/95 backdrop-blur-md border-b border-surface-200">
-                    <div className="max-w-md mx-auto px-4 py-2.5 flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                            <p className="text-[11px] uppercase tracking-wide text-ink-faint">Coach-visning</p>
-                            <p className="text-sm font-medium truncate">
+                <div className="sticky top-[73px] z-30 bg-surface-50/90 backdrop-blur-md border-b border-surface-200">
+                    <div className="max-w-md mx-auto px-4 py-1.5 flex items-center justify-between gap-3 text-xs">
+                        <div className="min-w-0 flex items-center gap-2">
+                            <span className="uppercase tracking-wide text-ink-faint shrink-0">Coach</span>
+                            <p className="font-medium truncate">
                                 {viewingClient.name} <span className="text-ink-muted font-normal">@{viewingClient.username}</span>
                             </p>
                         </div>
-                        <div className="text-right">
-                            <p className="text-xs text-ink-muted">
-                                {(currentData.checkins || []).length} rapport{(currentData.checkins || []).length === 1 ? '' : 'er'}
-                            </p>
-                            {viewingClient.is_archived && (
-                                <p className="text-[11px] text-amber-600">Arkivert utøver</p>
-                            )}
+                        <div className="text-right text-ink-muted shrink-0">
+                            {viewingClient.is_archived ? 'Arkivert' : `${(currentData.checkins || []).length} rapport${(currentData.checkins || []).length === 1 ? '' : 'er'}`}
                         </div>
                     </div>
                 </div>
