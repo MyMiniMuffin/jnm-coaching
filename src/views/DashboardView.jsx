@@ -474,7 +474,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
             )}
 
             {/* Hero Card */}
-            <div className="p-6 bg-ink text-white rounded-2xl relative overflow-hidden">
+            <div className="p-6 hero-tint text-white rounded-2xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-3xl transform translate-x-10 -translate-y-10" />
                 <div className="relative z-10">
                     <div className="flex justify-between items-start mb-4">
@@ -574,7 +574,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                     </p>
                 </Card>
 
-                <Card className="p-5 relative">
+                <Card className="p-5 relative soft-panel">
                     <div className="flex justify-between items-start mb-3">
                         <div className="w-10 h-10 bg-surface-100 rounded-xl flex items-center justify-center text-ink-muted">
                             <Footprints size={20} />
@@ -673,7 +673,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
             )}
 
             {/* Dagens motivasjon */}
-            <Card className="p-6 bg-gradient-to-br from-surface-50 to-surface-100 border-dashed">
+            <Card className="p-6 bg-gradient-to-br from-[#f4ede2] via-surface-50 to-[#edf3ea] border-dashed">
                 <div className="text-center">
                     <p className="font-display text-lg text-ink italic leading-relaxed">"{todayQuote.text}"</p>
                     <p className="text-xs text-ink-muted mt-3">- {todayQuote.author}</p>

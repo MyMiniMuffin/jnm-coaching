@@ -7,9 +7,9 @@ export const Skeleton = React.memo(({ className }) => (
 
 const BADGE_VARIANTS = {
     default: 'bg-surface-200 text-ink',
-    success: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
-    warning: 'bg-amber-50 text-amber-700 border border-amber-200',
-    muted: 'bg-surface-100 text-ink-muted',
+    success: 'bg-[#edf3ea] text-[#4f6b52] border border-[#cfe0cf]',
+    warning: 'bg-[#f6ede2] text-[#946b45] border border-[#e7d2bb]',
+    muted: 'bg-[#f4ede2] text-ink-muted border border-[#e6ded0]',
 };
 
 export const Badge = React.memo(({ children, variant = 'default', className = '' }) => (
@@ -19,8 +19,8 @@ export const Badge = React.memo(({ children, variant = 'default', className = ''
 ));
 
 const BUTTON_VARIANTS = {
-    primary: 'bg-ink text-surface-50 hover:bg-accent-hover active:scale-[0.98]',
-    secondary: 'bg-surface-100 text-ink hover:bg-surface-200 active:scale-[0.98]',
+    primary: 'bg-accent text-surface-50 hover:bg-accent-hover active:scale-[0.98]',
+    secondary: 'bg-surface-100 text-ink hover:bg-[#ece4d7] active:scale-[0.98]',
     ghost: 'text-ink-muted hover:text-ink hover:bg-surface-100',
     danger: 'bg-red-50 text-red-600 hover:bg-red-100',
 };
@@ -42,7 +42,7 @@ export const Button = React.memo(({ children, variant = 'primary', size = 'md', 
 export const Card = React.memo(React.forwardRef(({ children, className = "", interactive = false, ...props }, ref) => (
     <div
         ref={ref}
-        className={`bg-white rounded-2xl border border-surface-200 ${interactive ? 'hover:border-surface-300 hover:shadow-sm cursor-pointer transition-all' : ''} ${className}`}
+        className={`bg-white rounded-2xl border border-surface-200 ${interactive ? 'hover:border-surface-300 hover:shadow-sm hover:shadow-[#d9cfbf33] cursor-pointer transition-all' : ''} ${className}`}
         {...props}
     >
         {children}

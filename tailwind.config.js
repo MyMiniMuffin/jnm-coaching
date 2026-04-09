@@ -13,9 +13,9 @@ module.exports = {
       colors: {
         surface: {
           50: '#FAFAF9',
-          100: '#F5F5F4',
-          200: '#E7E5E4',
-          300: '#D6D3D1',
+          100: '#F3EEE6',
+          200: '#E6DED0',
+          300: '#D4C8B5',
         },
         ink: {
           DEFAULT: '#171717',
@@ -23,8 +23,8 @@ module.exports = {
           faint: '#A3A3A3',
         },
         accent: {
-          DEFAULT: '#171717',
-          hover: '#262626',
+          DEFAULT: '#5E765F',
+          hover: '#4F6650',
         },
         success: '#16A34A',
         warning: '#CA8A04',

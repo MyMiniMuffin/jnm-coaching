@@ -137,7 +137,7 @@ const CoachDashboard = React.memo(({ user, allUsers, onSelectClient, onAddClient
             )}
 
             {/* Hero Stats Card */}
-            <div className="p-6 bg-ink text-white rounded-2xl relative overflow-hidden">
+            <div className="p-6 hero-tint text-white rounded-2xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-3xl transform translate-x-10 -translate-y-10" />
                 <div className="relative z-10">
                     <p className="text-white/60 text-sm">Velkommen tilbake</p>
