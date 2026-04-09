@@ -44,6 +44,26 @@ const validateCheckinData = (data) => {
   return errors;
 };
 
+const formatCheckinRecord = (checkin) => {
+  let imageList = [];
+  if (checkin.images) {
+    try {
+      imageList = typeof checkin.images === 'string' ? JSON.parse(checkin.images) : checkin.images;
+    } catch (e) {
+      console.error('Feil ved parsing av bilder', e);
+    }
+  } else if (checkin.image_url) {
+    imageList = [checkin.image_url];
+  }
+
+  const { image_url, ...rest } = checkin;
+  return {
+    ...rest,
+    timestamp: new Date(checkin.timestamp).getTime(),
+    images: imageList
+  };
+};
+
 exports.handler = async (event) => {
   try {
     // --- GET: Hent all data ---
@@ -106,25 +126,7 @@ exports.handler = async (event) => {
 
       const user = userResult[0] || {};
       
-      const formattedCheckins = checkins.map(c => {
-        let imageList = [];
-        if (c.images) {
-          try { 
-            imageList = typeof c.images === 'string' ? JSON.parse(c.images) : c.images; 
-          } catch (e) { 
-            console.error("Feil ved parsing av bilder", e); 
-          }
-        } else if (c.image_url) { 
-          imageList = [c.image_url]; 
-        }
-
-        const { image_url, ...rest } = c;
-        return {
-          ...rest,
-          timestamp: new Date(c.timestamp).getTime(),
-          images: imageList
-        };
-      });
+      const formattedCheckins = checkins.map(formatCheckinRecord);
 
       return {
         statusCode: 200,
@@ -303,7 +305,7 @@ exports.handler = async (event) => {
         const userRes = await sql`SELECT current_period_id FROM users WHERE id = ${userId}`;
         const periodId = userRes[0]?.current_period_id || null;
         
-        await sql`
+        const insertedCheckin = await sql`
           INSERT INTO checkins (
             user_id, date, weight, sleep, energy, accuracy, 
             strength_sessions, cardio_sessions, steps_reached, taken_supplements, comment, images, period_id
@@ -323,7 +325,24 @@ exports.handler = async (event) => {
             ${imagesJson},
             ${periodId}
           )
+          RETURNING
+            id, date, weight, sleep, energy, accuracy,
+            strength_sessions as "strengthSessions",
+            cardio_sessions as "cardioSessions",
+            steps_reached as "stepsReached",
+            taken_supplements as "takenSupplements",
+            comment, image_url, images, created_at as timestamp,
+            period_id as "periodId", is_read as "isRead"
         `;
+
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            success: true,
+            checkin: formatCheckinRecord(insertedCheckin[0])
+          })
+        };
       }
       
       else if (type === 'delete_checkin') {
@@ -376,11 +395,13 @@ exports.handler = async (event) => {
 
         const startDate = new Date().toISOString();
 
-        // Bruk CTE for atomisk operasjon (BEGIN/COMMIT fungerer ikke med Neon HTTP-driver)
-        await sql`UPDATE coaching_periods SET is_active = false WHERE user_id = ${userId}`;
-
         const result = await sql`
-          WITH new_period AS (
+          WITH deactivate_existing AS (
+            UPDATE coaching_periods
+            SET is_active = false
+            WHERE user_id = ${userId}
+          ),
+          new_period AS (
             INSERT INTO coaching_periods (user_id, name, start_date, starting_weight, goal_weight, is_active)
             VALUES (${userId}, ${periodName}, ${startDate}, ${sw}, ${gw}, true)
             RETURNING id
@@ -455,12 +476,18 @@ exports.handler = async (event) => {
 
         if (startingWeight !== undefined) {
           const swParsed = parseFloat(startingWeight);
+          if (isNaN(swParsed) || swParsed < 20 || swParsed > 500) {
+            return { statusCode: 400, body: JSON.stringify({ error: 'Startvekt må være mellom 20 og 500 kg' }) };
+          }
           queries.push(sql`UPDATE coaching_periods SET starting_weight = ${swParsed} WHERE id = ${periodId} AND user_id = ${userId}`);
           queries.push(sql`UPDATE users SET starting_weight = ${swParsed} WHERE id = ${userId} AND current_period_id = ${periodId}`);
         }
 
         if (goalWeight !== undefined) {
           const goalVal = goalWeight ? parseFloat(goalWeight) : null;
+          if (goalVal !== null && (isNaN(goalVal) || goalVal < 20 || goalVal > 500)) {
+            return { statusCode: 400, body: JSON.stringify({ error: 'Målvekt må være mellom 20 og 500 kg' }) };
+          }
           queries.push(sql`UPDATE coaching_periods SET goal_weight = ${goalVal} WHERE id = ${periodId} AND user_id = ${userId}`);
         }
 

@@ -295,9 +295,13 @@ const App = () => {
             setShowReauthPrompt(true);
             return;
         }
+        const savedCheckin = result.data?.checkin;
+        if (!savedCheckin) {
+            throw new Error('Mangler lagret check-in fra serveren');
+        }
         setCurrentData(prev => ({
             ...prev,
-            checkins: [...prev.checkins, { ...entry, periodId: prev.currentPeriodId, isRead: false }]
+            checkins: [...prev.checkins, savedCheckin]
         }));
     }, [viewingClient]);
 

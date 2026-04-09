@@ -240,7 +240,7 @@ export const api = {
             throw new Error(errorText || 'Innsending feilet');
         }
         cache.invalidate(`user-data-${userId}`);
-        return { authError: false };
+        return { authError: false, data: await res.json() };
     },
     deleteCheckin: async (userId, checkinId) => {
         const res = await fetch('/.netlify/functions/data', {
