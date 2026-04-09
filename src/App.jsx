@@ -3,7 +3,7 @@ import { Loader2, Pause, Eye, LogOut, ChevronLeft, WifiOff } from 'lucide-react'
 
 // Lib
 import { saveSession, getSession, getToken, clearSession, hasValidSession } from './lib/session';
-import { api } from './lib/api';
+import { api, cache } from './lib/api';
 import { APP_ICON, INITIAL_DATA_STATE, TAB_ORDER } from './lib/config';
 
 // Hooks
@@ -171,27 +171,23 @@ const App = () => {
                 }
 
                 if (sessionUser.role === 'coach') {
-                    // Vis cached brukerliste umiddelbart, oppdater i bakgrunn
-                    const cachedResult = await api.getUsers(true);
-                    if (cachedResult.data?.length) {
-                        setAllUsers(cachedResult.data);
+                    // Vis evt. cached brukerliste umiddelbart, men ikke vent på nettverket
+                    const cachedUsers = cache.get('users-list');
+                    if (cachedUsers?.length) {
+                        setAllUsers(cachedUsers);
                     }
-
-                    // Vis UI nå — ikke vent på nettverket
                     setIsLoading(false);
 
-                    // Hent fersk brukerliste i bakgrunn
-                    if (cachedResult.fromCache || !cachedResult.data?.length) {
-                        api.getUsers(false).then(result => {
-                            if (result.authError) {
-                                setShowReauthPrompt(true);
-                            } else if (result.data) {
-                                setAllUsers(result.data);
-                                const freshUser = result.data.find(u => u.id === sessionUser.id);
-                                if (freshUser) setCurrentUser(freshUser);
-                            }
-                        }).catch(e => console.error('[Init] Feil ved henting av brukerliste:', e));
-                    }
+                    // Hent alltid fersk brukerliste i bakgrunnen
+                    api.getUsers(false).then(result => {
+                        if (result.authError) {
+                            setShowReauthPrompt(true);
+                        } else if (result.data) {
+                            setAllUsers(result.data);
+                            const freshUser = result.data.find(u => u.id === sessionUser.id);
+                            if (freshUser) setCurrentUser(freshUser);
+                        }
+                    }).catch(e => console.error('[Init] Feil ved henting av brukerliste:', e));
                     return; // isLoading allerede satt til false
                 }
             }

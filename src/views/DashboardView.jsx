@@ -362,36 +362,48 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
     // Beregn statistikk fra alle innsjekker
     const stats = useMemo(() => {
         if (checkins.length === 0) return null;
-        
-        const totalStrength = checkins.reduce((sum, c) => sum + (parseInt(c.strengthSessions) || 0), 0);
-        const totalCardio = checkins.reduce((sum, c) => sum + (parseInt(c.cardioSessions) || 0), 0);
-        const stepsHit = checkins.filter(c => c.stepsReached).length;
-        const avgAccuracy = (checkins.reduce((sum, c) => sum + (parseInt(c.accuracy) || 0), 0) / checkins.length).toFixed(1);
-        
-        // Vektendring - bruk aktivt periodestartsvekt hvis tilgjengelig
-        let weightChange = null;
-        let periodCheckins = checkins;
-        
-        // Filtrer checkins til kun de fra aktiv periode
-        if (activePeriod && activePeriod.id) {
-            periodCheckins = checkins.filter(c => c.periodId === activePeriod.id);
+
+        let totalStrength = 0;
+        let totalCardio = 0;
+        let stepsHit = 0;
+        let accuracySum = 0;
+        let periodCheckinsCount = 0;
+        let newestRelevantWeight = null;
+        let oldestRelevantWeight = null;
+
+        for (const checkin of checkins) {
+            totalStrength += parseInt(checkin.strengthSessions) || 0;
+            totalCardio += parseInt(checkin.cardioSessions) || 0;
+            if (checkin.stepsReached) stepsHit++;
+            accuracySum += parseInt(checkin.accuracy) || 0;
+
+            const isRelevantPeriod = !activePeriod?.id || checkin.periodId === activePeriod.id;
+            if (!isRelevantPeriod) continue;
+
+            periodCheckinsCount++;
+
+            const parsedWeight = parseFloat(checkin.weight);
+            if (isNaN(parsedWeight) || parsedWeight <= 0) continue;
+
+            if (newestRelevantWeight === null) {
+                newestRelevantWeight = parsedWeight;
+            }
+            oldestRelevantWeight = parsedWeight;
         }
-        
-        const validWeights = periodCheckins.filter(c => c.weight && parseFloat(c.weight) > 0).sort((a, b) => a.timestamp - b.timestamp);
-        
-        if (validWeights.length >= 1 && activePeriod?.startingWeight) {
+
+        const avgAccuracy = (accuracySum / checkins.length).toFixed(1);
+        let weightChange = null;
+
+        if (newestRelevantWeight !== null && activePeriod?.startingWeight) {
             // Beregn fra rundens startvekt til siste vekt
             const startWeight = parseFloat(activePeriod.startingWeight);
-            const lastWeight = parseFloat(validWeights[validWeights.length - 1].weight);
-            weightChange = (lastWeight - startWeight).toFixed(1);
-        } else if (validWeights.length >= 2) {
+            weightChange = (newestRelevantWeight - startWeight).toFixed(1);
+        } else if (newestRelevantWeight !== null && oldestRelevantWeight !== null && newestRelevantWeight !== oldestRelevantWeight) {
             // Fallback: første til siste checkin
-            const first = parseFloat(validWeights[0].weight);
-            const last = parseFloat(validWeights[validWeights.length - 1].weight);
-            weightChange = (last - first).toFixed(1);
+            weightChange = (newestRelevantWeight - oldestRelevantWeight).toFixed(1);
         }
-        
-        return { totalStrength, totalCardio, stepsHit, avgAccuracy, weightChange, totalCheckins: checkins.length, periodCheckins: periodCheckins.length };
+
+        return { totalStrength, totalCardio, stepsHit, avgAccuracy, weightChange, totalCheckins: checkins.length, periodCheckins: periodCheckinsCount };
     }, [checkins, activePeriod]);
 
     // Memoize dagens quote

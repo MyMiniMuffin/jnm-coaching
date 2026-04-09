@@ -7,25 +7,19 @@ const CACHE_PREFIX = 'jnm_cache_';
 export const cache = {
     store: {},
 
-    // Last inn fra localStorage ved oppstart
-    init: () => {
-        try {
-            const keys = Object.keys(localStorage).filter(k => k.startsWith(CACHE_PREFIX));
-            keys.forEach(key => {
-                const item = JSON.parse(localStorage.getItem(key));
-                if (item && Date.now() - item.timestamp < CACHE_TTL) {
-                    cache.store[key.replace(CACHE_PREFIX, '')] = item;
-                } else {
-                    localStorage.removeItem(key);
-                }
-            });
-        } catch (e) {
-            // localStorage ikke tilgjengelig, fortsett uten
-        }
-    },
-
     get: (key) => {
-        const item = cache.store[key];
+        let item = cache.store[key];
+        if (!item) {
+            try {
+                const stored = localStorage.getItem(CACHE_PREFIX + key);
+                item = stored ? JSON.parse(stored) : null;
+                if (item) {
+                    cache.store[key] = item;
+                }
+            } catch (e) {
+                item = null;
+            }
+        }
         if (!item) return null;
 
         // Sjekk om cache har utløpt
@@ -67,9 +61,6 @@ export const cache = {
         });
     }
 };
-
-// Initialiser cache fra localStorage
-cache.init();
 
 // --- DEBOUNCE UTILITY ---
 export const debounce = (fn, delay) => {
