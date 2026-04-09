@@ -14,7 +14,7 @@ const Header = React.memo(({ title, user, viewingClient, onLogout, onClearClient
                         {user.role === 'coach' ? <Briefcase size={12} /> : <User size={12} />}
                         {user.name}
                     </span>
-                    {viewingClient && (
+                    {viewingClient && user.role !== 'coach' && (
                         <Badge variant="muted" className="text-[10px]">
                             <ChevronRight size={10} /> {viewingClient.name} <span className="text-ink-faint">@{viewingClient.username}</span>
                         </Badge>
