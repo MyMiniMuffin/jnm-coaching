@@ -161,7 +161,10 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
     const parsedContent = useMemo(() => {
         if (!text) return '<p class="text-ink-muted italic text-center py-12">Ingen plan enda</p>';
         const rawHtml = marked.parse(text);
-        return DOMPurify.sanitize(rawHtml);
+        const sanitizedHtml = DOMPurify.sanitize(rawHtml);
+        return sanitizedHtml
+            .replace(/<table>/g, '<div class="plan-table-wrap"><table>')
+            .replace(/<\/table>/g, '</table></div>');
     }, [text]);
 
     const toolbarButtons = [
