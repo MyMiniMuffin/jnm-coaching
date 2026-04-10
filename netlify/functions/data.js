@@ -64,6 +64,17 @@ const formatCheckinRecord = (checkin) => {
   };
 };
 
+const getTargetUserState = async (userId) => {
+  const result = await sql`
+    SELECT role, is_archived
+    FROM users
+    WHERE id = ${userId}
+    LIMIT 1
+  `;
+
+  return result[0] || null;
+};
+
 exports.handler = async (event) => {
   try {
     // --- GET: Hent all data ---
@@ -186,6 +197,23 @@ exports.handler = async (event) => {
       const authResult = requireOwnership(event, userId);
       if (!authResult.success) {
         return { statusCode: authResult.statusCode, body: authResult.body };
+      }
+
+      const targetUser = await getTargetUserState(userId);
+      if (!targetUser) {
+        return { statusCode: 404, body: JSON.stringify({ error: 'Brukeren ble ikke funnet' }) };
+      }
+
+      const isArchivedAthlete = targetUser.role === 'athlete' && targetUser.is_archived;
+      if (isArchivedAthlete) {
+        const canViewArchivedData = event.httpMethod === 'GET';
+        const canCoachMarkRead = event.httpMethod === 'POST' && authResult.role === 'coach' && body?.type === 'mark_checkins_read';
+        if (!canViewArchivedData && !canCoachMarkRead) {
+          return {
+            statusCode: 403,
+            body: JSON.stringify({ error: 'Kontoen er arkivert og kan ikke endres.' })
+          };
+        }
       }
 
       if (type === 'plan_update') {
@@ -368,8 +396,7 @@ exports.handler = async (event) => {
           return { statusCode: 403, body: JSON.stringify({ error: 'Kun coach kan markere rapporter som lest' }) };
         }
         // Verifiser at target-bruker er en utøver, ikke en annen coach
-        const targetUser = await sql`SELECT role FROM users WHERE id = ${userId}`;
-        if (targetUser.length === 0 || targetUser[0].role !== 'athlete') {
+        if (targetUser.role !== 'athlete') {
           return { statusCode: 400, body: JSON.stringify({ error: 'Kan bare markere rapporter for utøvere' }) };
         }
         await sql`UPDATE checkins SET is_read = true WHERE user_id = ${userId}`;

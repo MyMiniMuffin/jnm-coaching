@@ -198,6 +198,8 @@ export const api = {
             return { authError: false, data };
         } catch (e) {
             console.error('[API] getUserData feil:', e);
+            const cached = cache.get(cacheKey);
+            if (cached) return { authError: false, data: cached, fromCache: true, networkError: true };
             return { authError: false, networkError: true };
         }
     },

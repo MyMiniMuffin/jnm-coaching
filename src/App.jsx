@@ -159,6 +159,7 @@ const App = () => {
                 setCurrentUser(sessionUser);
 
                 if (sessionUser.role === 'athlete') {
+                    skipNextAthleteFetchRef.current = true;
                     setViewingClient(sessionUser);
                     // Start datahenting parallelt (unngå ekstra renderingssyklus)
                     api.getUserData(sessionUser.id).then(result => {
@@ -234,17 +235,15 @@ const App = () => {
         return () => document.removeEventListener('visibilitychange', handleVisibility);
     }, [currentUser]);
 
-    // Last klientdata - kun for athlete som logger inn via login (ikke init)
-    const initDoneRef = useRef(false);
+    const skipNextAthleteFetchRef = useRef(false);
     useEffect(() => {
         if (viewingClient && currentUser?.role === 'athlete') {
-            // Skip første gang — init() henter allerede data
-            if (!initDoneRef.current) {
-                initDoneRef.current = true;
+            if (skipNextAthleteFetchRef.current) {
+                skipNextAthleteFetchRef.current = false;
                 return;
             }
             setIsClientLoading(true);
-            api.getUserData(viewingClient.id)
+            api.getUserData(viewingClient.id, false)
                 .then(result => {
                     if (result.authError) {
                         console.warn('[App] Auth-feil ved henting av klientdata');
@@ -252,10 +251,12 @@ const App = () => {
                     } else if (result.data) {
                         setCurrentData(result.data);
                     } else if (result.networkError) {
-                        console.log('[App] Nettverksfeil - bruker cached data');
+                        console.log('[App] Nettverksfeil - bruker eksisterende data');
                     }
                 })
-                .catch(() => setCurrentData(INITIAL_DATA_STATE))
+                .catch(() => {
+                    console.error('[App] Kunne ikke hente athlete-data');
+                })
                 .finally(() => setIsClientLoading(false));
         }
     }, [viewingClient, currentUser?.role]);
@@ -264,7 +265,10 @@ const App = () => {
         setCurrentUser(user);
         saveSession(user);
         setShowReauthPrompt(false);
-        if (user.role === 'athlete') setViewingClient(user);
+        if (user.role === 'athlete') {
+            setCurrentData(INITIAL_DATA_STATE);
+            setViewingClient(user);
+        }
     }, []);
 
     const handleLogout = useCallback(() => {
@@ -445,7 +449,7 @@ const App = () => {
 
     const handleSelectClient = useCallback(async (client) => {
         const requestId = ++selectClientRef.current;
-        setCurrentData(INITIAL_DATA_STATE);
+        const previousData = currentData;
         setViewingClient(client);
         setIsClientLoading(true);
         setShowWeightHistory(false);
@@ -456,30 +460,43 @@ const App = () => {
             if (requestId !== selectClientRef.current) return; // Avbrutt av nyere klikk
             if (result.authError) {
                 setShowReauthPrompt(true);
+                setCurrentData(previousData);
                 setIsClientLoading(false);
                 return;
             }
             if (result.data) {
                 setCurrentData(result.data);
+            } else if (result.networkError) {
+                setCurrentData(previousData);
             }
         } catch (e) {
             if (requestId !== selectClientRef.current) return;
             console.error('Kunne ikke hente klientdata:', e);
+            setCurrentData(previousData);
         }
 
         setIsClientLoading(false);
 
         if (client.unreadCheckins > 0) {
+            const previousUnread = client.unreadCheckins;
             setAllUsers(prev => prev.map(u =>
                 u.id === client.id ? { ...u, unreadCheckins: 0 } : u
             ));
             api.markCheckinsRead(client.id).then(result => {
-                if (result.authError) setShowReauthPrompt(true);
+                if (result.authError) {
+                    setShowReauthPrompt(true);
+                    setAllUsers(prev => prev.map(u =>
+                        u.id === client.id ? { ...u, unreadCheckins: previousUnread } : u
+                    ));
+                }
             }).catch(e => {
                 console.error('Kunne ikke markere innsjekk som lest:', e);
+                setAllUsers(prev => prev.map(u =>
+                    u.id === client.id ? { ...u, unreadCheckins: previousUnread } : u
+                ));
             });
         }
-    }, []);
+    }, [currentData]);
 
     const handleAddClient = useCallback(async (u) => {
         try {

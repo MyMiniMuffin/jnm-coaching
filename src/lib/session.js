@@ -13,7 +13,8 @@ export const saveSession = (userData) => {
                 id: userData.id,
                 username: userData.username,
                 name: userData.name,
-                role: userData.role
+                role: userData.role,
+                is_archived: Boolean(userData.is_archived)
             },
             token: userData.token,
             expiresAt: Date.now() + SESSION_TIMEOUT_MS,

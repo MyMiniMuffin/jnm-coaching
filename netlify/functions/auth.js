@@ -74,7 +74,7 @@ exports.handler = async (event) => {
 
     // Hent bruker (inkludert passord for sammenligning)
     const result = await sql`
-      SELECT id, username, name, role, password 
+      SELECT id, username, name, role, is_archived, password
       FROM users 
       WHERE username = ${username.trim().toLowerCase()}
       LIMIT 1
@@ -132,6 +132,7 @@ exports.handler = async (event) => {
         username: user.username,
         name: user.name,
         role: user.role,
+        is_archived: user.is_archived,
         token
       }),
     };
