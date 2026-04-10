@@ -281,7 +281,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                         </div>
                     ) : (
                         <div
-                            className="plan-prose max-w-none"
+                            className={`plan-prose max-w-none ${type === 'diet' ? 'plan-prose-compact' : ''}`}
                             dangerouslySetInnerHTML={{ __html: parsedContent }}
                         />
                     )}

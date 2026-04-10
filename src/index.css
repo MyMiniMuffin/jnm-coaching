@@ -137,6 +137,45 @@ input[type="checkbox"]:checked {
     color: rgba(23, 23, 23, 0.82);
 }
 
+.plan-prose-compact {
+    font-size: 0.88rem;
+    line-height: 1.55;
+}
+
+.plan-prose-compact h1 {
+    font-size: 1.38rem;
+    margin-bottom: 0.55rem;
+}
+
+.plan-prose-compact h2 {
+    font-size: 1.08rem;
+    margin: 1rem 0 0.4rem;
+    padding-top: 0.65rem;
+}
+
+.plan-prose-compact h3 {
+    font-size: 0.96rem;
+    margin: 0.9rem 0 0.3rem;
+}
+
+.plan-prose-compact p {
+    margin-bottom: 0.55rem;
+}
+
+.plan-prose-compact ul,
+.plan-prose-compact ol {
+    margin-bottom: 0.6rem;
+    padding-left: 1.05rem;
+}
+
+.plan-prose-compact li {
+    margin-bottom: 0.22rem;
+}
+
+.plan-prose-compact hr {
+    margin: 0.8rem 0;
+}
+
 .plan-table-wrap {
     margin: 1.15rem 0 1.5rem;
     border: 1px solid rgba(23, 23, 23, 0.08);
