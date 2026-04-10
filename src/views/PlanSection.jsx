@@ -29,9 +29,6 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
 
     const Icon = type === 'diet' ? Utensils : Dumbbell;
     const title = type === 'diet' ? 'Matplan' : 'Treningsplan';
-    const helperText = type === 'diet'
-        ? 'Bygg planen med tydelige måltider, korte punktlister og viktige påminnelser.'
-        : 'Bygg planen med økter, struktur per dag og tydelige fokusområder.';
     const template = type === 'diet'
         ? `# Ukeplan\n\n## Frokost\n- Velg 1 alternativ\n- Drikk vann eller kaffe\n\n## Lunsj\n- Protein\n- Karbohydrat\n- Grønnsaker\n\n## Middag\n- Protein\n- Poteter, ris eller pasta\n- Grønnsaker\n\n## Mellommåltid\n- Frukt eller yoghurt\n\n## Fokus denne uken\n- 8 000+ skritt daglig\n- Protein til hvert måltid\n`
         : `# Treningsuke\n\n## Dag 1 - Underkropp\n- Knebøy: 4 x 6\n- Rumensk markløft: 3 x 8\n- Utfall: 3 x 10 per bein\n\n## Dag 2 - Overkropp\n- Benkpress: 4 x 6\n- Sittende roing: 4 x 8\n- Skulderpress: 3 x 10\n\n## Kondisjon\n- 2 rolige økter á 25-30 min\n\n## Fokus denne uken\n- Kontrollerte repetisjoner\n- Stopp med 1-2 reps i reserve\n`;
@@ -184,17 +181,15 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                         </div>
                         <div>
                             <h2 className="font-display text-xl">{title}</h2>
-                            <p className="text-xs text-ink-muted mt-0.5">
-                                {isReadOnly
-                                    ? helperText
-                                    : saveState === 'saving'
+                            {!isReadOnly && saveState !== 'idle' && (
+                                <p className="text-xs text-ink-muted mt-0.5">
+                                    {saveState === 'saving'
                                         ? 'Lagrer endringer...'
                                         : saveState === 'saved'
                                             ? 'Lagret'
-                                            : saveState === 'dirty'
-                                                ? 'Ulagrede endringer'
-                                                : helperText}
-                            </p>
+                                            : 'Ulagrede endringer'}
+                                </p>
+                            )}
                         </div>
                     </div>
                     {!isReadOnly && (
@@ -217,25 +212,6 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
 
                 {isEditing && !isReadOnly && (
                     <div className="border-b border-surface-100 bg-white/95 backdrop-blur-sm">
-                        <div className="px-5 pt-4">
-                            <div className="rounded-2xl border border-surface-200 bg-[linear-gradient(180deg,#fbf8f3,#f7f2e8)] p-4">
-                                <div className="flex flex-wrap items-center justify-between gap-3">
-                                    <div>
-                                        <p className="text-sm font-medium text-ink">Skriv rolig og skannbart</p>
-                                        <p className="text-xs text-ink-muted mt-1">Bruk korte seksjoner, tydelige overskrifter og punktlister som er lette å følge på mobil.</p>
-                                    </div>
-                                    <Button variant="secondary" size="sm" onClick={handleInsertTemplate}>
-                                        <FileText size={16} /> Sett inn mal
-                                    </Button>
-                                </div>
-                                <div className="flex flex-wrap gap-2 mt-3">
-                                    <span className="rounded-full border border-surface-200 bg-white px-3 py-1 text-xs text-ink-muted"># Mandag</span>
-                                    <span className="rounded-full border border-surface-200 bg-white px-3 py-1 text-xs text-ink-muted">- Punktliste</span>
-                                    <span className="rounded-full border border-surface-200 bg-white px-3 py-1 text-xs text-ink-muted">**Viktig**</span>
-                                </div>
-                            </div>
-                        </div>
-
                         <div className="px-5 py-4 space-y-4">
                             <div className="flex items-center justify-between gap-3 flex-wrap">
                                 <div className="inline-flex rounded-2xl bg-surface-100 p-1">
@@ -260,6 +236,9 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                                 </div>
 
                                 <div className="flex items-center gap-2 flex-wrap">
+                                    <Button variant="secondary" size="sm" onClick={handleInsertTemplate}>
+                                        <FileText size={16} /> Sett inn mal
+                                    </Button>
                                     {toolbarButtons.map(({ icon: ToolbarIcon, label, onClick }) => (
                                         <button
                                             key={label}
