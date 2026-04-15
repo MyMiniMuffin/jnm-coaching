@@ -52,19 +52,25 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
         const markers = periods
             .filter(period => period?.startDate)
             .map(period => {
-                const timestamp = new Date(period.startDate).getTime();
-                if (Number.isNaN(timestamp)) return null;
-                if (timestamp < minT || timestamp > maxT) return null;
+                const startTimestamp = new Date(period.startDate).getTime();
+                const endTimestamp = period.endDate ? new Date(period.endDate).getTime() : null;
+                if (Number.isNaN(startTimestamp)) return null;
+
+                const overlapsChart = startTimestamp <= maxT && (endTimestamp === null || !Number.isNaN(endTimestamp) && endTimestamp >= minT);
+                if (!overlapsChart) return null;
+
+                const markerTimestamp = Math.max(minT, Math.min(maxT, startTimestamp));
 
                 const x = minT === maxT
                     ? width / 2
-                    : ((timestamp - minT) / (maxT - minT)) * (width - 2 * padding) + padding;
+                    : ((markerTimestamp - minT) / (maxT - minT)) * (width - 2 * padding) + padding;
 
                 return {
                     id: period.id,
                     x,
                     label: period.name || 'Ny runde',
-                    shortDate: formatDateNO(period.startDate)
+                    shortDate: formatDateNO(period.startDate),
+                    isClampedToStart: startTimestamp < minT
                 };
             })
             .filter(Boolean);
@@ -157,7 +163,7 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
                                             fontWeight="500"
                                             fill="#FAFAF9"
                                         >
-                                            {marker.label}
+                                            {marker.isClampedToStart ? `${marker.label} (pågikk)` : marker.label}
                                         </text>
                                     </g>
                                 )}
@@ -172,7 +178,7 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
                         <div className="mt-3 flex flex-wrap gap-2">
                             {periodMarkers.map((marker) => (
                                 <Badge key={marker.id} variant="warning">
-                                    {marker.label} · {marker.shortDate}
+                                    {marker.label} · {marker.isClampedToStart ? `før ${formatDateNO(first.date || first.timestamp)}` : marker.shortDate}
                                 </Badge>
                             ))}
                         </div>
