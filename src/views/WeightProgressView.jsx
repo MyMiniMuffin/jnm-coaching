@@ -36,7 +36,7 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
     const chartBottom = height - padding;
 
     // Memoize tunge beregninger (min/max over alle vekter + SVG-koordinater)
-    const { points, chartPoints, periodMarkers } = useMemo(() => {
+    const { points, chartPoints, periodMarkers, historyDividers } = useMemo(() => {
         const weights = validCheckins.map(c => parseFloat(c.weight));
         const minW = Math.min(...weights) - 0.5;
         const maxW = Math.max(...weights) + 0.5;
@@ -79,12 +79,41 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
             })
             .filter(Boolean);
 
+        const sortedPeriods = [...periods]
+            .filter(period => period?.startDate)
+            .map(period => ({
+                id: period.id,
+                label: period.name || 'Ny runde',
+                startTimestamp: new Date(period.startDate).getTime(),
+                shortDate: formatDateNO(period.startDate)
+            }))
+            .filter(period => !Number.isNaN(period.startTimestamp))
+            .sort((a, b) => b.startTimestamp - a.startTimestamp);
+
+        const dividers = sortedPeriods
+            .map((period) => {
+                const targetEntry = reversedCheckins.find((entry) => entry.timestamp <= period.startTimestamp);
+                const fallbackEntry = reversedCheckins[reversedCheckins.length - 1];
+                const entryId = targetEntry?.id || fallbackEntry?.id;
+
+                if (!entryId) return null;
+
+                return {
+                    id: period.id,
+                    entryId,
+                    label: period.label,
+                    shortDate: period.shortDate
+                };
+            })
+            .filter((divider, index, arr) => divider && arr.findIndex(item => item?.id === divider.id) === index);
+
         return {
             points: pts.map(p => `${p.x},${p.y}`).join(' '),
             chartPoints: pts,
-            periodMarkers: markers
+            periodMarkers: markers,
+            historyDividers: dividers
         };
-    }, [validCheckins, periods]);
+    }, [validCheckins, periods, reversedCheckins]);
 
     return (
         <div className="space-y-6 animate-slide-up pb-32">
@@ -193,23 +222,35 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
                 {reversedCheckins.map((entry, i) => {
                     const prev = reversedCheckins[i+1];
                     const change = prev ? (parseFloat(entry.weight) - parseFloat(prev.weight)) : 0;
+                    const divider = historyDividers.find(item => item.entryId === entry.id);
 
                     return (
-                        <Card key={entry.id} className="p-4 flex justify-between items-center">
-                            <div>
-                                <p className="font-medium">{formatDateNO(entry.date)}</p>
-                                <p className="text-xs text-ink-muted">{new Date(entry.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                {prev && change !== 0 && (
-                                    <Badge variant={change < 0 ? 'success' : 'muted'}>
-                                        {change < 0 ? <TrendingDown size={12}/> : <TrendingUp size={12}/>}
-                                        {change > 0 ? '+' : ''}{change.toFixed(1).replace('.', ',')}
-                                    </Badge>
-                                )}
-                                <span className="font-semibold text-lg tabular-nums">{formatWeight(entry.weight)}</span>
-                            </div>
-                        </Card>
+                        <div key={entry.id} className="space-y-2">
+                            {divider && (
+                                <div className="flex items-center gap-3 px-1 pt-2">
+                                    <div className="h-px flex-1 bg-[#d8c0a1]" />
+                                    <div className="text-[11px] font-medium uppercase tracking-wide text-[#9b6f42]">
+                                        {divider.label} startet {divider.shortDate}
+                                    </div>
+                                    <div className="h-px flex-1 bg-[#d8c0a1]" />
+                                </div>
+                            )}
+                            <Card className="p-4 flex justify-between items-center">
+                                <div>
+                                    <p className="font-medium">{formatDateNO(entry.date)}</p>
+                                    <p className="text-xs text-ink-muted">{new Date(entry.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    {prev && change !== 0 && (
+                                        <Badge variant={change < 0 ? 'success' : 'muted'}>
+                                            {change < 0 ? <TrendingDown size={12}/> : <TrendingUp size={12}/>}
+                                            {change > 0 ? '+' : ''}{change.toFixed(1).replace('.', ',')}
+                                        </Badge>
+                                    )}
+                                    <span className="font-semibold text-lg tabular-nums">{formatWeight(entry.weight)}</span>
+                                </div>
+                            </Card>
+                        </div>
                     )
                 })}
             </div>
