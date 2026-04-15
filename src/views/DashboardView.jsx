@@ -15,6 +15,9 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
     const confirmDialog = useConfirm();
     const [view, setView] = useState('list'); // 'list' eller 'create'
     const [formData, setFormData] = useState({ name: '', startingWeight: '', goalWeight: '' });
+    const [editingPeriodId, setEditingPeriodId] = useState(null);
+    const [editingName, setEditingName] = useState('');
+    const [nameError, setNameError] = useState('');
     const [weightError, setWeightError] = useState('');
     const periods = userData.periods || [];
     const activePeriod = periods.find(p => p.isActive);
@@ -40,6 +43,35 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
         }
     }, [onEndPeriod, onClose, confirmDialog]);
 
+    const handleStartRename = useCallback((period) => {
+        setEditingPeriodId(period.id);
+        setEditingName(period.name || '');
+        setNameError('');
+    }, []);
+
+    const handleCancelRename = useCallback(() => {
+        setEditingPeriodId(null);
+        setEditingName('');
+        setNameError('');
+    }, []);
+
+    const handleEditingNameChange = useCallback((e) => {
+        setEditingName(e.target.value);
+        setNameError('');
+    }, []);
+
+    const handleSaveRename = useCallback(async (periodId) => {
+        const trimmedName = editingName.trim();
+        if (!trimmedName) {
+            setNameError('Navn kan ikke være tomt');
+            return;
+        }
+        await onUpdatePeriod(periodId, { name: trimmedName });
+        setEditingPeriodId(null);
+        setEditingName('');
+        setNameError('');
+    }, [editingName, onUpdatePeriod]);
+
     return (
         <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
             <Card className="w-full max-w-md p-6 max-h-[80vh] overflow-y-auto animate-scale-in">
@@ -59,10 +91,57 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                 <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
                                     <div className="flex justify-between items-start mb-3">
                                         <div>
-                                            <p className="font-semibold text-ink">{activePeriod.name}</p>
-                                            <p className="text-sm text-ink-muted">Startet {formatDateNO(activePeriod.startDate)}</p>
+                                            {editingPeriodId === activePeriod.id ? (
+                                                <div className="space-y-2">
+                                                    <input
+                                                        type="text"
+                                                        value={editingName}
+                                                        onChange={handleEditingNameChange}
+                                                        className="w-full px-3 py-2 bg-white border border-emerald-200 rounded-lg outline-none focus:ring-2 focus:ring-ink"
+                                                        placeholder="Navn på runde"
+                                                        autoFocus
+                                                    />
+                                                    {nameError && <p className="text-red-600 text-xs">{nameError}</p>}
+                                                    <div className="flex gap-2">
+                                                        <Button
+                                                            variant="secondary"
+                                                            size="sm"
+                                                            onClick={handleCancelRename}
+                                                            disabled={isLoading}
+                                                        >
+                                                            Avbryt
+                                                        </Button>
+                                                        <Button
+                                                            variant="primary"
+                                                            size="sm"
+                                                            onClick={() => handleSaveRename(activePeriod.id)}
+                                                            disabled={isLoading}
+                                                        >
+                                                            {isLoading ? <><Loader2 size={14} className="animate-spin" /> Lagrer...</> : 'Lagre navn'}
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <p className="font-semibold text-ink">{activePeriod.name}</p>
+                                                    <p className="text-sm text-ink-muted">Startet {formatDateNO(activePeriod.startDate)}</p>
+                                                </>
+                                            )}
                                         </div>
-                                        <Badge variant="success">Aktiv</Badge>
+                                        <div className="flex items-center gap-2">
+                                            {editingPeriodId !== activePeriod.id && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleStartRename(activePeriod)}
+                                                    className="p-2 text-emerald-700/70 hover:text-emerald-900 transition-colors"
+                                                    aria-label={`Rediger navn på ${activePeriod.name}`}
+                                                    disabled={isLoading}
+                                                >
+                                                    <Pencil size={16} />
+                                                </button>
+                                            )}
+                                            <Badge variant="success">Aktiv</Badge>
+                                        </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-3 text-sm">
                                         <div>
@@ -98,11 +177,56 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                         <div key={period.id} className="p-4 bg-surface-50 rounded-xl">
                                             <div className="flex justify-between items-start mb-2">
                                                 <div>
-                                                    <p className="font-medium">{period.name}</p>
-                                                    <p className="text-xs text-ink-muted">
-                                                        {formatDateNO(period.startDate)} - {period.endDate ? formatDateNO(period.endDate) : 'Pågår'}
-                                                    </p>
+                                                    {editingPeriodId === period.id ? (
+                                                        <div className="space-y-2">
+                                                            <input
+                                                                type="text"
+                                                                value={editingName}
+                                                                onChange={handleEditingNameChange}
+                                                                className="w-full px-3 py-2 bg-white border border-surface-200 rounded-lg outline-none focus:ring-2 focus:ring-ink"
+                                                                placeholder="Navn på runde"
+                                                                autoFocus
+                                                            />
+                                                            {nameError && <p className="text-red-600 text-xs">{nameError}</p>}
+                                                            <div className="flex gap-2">
+                                                                <Button
+                                                                    variant="secondary"
+                                                                    size="sm"
+                                                                    onClick={handleCancelRename}
+                                                                    disabled={isLoading}
+                                                                >
+                                                                    Avbryt
+                                                                </Button>
+                                                                <Button
+                                                                    variant="primary"
+                                                                    size="sm"
+                                                                    onClick={() => handleSaveRename(period.id)}
+                                                                    disabled={isLoading}
+                                                                >
+                                                                    {isLoading ? <><Loader2 size={14} className="animate-spin" /> Lagrer...</> : 'Lagre navn'}
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            <p className="font-medium">{period.name}</p>
+                                                            <p className="text-xs text-ink-muted">
+                                                                {formatDateNO(period.startDate)} - {period.endDate ? formatDateNO(period.endDate) : 'Pågår'}
+                                                            </p>
+                                                        </>
+                                                    )}
                                                 </div>
+                                                {editingPeriodId !== period.id && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleStartRename(period)}
+                                                        className="p-2 text-ink-faint hover:text-ink transition-colors"
+                                                        aria-label={`Rediger navn på ${period.name}`}
+                                                        disabled={isLoading}
+                                                    >
+                                                        <Pencil size={16} />
+                                                    </button>
+                                                )}
                                             </div>
                                             <div className="flex gap-2 text-xs">
                                                 {period.startingWeight && (

@@ -70,7 +70,8 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
                     x,
                     label: period.name || 'Ny runde',
                     shortDate: formatDateNO(period.startDate),
-                    isClampedToStart: startTimestamp < minT
+                    isClampedToStart: startTimestamp < minT,
+                    tooltipText: `${period.name || 'Ny runde'} startet ${formatDateNO(period.startDate)}`
                 };
             })
             .filter(Boolean);
@@ -121,7 +122,7 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
                                 onFocus={() => setHoveredMarkerId(marker.id)}
                                 onBlur={() => setHoveredMarkerId(null)}
                             >
-                                <title>{`${marker.label} startet ${marker.shortDate}`}</title>
+                                <title>{marker.tooltipText}</title>
                                 <line
                                     x1={marker.x}
                                     x2={marker.x}
@@ -148,22 +149,22 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
                                 {hoveredMarkerId === marker.id && (
                                     <g>
                                         <rect
-                                            x={Math.max(8, Math.min(width - 116, marker.x - 58))}
+                                            x={Math.max(8, Math.min(width - 150, marker.x - 75))}
                                             y={4}
-                                            width="116"
-                                            height="24"
+                                            width="150"
+                                            height="28"
                                             rx="8"
                                             fill="#171717"
                                         />
                                         <text
-                                            x={Math.max(16, Math.min(width - 58, marker.x))}
-                                            y={20}
+                                            x={Math.max(16, Math.min(width - 75, marker.x))}
+                                            y={21}
                                             textAnchor="middle"
-                                            fontSize="10"
+                                            fontSize="9.5"
                                             fontWeight="500"
                                             fill="#FAFAF9"
                                         >
-                                            {marker.isClampedToStart ? `${marker.label} (pågikk)` : marker.label}
+                                            {marker.tooltipText}
                                         </text>
                                     </g>
                                 )}
@@ -178,7 +179,7 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
                         <div className="mt-3 flex flex-wrap gap-2">
                             {periodMarkers.map((marker) => (
                                 <Badge key={marker.id} variant="warning">
-                                    {marker.label} · {marker.isClampedToStart ? `før ${formatDateNO(first.date || first.timestamp)}` : marker.shortDate}
+                                    {marker.label} · {marker.shortDate}
                                 </Badge>
                             ))}
                         </div>

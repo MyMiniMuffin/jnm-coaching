@@ -360,6 +360,7 @@ const App = () => {
                             period.id === periodId
                                 ? {
                                     ...period,
+                                    ...(periodUpdates.name !== undefined ? { name: periodUpdates.name.trim() } : {}),
                                     ...(periodUpdates.startingWeight !== undefined ? { startingWeight: parseFloat(periodUpdates.startingWeight) } : {}),
                                     ...(periodUpdates.goalWeight !== undefined ? { goalWeight: periodUpdates.goalWeight ? parseFloat(periodUpdates.goalWeight) : null } : {}),
                                     ...(periodUpdates.notes !== undefined ? { notes: periodUpdates.notes } : {})

@@ -482,7 +482,7 @@ exports.handler = async (event) => {
       }
       
       else if (type === 'update_period') {
-        const { startingWeight, goalWeight, notes } = data;
+        const { name, startingWeight, goalWeight, notes } = data;
         const periodId = parseInt(data.periodId, 10);
 
         if (!data.periodId || isNaN(periodId)) {
@@ -500,6 +500,20 @@ exports.handler = async (event) => {
         
         // Samle uavhengige oppdateringer og kjør parallelt
         const queries = [];
+
+        if (name !== undefined) {
+          if (typeof name !== 'string') {
+            return { statusCode: 400, body: JSON.stringify({ error: 'Navn må være tekst' }) };
+          }
+          const trimmedName = name.trim();
+          if (!trimmedName) {
+            return { statusCode: 400, body: JSON.stringify({ error: 'Navn kan ikke være tomt' }) };
+          }
+          if (trimmedName.length > 120) {
+            return { statusCode: 400, body: JSON.stringify({ error: 'Navn er for langt (maks 120 tegn)' }) };
+          }
+          queries.push(sql`UPDATE coaching_periods SET name = ${trimmedName} WHERE id = ${periodId} AND user_id = ${userId}`);
+        }
 
         if (startingWeight !== undefined) {
           const swParsed = parseFloat(startingWeight);
