@@ -801,7 +801,11 @@ const App = () => {
                         <div key={activeTab} className="view-enter">
                             {activeTab === 'dashboard' ? (
                                 showWeightHistory ? (
-                                    <WeightProgressView checkins={currentData.checkins} onBack={handleCloseWeightHistory} />
+                                    <WeightProgressView
+                                        checkins={currentData.checkins}
+                                        periods={currentData.periods}
+                                        onBack={handleCloseWeightHistory}
+                                    />
                                 ) : (
                                     <DashboardView userData={currentData} isCoach={isCoach} onUpdateData={handleUpdateData} onOpenWeightHistory={handleOpenWeightHistory} />
                                 )

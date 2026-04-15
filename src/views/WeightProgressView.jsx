@@ -3,7 +3,7 @@ import { ChevronLeft, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { Card, Badge, Button } from '../components/ui';
 import { formatWeight, formatDateNO } from '../lib/formatters';
 
-const WeightProgressView = React.memo(({ checkins, onBack }) => {
+const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
     // OPTIMALISERING: Memoize filtrering og sortering
     const validCheckins = useMemo(() =>
         checkins.filter(c => c.weight && parseFloat(c.weight) > 0).sort((a, b) => a.timestamp - b.timestamp),
@@ -29,9 +29,11 @@ const WeightProgressView = React.memo(({ checkins, onBack }) => {
     const width = 300;
     const height = 140;
     const padding = 16;
+    const chartTop = padding;
+    const chartBottom = height - padding;
 
     // Memoize tunge beregninger (min/max over alle vekter + SVG-koordinater)
-    const { points, chartPoints } = useMemo(() => {
+    const { points, chartPoints, periodMarkers } = useMemo(() => {
         const weights = validCheckins.map(c => parseFloat(c.weight));
         const minW = Math.min(...weights) - 0.5;
         const maxW = Math.max(...weights) + 0.5;
@@ -45,11 +47,32 @@ const WeightProgressView = React.memo(({ checkins, onBack }) => {
             return { x, y };
         });
 
+        const markers = periods
+            .filter(period => period?.startDate)
+            .map(period => {
+                const timestamp = new Date(period.startDate).getTime();
+                if (Number.isNaN(timestamp)) return null;
+                if (timestamp < minT || timestamp > maxT) return null;
+
+                const x = minT === maxT
+                    ? width / 2
+                    : ((timestamp - minT) / (maxT - minT)) * (width - 2 * padding) + padding;
+
+                return {
+                    id: period.id,
+                    x,
+                    label: period.name || 'Ny runde',
+                    shortDate: formatDateNO(period.startDate)
+                };
+            })
+            .filter(Boolean);
+
         return {
             points: pts.map(p => `${p.x},${p.y}`).join(' '),
-            chartPoints: pts
+            chartPoints: pts,
+            periodMarkers: markers
         };
-    }, [validCheckins]);
+    }, [validCheckins, periods]);
 
     return (
         <div className="space-y-6 animate-slide-up pb-32">
@@ -82,11 +105,39 @@ const WeightProgressView = React.memo(({ checkins, onBack }) => {
                                 <stop offset="100%" stopColor="#171717" />
                             </linearGradient>
                         </defs>
+                        {periodMarkers.map((marker) => (
+                            <g key={marker.id}>
+                                <line
+                                    x1={marker.x}
+                                    x2={marker.x}
+                                    y1={chartTop}
+                                    y2={chartBottom}
+                                    stroke="#B98D63"
+                                    strokeWidth="1.5"
+                                    strokeDasharray="4 4"
+                                />
+                                <circle
+                                    cx={marker.x}
+                                    cy={chartTop}
+                                    r="3"
+                                    fill="#B98D63"
+                                />
+                            </g>
+                        ))}
                         <polyline fill="none" stroke="url(#lineGradient)" strokeWidth="2" points={points} strokeLinecap="round" strokeLinejoin="round" />
                         {chartPoints.map((p, i) => (
                             <circle key={i} cx={p.x} cy={p.y} r="4" fill="#FAFAF9" stroke="#171717" strokeWidth="2" />
                         ))}
                     </svg>
+                    {periodMarkers.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                            {periodMarkers.map((marker) => (
+                                <Badge key={marker.id} variant="warning">
+                                    {marker.label} · {marker.shortDate}
+                                </Badge>
+                            ))}
+                        </div>
+                    )}
                 </Card>
             )}
 
