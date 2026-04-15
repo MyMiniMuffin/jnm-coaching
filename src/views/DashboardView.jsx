@@ -16,8 +16,8 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
     const [view, setView] = useState('list'); // 'list' eller 'create'
     const [formData, setFormData] = useState({ name: '', startingWeight: '', goalWeight: '' });
     const [editingPeriodId, setEditingPeriodId] = useState(null);
-    const [editingName, setEditingName] = useState('');
-    const [nameError, setNameError] = useState('');
+    const [editingPeriod, setEditingPeriod] = useState({ name: '', startDate: '', endDate: '' });
+    const [editError, setEditError] = useState('');
     const [weightError, setWeightError] = useState('');
     const periods = userData.periods || [];
     const activePeriod = periods.find(p => p.isActive);
@@ -45,32 +45,48 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
 
     const handleStartRename = useCallback((period) => {
         setEditingPeriodId(period.id);
-        setEditingName(period.name || '');
-        setNameError('');
+        setEditingPeriod({
+            name: period.name || '',
+            startDate: period.startDate ? new Date(period.startDate).toISOString().split('T')[0] : '',
+            endDate: period.endDate ? new Date(period.endDate).toISOString().split('T')[0] : ''
+        });
+        setEditError('');
     }, []);
 
     const handleCancelRename = useCallback(() => {
         setEditingPeriodId(null);
-        setEditingName('');
-        setNameError('');
+        setEditingPeriod({ name: '', startDate: '', endDate: '' });
+        setEditError('');
     }, []);
 
-    const handleEditingNameChange = useCallback((e) => {
-        setEditingName(e.target.value);
-        setNameError('');
+    const handleEditFieldChange = useCallback((field, value) => {
+        setEditingPeriod(prev => ({ ...prev, [field]: value }));
+        setEditError('');
     }, []);
 
     const handleSaveRename = useCallback(async (periodId) => {
-        const trimmedName = editingName.trim();
+        const trimmedName = editingPeriod.name.trim();
         if (!trimmedName) {
-            setNameError('Navn kan ikke være tomt');
+            setEditError('Navn kan ikke være tomt');
             return;
         }
-        await onUpdatePeriod(periodId, { name: trimmedName });
+        if (!editingPeriod.startDate) {
+            setEditError('Startdato må fylles ut');
+            return;
+        }
+        if (editingPeriod.endDate && editingPeriod.endDate < editingPeriod.startDate) {
+            setEditError('Sluttdato kan ikke være før startdato');
+            return;
+        }
+        await onUpdatePeriod(periodId, {
+            name: trimmedName,
+            startDate: editingPeriod.startDate,
+            endDate: editingPeriod.endDate || null
+        });
         setEditingPeriodId(null);
-        setEditingName('');
-        setNameError('');
-    }, [editingName, onUpdatePeriod]);
+        setEditingPeriod({ name: '', startDate: '', endDate: '' });
+        setEditError('');
+    }, [editingPeriod, onUpdatePeriod]);
 
     return (
         <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
@@ -95,13 +111,13 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                                 <div className="space-y-2">
                                                     <input
                                                         type="text"
-                                                        value={editingName}
-                                                        onChange={handleEditingNameChange}
+                                                        value={editingPeriod.name}
+                                                        onChange={(e) => handleEditFieldChange('name', e.target.value)}
                                                         className="w-full px-3 py-2 bg-white border border-emerald-200 rounded-lg outline-none focus:ring-2 focus:ring-ink"
                                                         placeholder="Navn på runde"
                                                         autoFocus
                                                     />
-                                                    {nameError && <p className="text-red-600 text-xs">{nameError}</p>}
+                                                    {editError && <p className="text-red-600 text-xs">{editError}</p>}
                                                     <div className="flex gap-2">
                                                         <Button
                                                             variant="secondary"
@@ -187,7 +203,27 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                                                 placeholder="Navn på runde"
                                                                 autoFocus
                                                             />
-                                                            {nameError && <p className="text-red-600 text-xs">{nameError}</p>}
+                                                            <div className="grid grid-cols-2 gap-2">
+                                                                <div>
+                                                                    <InputLabel>Startdato</InputLabel>
+                                                                    <input
+                                                                        type="date"
+                                                                        value={editingPeriod.startDate}
+                                                                        onChange={(e) => handleEditFieldChange('startDate', e.target.value)}
+                                                                        className="w-full px-3 py-2 bg-white border border-surface-200 rounded-lg outline-none focus:ring-2 focus:ring-ink"
+                                                                    />
+                                                                </div>
+                                                                <div>
+                                                                    <InputLabel>Sluttdato</InputLabel>
+                                                                    <input
+                                                                        type="date"
+                                                                        value={editingPeriod.endDate}
+                                                                        onChange={(e) => handleEditFieldChange('endDate', e.target.value)}
+                                                                        className="w-full px-3 py-2 bg-white border border-surface-200 rounded-lg outline-none focus:ring-2 focus:ring-ink"
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                            {editError && <p className="text-red-600 text-xs">{editError}</p>}
                                                             <div className="flex gap-2">
                                                                 <Button
                                                                     variant="secondary"

@@ -361,6 +361,8 @@ const App = () => {
                                 ? {
                                     ...period,
                                     ...(periodUpdates.name !== undefined ? { name: periodUpdates.name.trim() } : {}),
+                                    ...(periodUpdates.startDate !== undefined ? { startDate: periodUpdates.startDate ? new Date(periodUpdates.startDate).toISOString() : null } : {}),
+                                    ...(periodUpdates.endDate !== undefined ? { endDate: periodUpdates.endDate ? new Date(periodUpdates.endDate).toISOString() : null } : {}),
                                     ...(periodUpdates.startingWeight !== undefined ? { startingWeight: parseFloat(periodUpdates.startingWeight) } : {}),
                                     ...(periodUpdates.goalWeight !== undefined ? { goalWeight: periodUpdates.goalWeight ? parseFloat(periodUpdates.goalWeight) : null } : {}),
                                     ...(periodUpdates.notes !== undefined ? { notes: periodUpdates.notes } : {})

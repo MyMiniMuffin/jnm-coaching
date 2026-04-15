@@ -482,7 +482,7 @@ exports.handler = async (event) => {
       }
       
       else if (type === 'update_period') {
-        const { name, startingWeight, goalWeight, notes } = data;
+        const { name, startDate, endDate, startingWeight, goalWeight, notes } = data;
         const periodId = parseInt(data.periodId, 10);
 
         if (!data.periodId || isNaN(periodId)) {
@@ -500,6 +500,8 @@ exports.handler = async (event) => {
         
         // Samle uavhengige oppdateringer og kjør parallelt
         const queries = [];
+        let parsedStartDate;
+        let parsedEndDate;
 
         if (name !== undefined) {
           if (typeof name !== 'string') {
@@ -513,6 +515,58 @@ exports.handler = async (event) => {
             return { statusCode: 400, body: JSON.stringify({ error: 'Navn er for langt (maks 120 tegn)' }) };
           }
           queries.push(sql`UPDATE coaching_periods SET name = ${trimmedName} WHERE id = ${periodId} AND user_id = ${userId}`);
+        }
+
+        if (startDate !== undefined) {
+          if (startDate === null || startDate === '') {
+            return { statusCode: 400, body: JSON.stringify({ error: 'Startdato kan ikke være tom' }) };
+          }
+          parsedStartDate = new Date(startDate);
+          if (Number.isNaN(parsedStartDate.getTime())) {
+            return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig startdato' }) };
+          }
+        }
+
+        if (endDate !== undefined) {
+          if (endDate === null || endDate === '') {
+            parsedEndDate = null;
+          } else {
+            parsedEndDate = new Date(endDate);
+            if (Number.isNaN(parsedEndDate.getTime())) {
+              return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig sluttdato' }) };
+            }
+          }
+        }
+
+        if (parsedStartDate !== undefined || endDate !== undefined) {
+          const existingPeriod = await sql`
+            SELECT start_date as "startDate", end_date as "endDate", is_active as "isActive"
+            FROM coaching_periods
+            WHERE id = ${periodId} AND user_id = ${userId}
+            LIMIT 1
+          `;
+
+          const currentPeriod = existingPeriod[0];
+          const finalStartDate = parsedStartDate !== undefined ? parsedStartDate : new Date(currentPeriod.startDate);
+          const finalEndDate = endDate !== undefined
+            ? parsedEndDate
+            : (currentPeriod.endDate ? new Date(currentPeriod.endDate) : null);
+
+          if (finalEndDate && finalEndDate.getTime() < finalStartDate.getTime()) {
+            return { statusCode: 400, body: JSON.stringify({ error: 'Sluttdato kan ikke være før startdato' }) };
+          }
+
+          if (currentPeriod.isActive && endDate !== undefined && finalEndDate !== null) {
+            return { statusCode: 400, body: JSON.stringify({ error: 'Aktiv runde kan ikke ha sluttdato satt her' }) };
+          }
+
+          if (parsedStartDate !== undefined) {
+            queries.push(sql`UPDATE coaching_periods SET start_date = ${parsedStartDate.toISOString()} WHERE id = ${periodId} AND user_id = ${userId}`);
+          }
+
+          if (endDate !== undefined) {
+            queries.push(sql`UPDATE coaching_periods SET end_date = ${finalEndDate ? finalEndDate.toISOString() : null} WHERE id = ${periodId} AND user_id = ${userId}`);
+          }
         }
 
         if (startingWeight !== undefined) {

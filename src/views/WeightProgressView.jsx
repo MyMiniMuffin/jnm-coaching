@@ -4,7 +4,8 @@ import { Card, Badge, Button } from '../components/ui';
 import { formatWeight, formatDateNO } from '../lib/formatters';
 
 const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
-    const [hoveredMarkerId, setHoveredMarkerId] = useState(null);
+    const [, setHoveredMarkerId] = useState(null);
+    const [activeTooltip, setActiveTooltip] = useState(null);
 
     // OPTIMALISERING: Memoize filtrering og sortering
     const validCheckins = useMemo(() =>
@@ -105,7 +106,7 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
             </div>
 
             {validCheckins.length > 1 && (
-                <Card className="p-4">
+                <Card className="relative p-4 overflow-visible">
                     <p className="text-xs text-ink-muted uppercase tracking-wide mb-3">Utvikling</p>
                     <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-32">
                         <defs>
@@ -117,10 +118,30 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
                         {periodMarkers.map((marker) => (
                             <g
                                 key={marker.id}
-                                onMouseEnter={() => setHoveredMarkerId(marker.id)}
-                                onMouseLeave={() => setHoveredMarkerId(null)}
-                                onFocus={() => setHoveredMarkerId(marker.id)}
-                                onBlur={() => setHoveredMarkerId(null)}
+                                onMouseEnter={() => {
+                                    setHoveredMarkerId(marker.id);
+                                    setActiveTooltip({
+                                        id: marker.id,
+                                        xPercent: (marker.x / width) * 100,
+                                        text: marker.tooltipText
+                                    });
+                                }}
+                                onMouseLeave={() => {
+                                    setHoveredMarkerId(null);
+                                    setActiveTooltip(null);
+                                }}
+                                onFocus={() => {
+                                    setHoveredMarkerId(marker.id);
+                                    setActiveTooltip({
+                                        id: marker.id,
+                                        xPercent: (marker.x / width) * 100,
+                                        text: marker.tooltipText
+                                    });
+                                }}
+                                onBlur={() => {
+                                    setHoveredMarkerId(null);
+                                    setActiveTooltip(null);
+                                }}
                             >
                                 <title>{marker.tooltipText}</title>
                                 <line
@@ -146,28 +167,6 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
                                     r="3"
                                     fill="#B98D63"
                                 />
-                                {hoveredMarkerId === marker.id && (
-                                    <g>
-                                        <rect
-                                            x={Math.max(8, Math.min(width - 150, marker.x - 75))}
-                                            y={4}
-                                            width="150"
-                                            height="28"
-                                            rx="8"
-                                            fill="#171717"
-                                        />
-                                        <text
-                                            x={Math.max(16, Math.min(width - 75, marker.x))}
-                                            y={21}
-                                            textAnchor="middle"
-                                            fontSize="9.5"
-                                            fontWeight="500"
-                                            fill="#FAFAF9"
-                                        >
-                                            {marker.tooltipText}
-                                        </text>
-                                    </g>
-                                )}
                             </g>
                         ))}
                         <polyline fill="none" stroke="url(#lineGradient)" strokeWidth="2" points={points} strokeLinecap="round" strokeLinejoin="round" />
@@ -175,6 +174,16 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
                             <circle key={i} cx={p.x} cy={p.y} r="4" fill="#FAFAF9" stroke="#171717" strokeWidth="2" />
                         ))}
                     </svg>
+                    {activeTooltip && (
+                        <div
+                            className="pointer-events-none absolute top-10 z-10 -translate-x-1/2 rounded-xl bg-ink px-3 py-2 text-xs font-medium text-surface-50 shadow-lg"
+                            style={{
+                                left: `${Math.max(20, Math.min(80, activeTooltip.xPercent))}%`
+                            }}
+                        >
+                            {activeTooltip.text}
+                        </div>
+                    )}
                     {periodMarkers.length > 0 && (
                         <div className="mt-3 flex flex-wrap gap-2">
                             {periodMarkers.map((marker) => (
