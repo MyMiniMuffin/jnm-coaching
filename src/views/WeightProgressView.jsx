@@ -145,7 +145,6 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
                                     setActiveTooltip(null);
                                 }}
                             >
-                                <title>{marker.tooltipText}</title>
                                 <line
                                     x1={marker.x}
                                     x2={marker.x}
