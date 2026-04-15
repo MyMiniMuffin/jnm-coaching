@@ -1,9 +1,11 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ChevronLeft, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { Card, Badge, Button } from '../components/ui';
 import { formatWeight, formatDateNO } from '../lib/formatters';
 
 const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
+    const [hoveredMarkerId, setHoveredMarkerId] = useState(null);
+
     // OPTIMALISERING: Memoize filtrering og sortering
     const validCheckins = useMemo(() =>
         checkins.filter(c => c.weight && parseFloat(c.weight) > 0).sort((a, b) => a.timestamp - b.timestamp),
@@ -106,7 +108,22 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
                             </linearGradient>
                         </defs>
                         {periodMarkers.map((marker) => (
-                            <g key={marker.id}>
+                            <g
+                                key={marker.id}
+                                onMouseEnter={() => setHoveredMarkerId(marker.id)}
+                                onMouseLeave={() => setHoveredMarkerId(null)}
+                                onFocus={() => setHoveredMarkerId(marker.id)}
+                                onBlur={() => setHoveredMarkerId(null)}
+                            >
+                                <title>{`${marker.label} startet ${marker.shortDate}`}</title>
+                                <line
+                                    x1={marker.x}
+                                    x2={marker.x}
+                                    y1={chartTop}
+                                    y2={chartBottom}
+                                    stroke="transparent"
+                                    strokeWidth="16"
+                                />
                                 <line
                                     x1={marker.x}
                                     x2={marker.x}
@@ -122,6 +139,28 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
                                     r="3"
                                     fill="#B98D63"
                                 />
+                                {hoveredMarkerId === marker.id && (
+                                    <g>
+                                        <rect
+                                            x={Math.max(8, Math.min(width - 116, marker.x - 58))}
+                                            y={4}
+                                            width="116"
+                                            height="24"
+                                            rx="8"
+                                            fill="#171717"
+                                        />
+                                        <text
+                                            x={Math.max(16, Math.min(width - 58, marker.x))}
+                                            y={20}
+                                            textAnchor="middle"
+                                            fontSize="10"
+                                            fontWeight="500"
+                                            fill="#FAFAF9"
+                                        >
+                                            {marker.label}
+                                        </text>
+                                    </g>
+                                )}
                             </g>
                         ))}
                         <polyline fill="none" stroke="url(#lineGradient)" strokeWidth="2" points={points} strokeLinecap="round" strokeLinejoin="round" />
