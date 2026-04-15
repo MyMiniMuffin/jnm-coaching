@@ -197,8 +197,8 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                                         <div className="space-y-2">
                                                             <input
                                                                 type="text"
-                                                                value={editingName}
-                                                                onChange={handleEditingNameChange}
+                                                                value={editingPeriod.name}
+                                                                onChange={(e) => handleEditFieldChange('name', e.target.value)}
                                                                 className="w-full px-3 py-2 bg-white border border-surface-200 rounded-lg outline-none focus:ring-2 focus:ring-ink"
                                                                 placeholder="Navn på runde"
                                                                 autoFocus
@@ -239,7 +239,7 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                                                     onClick={() => handleSaveRename(period.id)}
                                                                     disabled={isLoading}
                                                                 >
-                                                                    {isLoading ? <><Loader2 size={14} className="animate-spin" /> Lagrer...</> : 'Lagre navn'}
+                                                                    {isLoading ? <><Loader2 size={14} className="animate-spin" /> Lagrer...</> : 'Lagre endringer'}
                                                                 </Button>
                                                             </div>
                                                         </div>
