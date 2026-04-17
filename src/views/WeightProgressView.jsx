@@ -4,7 +4,6 @@ import { Card, Badge, Button } from '../components/ui';
 import { formatWeight, formatDateNO } from '../lib/formatters';
 
 const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
-    const [, setHoveredMarkerId] = useState(null);
     const [activeTooltip, setActiveTooltip] = useState(null);
 
     // OPTIMALISERING: Memoize filtrering og sortering
@@ -36,7 +35,7 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
     const chartBottom = height - padding;
 
     // Memoize tunge beregninger (min/max over alle vekter + SVG-koordinater)
-    const { points, chartPoints, periodMarkers, historyDividers } = useMemo(() => {
+    const { points, chartPoints, periodMarkers, dividersByEntryId } = useMemo(() => {
         const weights = validCheckins.map(c => parseFloat(c.weight));
         const minW = Math.min(...weights) - 0.5;
         const maxW = Math.max(...weights) + 0.5;
@@ -73,7 +72,6 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
                     label: period.name || 'Ny runde',
                     shortDate: formatDateNO(period.startDate),
                     isClampedToStart: startTimestamp < minT,
-                    isClampedToEnd: startTimestamp > maxT,
                     tooltipText: `${period.name || 'Ny runde'} startet ${formatDateNO(period.startDate)}`
                 };
             })
@@ -90,28 +88,25 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
             .filter(period => !Number.isNaN(period.startTimestamp))
             .sort((a, b) => b.startTimestamp - a.startTimestamp);
 
-        const dividers = sortedPeriods
-            .map((period) => {
-                const targetEntry = reversedCheckins.find((entry) => entry.timestamp <= period.startTimestamp);
-                const fallbackEntry = reversedCheckins[reversedCheckins.length - 1];
-                const entryId = targetEntry?.id || fallbackEntry?.id;
-
-                if (!entryId) return null;
-
-                return {
-                    id: period.id,
-                    entryId,
-                    label: period.label,
-                    shortDate: period.shortDate
-                };
-            })
-            .filter((divider, index, arr) => divider && arr.findIndex(item => item?.id === divider.id) === index);
+        const dividersByEntryId = new Map();
+        for (const period of sortedPeriods) {
+            const targetEntry = reversedCheckins.find((entry) => entry.timestamp <= period.startTimestamp);
+            const fallbackEntry = reversedCheckins[reversedCheckins.length - 1];
+            const entryId = targetEntry?.id ?? fallbackEntry?.id;
+            if (!entryId) continue;
+            const existing = dividersByEntryId.get(entryId) || [];
+            dividersByEntryId.set(entryId, [...existing, {
+                id: period.id,
+                label: period.label,
+                shortDate: period.shortDate
+            }]);
+        }
 
         return {
             points: pts.map(p => `${p.x},${p.y}`).join(' '),
             chartPoints: pts,
             periodMarkers: markers,
-            historyDividers: dividers
+            dividersByEntryId
         };
     }, [validCheckins, periods, reversedCheckins]);
 
@@ -149,30 +144,18 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
                         {periodMarkers.map((marker) => (
                             <g
                                 key={marker.id}
-                                onMouseEnter={() => {
-                                    setHoveredMarkerId(marker.id);
-                                    setActiveTooltip({
-                                        id: marker.id,
-                                        xPercent: (marker.x / width) * 100,
-                                        text: marker.tooltipText
-                                    });
-                                }}
-                                onMouseLeave={() => {
-                                    setHoveredMarkerId(null);
-                                    setActiveTooltip(null);
-                                }}
-                                onFocus={() => {
-                                    setHoveredMarkerId(marker.id);
-                                    setActiveTooltip({
-                                        id: marker.id,
-                                        xPercent: (marker.x / width) * 100,
-                                        text: marker.tooltipText
-                                    });
-                                }}
-                                onBlur={() => {
-                                    setHoveredMarkerId(null);
-                                    setActiveTooltip(null);
-                                }}
+                                onMouseEnter={() => setActiveTooltip({
+                                    id: marker.id,
+                                    xPercent: (marker.x / width) * 100,
+                                    text: marker.tooltipText
+                                })}
+                                onMouseLeave={() => setActiveTooltip(null)}
+                                onFocus={() => setActiveTooltip({
+                                    id: marker.id,
+                                    xPercent: (marker.x / width) * 100,
+                                    text: marker.tooltipText
+                                })}
+                                onBlur={() => setActiveTooltip(null)}
                             >
                                 <line
                                     x1={marker.x}
@@ -222,19 +205,19 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
                 {reversedCheckins.map((entry, i) => {
                     const prev = reversedCheckins[i+1];
                     const change = prev ? (parseFloat(entry.weight) - parseFloat(prev.weight)) : 0;
-                    const divider = historyDividers.find(item => item.entryId === entry.id);
+                    const dividers = dividersByEntryId.get(entry.id) || [];
 
                     return (
                         <div key={entry.id} className="space-y-2">
-                            {divider && (
-                                <div className="flex items-center gap-3 px-1 pt-2">
+                            {dividers.map(divider => (
+                                <div key={divider.id} className="flex items-center gap-3 px-1 pt-2">
                                     <div className="h-px flex-1 bg-[#d8c0a1]" />
                                     <div className="text-[11px] font-medium uppercase tracking-wide text-[#9b6f42]">
                                         {divider.label} startet {divider.shortDate}
                                     </div>
                                     <div className="h-px flex-1 bg-[#d8c0a1]" />
                                 </div>
-                            )}
+                            ))}
                             <Card className="p-4 flex justify-between items-center">
                                 <div>
                                     <p className="font-medium">{formatDateNO(entry.date)}</p>

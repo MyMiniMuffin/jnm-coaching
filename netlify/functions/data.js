@@ -547,6 +547,9 @@ exports.handler = async (event) => {
           `;
 
           const currentPeriod = existingPeriod[0];
+          if (!currentPeriod) {
+            return { statusCode: 404, body: JSON.stringify({ error: 'Periode ikke funnet' }) };
+          }
           const finalStartDate = parsedStartDate !== undefined ? parsedStartDate : new Date(currentPeriod.startDate);
           const finalEndDate = endDate !== undefined
             ? parsedEndDate
