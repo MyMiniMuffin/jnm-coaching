@@ -141,6 +141,7 @@ const App = () => {
 
     const [currentData, setCurrentData] = useState(INITIAL_DATA_STATE);
     const [isLoading, setIsLoading] = useState(true);
+    const [isUsersLoading, setIsUsersLoading] = useState(false);
     const [showReauthPrompt, setShowReauthPrompt] = useState(false);
 
     // ============================================
@@ -177,6 +178,7 @@ const App = () => {
                     if (cachedUsers?.length) {
                         setAllUsers(cachedUsers);
                     }
+                    setIsUsersLoading(true);
                     setIsLoading(false);
 
                     // Hent alltid fersk brukerliste i bakgrunnen
@@ -188,7 +190,8 @@ const App = () => {
                             const freshUser = result.data.find(u => u.id === sessionUser.id);
                             if (freshUser) setCurrentUser(freshUser);
                         }
-                    }).catch(e => console.error('[Init] Feil ved henting av brukerliste:', e));
+                    }).catch(e => console.error('[Init] Feil ved henting av brukerliste:', e))
+                      .finally(() => setIsUsersLoading(false));
                     return; // isLoading allerede satt til false
                 }
             }
@@ -756,6 +759,7 @@ const App = () => {
                         <CoachDashboard
                             user={currentUser}
                             allUsers={allUsers}
+                            isLoading={isUsersLoading}
                             onSelectClient={handleSelectClient}
                             onAddClient={handleAddClient}
                             onDeleteClient={handleDeleteClient}

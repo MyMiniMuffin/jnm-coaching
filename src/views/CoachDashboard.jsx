@@ -4,7 +4,7 @@ import { Card, Badge, Button } from '../components/ui';
 import { useEscapeKey } from '../hooks';
 import { useConfirm } from '../components/ConfirmDialog';
 
-const CoachDashboard = React.memo(({ user, allUsers, onSelectClient, onAddClient, onDeleteClient, onArchiveClient, onResetPassword }) => {
+const CoachDashboard = React.memo(({ user, allUsers, isLoading, onSelectClient, onAddClient, onDeleteClient, onArchiveClient, onResetPassword }) => {
     const [showModal, setShowModal] = useState(false);
     const [showArchived, setShowArchived] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
@@ -162,7 +162,7 @@ const CoachDashboard = React.memo(({ user, allUsers, onSelectClient, onAddClient
 
             {/* Toggle og Ny-knapp */}
             <div className="flex justify-between items-center">
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
                     <button
                         onClick={showActive}
                         className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${!showArchived ? 'bg-ink text-white' : 'text-ink-muted hover:bg-surface-100'}`}
@@ -175,6 +175,9 @@ const CoachDashboard = React.memo(({ user, allUsers, onSelectClient, onAddClient
                     >
                         Arkivert ({archivedClients.length})
                     </button>
+                    {isLoading && displayedClients.length > 0 && (
+                        <Loader2 size={14} className="animate-spin text-ink-faint ml-1" aria-label="Oppdaterer" />
+                    )}
                 </div>
                 <Button variant="primary" size="sm" onClick={openModal}>
                     <Plus size={16} /> Ny
@@ -183,7 +186,22 @@ const CoachDashboard = React.memo(({ user, allUsers, onSelectClient, onAddClient
 
             {/* Client List */}
             <div className="space-y-2">
-                {displayedClients.length === 0 ? (
+                {displayedClients.length === 0 && isLoading ? (
+                    <div className="space-y-2 animate-pulse" aria-label="Laster utøvere" role="status">
+                        {[1, 2, 3, 4].map(i => (
+                            <div key={i} className="p-4 flex items-center justify-between bg-white rounded-2xl border border-surface-200">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-surface-200 rounded-xl" />
+                                    <div className="space-y-2">
+                                        <div className="h-4 w-28 bg-surface-200 rounded" />
+                                        <div className="h-3 w-40 bg-surface-100 rounded" />
+                                    </div>
+                                </div>
+                                <div className="w-4 h-4 bg-surface-100 rounded" />
+                            </div>
+                        ))}
+                    </div>
+                ) : displayedClients.length === 0 ? (
                     <div className="text-center py-12">
                         <div className="w-14 h-14 bg-surface-100 rounded-2xl flex items-center justify-center text-ink-muted mx-auto mb-4">
                             <User size={24} />
