@@ -702,10 +702,10 @@ const App = () => {
                 setCurrentData(prev => ({ ...prev, checkins: previousCheckins }));
             }
         } catch (e) {
-            toast('Kunne ikke slette rapporten', 'error');
+            toast(e.message || 'Kunne ikke slette rapporten', 'error');
             setCurrentData(prev => ({ ...prev, checkins: previousCheckins }));
         }
-    }, [viewingClient]);
+    }, [viewingClient, toast]);
 
     const handleClearClient = useCallback(() => {
         setViewingClient(null);

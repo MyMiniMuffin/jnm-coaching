@@ -465,12 +465,13 @@ exports.handler = async (event) => {
           return { statusCode: 400, body: JSON.stringify({ error: 'Mangler checkin-ID' }) };
         }
 
-        // SIKKERHET: Sjekk at brukeren eier denne checkin
-        const ownerCheck = await sql`
+        // SIKKERHET: Verifiser at checkin tilhorer valgt bruker.
+        // Coach kan slette for en utøver de har åpnet, men ikke på tvers av brukere.
+        const checkinMatch = await sql`
           SELECT id FROM checkins WHERE id = ${data.checkinId} AND user_id = ${userId}
         `;
 
-        if (ownerCheck.length === 0) {
+        if (checkinMatch.length === 0) {
           return { statusCode: 403, body: JSON.stringify({ error: 'Ingen tilgang til denne rapporten' }) };
         }
 

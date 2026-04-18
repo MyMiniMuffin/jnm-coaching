@@ -245,7 +245,10 @@ export const api = {
             console.warn('[API] 401 ved deleteCheckin');
             return { authError: true };
         }
-        if (!res.ok) throw new Error('Sletting feilet');
+        if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Sletting feilet');
+        }
         cache.invalidate(`user-data-${userId}`);
         return { authError: false };
     },
