@@ -110,6 +110,8 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
         };
     }, [validCheckins, periods, reversedCheckins]);
 
+    const latestPeriodMarker = periodMarkers[periodMarkers.length - 1] || null;
+
     return (
         <div className="space-y-6 animate-slide-up pb-32">
             <button onClick={onBack} className="flex items-center gap-2 text-ink-muted hover:text-ink transition-colors">
@@ -133,8 +135,20 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
 
             {validCheckins.length > 1 && (
                 <Card className="relative p-4 overflow-visible">
-                    <p className="text-xs text-ink-muted uppercase tracking-wide mb-3">Utvikling</p>
-                    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-32">
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                        <div>
+                            <p className="text-xs text-ink-muted uppercase tracking-wide">Utvikling</p>
+                            <p className="text-sm text-ink-muted mt-1">
+                                {latestPeriodMarker
+                                    ? `Siste runde startet ${latestPeriodMarker.shortDate}`
+                                    : 'Trykk på markørene under for å se når nye runder startet'}
+                            </p>
+                        </div>
+                        {periodMarkers.length > 0 && (
+                            <Badge variant="warning">Rundeskifte markert</Badge>
+                        )}
+                    </div>
+                    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-32" role="img" aria-label="Vektutvikling over tid med markører for nye coaching-runder">
                         <defs>
                             <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
                                 <stop offset="0%" stopColor="#A3A3A3" />
@@ -195,6 +209,28 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
                             }}
                         >
                             {activeTooltip.text}
+                        </div>
+                    )}
+                    {periodMarkers.length > 0 && (
+                        <div className="mt-4 flex flex-wrap gap-2">
+                            {periodMarkers.map((marker) => (
+                                <button
+                                    key={marker.id}
+                                    type="button"
+                                    onClick={() => setActiveTooltip((current) => current?.id === marker.id ? null : {
+                                        id: marker.id,
+                                        xPercent: (marker.x / width) * 100,
+                                        text: marker.tooltipText
+                                    })}
+                                    className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                                        activeTooltip?.id === marker.id
+                                            ? 'border-[#b98d63] bg-[#f6ede2] text-[#946b45]'
+                                            : 'border-surface-200 bg-surface-50 text-ink-muted hover:text-ink hover:border-surface-300'
+                                    }`}
+                                >
+                                    {marker.label} · {marker.shortDate}
+                                </button>
+                            ))}
                         </div>
                     )}
                 </Card>

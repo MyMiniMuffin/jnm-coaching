@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   Check, Camera, X, Trash2, Loader2, Scale,
-  Activity, Footprints, AlertCircle, Save
+  Activity, Footprints, AlertCircle, Save, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { Card, Badge, Button, InputLabel, SelectField } from '../components/ui';
 import ImageModal from '../components/ImageModal';
@@ -19,6 +19,8 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
     const [errorMessage, setErrorMessage] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState(INITIAL_FORM_DATA);
+    const [showHistory, setShowHistory] = useState(false);
+    const [restoredDraft, setRestoredDraft] = useState(false);
     const confirmDialog = useConfirm();
     const storageKey = `jnm_checkin_draft_${draftKey}`;
 
@@ -29,6 +31,7 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
             if (savedDraft) {
                 const parsedDraft = JSON.parse(savedDraft);
                 setFormData(prev => ({ ...prev, ...parsedDraft }));
+                setRestoredDraft(true);
             }
         } catch (e) {
             console.error('[CheckIn] Kunne ikke laste utkast:', e);
@@ -129,6 +132,7 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
             };
             await onNewCheckin(newEntry);
             try { localStorage.removeItem(storageKey); } catch (e) {}
+            setRestoredDraft(false);
             setStep('success');
             createConfetti(); // 🎉 Konfetti!
             setTimeout(() => {
@@ -165,6 +169,8 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
     const handleStepsChange = useCallback((e) => updateField('stepsReached', e.target.checked), [updateField]);
     const handleSupplementsChange = useCallback((e) => updateField('takenSupplements', e.target.checked), [updateField]);
     const handleCommentChange = useCallback((e) => updateField('comment', e.target.value), [updateField]);
+    const toggleHistory = useCallback(() => setShowHistory(prev => !prev), []);
+    const dismissDraftNotice = useCallback(() => setRestoredDraft(false), []);
 
     if (step === 'success') {
         return (
@@ -186,9 +192,30 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
 
             {!isReadOnly && !hideForm && (
                 <form onSubmit={handleSubmit} className="space-y-5">
+                    {restoredDraft && (
+                        <Card className="p-4 border-emerald-200 bg-emerald-50">
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <p className="font-medium text-emerald-900">Utkast gjenopprettet</p>
+                                    <p className="text-sm text-emerald-800/80 mt-1">Du kan fortsette der du slapp og sende rapporten når du er klar.</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={dismissDraftNotice}
+                                    className="text-emerald-700/70 hover:text-emerald-900 transition-colors"
+                                    aria-label="Skjul melding om gjenopprettet utkast"
+                                >
+                                    <X size={16} />
+                                </button>
+                            </div>
+                        </Card>
+                    )}
                     <Card className="p-5 space-y-5">
                         <div className="flex items-center justify-between gap-3">
-                            <h3 className="font-display text-lg">Ny ukesrapport</h3>
+                            <div>
+                                <h3 className="font-display text-lg">Ny ukesrapport</h3>
+                                <p className="text-sm text-ink-muted mt-1">Fyll ut denne ukens status først. Historikken ligger separat lenger ned.</p>
+                            </div>
                             <span className="text-xs text-ink-muted">
                                 Utkast lagres automatisk
                             </span>
@@ -346,8 +373,28 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
 
             {/* History */}
             <div className={!isReadOnly && !hideForm ? "pt-8 border-t border-surface-200" : ""}>
-                <p className="text-xs text-ink-muted uppercase tracking-wide mb-4 px-1">Tidligere rapporter</p>
-                
+                <div className="flex items-center justify-between gap-3 mb-4 px-1">
+                    <div>
+                        <p className="text-xs text-ink-muted uppercase tracking-wide">Tidligere rapporter</p>
+                        <p className="text-sm text-ink-muted mt-1">
+                            {sortedCheckins.length === 0
+                                ? 'Ingen tidligere innsendinger ennå'
+                                : `${sortedCheckins.length} rapport${sortedCheckins.length > 1 ? 'er' : ''} lagret`}
+                        </p>
+                    </div>
+                    {sortedCheckins.length > 0 && (
+                        <button
+                            type="button"
+                            onClick={toggleHistory}
+                            className="inline-flex items-center gap-2 rounded-xl border border-surface-200 bg-white px-3 py-2 text-sm font-medium text-ink-muted hover:text-ink hover:border-surface-300 transition-colors"
+                            aria-expanded={showHistory}
+                        >
+                            {showHistory ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                            {showHistory ? 'Skjul' : 'Vis'}
+                        </button>
+                    )}
+                </div>
+
                 {sortedCheckins.length === 0 ? (
                     <div className="text-center py-12">
                         <div className="w-14 h-14 bg-surface-100 rounded-2xl flex items-center justify-center text-ink-muted mx-auto mb-4">
@@ -356,7 +403,7 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
                         <p className="text-ink-muted font-display text-lg italic mb-1">Ingen rapporter enda</p>
                         <p className="text-ink-faint text-sm">Fyll ut skjemaet over for å sende din første ukesrapport</p>
                     </div>
-                ) : (
+                ) : showHistory ? (
                     <div className="space-y-3">
                         {sortedCheckins.map((entry) => {
                             // Sikre at images alltid er en array
@@ -455,6 +502,12 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
                             );
                         })}
                     </div>
+                ) : (
+                    <Card className="p-4">
+                        <p className="text-sm text-ink-muted">
+                            Historikken er skjult mens du fyller ut rapporten, så det er lettere å fokusere på innsendingen.
+                        </p>
+                    </Card>
                 )}
             </div>
         </div>

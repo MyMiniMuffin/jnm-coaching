@@ -479,6 +479,14 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                             >
                                 Tidslinje
                             </button>
+                            {allImages.length >= 2 && (
+                                <button
+                                    onClick={startCompare}
+                                    className="px-3 py-1.5 text-sm font-medium rounded-md transition-colors text-ink-muted hover:text-ink"
+                                >
+                                    Sammenlign
+                                </button>
+                            )}
                         </div>
                     ) : (
                         <Button variant="secondary" size="sm" onClick={clearCompare}>
@@ -742,18 +750,6 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                 </div>
             )}
 
-            {/* Sammenlign-knapp */}
-            {viewMode !== 'compare' && allImages.length >= 2 && (
-                <Button 
-                    variant="secondary" 
-                    size="lg" 
-                    className="w-full"
-                    onClick={startCompare}
-                >
-                    <ArrowRight size={18} className="rotate-90" />
-                    Sammenlign før/etter
-                </Button>
-            )}
         </div>
     );
 });
