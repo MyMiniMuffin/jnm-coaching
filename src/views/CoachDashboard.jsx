@@ -162,33 +162,40 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
                         </div>
                     </div>
 
-                    <div className="mt-5 rounded-2xl bg-white/10 border border-white/10 p-4 flex items-center justify-between gap-3">
-                        <div>
-                            <p className="text-sm font-medium text-white">Varsler for nye check-ins</p>
-                            <p className="text-xs text-white/70 mt-1">
-                                {notificationPermission === 'granted'
-                                    ? totalUnreadCheckins > 0
-                                        ? `${totalUnreadCheckins} uleste rapporter akkurat nå`
-                                        : 'Du får varsel når en utøver sender inn en ny rapport'
-                                    : notificationPermission === 'denied'
+                    {notificationPermission === 'granted' ? (
+                        <div className="mt-5 flex items-center gap-2 text-sm text-white/75">
+                            <BellRing size={14} className="text-white/70" />
+                            <span>
+                                {totalUnreadCheckins > 0
+                                    ? `${totalUnreadCheckins} uleste rapporter akkurat nå`
+                                    : 'Pushvarsler er aktivert'}
+                            </span>
+                        </div>
+                    ) : (
+                        <div className="mt-5 rounded-2xl bg-white/10 border border-white/10 p-4 flex items-center justify-between gap-3">
+                            <div>
+                                <p className="text-sm font-medium text-white">Varsler for nye check-ins</p>
+                                <p className="text-xs text-white/70 mt-1">
+                                    {notificationPermission === 'denied'
                                         ? 'Varsler er blokkert i nettleseren. Åpne nettleserinnstillingene for å slå dem på.'
                                         : notificationPermission === 'unsupported'
                                             ? 'Denne enheten støtter ikke systemvarsler, men appen viser fortsatt interne varsler.'
                                             : 'Slå på systemvarsler for å få beskjed selv når appen er i bakgrunnen.'}
-                            </p>
+                                </p>
+                            </div>
+                            {notificationPermission !== 'unsupported' && (
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={onEnableNotifications}
+                                    disabled={notificationPermission === 'denied'}
+                                >
+                                    <BellRing size={16} />
+                                    {notificationPermission === 'denied' ? 'Blokkert' : 'Slå på'}
+                                </Button>
+                            )}
                         </div>
-                        {notificationPermission !== 'granted' && notificationPermission !== 'unsupported' && (
-                            <Button
-                                variant="secondary"
-                                size="sm"
-                                onClick={onEnableNotifications}
-                                disabled={notificationPermission === 'denied'}
-                            >
-                                <BellRing size={16} />
-                                {notificationPermission === 'denied' ? 'Blokkert' : 'Slå på'}
-                            </Button>
-                        )}
-                    </div>
+                    )}
                 </div>
             </div>
 
