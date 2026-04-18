@@ -17,7 +17,7 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
 
     if (validCheckins.length === 0) return (
         <div className="flex flex-col items-center justify-center h-[60vh] animate-fade-in text-center px-6">
-            <p className="text-ink-muted font-display text-lg italic mb-6">Ingen vektdata enda</p>
+            <p className="text-ink-muted font-display text-[1.35rem] italic mb-6">Ingen vektdata enda</p>
             <Button variant="secondary" onClick={onBack}>Tilbake</Button>
         </div>
     );
@@ -121,32 +121,27 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
 
             <div className="grid grid-cols-2 gap-4">
                 <Card className="p-5">
-                    <p className="text-xs text-ink-muted uppercase tracking-wide mb-1">Endring</p>
+                    <p className="section-label mb-1">Endring</p>
                     <div className={`text-2xl font-semibold flex items-center gap-2 ${isDown ? 'text-emerald-600' : isSame ? 'text-ink-muted' : 'text-ink'}`}>
                         {totalChange > 0 ? '+' : ''}{totalChange.replace('.', ',')} kg
                         {isDown ? <TrendingDown size={20} /> : isSame ? <Minus size={20} /> : <TrendingUp size={20} />}
                     </div>
                 </Card>
                 <Card className="p-5">
-                    <p className="text-xs text-ink-muted uppercase tracking-wide mb-1">Nåværende</p>
+                    <p className="section-label mb-1">Nåværende</p>
                     <p className="text-2xl font-semibold tabular-nums">{formatWeight(last.weight)} kg</p>
                 </Card>
             </div>
 
             {validCheckins.length > 1 && (
                 <Card className="relative p-4 overflow-visible">
-                    <div className="flex items-start justify-between gap-3 mb-3">
-                        <div>
-                            <p className="text-xs text-ink-muted uppercase tracking-wide">Utvikling</p>
-                            <p className="text-sm text-ink-muted mt-1">
-                                {latestPeriodMarker
-                                    ? `Siste runde startet ${latestPeriodMarker.shortDate}`
-                                    : 'Trykk på markørene under for å se når nye runder startet'}
-                            </p>
-                        </div>
-                        {periodMarkers.length > 0 && (
-                            <Badge variant="warning">Rundeskifte markert</Badge>
-                        )}
+                    <div className="mb-3">
+                        <p className="section-label">Utvikling</p>
+                        <p className="text-sm text-ink-muted mt-1">
+                            {latestPeriodMarker
+                                ? `Siste runde startet ${latestPeriodMarker.shortDate}`
+                                : 'Hold over punktene for å se vekt'}
+                        </p>
                     </div>
                     <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-32" role="img" aria-label="Vektutvikling over tid med markører for nye coaching-runder">
                         <defs>
@@ -198,7 +193,26 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
                         ))}
                         <polyline fill="none" stroke="url(#lineGradient)" strokeWidth="2" points={points} strokeLinecap="round" strokeLinejoin="round" />
                         {chartPoints.map((p, i) => (
-                            <circle key={i} cx={p.x} cy={p.y} r="4" fill="#FAFAF9" stroke="#171717" strokeWidth="2" />
+                            <circle
+                                key={i}
+                                cx={p.x}
+                                cy={p.y}
+                                r="4"
+                                fill="#FAFAF9"
+                                stroke="#171717"
+                                strokeWidth="2"
+                                onMouseEnter={() => setActiveTooltip({
+                                    id: `point-${validCheckins[i].id ?? i}`,
+                                    xPercent: (p.x / width) * 100,
+                                    text: `${formatWeight(validCheckins[i].weight)} kg`
+                                })}
+                                onMouseLeave={() => setActiveTooltip(null)}
+                                onClick={() => setActiveTooltip((current) => current?.id === `point-${validCheckins[i].id ?? i}` ? null : {
+                                    id: `point-${validCheckins[i].id ?? i}`,
+                                    xPercent: (p.x / width) * 100,
+                                    text: `${formatWeight(validCheckins[i].weight)} kg`
+                                })}
+                            />
                         ))}
                     </svg>
                     {activeTooltip && (
@@ -211,33 +225,11 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
                             {activeTooltip.text}
                         </div>
                     )}
-                    {periodMarkers.length > 0 && (
-                        <div className="mt-4 flex flex-wrap gap-2">
-                            {periodMarkers.map((marker) => (
-                                <button
-                                    key={marker.id}
-                                    type="button"
-                                    onClick={() => setActiveTooltip((current) => current?.id === marker.id ? null : {
-                                        id: marker.id,
-                                        xPercent: (marker.x / width) * 100,
-                                        text: marker.tooltipText
-                                    })}
-                                    className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-                                        activeTooltip?.id === marker.id
-                                            ? 'border-[#b98d63] bg-[#f6ede2] text-[#946b45]'
-                                            : 'border-surface-200 bg-surface-50 text-ink-muted hover:text-ink hover:border-surface-300'
-                                    }`}
-                                >
-                                    {marker.label} · {marker.shortDate}
-                                </button>
-                            ))}
-                        </div>
-                    )}
                 </Card>
             )}
 
             <div className="space-y-2">
-                <p className="text-xs text-ink-muted uppercase tracking-wide px-1">Historikk</p>
+                <p className="section-label px-1">Historikk</p>
                 {reversedCheckins.map((entry, i) => {
                     const prev = reversedCheckins[i+1];
                     const change = prev ? (parseFloat(entry.weight) - parseFloat(prev.weight)) : 0;
@@ -248,7 +240,7 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
                             {dividers.map(divider => (
                                 <div key={divider.id} className="flex items-center gap-3 px-1 pt-2">
                                     <div className="h-px flex-1 bg-[#d8c0a1]" />
-                                    <div className="text-[11px] font-medium uppercase tracking-wide text-[#9b6f42]">
+                                    <div className="text-xs font-medium tracking-[0.01em] text-[#9b6f42]">
                                         {divider.label} startet {divider.shortDate}
                                     </div>
                                     <div className="h-px flex-1 bg-[#d8c0a1]" />

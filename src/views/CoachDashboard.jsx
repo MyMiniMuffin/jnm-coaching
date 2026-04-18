@@ -141,20 +141,20 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, onSelectClient, 
                 <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-3xl transform translate-x-10 -translate-y-10" />
                 <div className="relative z-10">
                     <p className="text-white/60 text-sm">Velkommen tilbake</p>
-                    <h2 className="text-3xl font-display mt-1">{user.name}</h2>
+                    <h2 className="text-[2.6rem] font-display mt-1">{user.name}</h2>
 
                     <div className="grid grid-cols-3 gap-4 mt-6">
                         <div className="text-center">
                             <p className="text-3xl font-semibold">{activeClients.length}</p>
-                            <p className="text-white/50 text-xs uppercase tracking-wide mt-1">Aktive</p>
+                            <p className="text-white/55 text-sm mt-1">Aktive</p>
                         </div>
                         <div className="text-center border-x border-white/10">
                             <p className="text-3xl font-semibold">{archivedClients.length}</p>
-                            <p className="text-white/50 text-xs uppercase tracking-wide mt-1">Arkivert</p>
+                            <p className="text-white/55 text-sm mt-1">Arkivert</p>
                         </div>
                         <div className="text-center">
                             <p className="text-3xl font-semibold">{totalAthletes}</p>
-                            <p className="text-white/50 text-xs uppercase tracking-wide mt-1">Totalt</p>
+                            <p className="text-white/55 text-sm mt-1">Totalt</p>
                         </div>
                     </div>
                 </div>
@@ -206,7 +206,7 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, onSelectClient, 
                         <div className="w-14 h-14 bg-surface-100 rounded-2xl flex items-center justify-center text-ink-muted mx-auto mb-4">
                             <User size={24} />
                         </div>
-                        <p className="text-ink-muted font-display text-lg italic mb-1">{showArchived ? 'Ingen arkiverte utøvere' : 'Ingen utøvere enda'}</p>
+                        <p className="text-ink-muted font-display text-[1.35rem] italic mb-1">{showArchived ? 'Ingen arkiverte utøvere' : 'Ingen utøvere enda'}</p>
                         {!showArchived && <p className="text-ink-faint text-sm">Trykk «Ny» for å legge til din første utøver</p>}
                     </div>
                 ) : (
@@ -220,7 +220,7 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, onSelectClient, 
                             onClick={() => !isPending && onSelectClient(client)}
                         >
                             <div className="flex items-center gap-4">
-                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-display text-xl ${showArchived ? 'bg-surface-200 text-ink-muted' : client.unreadCheckins > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-surface-100 text-ink'}`}>
+                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-lg font-semibold ${showArchived ? 'bg-surface-200 text-ink-muted' : client.unreadCheckins > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-surface-100 text-ink'}`}>
                                     {client.name.charAt(0)}
                                 </div>
                                 <div>

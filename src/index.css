@@ -12,10 +12,35 @@ body {
     background-color: #FAFAF9;
     color: #171717;
     letter-spacing: -0.01em;
+    line-height: 1.5;
 }
 
 .font-display {
     font-family: 'Instrument Serif', Georgia, serif;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    line-height: 1.08;
+}
+
+.section-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #171717;
+    letter-spacing: -0.01em;
+}
+
+.section-label {
+    font-size: 0.76rem;
+    font-weight: 500;
+    color: rgba(23, 23, 23, 0.56);
+    letter-spacing: 0.01em;
+}
+
+.stat-label {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: rgba(23, 23, 23, 0.54);
+    letter-spacing: 0.01em;
 }
 
 :root {
@@ -50,8 +75,8 @@ input[type="checkbox"]:checked {
 
 .plan-prose {
     color: #171717;
-    font-size: 0.92rem;
-    line-height: 1.65;
+    font-size: 0.95rem;
+    line-height: 1.72;
 }
 
 .plan-prose > :first-child {
@@ -73,24 +98,24 @@ input[type="checkbox"]:checked {
 
 .plan-prose h1 {
     font-size: 1.6rem;
-    margin: 0 0 0.8rem;
+    margin: 0 0 0.9rem;
 }
 
 .plan-prose h2 {
-    font-size: 1.22rem;
-    margin: 1.5rem 0 0.6rem;
-    padding-top: 0.95rem;
+    font-size: 1.18rem;
+    margin: 1.35rem 0 0.65rem;
+    padding-top: 0.85rem;
     border-top: 1px solid rgba(23, 23, 23, 0.08);
 }
 
 .plan-prose h3 {
-    font-size: 1.02rem;
-    margin: 1.2rem 0 0.45rem;
+    font-size: 1rem;
+    margin: 1.1rem 0 0.45rem;
 }
 
 .plan-prose p {
-    margin: 0 0 0.85rem;
-    color: rgba(23, 23, 23, 0.88);
+    margin: 0 0 0.95rem;
+    color: rgba(23, 23, 23, 0.82);
 }
 
 .plan-prose strong {
@@ -115,7 +140,7 @@ input[type="checkbox"]:checked {
 .plan-prose li {
     margin-bottom: 0.4rem;
     padding-left: 0.15rem;
-    color: rgba(23, 23, 23, 0.9);
+    color: rgba(23, 23, 23, 0.84);
 }
 
 .plan-prose li::marker {
@@ -138,8 +163,8 @@ input[type="checkbox"]:checked {
 }
 
 .plan-prose-compact {
-    font-size: 0.88rem;
-    line-height: 1.55;
+    font-size: 0.9rem;
+    line-height: 1.62;
 }
 
 .plan-prose-compact h1 {

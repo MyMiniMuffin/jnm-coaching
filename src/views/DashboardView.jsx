@@ -642,7 +642,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                             <p className="text-white/60 text-sm">
                                 {activePeriod ? activePeriod.name : (userData.isPaused ? 'Plan på pause' : userData.startDate ? 'Din fremgang' : 'Velkommen')}
                             </p>
-                            <h2 className="text-3xl font-display mt-1">
+                    <h2 className="text-[2.4rem] font-display mt-1">
                                 {userData.isPaused ? 'Pauset' : userData.startDate ? `Uke ${currentWeek}` : 'Kom i gang'}
                             </h2>
                             {userData.startDate && !userData.isPaused && (() => {
@@ -727,7 +727,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                         </div>
                         <ChevronRight size={16} className="text-ink-faint" />
                     </div>
-                    <p className="text-xs text-ink-muted uppercase tracking-wide">Siste vekt</p>
+                    <p className="section-label">Siste vekt</p>
                     <p className="text-2xl font-semibold mt-1 tabular-nums">
                         {lastCheckin ? formatWeight(lastCheckin.weight) : '-'}
                         <span className="text-sm font-normal text-ink-muted ml-1">kg</span>
@@ -740,7 +740,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                             <Footprints size={20} />
                         </div>
                     </div>
-                    <p className="text-xs text-ink-muted uppercase tracking-wide">Ukentlig skrittmål</p>
+                    <p className="section-label">Ukentlig skrittmål</p>
                     <p className="text-2xl font-semibold mt-1">{(userData.stepGoal || 10000).toLocaleString()}</p>
                 </Card>
             </div>
@@ -748,7 +748,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
             {/* Last Report */}
             {lastCheckin && (
                 <div>
-                    <p className="text-xs text-ink-muted uppercase tracking-wide mb-3 px-1">Siste rapport</p>
+                    <p className="section-label mb-3 px-1">Siste rapport</p>
                     <Card className="p-4">
                         <div className="grid grid-cols-5 gap-2 text-center">
                             <div>
@@ -799,24 +799,24 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
             {/* Totaloversikt - kun hvis det finnes data */}
             {stats && (
                 <div>
-                    <p className="text-xs text-ink-muted uppercase tracking-wide mb-3 px-1">Din reise så langt</p>
+                    <p className="section-label mb-3 px-1">Din reise så langt</p>
                     <Card className="p-5">
                         <div className="grid grid-cols-4 gap-3 text-center mb-5">
                             <div>
                                 <div className="text-2xl font-semibold text-ink">{stats.totalStrength}</div>
-                                <div className="text-[10px] text-ink-muted uppercase tracking-wide mt-1">Styrkeøkter</div>
+                                <div className="stat-label mt-1">Styrkeøkter</div>
                             </div>
                             <div>
                                 <div className="text-2xl font-semibold text-ink">{stats.totalCardio}</div>
-                                <div className="text-[10px] text-ink-muted uppercase tracking-wide mt-1">Cardio</div>
+                                <div className="stat-label mt-1">Cardio</div>
                             </div>
                             <div>
                                 <div className="text-2xl font-semibold text-ink tabular-nums">{stats.stepsHit}/{stats.totalCheckins}</div>
-                                <div className="text-[10px] text-ink-muted uppercase tracking-wide mt-1">Skrittmål</div>
+                                <div className="stat-label mt-1">Skrittmål</div>
                             </div>
                             <div>
                                 <div className="text-2xl font-semibold text-ink tabular-nums">{stats.avgAccuracy}</div>
-                                <div className="text-[10px] text-ink-muted uppercase tracking-wide mt-1">Snitt nøyakt.</div>
+                                <div className="stat-label mt-1">Snitt nøyakt.</div>
                             </div>
                         </div>
                         
@@ -835,7 +835,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
             {/* Dagens motivasjon */}
             <Card className="p-6 bg-gradient-to-br from-[#f4ede2] via-surface-50 to-[#edf3ea] border-dashed">
                 <div className="text-center">
-                    <p className="font-display text-lg text-ink italic leading-relaxed">"{todayQuote.text}"</p>
+                    <p className="font-display text-[1.35rem] text-ink italic leading-relaxed">"{todayQuote.text}"</p>
                     <p className="text-xs text-ink-muted mt-3">- {todayQuote.author}</p>
                 </div>
             </Card>

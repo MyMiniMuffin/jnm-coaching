@@ -253,7 +253,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
         <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
             <Card ref={uploadModalRef} className="w-full max-w-sm p-6 animate-scale-in">
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-display">Last opp bilder</h2>
+                    <h2 className="section-title text-[1.05rem]">Last opp bilder</h2>
                     <button onClick={closeUploadModal} aria-label="Lukk" className="text-ink-muted hover:text-ink p-2">
                         <X size={20} />
                     </button>
@@ -321,7 +321,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                 <div className="w-16 h-16 bg-surface-100 rounded-2xl flex items-center justify-center text-ink-muted mb-6">
                     <Camera size={32} />
                 </div>
-                <p className="text-ink-muted font-display text-lg italic mb-2">Ingen bilder enda</p>
+                <p className="text-ink-muted font-display text-[1.35rem] italic mb-2">Ingen bilder enda</p>
                 <p className="text-ink-faint text-sm mb-6">Bilder fra ukesrapporter vil vises her</p>
                 {isCoach && onAddGalleryImage && (
                     <Button variant="primary" size="md" onClick={() => setShowUploadModal(true)}>
@@ -452,7 +452,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
             {/* Header med visningsvalg */}
             <div className="flex justify-between items-center">
                 <div>
-                    <h2 className="font-display text-xl">
+                    <h2 className="text-[1.7rem] font-display">
                         {viewMode === 'compare' ? 'Sammenlign' : 'Fremgangsgalleri'}
                     </h2>
                     <p className="text-sm text-ink-muted">
@@ -503,7 +503,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                     <div className="grid grid-cols-2 gap-3">
                         {/* Før-bilde */}
                         <div className="space-y-2">
-                            <p className="text-xs font-medium text-ink-muted uppercase tracking-wide text-center">Før</p>
+                            <p className="section-label text-center">Før</p>
                             <div 
                                 className={`relative aspect-[3/4] rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${selectingFor === 'before' ? 'border-ink ring-2 ring-ink/20' : 'border-surface-200'}`}
                                 onClick={() => setSelectingFor(selectingFor === 'before' ? null : 'before')}
@@ -540,7 +540,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
 
                         {/* Etter-bilde */}
                         <div className="space-y-2">
-                            <p className="text-xs font-medium text-ink-muted uppercase tracking-wide text-center">Etter</p>
+                            <p className="section-label text-center">Etter</p>
                             <div 
                                 className={`relative aspect-[3/4] rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${selectingFor === 'after' ? 'border-ink ring-2 ring-ink/20' : 'border-surface-200'}`}
                                 onClick={() => setSelectingFor(selectingFor === 'after' ? null : 'after')}
@@ -581,12 +581,12 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                         <Card className="p-4">
                             <div className="grid grid-cols-2 gap-4 text-center">
                                 <div>
-                                    <p className="text-xs text-ink-muted uppercase tracking-wide mb-1">Tidsperiode</p>
+                                    <p className="section-label mb-1">Tidsperiode</p>
                                     <p className="text-lg font-semibold">{daysDiff} dager</p>
                                 </div>
                                 {weightDiff && (
                                     <div>
-                                        <p className="text-xs text-ink-muted uppercase tracking-wide mb-1">Vektendring</p>
+                                        <p className="section-label mb-1">Vektendring</p>
                                         <p className={`text-lg font-semibold flex items-center justify-center gap-1 ${parseFloat(weightDiff) < 0 ? 'text-emerald-600' : parseFloat(weightDiff) > 0 ? 'text-ink' : 'text-ink-muted'}`}>
                                             {parseFloat(weightDiff) > 0 ? '+' : ''}{weightDiff.replace('.', ',')} kg
                                             {parseFloat(weightDiff) < 0 ? <TrendingDown size={18} /> : parseFloat(weightDiff) > 0 ? <TrendingUp size={18} /> : null}
@@ -620,7 +620,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
 
                     {/* Bilderutenett for valg */}
                     <div>
-                        <p className="text-xs text-ink-muted uppercase tracking-wide mb-3">Velg bilder</p>
+                        <p className="section-label mb-3">Velg bilder</p>
                         <div className="grid grid-cols-4 gap-1.5">
                             {allImages.map((img, idx) => {
                                 const isSelected = compareImages.before?.url === img.url || compareImages.after?.url === img.url;

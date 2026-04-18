@@ -180,9 +180,9 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                             <Icon size={20} />
                         </div>
                         <div>
-                            <h2 className="font-display text-xl">{title}</h2>
+                            <h2 className="text-[1.05rem] font-semibold tracking-[-0.01em]">{title}</h2>
                             {!isReadOnly && saveState !== 'idle' && (
-                                <p className="text-xs text-ink-muted mt-0.5">
+                                <p className="section-label mt-0.5">
                                     {saveState === 'saving'
                                         ? 'Lagrer endringer...'
                                         : saveState === 'saved'

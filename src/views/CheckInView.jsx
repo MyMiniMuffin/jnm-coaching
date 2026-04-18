@@ -178,7 +178,7 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
                 <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 mb-6">
                     <Check size={32} strokeWidth={2.5} />
                 </div>
-                <h2 className="text-2xl font-display mb-2">Rapport sendt</h2>
+                <h2 className="text-[2rem] font-display mb-2">Rapport sendt</h2>
                 <p className="text-ink-muted">Oppdateringen din er lagret</p>
             </div>
         );
@@ -213,7 +213,7 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
                     <Card className="p-5 space-y-5">
                         <div className="flex items-center justify-between gap-3">
                             <div>
-                                <h3 className="font-display text-lg">Ny ukesrapport</h3>
+                                <h3 className="section-title">Ny ukesrapport</h3>
                                 <p className="text-sm text-ink-muted mt-1">Fyll ut denne ukens status først. Historikken ligger separat lenger ned.</p>
                             </div>
                             <span className="text-xs text-ink-muted">
@@ -375,7 +375,7 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
             <div className={!isReadOnly && !hideForm ? "pt-8 border-t border-surface-200" : ""}>
                 <div className="flex items-center justify-between gap-3 mb-4 px-1">
                     <div>
-                        <p className="text-xs text-ink-muted uppercase tracking-wide">Tidligere rapporter</p>
+                        <p className="section-label">Tidligere rapporter</p>
                         <p className="text-sm text-ink-muted mt-1">
                             {sortedCheckins.length === 0
                                 ? 'Ingen tidligere innsendinger ennå'
@@ -400,7 +400,7 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
                         <div className="w-14 h-14 bg-surface-100 rounded-2xl flex items-center justify-center text-ink-muted mx-auto mb-4">
                             <Activity size={24} />
                         </div>
-                        <p className="text-ink-muted font-display text-lg italic mb-1">Ingen rapporter enda</p>
+                        <p className="text-ink-muted font-display text-[1.35rem] italic mb-1">Ingen rapporter enda</p>
                         <p className="text-ink-faint text-sm">Fyll ut skjemaet over for å sende din første ukesrapport</p>
                     </div>
                 ) : showHistory ? (
