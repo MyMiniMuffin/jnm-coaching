@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   Check, Camera, X, Trash2, Loader2, Scale,
-  Activity, Footprints, AlertCircle, Save, ChevronDown, ChevronUp
+  Activity, Footprints, AlertCircle, Save
 } from 'lucide-react';
 import { Card, Badge, Button, InputLabel, SelectField } from '../components/ui';
 import ImageModal from '../components/ImageModal';
@@ -19,7 +19,6 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
     const [errorMessage, setErrorMessage] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState(INITIAL_FORM_DATA);
-    const [showHistory, setShowHistory] = useState(false);
     const [restoredDraft, setRestoredDraft] = useState(false);
     const confirmDialog = useConfirm();
     const storageKey = `jnm_checkin_draft_${draftKey}`;
@@ -169,7 +168,6 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
     const handleStepsChange = useCallback((e) => updateField('stepsReached', e.target.checked), [updateField]);
     const handleSupplementsChange = useCallback((e) => updateField('takenSupplements', e.target.checked), [updateField]);
     const handleCommentChange = useCallback((e) => updateField('comment', e.target.value), [updateField]);
-    const toggleHistory = useCallback(() => setShowHistory(prev => !prev), []);
     const dismissDraftNotice = useCallback(() => setRestoredDraft(false), []);
 
     if (step === 'success') {
@@ -373,7 +371,7 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
 
             {/* History */}
             <div className={!isReadOnly && !hideForm ? "pt-8 border-t border-surface-200" : ""}>
-                <div className="flex items-center justify-between gap-3 mb-4 px-1">
+                <div className="mb-4 px-1">
                     <div>
                         <p className="section-label">Tidligere rapporter</p>
                         <p className="text-sm text-ink-muted mt-1">
@@ -382,17 +380,6 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
                                 : `${sortedCheckins.length} rapport${sortedCheckins.length > 1 ? 'er' : ''} lagret`}
                         </p>
                     </div>
-                    {sortedCheckins.length > 0 && (
-                        <button
-                            type="button"
-                            onClick={toggleHistory}
-                            className="inline-flex items-center gap-2 rounded-xl border border-surface-200 bg-white px-3 py-2 text-sm font-medium text-ink-muted hover:text-ink hover:border-surface-300 transition-colors"
-                            aria-expanded={showHistory}
-                        >
-                            {showHistory ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                            {showHistory ? 'Skjul' : 'Vis'}
-                        </button>
-                    )}
                 </div>
 
                 {sortedCheckins.length === 0 ? (
@@ -403,7 +390,7 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
                         <p className="text-ink-muted font-display text-[1.35rem] italic mb-1">Ingen rapporter enda</p>
                         <p className="text-ink-faint text-sm">Fyll ut skjemaet over for å sende din første ukesrapport</p>
                     </div>
-                ) : showHistory ? (
+                ) : (
                     <div className="space-y-3">
                         {sortedCheckins.map((entry) => {
                             // Sikre at images alltid er en array
@@ -502,12 +489,6 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
                             );
                         })}
                     </div>
-                ) : (
-                    <Card className="p-4">
-                        <p className="text-sm text-ink-muted">
-                            Historikken er skjult mens du fyller ut rapporten, så det er lettere å fokusere på innsendingen.
-                        </p>
-                    </Card>
                 )}
             </div>
         </div>
