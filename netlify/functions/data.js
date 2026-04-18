@@ -9,6 +9,74 @@ if (!process.env.NETLIFY_DATABASE_URL) {
 // Gjenbruk SQL-tilkobling mellom warm invocations
 const sql = neon(process.env.NETLIFY_DATABASE_URL);
 
+const getWebPushClient = () => {
+  if (!process.env.WEB_PUSH_PUBLIC_KEY || !process.env.WEB_PUSH_PRIVATE_KEY) {
+    return null;
+  }
+
+  try {
+    const webpush = require('web-push');
+    webpush.setVapidDetails(
+      process.env.WEB_PUSH_SUBJECT || 'mailto:hello@example.com',
+      process.env.WEB_PUSH_PUBLIC_KEY,
+      process.env.WEB_PUSH_PRIVATE_KEY
+    );
+    return webpush;
+  } catch (error) {
+    console.error('web-push dependency mangler eller kunne ikke lastes:', error);
+    return null;
+  }
+};
+
+const sendCoachPushNotifications = async ({ athleteId, athleteName, unreadCount }) => {
+  const webpush = getWebPushClient();
+  if (!webpush) return;
+
+  try {
+    const subscriptions = await sql`
+      SELECT ps.endpoint, ps.p256dh, ps.auth
+      FROM push_subscriptions ps
+      INNER JOIN users u ON u.id = ps.user_id
+      WHERE u.role = 'coach' AND COALESCE(u.is_archived, false) = false
+    `;
+
+    if (!subscriptions.length) return;
+
+    const payload = JSON.stringify({
+      title: 'Ny check-in mottatt',
+      body: unreadCount > 1
+        ? `${athleteName} har nå ${unreadCount} uleste rapporter.`
+        : `${athleteName} har sendt inn en ny rapport.`,
+      url: '/',
+      tag: `coach-checkin-${athleteId}`,
+      clientId: athleteId,
+      icon: '/icon-192.png',
+      badge: '/icon-192.png'
+    });
+
+    await Promise.allSettled(subscriptions.map(async (subscription) => {
+      try {
+        await webpush.sendNotification({
+          endpoint: subscription.endpoint,
+          keys: {
+            p256dh: subscription.p256dh,
+            auth: subscription.auth
+          }
+        }, payload);
+      } catch (error) {
+        const statusCode = error?.statusCode;
+        console.error('Push sending feilet:', statusCode || error?.message || error);
+
+        if (statusCode === 404 || statusCode === 410) {
+          await sql`DELETE FROM push_subscriptions WHERE endpoint = ${subscription.endpoint}`;
+        }
+      }
+    }));
+  } catch (error) {
+    console.error('Kunne ikke sende coach-pushvarsler:', error);
+  }
+};
+
 // Validering av checkin-data
 const validateCheckinData = (data) => {
   const errors = [];
@@ -362,6 +430,25 @@ exports.handler = async (event) => {
             comment, image_url, images, created_at as timestamp,
             period_id as "periodId", is_read as "isRead"
         `;
+
+        const unreadCountResult = await sql`
+          SELECT COUNT(*)::integer AS count
+          FROM checkins
+          WHERE user_id = ${userId} AND is_read = false
+        `;
+
+        const athleteNameResult = await sql`
+          SELECT name
+          FROM users
+          WHERE id = ${userId}
+          LIMIT 1
+        `;
+
+        await sendCoachPushNotifications({
+          athleteId: userId,
+          athleteName: athleteNameResult[0]?.name || 'En utøver',
+          unreadCount: unreadCountResult[0]?.count || 1
+        });
 
         return {
           statusCode: 200,

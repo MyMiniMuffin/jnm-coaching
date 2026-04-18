@@ -349,6 +349,32 @@ export const api = {
         }
         return { authError: false, data: await res.json() };
     },
+    savePushSubscription: async (subscription) => {
+        const res = await fetch('/.netlify/functions/push-subscriptions', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ subscription })
+        });
+        if (res.status === 401) {
+            console.warn('[API] 401 ved savePushSubscription');
+            return { authError: true };
+        }
+        if (!res.ok) throw new Error('Kunne ikke lagre push-abonnement');
+        return { authError: false, data: await res.json() };
+    },
+    deletePushSubscription: async (endpoint) => {
+        const res = await fetch('/.netlify/functions/push-subscriptions', {
+            method: 'DELETE',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ endpoint })
+        });
+        if (res.status === 401) {
+            console.warn('[API] 401 ved deletePushSubscription');
+            return { authError: true };
+        }
+        if (!res.ok) throw new Error('Kunne ikke slette push-abonnement');
+        return { authError: false };
+    },
     login: async (username, password) => {
         const res = await fetch('/.netlify/functions/auth', {
             method: 'POST',

@@ -1,10 +1,10 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { Plus, X, Trash2, Pause, Play, User, ChevronRight, Loader2, KeyRound } from 'lucide-react';
+import { Plus, X, Trash2, Pause, Play, User, ChevronRight, Loader2, KeyRound, BellRing } from 'lucide-react';
 import { Card, Badge, Button } from '../components/ui';
 import { useEscapeKey } from '../hooks';
 import { useConfirm } from '../components/ConfirmDialog';
 
-const CoachDashboard = React.memo(({ user, allUsers, isLoading, onSelectClient, onAddClient, onDeleteClient, onArchiveClient, onResetPassword }) => {
+const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPermission = 'unsupported', onEnableNotifications, onSelectClient, onAddClient, onDeleteClient, onArchiveClient, onResetPassword }) => {
     const [showModal, setShowModal] = useState(false);
     const [showArchived, setShowArchived] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
@@ -19,6 +19,10 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, onSelectClient, 
         archivedClients: allUsers.filter(u => u.role === 'athlete' && u.is_archived),
         totalAthletes: allUsers.filter(u => u.role === 'athlete').length
     }), [allUsers]);
+    const totalUnreadCheckins = useMemo(
+        () => activeClients.reduce((sum, client) => sum + (Number(client.unreadCheckins) || 0), 0),
+        [activeClients]
+    );
 
     const displayedClients = showArchived ? archivedClients : activeClients;
 
@@ -156,6 +160,34 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, onSelectClient, 
                             <p className="text-3xl font-semibold">{totalAthletes}</p>
                             <p className="text-white/55 text-sm mt-1">Totalt</p>
                         </div>
+                    </div>
+
+                    <div className="mt-5 rounded-2xl bg-white/10 border border-white/10 p-4 flex items-center justify-between gap-3">
+                        <div>
+                            <p className="text-sm font-medium text-white">Varsler for nye check-ins</p>
+                            <p className="text-xs text-white/70 mt-1">
+                                {notificationPermission === 'granted'
+                                    ? totalUnreadCheckins > 0
+                                        ? `${totalUnreadCheckins} uleste rapporter akkurat nå`
+                                        : 'Du får varsel når en utøver sender inn en ny rapport'
+                                    : notificationPermission === 'denied'
+                                        ? 'Varsler er blokkert i nettleseren. Åpne nettleserinnstillingene for å slå dem på.'
+                                        : notificationPermission === 'unsupported'
+                                            ? 'Denne enheten støtter ikke systemvarsler, men appen viser fortsatt interne varsler.'
+                                            : 'Slå på systemvarsler for å få beskjed selv når appen er i bakgrunnen.'}
+                            </p>
+                        </div>
+                        {notificationPermission !== 'granted' && notificationPermission !== 'unsupported' && (
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={onEnableNotifications}
+                                disabled={notificationPermission === 'denied'}
+                            >
+                                <BellRing size={16} />
+                                {notificationPermission === 'denied' ? 'Blokkert' : 'Slå på'}
+                            </Button>
+                        )}
                     </div>
                 </div>
             </div>

@@ -127,6 +127,27 @@ const prefetchViews = () => {
     import('./views/CoachDashboard');
 };
 
+const supportsPushNotifications = () => {
+    if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+        return false;
+    }
+    return 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window;
+};
+
+const getNotificationPermission = () => {
+    if (!supportsPushNotifications()) {
+        return 'unsupported';
+    }
+    return Notification.permission;
+};
+
+const urlBase64ToUint8Array = (base64String) => {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    return Uint8Array.from([...rawData].map(char => char.charCodeAt(0)));
+};
+
 const App = () => {
     const toast = useToast();
     const isOnline = useOnlineStatus();
@@ -143,6 +164,169 @@ const App = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isUsersLoading, setIsUsersLoading] = useState(false);
     const [showReauthPrompt, setShowReauthPrompt] = useState(false);
+    const [notificationPermission, setNotificationPermission] = useState(getNotificationPermission);
+    const coachUnreadSnapshotRef = useRef(new Map());
+    const hasPrimedCoachNotificationsRef = useRef(false);
+    const serviceWorkerRegistrationRef = useRef(null);
+
+    const deliverCoachCheckinAlert = useCallback((clientsWithNewCheckins) => {
+        if (!clientsWithNewCheckins.length) return;
+
+        const totalNewCheckins = clientsWithNewCheckins.reduce((sum, client) => sum + client.delta, 0);
+        const firstClient = clientsWithNewCheckins[0]?.name;
+        const multipleClients = clientsWithNewCheckins.length > 1;
+        const message = multipleClients
+            ? `${totalNewCheckins} nye rapporter fra ${clientsWithNewCheckins.length} utøvere`
+            : `${firstClient} har sendt inn ${totalNewCheckins > 1 ? `${totalNewCheckins} nye rapporter` : 'en ny rapport'}`;
+
+        toast(message, 'info');
+
+        if (
+            typeof window === 'undefined' ||
+            !('Notification' in window) ||
+            Notification.permission !== 'granted' ||
+            document.visibilityState === 'visible'
+        ) {
+            return;
+        }
+
+        const body = multipleClients
+            ? clientsWithNewCheckins.map(client => `${client.name}: +${client.delta}`).join(', ')
+            : 'Trykk deg inn i appen for å lese rapporten.';
+
+        const notification = new Notification('Ny check-in mottatt', {
+            body,
+            icon: '/icon-192.png',
+            badge: '/icon-192.png',
+            tag: 'coach-checkin-alert'
+        });
+
+        notification.onclick = () => {
+            window.focus();
+            notification.close();
+        };
+    }, [toast]);
+
+    const applyUsersList = useCallback((nextUsers, { notify = false } = {}) => {
+        setAllUsers(nextUsers);
+
+        setCurrentUser(prevUser => {
+            if (!prevUser) return prevUser;
+            const refreshedUser = nextUsers.find(user => user.id === prevUser.id);
+            return refreshedUser ? { ...prevUser, ...refreshedUser } : prevUser;
+        });
+
+        const nextUnreadSnapshot = new Map(
+            nextUsers
+                .filter(user => user.role === 'athlete')
+                .map(user => [user.id, Number(user.unreadCheckins) || 0])
+        );
+
+        if (!hasPrimedCoachNotificationsRef.current) {
+            coachUnreadSnapshotRef.current = nextUnreadSnapshot;
+            hasPrimedCoachNotificationsRef.current = true;
+            return;
+        }
+
+        if (notify) {
+            const clientsWithNewCheckins = nextUsers
+                .filter(user => user.role === 'athlete')
+                .map(user => {
+                    const previousUnread = coachUnreadSnapshotRef.current.get(user.id) || 0;
+                    const currentUnread = Number(user.unreadCheckins) || 0;
+                    return currentUnread > previousUnread
+                        ? { id: user.id, name: user.name, delta: currentUnread - previousUnread }
+                        : null;
+                })
+                .filter(Boolean);
+
+            deliverCoachCheckinAlert(clientsWithNewCheckins);
+        }
+
+        coachUnreadSnapshotRef.current = nextUnreadSnapshot;
+    }, [deliverCoachCheckinAlert]);
+
+    const requestCoachNotificationPermission = useCallback(async () => {
+        if (typeof window === 'undefined' || !('Notification' in window)) {
+            toast('Denne enheten støtter ikke systemvarsler', 'error');
+            setNotificationPermission('unsupported');
+            return;
+        }
+
+        const permission = await Notification.requestPermission();
+        setNotificationPermission(permission);
+
+        if (permission === 'granted') {
+            toast('Systemvarsler er slått på');
+        } else if (permission === 'denied') {
+            toast('Systemvarsler er blokkert i nettleseren', 'error');
+        }
+    }, [toast]);
+
+    const ensureCoachPushSubscription = useCallback(async () => {
+        if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+            throw new Error('Push støttes ikke på denne enheten');
+        }
+
+        const vapidPublicKey = import.meta.env.VITE_WEB_PUSH_PUBLIC_KEY;
+        if (!vapidPublicKey) {
+            throw new Error('Mangler VITE_WEB_PUSH_PUBLIC_KEY');
+        }
+
+        let registration = serviceWorkerRegistrationRef.current;
+        if (!registration) {
+            registration = await navigator.serviceWorker.register('/sw.js');
+            serviceWorkerRegistrationRef.current = registration;
+        }
+
+        let subscription = await registration.pushManager.getSubscription();
+        if (!subscription) {
+            subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+            });
+        }
+
+        const result = await api.savePushSubscription(subscription.toJSON());
+        if (result.authError) {
+            setShowReauthPrompt(true);
+            return;
+        }
+    }, []);
+
+    const requestCoachPushNotifications = useCallback(async () => {
+        if (!supportsPushNotifications()) {
+            toast('Denne enheten støtter ikke pushvarsler', 'error');
+            setNotificationPermission('unsupported');
+            return;
+        }
+
+        if (notificationPermission === 'denied') {
+            toast('Systemvarsler er blokkert i nettleseren', 'error');
+            return;
+        }
+
+        let permission = notificationPermission;
+        if (permission !== 'granted') {
+            permission = await Notification.requestPermission();
+            setNotificationPermission(permission);
+        }
+
+        if (permission !== 'granted') {
+            if (permission === 'denied') {
+                toast('Systemvarsler er blokkert i nettleseren', 'error');
+            }
+            return;
+        }
+
+        try {
+            await ensureCoachPushSubscription();
+            toast('Pushvarsler er aktivert');
+        } catch (error) {
+            console.error('[Push] Kunne ikke aktivere pushvarsler:', error);
+            toast(error.message || 'Kunne ikke aktivere pushvarsler', 'error');
+        }
+    }, [notificationPermission, ensureCoachPushSubscription, toast]);
 
     // ============================================
     // FIKSET INIT - Vis UI umiddelbart, oppdater i bakgrunn
@@ -186,9 +370,7 @@ const App = () => {
                         if (result.authError) {
                             setShowReauthPrompt(true);
                         } else if (result.data) {
-                            setAllUsers(result.data);
-                            const freshUser = result.data.find(u => u.id === sessionUser.id);
-                            if (freshUser) setCurrentUser(freshUser);
+                            applyUsersList(result.data);
                         }
                     }).catch(e => console.error('[Init] Feil ved henting av brukerliste:', e))
                       .finally(() => setIsUsersLoading(false));
@@ -211,6 +393,24 @@ const App = () => {
             setIsLoading(false);
         };
         init();
+    }, [applyUsersList]);
+
+    useEffect(() => {
+        setNotificationPermission(getNotificationPermission());
+    }, [currentUser?.role]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+            return;
+        }
+
+        navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+                serviceWorkerRegistrationRef.current = registration;
+            })
+            .catch(error => {
+                console.error('[Push] Kunne ikke registrere service worker:', error);
+            });
     }, []);
 
     // Prefetch view-chunks når appen er lastet (gjør tab-bytte instant)
@@ -227,6 +427,7 @@ const App = () => {
         const handleVisibility = () => {
             if (document.visibilityState === 'visible' && currentUser) {
                 console.log('[Visibility] App ble synlig, sjekker session');
+                setNotificationPermission(getNotificationPermission());
                 if (!hasValidSession()) {
                     console.warn('[Visibility] Session borte - viser re-auth prompt');
                     setShowReauthPrompt(true);
@@ -237,6 +438,64 @@ const App = () => {
         document.addEventListener('visibilitychange', handleVisibility);
         return () => document.removeEventListener('visibilitychange', handleVisibility);
     }, [currentUser]);
+
+    useEffect(() => {
+        if (currentUser?.role !== 'coach') {
+            coachUnreadSnapshotRef.current = new Map();
+            hasPrimedCoachNotificationsRef.current = false;
+            return;
+        }
+
+        let isCancelled = false;
+
+        const refreshUsers = async (notify = true) => {
+            try {
+                const result = await api.getUsers(false);
+                if (isCancelled) return;
+                if (result.authError) {
+                    setShowReauthPrompt(true);
+                    return;
+                }
+                if (result.data) {
+                    applyUsersList(result.data, { notify });
+                }
+            } catch (error) {
+                if (!isCancelled) {
+                    console.error('[Coach Poll] Kunne ikke oppdatere brukerliste:', error);
+                }
+            }
+        };
+
+        const intervalId = window.setInterval(() => {
+            refreshUsers(true);
+        }, 60000);
+
+        refreshUsers(false);
+
+        const handleVisibilityRefresh = () => {
+            if (document.visibilityState === 'visible') {
+                refreshUsers(true);
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityRefresh);
+
+        return () => {
+            isCancelled = true;
+            window.clearInterval(intervalId);
+            document.removeEventListener('visibilitychange', handleVisibilityRefresh);
+        };
+    }, [currentUser?.role, applyUsersList]);
+
+    useEffect(() => {
+        if (currentUser?.role !== 'coach' || notificationPermission !== 'granted') {
+            return;
+        }
+
+        ensureCoachPushSubscription().catch(error => {
+            console.error('[Push] Kunne ikke sikre coach-abonnement:', error);
+        });
+    }, [currentUser?.role, notificationPermission, ensureCoachPushSubscription]);
 
     const skipNextAthleteFetchRef = useRef(false);
     useEffect(() => {
@@ -511,11 +770,11 @@ const App = () => {
                 setShowReauthPrompt(true);
                 return;
             }
-            if (result.data) setAllUsers(result.data);
+            if (result.data) applyUsersList(result.data);
         } catch (e) {
             toast(e.message || 'Feil ved opprettelse av utøver', 'error');
         }
-    }, [toast]);
+    }, [toast, applyUsersList]);
 
     const handleDeleteClient = useCallback(async (id) => {
         try {
@@ -524,12 +783,12 @@ const App = () => {
                 setShowReauthPrompt(true);
                 return;
             }
-            if (result.data) setAllUsers(result.data);
+            if (result.data) applyUsersList(result.data);
             toast('Utøver slettet');
         } catch (e) {
             toast(e.message || 'Feil ved sletting av utøver', 'error');
         }
-    }, [toast]);
+    }, [toast, applyUsersList]);
 
     const handleResetPassword = useCallback(async (id, newPassword) => {
         try {
@@ -551,12 +810,12 @@ const App = () => {
                 setShowReauthPrompt(true);
                 return;
             }
-            if (result.data) setAllUsers(result.data);
+            if (result.data) applyUsersList(result.data);
             toast(archive ? 'Utøver arkivert' : 'Utøver gjenopprettet');
         } catch (e) {
             toast(e.message || 'Feil ved arkivering', 'error');
         }
-    }, [toast]);
+    }, [toast, applyUsersList]);
 
     const handleAddGalleryImage = useCallback(async (imageUrl, label, date, weight) => {
         if (!viewingClient) return;
@@ -760,6 +1019,8 @@ const App = () => {
                             user={currentUser}
                             allUsers={allUsers}
                             isLoading={isUsersLoading}
+                            notificationPermission={notificationPermission}
+                            onEnableNotifications={requestCoachPushNotifications}
                             onSelectClient={handleSelectClient}
                             onAddClient={handleAddClient}
                             onDeleteClient={handleDeleteClient}
