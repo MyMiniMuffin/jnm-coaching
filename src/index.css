@@ -325,8 +325,8 @@ input:focus, textarea:focus, select:focus, button:focus-visible {
 
 .hero-tint {
     background:
-        radial-gradient(circle at top right, rgba(255,255,255,0.10), transparent 34%),
-        linear-gradient(135deg, #6B3220 0%, #3D1A0E 100%);
+        radial-gradient(circle at top right, rgba(255,255,255,0.18), transparent 34%),
+        linear-gradient(135deg, #B5603A 0%, #7A3820 100%);
 }
 
 .soft-panel {
