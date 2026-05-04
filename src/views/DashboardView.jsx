@@ -634,8 +634,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
             )}
 
             {/* Hero Card */}
-            <div className="px-5 py-4 hero-tint text-white rounded-2xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-3xl transform translate-x-10 -translate-y-10" />
+            <div className="px-5 py-4 hero-tint text-white rounded-xl relative overflow-hidden">
                 <div className="relative z-10">
                     <div className="flex justify-between items-start mb-3">
                         <div>

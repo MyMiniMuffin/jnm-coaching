@@ -41,7 +41,7 @@ class ViewErrorBoundary extends React.Component {
         if (this.state.hasError) {
             return (
                 <div className="flex flex-col items-center justify-center h-[50vh] text-center px-6">
-                    <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center text-red-500 mb-4">
+                    <div className="w-16 h-16 bg-red-50 rounded-xl flex items-center justify-center text-red-500 mb-4">
                         <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                     </div>
                     <h2 className="text-lg font-display mb-2">Noe gikk galt</h2>
@@ -73,7 +73,7 @@ const ViewSkeleton = ({ tab }) => {
     );
     if (tab === 'diet' || tab === 'workout') return (
         <div className="animate-pulse">
-            <div className="bg-white rounded-2xl border border-surface-200 overflow-hidden">
+            <div className="bg-white rounded-xl border border-surface-200 overflow-hidden">
                 <div className="p-5 border-b border-surface-100 flex justify-between items-center">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-surface-200 rounded-xl" />
@@ -93,7 +93,7 @@ const ViewSkeleton = ({ tab }) => {
     );
     if (tab === 'checkin') return (
         <div className="space-y-4 animate-pulse">
-            <div className="bg-white rounded-2xl border border-surface-200 p-5 space-y-4">
+            <div className="bg-white rounded-xl border border-surface-200 p-5 space-y-4">
                 <div className="h-6 w-32 bg-surface-200 rounded-lg" />
                 <div className="h-12 bg-surface-200 rounded-xl" />
                 <div className="grid grid-cols-2 gap-4">
@@ -107,12 +107,12 @@ const ViewSkeleton = ({ tab }) => {
     // Dashboard default
     return (
         <div className="space-y-4 animate-pulse">
-            <div className="h-40 bg-surface-200 rounded-2xl" />
+            <div className="h-40 bg-surface-200 rounded-xl" />
             <div className="grid grid-cols-2 gap-4">
-                <div className="h-32 bg-surface-200 rounded-2xl" />
-                <div className="h-32 bg-surface-200 rounded-2xl" />
+                <div className="h-32 bg-surface-200 rounded-xl" />
+                <div className="h-32 bg-surface-200 rounded-xl" />
             </div>
-            <div className="h-24 bg-surface-200 rounded-2xl" />
+            <div className="h-24 bg-surface-200 rounded-xl" />
         </div>
     );
 };
@@ -954,7 +954,7 @@ const App = () => {
                 <Header title="Konto pauset" user={currentUser} onLogout={handleLogout} />
                 <main className="p-4">
                     <div className="flex flex-col items-center justify-center min-h-[70vh] text-center px-6 animate-fade-in">
-                        <div className="w-20 h-20 bg-surface-100 rounded-2xl flex items-center justify-center text-ink-muted mb-6">
+                        <div className="w-20 h-20 bg-surface-100 rounded-xl flex items-center justify-center text-ink-muted mb-6">
                             <Pause size={40} />
                         </div>
                         <h2 className="text-2xl font-display text-ink mb-3">Kontoen er pauset</h2>

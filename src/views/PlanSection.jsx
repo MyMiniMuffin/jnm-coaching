@@ -180,7 +180,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                             <Icon size={20} />
                         </div>
                         <div>
-                            <h2 className="text-[1.05rem] font-semibold tracking-[-0.01em]">{title}</h2>
+                            <h2 className="text-[1.05rem] font-semibold">{title}</h2>
                             {!isReadOnly && saveState !== 'idle' && (
                                 <p className="section-label mt-0.5">
                                     {saveState === 'saving'
@@ -214,7 +214,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                     <div className="border-b border-surface-100 bg-white/95 backdrop-blur-sm">
                         <div className="px-5 py-4 space-y-4">
                             <div className="flex items-center justify-between gap-3 flex-wrap">
-                                <div className="inline-flex rounded-2xl bg-surface-100 p-1">
+                                <div className="inline-flex rounded-xl bg-surface-100 p-1">
                                     <button
                                         type="button"
                                         onClick={() => setActivePane('write')}
@@ -267,11 +267,11 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                                     value={text}
                                     onChange={handleTextChange}
                                     autoFocus
-                                    className="w-full min-h-[58vh] p-5 bg-[#fcfaf7] rounded-[1.4rem] border border-surface-200 focus:ring-2 focus:ring-ink focus:border-ink outline-none text-ink font-mono text-[15px] leading-7 resize-none shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]"
+                                    className="w-full min-h-[58vh] p-5 bg-surface-50 rounded-xl border border-surface-200 focus:ring-2 focus:ring-accent focus:border-accent outline-none text-ink font-mono text-[15px] leading-7 resize-none shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]"
                                     placeholder="Skriv planen her..."
                                 />
                             ) : (
-                                <div className="rounded-[1.4rem] border border-surface-200 bg-[#fcfaf7] p-5 min-h-[58vh]">
+                                <div className="rounded-xl border border-surface-200 bg-surface-50 p-5 min-h-[58vh]">
                                     <div
                                         className="plan-prose max-w-none"
                                         dangerouslySetInnerHTML={{ __html: parsedContent }}

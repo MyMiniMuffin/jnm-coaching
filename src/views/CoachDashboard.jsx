@@ -141,8 +141,7 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
             )}
 
             {/* Hero Stats Card */}
-            <div className="px-5 py-4 hero-tint text-white rounded-2xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-3xl transform translate-x-10 -translate-y-10" />
+            <div className="px-5 py-4 hero-tint text-white rounded-xl relative overflow-hidden">
                 <div className="relative z-10 flex items-center justify-between gap-4">
                     <div className="min-w-0">
                         <p className="text-white/60 text-xs">Velkommen tilbake</p>
@@ -211,7 +210,7 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
                 {displayedClients.length === 0 && isLoading ? (
                     <div className="space-y-2 animate-pulse" aria-label="Laster utøvere" role="status">
                         {[1, 2, 3, 4].map(i => (
-                            <div key={i} className="p-4 flex items-center justify-between bg-white rounded-2xl border border-surface-200">
+                            <div key={i} className="p-4 flex items-center justify-between bg-white rounded-xl border border-surface-200">
                                 <div className="flex items-center gap-4">
                                     <div className="w-12 h-12 bg-surface-200 rounded-xl" />
                                     <div className="space-y-2">
@@ -225,7 +224,7 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
                     </div>
                 ) : displayedClients.length === 0 ? (
                     <div className="text-center py-12">
-                        <div className="w-14 h-14 bg-surface-100 rounded-2xl flex items-center justify-center text-ink-muted mx-auto mb-4">
+                        <div className="w-14 h-14 bg-surface-100 rounded-xl flex items-center justify-center text-ink-muted mx-auto mb-4">
                             <User size={24} />
                         </div>
                         <p className="text-ink-muted font-display text-[1.35rem] italic mb-1">{showArchived ? 'Ingen arkiverte utøvere' : 'Ingen utøvere enda'}</p>

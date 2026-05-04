@@ -12,10 +12,10 @@ module.exports = {
       },
       colors: {
         surface: {
-          50: '#FAFAF9',
-          100: '#F3EEE6',
-          200: '#E6DED0',
-          300: '#D4C8B5',
+          50: '#F7F7F4',
+          100: '#F1F0EC',
+          200: '#E4E1DA',
+          300: '#CCC7BC',
         },
         ink: {
           DEFAULT: '#171717',

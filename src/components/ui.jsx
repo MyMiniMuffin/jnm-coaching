@@ -19,7 +19,7 @@ export const SegmentedControl = React.memo(({ label, value, onChange, options, c
                         key={opt}
                         type="button"
                         onClick={() => onChange(opt)}
-                        className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-150 active:scale-95 tabular-nums ${
+                        className={`flex-1 py-2.5 rounded-md text-sm font-semibold transition-all duration-150 active:scale-95 tabular-nums ${
                             isSelected
                                 ? selectedCls
                                 : 'bg-surface-100 text-ink-muted hover:bg-surface-200'
@@ -34,7 +34,7 @@ export const SegmentedControl = React.memo(({ label, value, onChange, options, c
 ));
 
 export const Skeleton = React.memo(({ className }) => (
-    <div className={`bg-surface-200 animate-pulse rounded-2xl ${className}`} />
+    <div className={`bg-surface-200 animate-pulse rounded-xl ${className}`} />
 ));
 
 const BADGE_VARIANTS = {
@@ -45,7 +45,7 @@ const BADGE_VARIANTS = {
 };
 
 export const Badge = React.memo(({ children, variant = 'default', className = '' }) => (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full ${BADGE_VARIANTS[variant]} ${className}`}>
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg ${BADGE_VARIANTS[variant]} ${className}`}>
         {children}
     </span>
 ));
@@ -64,7 +64,7 @@ const BUTTON_SIZES = {
 
 export const Button = React.memo(({ children, variant = 'primary', size = 'md', className = '', ...props }) => (
     <button
-        className={`font-medium rounded-xl transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${BUTTON_VARIANTS[variant]} ${BUTTON_SIZES[size]} ${className}`}
+        className={`font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${BUTTON_VARIANTS[variant]} ${BUTTON_SIZES[size]} ${className}`}
         {...props}
     >
         {children}
@@ -74,7 +74,7 @@ export const Button = React.memo(({ children, variant = 'primary', size = 'md', 
 export const Card = React.memo(React.forwardRef(({ children, className = "", interactive = false, ...props }, ref) => (
     <div
         ref={ref}
-        className={`bg-white rounded-2xl border border-surface-200 ${interactive ? 'hover:border-surface-300 hover:shadow-sm hover:shadow-[#d9cfbf33] cursor-pointer transition-all' : ''} ${className}`}
+        className={`bg-white rounded-xl border border-surface-200 ${interactive ? 'hover:border-surface-300 hover:shadow-sm hover:shadow-[#d9cfbf33] cursor-pointer transition-all' : ''} ${className}`}
         {...props}
     >
         {children}

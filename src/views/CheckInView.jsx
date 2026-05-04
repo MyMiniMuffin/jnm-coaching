@@ -173,7 +173,7 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
     if (step === 'success') {
         return (
             <div className="flex flex-col items-center justify-center h-[60vh] animate-scale-in text-center px-6">
-                <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 mb-6">
+                <div className="w-16 h-16 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 mb-6">
                     <Check size={32} strokeWidth={2.5} />
                 </div>
                 <h2 className="text-[2rem] font-display mb-2">Rapport sendt</h2>
@@ -379,7 +379,7 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
 
                 {sortedCheckins.length === 0 ? (
                     <div className="text-center py-12">
-                        <div className="w-14 h-14 bg-surface-100 rounded-2xl flex items-center justify-center text-ink-muted mx-auto mb-4">
+                        <div className="w-14 h-14 bg-surface-100 rounded-xl flex items-center justify-center text-ink-muted mx-auto mb-4">
                             <Activity size={24} />
                         </div>
                         <p className="text-ink-muted font-display text-[1.35rem] italic mb-1">Ingen rapporter enda</p>

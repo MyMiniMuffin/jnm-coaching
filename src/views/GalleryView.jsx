@@ -318,7 +318,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
         return (
             <div className="flex flex-col items-center justify-center h-[60vh] animate-fade-in text-center px-6">
                 {uploadModal}
-                <div className="w-16 h-16 bg-surface-100 rounded-2xl flex items-center justify-center text-ink-muted mb-6">
+                <div className="w-16 h-16 bg-surface-100 rounded-xl flex items-center justify-center text-ink-muted mb-6">
                     <Camera size={32} />
                 </div>
                 <p className="text-ink-muted font-display text-[1.35rem] italic mb-2">Ingen bilder enda</p>
@@ -613,7 +613,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                     {selectingFor && (
                         <Card className="p-3 bg-ink text-white">
                             <p className="text-sm text-center">
-                                👆 Trykk på et bilde nedenfor for å velge som "{selectingFor === 'before' ? 'før' : 'etter'}"-bilde
+                                Trykk på et bilde nedenfor for å velge som "{selectingFor === 'before' ? 'før' : 'etter'}"-bilde
                             </p>
                         </Card>
                     )}

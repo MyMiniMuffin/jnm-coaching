@@ -9,16 +9,16 @@
 body {
     overscroll-behavior-y: none;
     font-family: 'Outfit', system-ui, sans-serif;
-    background-color: #FAFAF9;
+    background-color: #f7f7f4;
     color: #171717;
-    letter-spacing: -0.01em;
+    letter-spacing: 0;
     line-height: 1.5;
 }
 
 .font-display {
     font-family: 'Instrument Serif', Georgia, serif;
     font-weight: 400;
-    letter-spacing: -0.02em;
+    letter-spacing: 0;
     line-height: 1.08;
 }
 
@@ -26,7 +26,7 @@ body {
     font-size: 0.95rem;
     font-weight: 600;
     color: #171717;
-    letter-spacing: -0.01em;
+    letter-spacing: 0;
 }
 
 .section-label {
@@ -45,7 +45,7 @@ body {
 
 :root {
     --surface-tint: #f4ede2;
-    --surface-soft: #edf3ea;
+    --surface-soft: #eef3ef;
     --accent-soft: #C06A44;
     --accent-warm: #b98d63;
 }
@@ -92,7 +92,7 @@ input[type="checkbox"]:checked {
 .plan-prose h3 {
     font-family: 'Instrument Serif', Georgia, serif;
     color: #171717;
-    letter-spacing: -0.02em;
+    letter-spacing: 0;
     line-height: 1.15;
 }
 
@@ -204,8 +204,8 @@ input[type="checkbox"]:checked {
 .plan-table-wrap {
     margin: 1.15rem 0 1.5rem;
     border: 1px solid rgba(23, 23, 23, 0.08);
-    border-radius: 1.15rem;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(249, 246, 241, 0.98));
+    border-radius: 0.75rem;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 247, 244, 0.98));
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
     overflow: hidden;
 }
@@ -226,7 +226,7 @@ input[type="checkbox"]:checked {
     background: linear-gradient(180deg, #fcfaf6, #f6efe4);
     color: #171717;
     font-weight: 600;
-    letter-spacing: -0.01em;
+    letter-spacing: 0;
     border-bottom: 1px solid rgba(23, 23, 23, 0.08);
 }
 
@@ -304,7 +304,7 @@ input[type="checkbox"]:checked {
 /* Custom focus states */
 input:focus, textarea:focus, select:focus, button:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 2px rgba(111, 138, 111, 0.9);
+    box-shadow: 0 0 0 2px rgba(181, 96, 58, 0.28);
 }
 
 /* View transition — subtil fade ved tab-bytte */
@@ -319,18 +319,16 @@ input:focus, textarea:focus, select:focus, button:focus-visible {
 /* Nav pill indicator */
 .nav-pill {
     transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-    background: linear-gradient(180deg, rgba(244, 237, 226, 0.95), rgba(237, 243, 234, 0.95));
+    background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(241,240,236,0.95));
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
 }
 
 .hero-tint {
-    background:
-        radial-gradient(circle at top right, rgba(255,255,255,0.06), transparent 34%),
-        linear-gradient(135deg, #2a2a2a 0%, #111111 100%);
+    background: linear-gradient(135deg, #272522 0%, #171717 100%);
 }
 
 .soft-panel {
-    background: linear-gradient(180deg, rgba(244, 237, 226, 0.65), rgba(255, 255, 255, 0.9));
+    background: linear-gradient(180deg, rgba(247, 247, 244, 0.96), rgba(255, 255, 255, 0.96));
 }
 
 /* Smooth number input */
