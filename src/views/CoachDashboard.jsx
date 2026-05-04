@@ -108,9 +108,9 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
                             </button>
                         </div>
                         <form onSubmit={handleFormSubmit} className="space-y-4">
-                            <input required name="name" type="text" placeholder="Fullt navn" autoFocus className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink" />
-                            <input required name="username" type="text" placeholder="Brukernavn" autoComplete="off" pattern="[a-zA-Z0-9_]+" title="Kun bokstaver, tall og understrek" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink" />
-                            <input required name="password" type="password" minLength="6" placeholder="Passord (min. 6 tegn)" autoComplete="new-password" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink" />
+                            <input required name="name" type="text" placeholder="Fullt navn" autoFocus className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-accent" />
+                            <input required name="username" type="text" placeholder="Brukernavn" autoComplete="off" pattern="[a-zA-Z0-9_]+" title="Kun bokstaver, tall og understrek" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-accent" />
+                            <input required name="password" type="password" minLength="6" placeholder="Passord (min. 6 tegn)" autoComplete="new-password" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-accent" />
                             <Button type="submit" size="lg" className="w-full" disabled={isCreating}>
                                 {isCreating ? <><Loader2 size={18} className="animate-spin" /> Oppretter...</> : 'Opprett utøver'}
                             </Button>
@@ -131,7 +131,7 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
                         </div>
                         <p className="text-sm text-ink-muted mb-4">Nytt passord for <span className="font-medium text-ink">{resetTarget.name}</span></p>
                         <form onSubmit={handleResetSubmit} className="space-y-4">
-                            <input required name="password" type="password" minLength="6" placeholder="Nytt passord (min. 6 tegn)" autoFocus autoComplete="new-password" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink" />
+                            <input required name="password" type="password" minLength="6" placeholder="Nytt passord (min. 6 tegn)" autoFocus autoComplete="new-password" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-accent" />
                             <Button type="submit" size="lg" className="w-full" disabled={isResetting}>
                                 {isResetting ? <><Loader2 size={18} className="animate-spin" /> Tilbakestiller...</> : <><KeyRound size={18} /> Tilbakestill passord</>}
                             </Button>
@@ -141,61 +141,44 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
             )}
 
             {/* Hero Stats Card */}
-            <div className="p-6 hero-tint text-white rounded-2xl relative overflow-hidden">
+            <div className="px-5 py-4 hero-tint text-white rounded-2xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-3xl transform translate-x-10 -translate-y-10" />
-                <div className="relative z-10">
-                    <p className="text-white/60 text-sm">Velkommen tilbake</p>
-                    <h2 className="text-[2.6rem] font-display mt-1">{user.name}</h2>
-
-                    <div className="grid grid-cols-3 gap-4 mt-6">
-                        <div className="text-center">
-                            <p className="text-3xl font-semibold">{activeClients.length}</p>
-                            <p className="text-white/55 text-sm mt-1">Aktive</p>
-                        </div>
-                        <div className="text-center border-x border-white/10">
-                            <p className="text-3xl font-semibold">{archivedClients.length}</p>
-                            <p className="text-white/55 text-sm mt-1">Arkivert</p>
-                        </div>
-                        <div className="text-center">
-                            <p className="text-3xl font-semibold">{totalAthletes}</p>
-                            <p className="text-white/55 text-sm mt-1">Totalt</p>
-                        </div>
-                    </div>
-
-                    {notificationPermission === 'granted' ? (
-                        <div className="mt-5 flex items-center gap-2 text-sm text-white/75">
-                            <BellRing size={14} className="text-white/70" />
+                <div className="relative z-10 flex items-center justify-between gap-4">
+                    <div className="min-w-0">
+                        <p className="text-white/60 text-xs">Velkommen tilbake</p>
+                        <h2 className="text-2xl font-display leading-tight truncate">{user.name}</h2>
+                        <div className="flex items-center gap-1.5 mt-1.5 text-xs text-white/60">
+                            <BellRing size={12} />
                             <span>
-                                {totalUnreadCheckins > 0
-                                    ? `${totalUnreadCheckins} uleste rapporter akkurat nå`
-                                    : 'Pushvarsler er aktivert'}
-                            </span>
-                        </div>
-                    ) : (
-                        <div className="mt-5 rounded-2xl bg-white/10 border border-white/10 p-4 flex items-center justify-between gap-3">
-                            <div>
-                                <p className="text-sm font-medium text-white">Varsler for nye check-ins</p>
-                                <p className="text-xs text-white/70 mt-1">
-                                    {notificationPermission === 'denied'
-                                        ? 'Varsler er blokkert i nettleseren. Åpne nettleserinnstillingene for å slå dem på.'
+                                {notificationPermission === 'granted'
+                                    ? (totalUnreadCheckins > 0 ? `${totalUnreadCheckins} uleste rapporter` : 'Pushvarsler aktivert')
+                                    : notificationPermission === 'denied'
+                                        ? 'Varsler blokkert'
                                         : notificationPermission === 'unsupported'
-                                            ? 'Denne enheten støtter ikke systemvarsler, men appen viser fortsatt interne varsler.'
-                                            : 'Slå på systemvarsler for å få beskjed selv når appen er i bakgrunnen.'}
-                                </p>
-                            </div>
-                            {notificationPermission !== 'unsupported' && (
-                                <Button
-                                    variant="secondary"
-                                    size="sm"
-                                    onClick={onEnableNotifications}
-                                    disabled={notificationPermission === 'denied'}
-                                >
-                                    <BellRing size={16} />
-                                    {notificationPermission === 'denied' ? 'Blokkert' : 'Slå på'}
-                                </Button>
+                                            ? 'Varsler ikke støttet'
+                                            : 'Varsler ikke aktivert'}
+                            </span>
+                            {notificationPermission === 'default' && (
+                                <button onClick={onEnableNotifications} className="underline underline-offset-2 text-white/80 hover:text-white">
+                                    Slå på
+                                </button>
                             )}
                         </div>
-                    )}
+                    </div>
+                    <div className="flex gap-4 shrink-0">
+                        <div className="text-center">
+                            <p className="text-2xl font-semibold leading-none">{activeClients.length}</p>
+                            <p className="text-white/55 text-xs mt-1">Aktive</p>
+                        </div>
+                        <div className="text-center border-x border-white/10 px-4">
+                            <p className="text-2xl font-semibold leading-none">{archivedClients.length}</p>
+                            <p className="text-white/55 text-xs mt-1">Arkivert</p>
+                        </div>
+                        <div className="text-center">
+                            <p className="text-2xl font-semibold leading-none">{totalUnreadCheckins}</p>
+                            <p className="text-white/55 text-xs mt-1">Uleste</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -204,13 +187,13 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
                 <div className="flex gap-2 items-center">
                     <button
                         onClick={showActive}
-                        className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${!showArchived ? 'bg-ink text-white' : 'text-ink-muted hover:bg-surface-100'}`}
+                        className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${!showArchived ? 'bg-accent text-white' : 'text-ink-muted hover:bg-surface-100'}`}
                     >
                         Aktive ({activeClients.length})
                     </button>
                     <button
                         onClick={showArchivedClients}
-                        className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${showArchived ? 'bg-ink text-white' : 'text-ink-muted hover:bg-surface-100'}`}
+                        className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${showArchived ? 'bg-accent text-white' : 'text-ink-muted hover:bg-surface-100'}`}
                     >
                         Arkivert ({archivedClients.length})
                     </button>

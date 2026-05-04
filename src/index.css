@@ -46,7 +46,7 @@ body {
 :root {
     --surface-tint: #f4ede2;
     --surface-soft: #edf3ea;
-    --accent-soft: #6f8a6f;
+    --accent-soft: #C06A44;
     --accent-warm: #b98d63;
 }
 
@@ -326,7 +326,7 @@ input:focus, textarea:focus, select:focus, button:focus-visible {
 .hero-tint {
     background:
         radial-gradient(circle at top right, rgba(255,255,255,0.18), transparent 34%),
-        linear-gradient(135deg, #5b6f5b 0%, #7f6a4f 100%);
+        linear-gradient(135deg, #B5603A 0%, #7A3820 100%);
 }
 
 .soft-panel {

@@ -146,8 +146,8 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
                     <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-32" role="img" aria-label="Vektutvikling over tid med markører for nye coaching-runder">
                         <defs>
                             <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
-                                <stop offset="0%" stopColor="#A3A3A3" />
-                                <stop offset="100%" stopColor="#171717" />
+                                <stop offset="0%" stopColor="#D4A090" />
+                                <stop offset="100%" stopColor="#B5603A" />
                             </linearGradient>
                         </defs>
                         {periodMarkers.map((marker) => (

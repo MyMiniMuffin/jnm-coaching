@@ -904,8 +904,10 @@ const App = () => {
         if (currentTabIndex > 0 && !showWeightHistory) {
             setActiveTab(TAB_ORDER[currentTabIndex - 1]);
             window.scrollTo({ top: 0, behavior: 'instant' });
+        } else if (currentTabIndex === 0 && currentUser?.role === 'coach' && viewingClient) {
+            handleClearClient();
         }
-    }, [currentTabIndex, showWeightHistory]);
+    }, [currentTabIndex, showWeightHistory, currentUser?.role, viewingClient, handleClearClient]);
 
     const swipeHandlers = useSwipe(handleSwipeLeft, handleSwipeRight, {
         threshold: 60,

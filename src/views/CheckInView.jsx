@@ -3,7 +3,7 @@ import {
   Check, Camera, X, Trash2, Loader2, Scale,
   Activity, Footprints, AlertCircle, Save
 } from 'lucide-react';
-import { Card, Badge, Button, InputLabel, SelectField } from '../components/ui';
+import { Card, Badge, Button, InputLabel, SegmentedControl } from '../components/ui';
 import ImageModal from '../components/ImageModal';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
@@ -160,11 +160,11 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
 
     // Stabile onChange-handlers for å ikke bryte React.memo på SelectField
     const handleWeightChange = useCallback((e) => updateField('weight', e.target.value), [updateField]);
-    const handleEnergyChange = useCallback((e) => updateField('energy', e.target.value), [updateField]);
-    const handleSleepChange = useCallback((e) => updateField('sleep', e.target.value), [updateField]);
-    const handleAccuracyChange = useCallback((e) => updateField('accuracy', e.target.value), [updateField]);
-    const handleStrengthChange = useCallback((e) => updateField('strengthSessions', e.target.value), [updateField]);
-    const handleCardioChange = useCallback((e) => updateField('cardioSessions', e.target.value), [updateField]);
+    const handleEnergyChange = useCallback((val) => updateField('energy', val), [updateField]);
+    const handleSleepChange = useCallback((val) => updateField('sleep', val), [updateField]);
+    const handleAccuracyChange = useCallback((val) => updateField('accuracy', val), [updateField]);
+    const handleStrengthChange = useCallback((val) => updateField('strengthSessions', val), [updateField]);
+    const handleCardioChange = useCallback((val) => updateField('cardioSessions', val), [updateField]);
     const handleStepsChange = useCallback((e) => updateField('stepsReached', e.target.checked), [updateField]);
     const handleSupplementsChange = useCallback((e) => updateField('takenSupplements', e.target.checked), [updateField]);
     const handleCommentChange = useCallback((e) => updateField('comment', e.target.value), [updateField]);
@@ -209,13 +209,13 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
                         </Card>
                     )}
                     <Card className="p-5 space-y-5">
-                        <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-start justify-between gap-3">
                             <div>
                                 <h3 className="section-title">Ny ukesrapport</h3>
                                 <p className="text-sm text-ink-muted mt-1">Fyll ut denne ukens status først. Historikken ligger separat lenger ned.</p>
                             </div>
-                            <span className="text-xs text-ink-muted">
-                                Utkast lagres automatisk
+                            <span className="shrink-0 text-[11px] font-medium text-ink-faint bg-surface-100 px-2 py-1 rounded-full">
+                                Auto-lagret
                             </span>
                         </div>
                         
@@ -232,8 +232,8 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
                                     required
                                     value={formData.weight}
                                     onChange={handleWeightChange}
-                                    className="w-full pl-12 pr-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink focus:border-ink font-medium text-lg placeholder-ink-faint"
-                                    placeholder="0.0"
+                                    className="w-full pl-12 pr-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-accent focus:border-accent font-medium text-lg placeholder-ink-faint"
+                                    placeholder="f.eks. 83.5"
                                 />
                             </div>
                             {lastWeight && (
@@ -241,36 +241,35 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
                             )}
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <SelectField
-                                label="Energi (1–10)"
-                                value={formData.energy}
-                                onChange={handleEnergyChange}
-                                options={OPTIONS_1_TO_10}
-                            />
-                            <SelectField
-                                label="Søvnkvalitet (1–10)"
-                                value={formData.sleep}
-                                onChange={handleSleepChange}
-                                options={OPTIONS_1_TO_10}
-                            />
-                        </div>
-                        
-                        <SelectField
-                            label={`Nøyaktighet (${formData.accuracy}/10)`}
+                        <SegmentedControl
+                            label="Energi (1–10)"
+                            value={formData.energy}
+                            onChange={handleEnergyChange}
+                            options={OPTIONS_1_TO_10}
+                            colorize
+                        />
+                        <SegmentedControl
+                            label="Søvnkvalitet (1–10)"
+                            value={formData.sleep}
+                            onChange={handleSleepChange}
+                            options={OPTIONS_1_TO_10}
+                            colorize
+                        />
+                        <SegmentedControl
+                            label="Nøyaktighet (1–10)"
                             value={formData.accuracy}
                             onChange={handleAccuracyChange}
                             options={OPTIONS_1_TO_10}
+                            colorize
                         />
-
                         <div className="grid grid-cols-2 gap-4">
-                            <SelectField
+                            <SegmentedControl
                                 label="Styrkeøkter"
                                 value={formData.strengthSessions}
                                 onChange={handleStrengthChange}
                                 options={OPTIONS_0_TO_7}
                             />
-                            <SelectField
+                            <SegmentedControl
                                 label="Cardio"
                                 value={formData.cardioSessions}
                                 onChange={handleCardioChange}
@@ -280,24 +279,20 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
 
                         <div className="space-y-3">
                             <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-all ${formData.stepsReached ? 'bg-emerald-50 border-emerald-200' : 'bg-surface-50 border-surface-200'}`}>
-                                <input 
-                                    type="checkbox" 
-                                    checked={formData.stepsReached}
-                                    onChange={handleStepsChange}
-                                    className="w-5 h-5 rounded-md border-surface-300 text-ink focus:ring-ink cursor-pointer" 
-                                />
+                                <input type="checkbox" checked={formData.stepsReached} onChange={handleStepsChange} className="sr-only" />
+                                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200 ${formData.stepsReached ? 'bg-emerald-500 text-white' : 'bg-surface-200 text-surface-200'}`}>
+                                    <Check size={14} strokeWidth={2.5} />
+                                </div>
                                 <div>
                                     <p className="font-medium">Skrittmål oppnådd</p>
                                     <p className="text-sm text-ink-muted">{stepGoal?.toLocaleString() || '10 000'} skritt</p>
                                 </div>
                             </label>
                             <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-all ${formData.takenSupplements ? 'bg-emerald-50 border-emerald-200' : 'bg-surface-50 border-surface-200'}`}>
-                                <input 
-                                    type="checkbox" 
-                                    checked={formData.takenSupplements}
-                                    onChange={handleSupplementsChange}
-                                    className="w-5 h-5 rounded-md border-surface-300 text-ink focus:ring-ink cursor-pointer" 
-                                />
+                                <input type="checkbox" checked={formData.takenSupplements} onChange={handleSupplementsChange} className="sr-only" />
+                                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200 ${formData.takenSupplements ? 'bg-emerald-500 text-white' : 'bg-surface-200 text-surface-200'}`}>
+                                    <Check size={14} strokeWidth={2.5} />
+                                </div>
                                 <div>
                                     <p className="font-medium">Kosttilskudd tatt</p>
                                     <p className="text-sm text-ink-muted">Tatt jevnlig denne uken</p>
@@ -311,7 +306,7 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
                                 value={formData.comment}
                                 onChange={handleCommentChange}
                                 maxLength={5000}
-                                className="w-full px-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl h-28 outline-none resize-none focus:ring-2 focus:ring-ink focus:border-ink"
+                                className="w-full px-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl h-28 outline-none resize-none focus:ring-2 focus:ring-accent focus:border-accent"
                                 placeholder="Hvordan har uken vært?"
                             />
                         </div>

@@ -113,7 +113,7 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                                         type="text"
                                                         value={editingPeriod.name}
                                                         onChange={(e) => handleEditFieldChange('name', e.target.value)}
-                                                        className="w-full px-3 py-2 bg-white border border-emerald-200 rounded-lg outline-none focus:ring-2 focus:ring-ink"
+                                                        className="w-full px-3 py-2 bg-white border border-emerald-200 rounded-lg outline-none focus:ring-2 focus:ring-accent"
                                                         placeholder="Navn på runde"
                                                         autoFocus
                                                     />
@@ -199,7 +199,7 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                                                 type="text"
                                                                 value={editingPeriod.name}
                                                                 onChange={(e) => handleEditFieldChange('name', e.target.value)}
-                                                                className="w-full px-3 py-2 bg-white border border-surface-200 rounded-lg outline-none focus:ring-2 focus:ring-ink"
+                                                                className="w-full px-3 py-2 bg-white border border-surface-200 rounded-lg outline-none focus:ring-2 focus:ring-accent"
                                                                 placeholder="Navn på runde"
                                                                 autoFocus
                                                             />
@@ -210,7 +210,7 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                                                         type="date"
                                                                         value={editingPeriod.startDate}
                                                                         onChange={(e) => handleEditFieldChange('startDate', e.target.value)}
-                                                                        className="w-full px-3 py-2 bg-white border border-surface-200 rounded-lg outline-none focus:ring-2 focus:ring-ink"
+                                                                        className="w-full px-3 py-2 bg-white border border-surface-200 rounded-lg outline-none focus:ring-2 focus:ring-accent"
                                                                     />
                                                                 </div>
                                                                 <div>
@@ -219,7 +219,7 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                                                         type="date"
                                                                         value={editingPeriod.endDate}
                                                                         onChange={(e) => handleEditFieldChange('endDate', e.target.value)}
-                                                                        className="w-full px-3 py-2 bg-white border border-surface-200 rounded-lg outline-none focus:ring-2 focus:ring-ink"
+                                                                        className="w-full px-3 py-2 bg-white border border-surface-200 rounded-lg outline-none focus:ring-2 focus:ring-accent"
                                                                     />
                                                                 </div>
                                                             </div>
@@ -301,7 +301,7 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                 value={formData.name}
                                 onChange={handleNameChange}
                                 placeholder={`Runde ${periods.length + 1}`}
-                                className="w-full px-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink"
+                                className="w-full px-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-accent"
                             />
                         </div>
                         
@@ -317,7 +317,7 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                     value={formData.startingWeight}
                                     onChange={handleStartingWeightChange}
                                     placeholder="0.0"
-                                    className={`w-full pl-12 pr-4 py-3.5 bg-surface-50 border rounded-xl outline-none focus:ring-2 focus:ring-ink font-medium text-lg ${weightError ? 'border-red-300' : 'border-surface-200'}`}
+                                    className={`w-full pl-12 pr-4 py-3.5 bg-surface-50 border rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium text-lg ${weightError ? 'border-red-300' : 'border-surface-200'}`}
                                 />
                             </div>
                             {weightError && <p className="text-red-600 text-xs mt-1.5">{weightError}</p>}
@@ -332,7 +332,7 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                 value={formData.goalWeight}
                                 onChange={handleGoalWeightChange}
                                 placeholder="0.0"
-                                className="w-full px-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink font-medium text-lg"
+                                className="w-full px-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium text-lg"
                             />
                         </div>
 
@@ -423,7 +423,7 @@ const PlanSettingsModal = React.memo(({ userData, onClose, onUpdateData, onOpenP
                                 type="date"
                                 value={startDate}
                                 onChange={handleStartDateChange}
-                                className="w-full min-w-0 pl-12 pr-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink font-medium appearance-none"
+                                className="w-full min-w-0 pl-12 pr-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium appearance-none"
                             />
                         </div>
                     </div>
@@ -437,7 +437,7 @@ const PlanSettingsModal = React.memo(({ userData, onClose, onUpdateData, onOpenP
                             max="52"
                             value={totalWeeks}
                             onChange={handleTotalWeeksChange}
-                            className="w-full px-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink font-medium"
+                            className="w-full px-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium"
                         />
                     </div>
 
@@ -453,7 +453,7 @@ const PlanSettingsModal = React.memo(({ userData, onClose, onUpdateData, onOpenP
                                 step="1000"
                                 value={stepGoal}
                                 onChange={handleStepGoalChange}
-                                className="w-full pl-12 pr-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink font-medium"
+                                className="w-full pl-12 pr-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium"
                             />
                         </div>
                     </div>
@@ -833,7 +833,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
             )}
 
             {/* Dagens motivasjon */}
-            <Card className="p-6 bg-gradient-to-br from-[#f4ede2] via-surface-50 to-[#edf3ea] border-dashed">
+            <Card className="p-6 bg-gradient-to-br from-[#f4ede2] via-surface-50 to-[#edf3ea]">
                 <div className="text-center">
                     <p className="font-display text-[1.35rem] text-ink italic leading-relaxed">"{todayQuote.text}"</p>
                     <p className="text-xs text-ink-muted mt-3">- {todayQuote.author}</p>

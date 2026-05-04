@@ -1,6 +1,38 @@
 import React from 'react';
 import { ChevronDown } from 'lucide-react';
 
+const SEGMENT_COLORS = (n) => {
+    if (n >= 8) return 'bg-emerald-500 text-white';
+    if (n >= 5) return 'bg-amber-400 text-white';
+    return 'bg-red-400 text-white';
+};
+
+export const SegmentedControl = React.memo(({ label, value, onChange, options, colorize = false }) => (
+    <div>
+        <label className="block text-sm font-medium text-ink-muted mb-2">{label}</label>
+        <div className="flex gap-1">
+            {options.map(opt => {
+                const isSelected = Number(value) === Number(opt);
+                const selectedCls = colorize ? SEGMENT_COLORS(Number(opt)) : 'bg-ink text-white';
+                return (
+                    <button
+                        key={opt}
+                        type="button"
+                        onClick={() => onChange(opt)}
+                        className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-150 active:scale-95 tabular-nums ${
+                            isSelected
+                                ? selectedCls
+                                : 'bg-surface-100 text-ink-muted hover:bg-surface-200'
+                        }`}
+                    >
+                        {opt}
+                    </button>
+                );
+            })}
+        </div>
+    </div>
+));
+
 export const Skeleton = React.memo(({ className }) => (
     <div className={`bg-surface-200 animate-pulse rounded-2xl ${className}`} />
 ));
@@ -64,7 +96,7 @@ export const SelectField = React.memo(({ label, value, onChange, options, id: pr
                     id={autoId}
                     value={value}
                     onChange={onChange}
-                    className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl appearance-none focus:ring-2 focus:ring-ink focus:border-ink outline-none font-medium cursor-pointer"
+                    className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl appearance-none focus:ring-2 focus:ring-accent focus:border-accent outline-none font-medium cursor-pointer"
                 >
                     {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                 </select>

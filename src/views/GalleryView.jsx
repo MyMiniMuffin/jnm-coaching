@@ -450,50 +450,50 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
             )}
 
             {/* Header med visningsvalg */}
-            <div className="space-y-3 sm:space-y-0 sm:flex sm:items-start sm:justify-between sm:gap-4">
-                <div className="min-w-0">
-                    <h2 className="text-[1.55rem] leading-none sm:text-[1.7rem] font-display">
-                        {viewMode === 'compare' ? 'Sammenlign' : 'Fremgangsgalleri'}
-                    </h2>
-                    <p className="text-sm text-ink-muted">
-                        {viewMode === 'compare' ? 'Velg bilder å sammenligne' : `${allImages.length} bilder`}
-                    </p>
-                </div>
-                <div className="flex items-center gap-2 sm:flex-shrink-0">
-                    {isCoach && onAddGalleryImage && viewMode !== 'compare' && (
-                        <Button variant="primary" size="sm" className="shrink-0" onClick={() => setShowUploadModal(true)}>
-                            <Plus size={16} />
-                        </Button>
-                    )}
-                    {viewMode !== 'compare' ? (
-                        <div className="flex flex-1 min-w-0 gap-1 bg-surface-100 p-1 rounded-lg overflow-x-auto hide-scrollbar sm:flex-initial">
-                            <button
-                                onClick={() => setViewMode('grid')}
-                                className={`px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-ink' : 'text-ink-muted'}`}
-                            >
-                                Rutenett
-                            </button>
-                            <button
-                                onClick={() => setViewMode('timeline')}
-                                className={`px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-colors ${viewMode === 'timeline' ? 'bg-white shadow-sm text-ink' : 'text-ink-muted'}`}
-                            >
-                                Tidslinje
-                            </button>
-                            {allImages.length >= 2 && (
-                                <button
-                                    onClick={startCompare}
-                                    className="px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-colors text-ink-muted hover:text-ink"
-                                >
-                                    Sammenlign
-                                </button>
-                            )}
-                        </div>
-                    ) : (
-                        <Button variant="secondary" size="sm" onClick={clearCompare}>
+            <div className="space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                        <h2 className="text-[1.55rem] leading-none font-display">
+                            {viewMode === 'compare' ? 'Sammenlign' : 'Fremgangsgalleri'}
+                        </h2>
+                        <p className="text-sm text-ink-muted">
+                            {viewMode === 'compare' ? 'Velg bilder å sammenligne' : `${allImages.length} bilder`}
+                        </p>
+                    </div>
+                    {viewMode === 'compare' ? (
+                        <Button variant="secondary" size="sm" className="shrink-0" onClick={clearCompare}>
                             <X size={16} /> Lukk
                         </Button>
-                    )}
+                    ) : isCoach && onAddGalleryImage ? (
+                        <Button variant="primary" size="sm" className="shrink-0" onClick={() => setShowUploadModal(true)}>
+                            <Plus size={16} /> Last opp
+                        </Button>
+                    ) : null}
                 </div>
+                {viewMode !== 'compare' && (
+                    <div className="flex gap-1 bg-surface-100 p-1 rounded-lg">
+                        <button
+                            onClick={() => setViewMode('grid')}
+                            className={`flex-1 px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-ink' : 'text-ink-muted'}`}
+                        >
+                            Rutenett
+                        </button>
+                        <button
+                            onClick={() => setViewMode('timeline')}
+                            className={`flex-1 px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-colors ${viewMode === 'timeline' ? 'bg-white shadow-sm text-ink' : 'text-ink-muted'}`}
+                        >
+                            Tidslinje
+                        </button>
+                        {allImages.length >= 2 && (
+                            <button
+                                onClick={startCompare}
+                                className="flex-1 px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-colors text-ink-muted hover:text-ink"
+                            >
+                                Sammenlign
+                            </button>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Sammenlign-modus */}
