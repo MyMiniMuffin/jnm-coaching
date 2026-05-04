@@ -634,27 +634,27 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
             )}
 
             {/* Hero Card */}
-            <div className="p-6 hero-tint text-white rounded-2xl relative overflow-hidden">
+            <div className="px-5 py-4 hero-tint text-white rounded-2xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-3xl transform translate-x-10 -translate-y-10" />
                 <div className="relative z-10">
-                    <div className="flex justify-between items-start mb-4">
+                    <div className="flex justify-between items-start mb-3">
                         <div>
-                            <p className="text-white/60 text-sm">
+                            <p className="text-white/60 text-xs">
                                 {activePeriod ? activePeriod.name : (userData.isPaused ? 'Plan på pause' : userData.startDate ? 'Din fremgang' : 'Velkommen')}
                             </p>
-                    <h2 className="text-[2.4rem] font-display mt-1">
+                            <h2 className="text-2xl font-display leading-tight mt-0.5">
                                 {userData.isPaused ? 'Pauset' : userData.startDate ? `Uke ${currentWeek}` : 'Kom i gang'}
                             </h2>
                             {userData.startDate && !userData.isPaused && (() => {
                                 const endDate = new Date(new Date(userData.startDate).getTime() + (userData.totalWeeks || 12) * 7 * 24 * 60 * 60 * 1000);
                                 return (
-                                    <p className="text-white/40 text-sm mt-1">
+                                    <p className="text-white/40 text-xs mt-0.5">
                                         {formatDateNO(userData.startDate)} → {formatDateNO(endDate.toISOString())}
                                     </p>
                                 );
                             })()}
                             {activePeriod && activePeriod.startingWeight && (
-                                <p className="text-white/40 text-sm mt-1">
+                                <p className="text-white/40 text-xs mt-0.5">
                                     Startvekt: {formatWeight(activePeriod.startingWeight)} kg
                                     {activePeriod.goalWeight && ` → Mål: ${formatWeight(activePeriod.goalWeight)} kg`}
                                 </p>
@@ -671,14 +671,14 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                     </div>
 
                     {userData.startDate && !userData.isPaused && (
-                        <div className="space-y-2">
-                            <div className="flex justify-between text-sm">
+                        <div className="space-y-1.5">
+                            <div className="flex justify-between text-xs">
                                 <span className="text-white/60">Fremdrift</span>
                                 <span className="font-medium">{Math.round(progress)}%</span>
                             </div>
-                            <div className="h-2 bg-white/20 rounded-full overflow-hidden">
-                                <div 
-                                    className="h-full bg-white rounded-full transition-all duration-500" 
+                            <div className="h-1.5 bg-white/20 rounded-full overflow-hidden">
+                                <div
+                                    className="h-full bg-white rounded-full transition-all duration-500"
                                     style={{ width: `${progress}%` }}
                                 />
                             </div>
