@@ -12,7 +12,7 @@ import { createConfetti } from '../lib/confetti';
 import { formatDateNO, formatWeight, getThumbnail } from '../lib/formatters';
 import { OPTIONS_1_TO_10, OPTIONS_0_TO_7, INITIAL_FORM_DATA } from '../lib/config';
 
-const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, stepGoal, hideForm = false, draftKey = 'default' }) => {
+const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, canDelete = !isReadOnly, stepGoal, hideForm = false, draftKey = 'default' }) => {
     const [step, setStep] = useState('form');
     const [lightbox, setLightbox] = useState({ isOpen: false, images: [], index: 0 });
     const [isCompressing, setIsCompressing] = useState(false);
@@ -420,7 +420,7 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
                                             <p className="text-xs text-ink-muted">{new Date(entry.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            {!isReadOnly && onDelete && (
+                                            {canDelete && onDelete && (
                                                 <button
                                                     onClick={async () => { if(await confirmDialog('Slett denne rapporten?', { title: 'Slett rapport', confirmText: 'Slett', destructive: true })) onDelete(entry.id); }}
                                                     aria-label="Slett rapport"
