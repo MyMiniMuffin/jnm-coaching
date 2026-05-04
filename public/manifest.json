@@ -4,7 +4,7 @@
   "description": "Din personlige coaching-app for trening og kosthold",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#FAFAF9",
+  "background_color": "#F7F7F4",
   "theme_color": "#171717",
   "orientation": "portrait-primary",
   "icons": [
