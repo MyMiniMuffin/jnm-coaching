@@ -51,7 +51,7 @@ export const Badge = React.memo(({ children, variant = 'default', className = ''
 ));
 
 const BUTTON_VARIANTS = {
-    primary: 'bg-accent text-surface-50 hover:bg-accent-hover active:scale-[0.98]',
+    primary: 'bg-ink text-white hover:bg-ink/85 active:scale-[0.98]',
     secondary: 'bg-surface-100 text-ink hover:bg-[#ece4d7] active:scale-[0.98]',
     ghost: 'text-ink-muted hover:text-ink hover:bg-surface-100',
     danger: 'bg-red-50 text-red-600 hover:bg-red-100',

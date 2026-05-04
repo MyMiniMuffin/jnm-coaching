@@ -187,13 +187,13 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
                 <div className="flex gap-2 items-center">
                     <button
                         onClick={showActive}
-                        className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${!showArchived ? 'bg-accent text-white' : 'text-ink-muted hover:bg-surface-100'}`}
+                        className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${!showArchived ? 'bg-ink text-white' : 'text-ink-muted hover:bg-surface-100'}`}
                     >
                         Aktive ({activeClients.length})
                     </button>
                     <button
                         onClick={showArchivedClients}
-                        className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${showArchived ? 'bg-accent text-white' : 'text-ink-muted hover:bg-surface-100'}`}
+                        className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${showArchived ? 'bg-ink text-white' : 'text-ink-muted hover:bg-surface-100'}`}
                     >
                         Arkivert ({archivedClients.length})
                     </button>
