@@ -569,13 +569,22 @@ const App = () => {
 
     // Ref for å spore pågående lagring og hindre dobbelt-klikk
     const savingRef = React.useRef(false);
+    const periodActionSavingRef = React.useRef(false);
 
     const handleUpdateData = useCallback(async (keyOrObj, value) => {
         if (!viewingClient) return;
-        if (savingRef.current) return;
-        savingRef.current = true;
 
-        let updates = typeof keyOrObj === 'string' ? { [keyOrObj]: value } : keyOrObj;
+        const updates = typeof keyOrObj === 'string' ? { [keyOrObj]: value } : keyOrObj;
+        const isPeriodAction = updates?.action === 'create_period' || updates?.action === 'end_period' || updates?.action === 'update_period';
+
+        if (isPeriodAction) {
+            if (periodActionSavingRef.current) return;
+            periodActionSavingRef.current = true;
+        } else {
+            if (savingRef.current) return;
+            savingRef.current = true;
+        }
+
         let previousData;
 
         try {
@@ -681,7 +690,11 @@ const App = () => {
             if (previousData) setCurrentData(previousData);
             toast('Lagring feilet', 'error');
         } finally {
-            savingRef.current = false;
+            if (isPeriodAction) {
+                periodActionSavingRef.current = false;
+            } else {
+                savingRef.current = false;
+            }
         }
     }, [viewingClient, toast]);
 
