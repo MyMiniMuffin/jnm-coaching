@@ -15,13 +15,19 @@ export default defineConfig({
     },
     rollupOptions: {
       output: {
-        manualChunks: {
-          // React kjerne — endres sjelden, caches lenge
-          'react-vendor': ['react', 'react-dom'],
-          // Markdown-rendering — kun brukt i PlanSection
-          'markdown': ['marked', 'dompurify'],
-          // Zoom/pan — kun brukt i ImageModal og GalleryView
-          'zoom': ['react-zoom-pan-pinch'],
+        manualChunks(id) {
+          // React kjerne - endres sjelden, caches lenge
+          if (id.includes('/node_modules/react/') || id.includes('/node_modules/react-dom/')) {
+            return 'react-vendor';
+          }
+          // Markdown-rendering - kun brukt i PlanSection
+          if (id.includes('/node_modules/marked/') || id.includes('/node_modules/dompurify/')) {
+            return 'markdown';
+          }
+          // Zoom/pan - kun brukt i ImageModal og GalleryView
+          if (id.includes('/node_modules/react-zoom-pan-pinch/')) {
+            return 'zoom';
+          }
         }
       }
     }

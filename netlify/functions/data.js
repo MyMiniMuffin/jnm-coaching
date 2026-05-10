@@ -143,6 +143,16 @@ const getTargetUserState = async (userId) => {
   return result[0] || null;
 };
 
+const COACH_ONLY_TYPES = new Set([
+  'plan_update',
+  'mark_checkins_read',
+  'create_period',
+  'end_period',
+  'update_period',
+  'add_gallery_image',
+  'delete_gallery_image'
+]);
+
 exports.handler = async (event) => {
   try {
     // --- GET: Hent all data ---
@@ -282,6 +292,20 @@ exports.handler = async (event) => {
             body: JSON.stringify({ error: 'Kontoen er arkivert og kan ikke endres.' })
           };
         }
+      }
+
+      if (COACH_ONLY_TYPES.has(type) && authResult.role !== 'coach') {
+        return {
+          statusCode: 403,
+          body: JSON.stringify({ error: 'Kun coach kan endre planer, runder og galleri.' })
+        };
+      }
+
+      if (type === 'new_checkin' && (authResult.role !== 'athlete' || parseInt(authResult.userId, 10) !== parseInt(userId, 10))) {
+        return {
+          statusCode: 403,
+          body: JSON.stringify({ error: 'Kun utøveren selv kan sende inn rapport.' })
+        };
       }
 
       if (type === 'plan_update') {
