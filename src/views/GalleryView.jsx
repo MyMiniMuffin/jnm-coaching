@@ -10,7 +10,7 @@ import { api } from '../lib/api';
 import { formatDateNO, formatWeight, getThumbnail, getFullSizeImage } from '../lib/formatters';
 
 // GalleryView - samler alle bilder fra checkins for lett sammenligning
-const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false, onAddGalleryImage, onDeleteGalleryImage }) => {
+const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false, uploadUserId, onAddGalleryImage, onDeleteGalleryImage }) => {
     const toast = useToast();
     const confirmDialog = useConfirm();
     const [lightbox, setLightbox] = useState({ isOpen: false, images: [], index: 0 });
@@ -158,6 +158,10 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
     const handleImageUpload = useCallback(async (e) => {
         const files = Array.from(e.target.files);
         if (files.length === 0) return;
+        if (!uploadUserId) {
+            toast('Mangler bruker for opplasting', 'error');
+            return;
+        }
         if (files.length > 5) {
             toast('Maks 5 bilder om gangen', 'error');
             return;
@@ -173,7 +177,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                         reader.onerror = () => reject(new Error('Kunne ikke lese fil: ' + file.name));
                         reader.readAsDataURL(file);
                     });
-                    const result = await api.uploadImage(base64Image);
+                    const result = await api.uploadImage(base64Image, uploadUserId, 'gallery');
                     if (result.authError) throw new Error('Autentisering feilet');
                     return result.data.url;
                 })
@@ -201,7 +205,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
             setIsUploading(false);
             setUploadProgress('');
         }
-    }, [onAddGalleryImage, uploadForm]);
+    }, [onAddGalleryImage, uploadForm, uploadUserId, toast]);
 
     const handleDeleteGalleryImage = useCallback(async (imageId) => {
         if (await confirmDialog('Slett dette bildet fra galleriet?', { title: 'Slett bilde', confirmText: 'Slett', destructive: true })) {

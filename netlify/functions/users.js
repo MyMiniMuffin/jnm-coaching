@@ -93,9 +93,9 @@ exports.handler = async (event) => {
         } catch (e) {
           return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig JSON i request body' }) };
         }
-        const { name, username, password, role } = parsed;
+        const { name, username, password } = parsed;
 
-        console.log('Users POST: Oppretter ny bruker:', { name, username, role });
+        console.log('Users POST: Oppretter ny utøver:', { name, username });
 
         // Valider input
         const validationErrors = validateUserInput(name, username, password);
@@ -113,14 +113,11 @@ exports.handler = async (event) => {
         console.log('Users POST: Hasher passord...');
         const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
-        // Valider rolle - kun 'coach' eller 'athlete' er gyldige
-        const validRole = ['coach', 'athlete'].includes(role) ? role : 'athlete';
-
         console.log('Users POST: Setter inn ny bruker i database...');
         try {
           await sql`
             INSERT INTO users (name, username, password, role)
-            VALUES (${name.trim()}, ${normalizedUsername}, ${hashedPassword}, ${validRole})
+            VALUES (${name.trim()}, ${normalizedUsername}, ${hashedPassword}, 'athlete')
           `;
         } catch (insertError) {
           // Håndter duplikat brukernavn (unique constraint violation)
@@ -156,19 +153,23 @@ exports.handler = async (event) => {
         return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig JSON i request body' }) };
       }
       const { id, is_archived, new_password } = parsed;
+      const userId = parseInt(id, 10);
 
-      if (!id) {
-        return { statusCode: 400, body: JSON.stringify({ error: 'Mangler bruker-ID' }) };
+      if (!id || isNaN(userId) || userId <= 0) {
+        return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig bruker-ID' }) };
       }
 
       // Hindre at coach endrer andre coaches
-      const targetUser = await sql`SELECT role FROM users WHERE id = ${id}`;
-      if (targetUser.length > 0 && targetUser[0].role === 'coach') {
+      const targetUser = await sql`SELECT role FROM users WHERE id = ${userId}`;
+      if (targetUser.length === 0) {
+        return { statusCode: 404, body: JSON.stringify({ error: 'Brukeren ble ikke funnet' }) };
+      }
+      if (targetUser[0].role === 'coach') {
         return { statusCode: 403, body: JSON.stringify({ error: 'Kan ikke endre en annen coach' }) };
       }
 
       if (typeof is_archived === 'boolean') {
-        await sql`UPDATE users SET is_archived = ${is_archived} WHERE id = ${id}`;
+        await sql`UPDATE users SET is_archived = ${is_archived} WHERE id = ${userId}`;
       }
 
       // Passord-reset
@@ -177,7 +178,7 @@ exports.handler = async (event) => {
           return { statusCode: 400, body: JSON.stringify({ error: 'Passord må være minst 6 tegn' }) };
         }
         const hashedPassword = await bcrypt.hash(new_password, SALT_ROUNDS);
-        await sql`UPDATE users SET password = ${hashedPassword} WHERE id = ${id}`;
+        await sql`UPDATE users SET password = ${hashedPassword} WHERE id = ${userId}`;
       }
 
       const allUsers = await getFormattedUsersList();

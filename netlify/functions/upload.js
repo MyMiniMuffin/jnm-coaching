@@ -1,5 +1,12 @@
 const cloudinary = require('cloudinary').v2;
-const { requireAuth } = require('./auth-middleware');
+const { neon } = require('@neondatabase/serverless');
+const { requireOwnership } = require('./auth-middleware');
+
+if (!process.env.NETLIFY_DATABASE_URL) {
+  throw new Error('NETLIFY_DATABASE_URL miljøvariabel er ikke satt');
+}
+
+const sql = neon(process.env.NETLIFY_DATABASE_URL);
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -10,13 +17,6 @@ cloudinary.config({
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
-  }
-
-  // Verifiser autentisering
-  const authResult = requireAuth(event);
-  if (!authResult.success) {
-    console.error('Upload: Autentisering feilet', authResult);
-    return { statusCode: authResult.statusCode, body: authResult.body };
   }
 
   try {
@@ -35,7 +35,48 @@ exports.handler = async (event) => {
     } catch (e) {
       return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig JSON i request body' }) };
     }
-    const { image } = parsed;
+    const { image, userId, purpose } = parsed;
+
+    if (!userId || !['checkin', 'gallery'].includes(purpose)) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'Mangler opplastingskontekst' })
+      };
+    }
+
+    const authResult = requireOwnership(event, userId);
+    if (!authResult.success) {
+      console.error('Upload: Autentisering feilet', authResult);
+      return { statusCode: authResult.statusCode, body: authResult.body };
+    }
+
+    const targetUserResult = await sql`
+      SELECT role, is_archived
+      FROM users
+      WHERE id = ${userId}
+      LIMIT 1
+    `;
+
+    const targetUser = targetUserResult[0];
+    if (!targetUser) {
+      return { statusCode: 404, body: JSON.stringify({ error: 'Brukeren ble ikke funnet' }) };
+    }
+
+    if (targetUser.role !== 'athlete') {
+      return { statusCode: 400, body: JSON.stringify({ error: 'Opplasting kan bare knyttes til utøvere.' }) };
+    }
+
+    if (targetUser.is_archived) {
+      return { statusCode: 403, body: JSON.stringify({ error: 'Kontoen er arkivert og kan ikke endres.' }) };
+    }
+
+    if (purpose === 'checkin' && (authResult.role !== 'athlete' || parseInt(authResult.userId, 10) !== parseInt(userId, 10))) {
+      return { statusCode: 403, body: JSON.stringify({ error: 'Kun utøveren selv kan laste opp rapportbilder.' }) };
+    }
+
+    if (purpose === 'gallery' && authResult.role !== 'coach') {
+      return { statusCode: 403, body: JSON.stringify({ error: 'Kun coach kan laste opp galleribilder.' }) };
+    }
 
     if (!image || typeof image !== 'string') {
       return {

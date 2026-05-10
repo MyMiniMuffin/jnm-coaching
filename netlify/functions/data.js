@@ -80,6 +80,17 @@ const sendCoachPushNotifications = async ({ athleteId, athleteName, unreadCount 
 // Validering av checkin-data
 const validateCheckinData = (data) => {
   const errors = [];
+  const requiredFields = ['weight', 'sleep', 'energy', 'accuracy'];
+
+  if (!data || typeof data !== 'object') {
+    return ['Mangler rapportdata'];
+  }
+
+  requiredFields.forEach((field) => {
+    if (data[field] === undefined || data[field] === null || data[field] === '') {
+      errors.push(`${field} må fylles ut`);
+    }
+  });
   
   if (data.weight !== undefined) {
     const weight = parseFloat(data.weight);
@@ -106,6 +117,29 @@ const validateCheckinData = (data) => {
     const accuracy = parseInt(data.accuracy);
     if (isNaN(accuracy) || accuracy < 1 || accuracy > 10) {
       errors.push('Nøyaktighet må være mellom 1 og 10');
+    }
+  }
+
+  ['strengthSessions', 'cardioSessions'].forEach((field) => {
+    if (data[field] !== undefined) {
+      const sessions = parseInt(data[field], 10);
+      if (isNaN(sessions) || sessions < 0 || sessions > 7) {
+        errors.push('Antall økter må være mellom 0 og 7');
+      }
+    }
+  });
+
+  if (data.comment !== undefined && typeof data.comment !== 'string') {
+    errors.push('Kommentar må være tekst');
+  }
+
+  if (data.images !== undefined) {
+    if (!Array.isArray(data.images)) {
+      errors.push('Bilder må være en liste');
+    } else if (data.images.length > 10) {
+      errors.push('Maks 10 bilder per rapport');
+    } else if (data.images.some(url => typeof url !== 'string' || !url.startsWith('https://res.cloudinary.com/'))) {
+      errors.push('Ugyldig bilde-URL');
     }
   }
   
@@ -265,7 +299,7 @@ exports.handler = async (event) => {
       } catch (e) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig JSON i request body' }) };
       }
-      const { userId, type, data } = body;
+      const { userId, type, data = {} } = body;
 
       if (!userId) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Mangler bruker-ID' }) };
@@ -417,8 +451,8 @@ exports.handler = async (event) => {
           return { statusCode: 400, body: JSON.stringify({ error: 'Kommentar er for lang (maks 5 000 tegn)' }) };
         }
 
-        const cardio = parseInt(data.cardioSessions) || 0;
-        const strength = parseInt(data.strengthSessions) || 0;
+        const cardio = parseInt(data.cardioSessions, 10) || 0;
+        const strength = parseInt(data.strengthSessions, 10) || 0;
         const imagesJson = JSON.stringify(data.images || []);
         
         // Hent brukerens aktive periode-ID
@@ -743,6 +777,10 @@ exports.handler = async (event) => {
         if (deleteResult.length === 0) {
           return { statusCode: 404, body: JSON.stringify({ error: 'Bildet ble ikke funnet eller du har ikke tilgang' }) };
         }
+      }
+
+      else {
+        return { statusCode: 400, body: JSON.stringify({ error: 'Ukjent handlingstype' }) };
       }
 
       return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ success: true }) };

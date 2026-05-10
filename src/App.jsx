@@ -1244,12 +1244,13 @@ const App = () => {
                                 checkins={currentData.checkins}
                                 galleryImages={currentData.galleryImages || []}
                                 isCoach={isCoach}
+                                uploadUserId={viewingClient?.id}
                                 onAddGalleryImage={handleAddGalleryImage}
                                 onDeleteGalleryImage={handleDeleteGalleryImage}
                             /> :
                             activeTab === 'diet' ? <PlanSection type="diet" content={currentData.dietPlan} onSave={handleSaveDietPlan} isReadOnly={!isCoach} /> :
                             activeTab === 'workout' ? <PlanSection type="workout" content={currentData.workoutPlan} onSave={handleSaveWorkoutPlan} isReadOnly={!isCoach} /> :
-                            <CheckInView checkins={currentData.checkins} onNewCheckin={handleNewCheckin} onDelete={handleDeleteCheckin} isReadOnly={isCoach} canDelete={Boolean(viewingClient)} stepGoal={currentData.stepGoal} draftKey={viewingClient?.id || currentUser?.id || 'default'} />}
+                            <CheckInView checkins={currentData.checkins} onNewCheckin={handleNewCheckin} onDelete={handleDeleteCheckin} isReadOnly={isCoach} canDelete={Boolean(viewingClient)} stepGoal={currentData.stepGoal} draftKey={viewingClient?.id || currentUser?.id || 'default'} uploadUserId={viewingClient?.id} />}
                         </div>
                     </Suspense></ViewErrorBoundary>
                 )}

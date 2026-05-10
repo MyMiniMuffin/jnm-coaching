@@ -336,11 +336,11 @@ export const api = {
         cache.invalidate(`user-data-${userId}`);
         return { authError: false };
     },
-    uploadImage: async (base64Image) => {
+    uploadImage: async (base64Image, userId, purpose) => {
         const res = await fetch('/.netlify/functions/upload', {
             method: 'POST',
             headers: getAuthHeaders(),
-            body: JSON.stringify({ image: base64Image })
+            body: JSON.stringify({ image: base64Image, userId, purpose })
         });
         if (res.status === 401) {
             console.warn('[API] 401 ved uploadImage');

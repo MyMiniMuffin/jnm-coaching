@@ -12,7 +12,7 @@ import { createConfetti } from '../lib/confetti';
 import { formatDateNO, formatWeight, getThumbnail } from '../lib/formatters';
 import { OPTIONS_1_TO_10, OPTIONS_0_TO_7, INITIAL_FORM_DATA } from '../lib/config';
 
-const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, canDelete = !isReadOnly, stepGoal, hideForm = false, draftKey = 'default' }) => {
+const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, canDelete = !isReadOnly, stepGoal, hideForm = false, draftKey = 'default', uploadUserId }) => {
     const [step, setStep] = useState('form');
     const [lightbox, setLightbox] = useState({ isOpen: false, images: [], index: 0 });
     const [isCompressing, setIsCompressing] = useState(false);
@@ -72,6 +72,10 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
     const handleImageUpload = useCallback(async (e) => {
         const files = Array.from(e.target.files);
         if (files.length === 0) return;
+        if (!uploadUserId) {
+            setErrorMessage('Mangler bruker for opplasting. Last inn siden på nytt og prøv igjen.');
+            return;
+        }
         setIsCompressing(true);
         setErrorMessage('');
         console.log('[CheckIn] Starter opplasting av', files.length, 'bilder');
@@ -86,7 +90,7 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
                 });
                 console.log('[CheckIn] Base64-lengde:', base64Image.length);
 
-                const result = await api.uploadImage(base64Image);
+                const result = await api.uploadImage(base64Image, uploadUserId, 'checkin');
                 if (result.authError) {
                     throw new Error('Autentisering feilet');
                 }
@@ -112,7 +116,7 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
         } finally {
             setIsCompressing(false);
         }
-    }, []);
+    }, [uploadUserId]);
 
     const removeImage = useCallback((indexToRemove) => {
         setFormData(prev => ({ ...prev, images: prev.images.filter((_, index) => index !== indexToRemove) }));
