@@ -141,6 +141,41 @@ const getNotificationPermission = () => {
     return Notification.permission;
 };
 
+const UI_STATE_KEY = 'jnm_ui_state';
+
+const readUiState = () => {
+    if (typeof window === 'undefined') return null;
+    try {
+        const state = localStorage.getItem(UI_STATE_KEY);
+        return state ? JSON.parse(state) : null;
+    } catch (error) {
+        console.error('[UI State] Kunne ikke lese lagret posisjon:', error);
+        return null;
+    }
+};
+
+const saveUiState = (state) => {
+    if (typeof window === 'undefined' || !state?.userId) return;
+    try {
+        localStorage.setItem(UI_STATE_KEY, JSON.stringify({
+            ...state,
+            scrollY: Math.max(0, Math.round(window.scrollY || document.documentElement.scrollTop || 0)),
+            savedAt: Date.now()
+        }));
+    } catch (error) {
+        console.error('[UI State] Kunne ikke lagre posisjon:', error);
+    }
+};
+
+const clearUiState = () => {
+    if (typeof window === 'undefined') return;
+    try {
+        localStorage.removeItem(UI_STATE_KEY);
+    } catch (error) {
+        console.error('[UI State] Kunne ikke slette lagret posisjon:', error);
+    }
+};
+
 const urlBase64ToUint8Array = (base64String) => {
     const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
     const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
@@ -168,6 +203,9 @@ const App = () => {
     const coachUnreadSnapshotRef = useRef(new Map());
     const hasPrimedCoachNotificationsRef = useRef(false);
     const serviceWorkerRegistrationRef = useRef(null);
+    const latestUiStateRef = useRef(null);
+    const hasRestoredUiStateRef = useRef(false);
+    const restoreScrollYRef = useRef(null);
 
     const deliverCoachCheckinAlert = useCallback((clientsWithNewCheckins) => {
         if (!clientsWithNewCheckins.length) return;
@@ -524,6 +562,7 @@ const App = () => {
     }, [viewingClient, currentUser?.role]);
 
     const handleLogin = useCallback((user) => {
+        hasRestoredUiStateRef.current = false;
         setCurrentUser(user);
         saveSession(user);
         setShowReauthPrompt(false);
@@ -536,6 +575,9 @@ const App = () => {
     const handleLogout = useCallback(() => {
         console.log('[App] Bruker logger ut');
         clearSession();
+        clearUiState();
+        hasRestoredUiStateRef.current = false;
+        restoreScrollYRef.current = null;
         setCurrentUser(null);
         setViewingClient(null);
         setShowReauthPrompt(false);
@@ -545,6 +587,9 @@ const App = () => {
     const handleReauth = useCallback(() => {
         console.log('[App] Bruker må logge inn på nytt');
         clearSession();
+        clearUiState();
+        hasRestoredUiStateRef.current = false;
+        restoreScrollYRef.current = null;
         setCurrentUser(null);
         setViewingClient(null);
         setShowReauthPrompt(false);
@@ -725,13 +770,16 @@ const App = () => {
         setActiveTab('dashboard');
     }, []);
 
-    const handleSelectClient = useCallback(async (client) => {
+    const handleSelectClient = useCallback(async (client, options = {}) => {
+        const { preserveView = false } = options;
         const requestId = ++selectClientRef.current;
         const previousData = currentData;
         setViewingClient(client);
         setIsClientLoading(true);
-        setShowWeightHistory(false);
-        setActiveTab('dashboard');
+        if (!preserveView) {
+            setShowWeightHistory(false);
+            setActiveTab('dashboard');
+        }
 
         try {
             const result = await api.getUserData(client.id, false);
@@ -775,6 +823,105 @@ const App = () => {
             });
         }
     }, [currentData]);
+
+    useEffect(() => {
+        if (!currentUser || hasRestoredUiStateRef.current) return;
+
+        const savedState = readUiState();
+        if (!savedState || savedState.userId !== currentUser.id) {
+            hasRestoredUiStateRef.current = true;
+            return;
+        }
+
+        const savedTab = TAB_ORDER.includes(savedState.activeTab) ? savedState.activeTab : 'dashboard';
+        setActiveTab(savedTab);
+        setShowWeightHistory(Boolean(savedState.showWeightHistory));
+        restoreScrollYRef.current = Number.isFinite(savedState.scrollY) ? savedState.scrollY : 0;
+
+        if (currentUser.role !== 'coach') {
+            hasRestoredUiStateRef.current = true;
+            return;
+        }
+
+        if (!savedState.viewingClientId) {
+            hasRestoredUiStateRef.current = true;
+            return;
+        }
+
+        const savedClient = allUsers.find(user => user.id === savedState.viewingClientId);
+        if (savedClient) {
+            hasRestoredUiStateRef.current = true;
+            handleSelectClient(savedClient, { preserveView: true });
+            return;
+        }
+
+        if (!isUsersLoading) {
+            hasRestoredUiStateRef.current = true;
+        }
+    }, [currentUser, allUsers, isUsersLoading, handleSelectClient]);
+
+    useEffect(() => {
+        if (!currentUser) {
+            latestUiStateRef.current = null;
+            return;
+        }
+        if (!hasRestoredUiStateRef.current || restoreScrollYRef.current !== null) return;
+
+        latestUiStateRef.current = {
+            userId: currentUser.id,
+            activeTab,
+            showWeightHistory,
+            viewingClientId: currentUser.role === 'coach' ? viewingClient?.id || null : null
+        };
+
+        saveUiState(latestUiStateRef.current);
+    }, [currentUser, activeTab, showWeightHistory, viewingClient?.id]);
+
+    useEffect(() => {
+        if (!currentUser || !hasRestoredUiStateRef.current || typeof window === 'undefined') return;
+
+        let frameId = null;
+        const persistCurrentPosition = () => {
+            if (!latestUiStateRef.current) return;
+            saveUiState(latestUiStateRef.current);
+        };
+
+        const handleScroll = () => {
+            if (frameId) return;
+            frameId = window.requestAnimationFrame(() => {
+                frameId = null;
+                persistCurrentPosition();
+            });
+        };
+
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        window.addEventListener('pagehide', persistCurrentPosition);
+
+        return () => {
+            if (frameId) window.cancelAnimationFrame(frameId);
+            window.removeEventListener('scroll', handleScroll);
+            window.removeEventListener('pagehide', persistCurrentPosition);
+        };
+    }, [currentUser]);
+
+    useEffect(() => {
+        if (restoreScrollYRef.current === null || isLoading || isClientLoading) return;
+
+        const scrollY = restoreScrollYRef.current;
+        restoreScrollYRef.current = null;
+
+        let timeoutId = null;
+        const restore = () => window.scrollTo({ top: scrollY, behavior: 'instant' });
+        const firstFrame = window.requestAnimationFrame(() => {
+            restore();
+            timeoutId = window.setTimeout(restore, 250);
+        });
+
+        return () => {
+            window.cancelAnimationFrame(firstFrame);
+            if (timeoutId) window.clearTimeout(timeoutId);
+        };
+    }, [currentUser, activeTab, viewingClient?.id, showWeightHistory, isLoading, isClientLoading, currentData]);
 
     const handleAddClient = useCallback(async (u) => {
         try {
