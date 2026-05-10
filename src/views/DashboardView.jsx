@@ -512,10 +512,11 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
         if (!userData.startDate) return { currentWeek: 0, progress: 0 };
         const start = new Date(userData.startDate);
         const end = userData.isPaused && userData.pausedAt ? new Date(userData.pausedAt) : new Date();
+        const totalWeeks = userData.totalWeeks || 12;
         const diffTime = Math.max(0, end - start);
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-        const week = Math.floor(diffDays / 7);
-        const prog = Math.min((week / (userData.totalWeeks || 12)) * 100, 100);
+        const week = Math.min(Math.floor(diffDays / 7) + 1, totalWeeks);
+        const prog = Math.min((diffTime / (totalWeeks * 7 * 24 * 60 * 60 * 1000)) * 100, 100);
         return { currentWeek: week, progress: prog };
     }, [userData.startDate, userData.isPaused, userData.pausedAt, userData.totalWeeks]);
 
