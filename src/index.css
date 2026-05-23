@@ -8,7 +8,7 @@
 
 body {
     overscroll-behavior-y: none;
-    font-family: 'Outfit', system-ui, sans-serif;
+    font-family: var(--font-sans);
     background-color: #f7f7f4;
     color: #171717;
     letter-spacing: 0;
@@ -16,7 +16,7 @@ body {
 }
 
 .font-display {
-    font-family: 'Instrument Serif', Georgia, serif;
+    font-family: var(--font-serif);
     font-weight: 400;
     letter-spacing: 0;
     line-height: 1.08;
@@ -43,7 +43,10 @@ body {
     letter-spacing: 0.01em;
 }
 
+
 :root {
+    --font-sans: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --font-serif: 'Instrument Serif', 'Iowan Old Style', 'Times New Roman', serif;
     --surface-tint: #f4ede2;
     --surface-soft: #eef3ef;
     --accent-soft: #C06A44;
@@ -90,7 +93,7 @@ input[type="checkbox"]:checked {
 .plan-prose h1,
 .plan-prose h2,
 .plan-prose h3 {
-    font-family: 'Instrument Serif', Georgia, serif;
+    font-family: var(--font-serif);
     color: #171717;
     letter-spacing: 0;
     line-height: 1.15;
