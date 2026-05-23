@@ -7,7 +7,7 @@ const NavButton = React.memo(({ item, isActive, onClick }) => {
     return (
         <button
             onClick={() => onClick(item.id)}
-            className={`relative z-10 flex flex-col items-center justify-center gap-1 min-h-[44px] min-w-[44px] transition-colors duration-200 active:scale-90 ${isActive ? 'text-ink' : 'text-ink-faint'}`}
+            className={`relative z-10 flex flex-col items-center justify-center gap-1 min-h-[44px] min-w-[44px] rounded-xl transition-colors duration-200 active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${isActive ? 'text-ink' : 'text-ink-faint'}`}
         >
             <Icon size={22} strokeWidth={isActive ? 2 : 1.5} />
             <span className={`text-[10px] ${isActive ? 'font-semibold text-ink' : 'font-medium text-ink-faint'}`}>{item.label}</span>

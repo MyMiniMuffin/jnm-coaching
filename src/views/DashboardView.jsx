@@ -437,8 +437,12 @@ const PlanSettingsModal = React.memo(({ userData, onClose, onUpdateData, onOpenP
                             max="52"
                             value={totalWeeks}
                             onChange={handleTotalWeeksChange}
-                            className="w-full px-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium"
+                            aria-invalid={totalWeeks !== '' && (Number(totalWeeks) < 1 || Number(totalWeeks) > 52)}
+                            className={`w-full px-4 py-3.5 bg-surface-50 border rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium ${totalWeeks !== '' && (Number(totalWeeks) < 1 || Number(totalWeeks) > 52) ? 'border-red-300' : 'border-surface-200'}`}
                         />
+                        {totalWeeks !== '' && (Number(totalWeeks) < 1 || Number(totalWeeks) > 52) && (
+                            <p className="text-red-600 text-xs mt-1.5">Velg mellom 1 og 52 uker.</p>
+                        )}
                     </div>
 
                     <div>
@@ -453,9 +457,13 @@ const PlanSettingsModal = React.memo(({ userData, onClose, onUpdateData, onOpenP
                                 step="1000"
                                 value={stepGoal}
                                 onChange={handleStepGoalChange}
-                                className="w-full pl-12 pr-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium"
+                                aria-invalid={stepGoal !== '' && (Number(stepGoal) < 1000 || Number(stepGoal) > 100000)}
+                                className={`w-full pl-12 pr-4 py-3.5 bg-surface-50 border rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium ${stepGoal !== '' && (Number(stepGoal) < 1000 || Number(stepGoal) > 100000) ? 'border-red-300' : 'border-surface-200'}`}
                             />
                         </div>
+                        {stepGoal !== '' && (Number(stepGoal) < 1000 || Number(stepGoal) > 100000) && (
+                            <p className="text-red-600 text-xs mt-1.5">Velg mellom 1 000 og 100 000 skritt.</p>
+                        )}
                     </div>
 
                     {userData.startDate && (
@@ -486,7 +494,11 @@ const PlanSettingsModal = React.memo(({ userData, onClose, onUpdateData, onOpenP
                         size="lg"
                         className="w-full"
                         onClick={handleSave}
-                        disabled={!hasChanges}
+                        disabled={
+                            !hasChanges ||
+                            (totalWeeks !== '' && (Number(totalWeeks) < 1 || Number(totalWeeks) > 52)) ||
+                            (stepGoal !== '' && (Number(stepGoal) < 1000 || Number(stepGoal) > 100000))
+                        }
                     >
                         <Check size={18} /> Lagre endringer
                     </Button>

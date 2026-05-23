@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { Plus, X, Trash2, Pause, Play, User, ChevronRight, Loader2, KeyRound, BellRing } from 'lucide-react';
 import { Card, Badge, Button } from '../components/ui';
 import { useEscapeKey } from '../hooks';
@@ -29,6 +29,20 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
     const closeModal = useCallback(() => setShowModal(false), []);
     const openModal = useCallback(() => setShowModal(true), []);
     useEscapeKey(closeModal, showModal);
+
+    // Delay focus to after scale-in animation finishes for stable mobile focus
+    const newAthleteNameRef = useRef(null);
+    const resetPasswordInputRef = useRef(null);
+    useEffect(() => {
+        if (!showModal) return;
+        const t = setTimeout(() => newAthleteNameRef.current?.focus(), 250);
+        return () => clearTimeout(t);
+    }, [showModal]);
+    useEffect(() => {
+        if (!resetTarget) return;
+        const t = setTimeout(() => resetPasswordInputRef.current?.focus(), 250);
+        return () => clearTimeout(t);
+    }, [resetTarget]);
     const showActive = useCallback(() => setShowArchived(false), []);
     const showArchivedClients = useCallback(() => setShowArchived(true), []);
 
@@ -108,7 +122,7 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
                             </button>
                         </div>
                         <form onSubmit={handleFormSubmit} className="space-y-4">
-                            <input required name="name" type="text" placeholder="Fullt navn" autoFocus className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-accent" />
+                            <input ref={newAthleteNameRef} required name="name" type="text" placeholder="Fullt navn" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-accent" />
                             <input required name="username" type="text" placeholder="Brukernavn" autoComplete="off" pattern="[a-zA-Z0-9_]+" title="Kun bokstaver, tall og understrek" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-accent" />
                             <input required name="password" type="password" minLength="6" placeholder="Passord (min. 6 tegn)" autoComplete="new-password" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-accent" />
                             <Button type="submit" size="lg" className="w-full" disabled={isCreating}>
@@ -131,7 +145,7 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
                         </div>
                         <p className="text-sm text-ink-muted mb-4">Nytt passord for <span className="font-medium text-ink">{resetTarget.name}</span></p>
                         <form onSubmit={handleResetSubmit} className="space-y-4">
-                            <input required name="password" type="password" minLength="6" placeholder="Nytt passord (min. 6 tegn)" autoFocus autoComplete="new-password" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-accent" />
+                            <input ref={resetPasswordInputRef} required name="password" type="password" minLength="6" placeholder="Nytt passord (min. 6 tegn)" autoComplete="new-password" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-accent" />
                             <Button type="submit" size="lg" className="w-full" disabled={isResetting}>
                                 {isResetting ? <><Loader2 size={18} className="animate-spin" /> Tilbakestiller...</> : <><KeyRound size={18} /> Tilbakestill passord</>}
                             </Button>

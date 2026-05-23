@@ -19,7 +19,7 @@ export const SegmentedControl = React.memo(({ label, value, onChange, options, c
                         key={opt}
                         type="button"
                         onClick={() => onChange(opt)}
-                        className={`flex-1 py-2.5 rounded-md text-sm font-semibold transition-all duration-150 active:scale-95 tabular-nums ${
+                        className={`flex-1 min-h-[44px] py-2.5 rounded-md text-sm font-semibold transition-all duration-150 active:scale-95 tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 ${
                             isSelected
                                 ? selectedCls
                                 : 'bg-surface-100 text-ink-muted hover:bg-surface-200'
@@ -64,7 +64,7 @@ const BUTTON_SIZES = {
 
 export const Button = React.memo(({ children, variant = 'primary', size = 'md', className = '', ...props }) => (
     <button
-        className={`font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${BUTTON_VARIANTS[variant]} ${BUTTON_SIZES[size]} ${className}`}
+        className={`font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${BUTTON_VARIANTS[variant]} ${BUTTON_SIZES[size]} ${className}`}
         {...props}
     >
         {children}

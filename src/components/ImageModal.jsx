@@ -75,8 +75,11 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
                 >
                     <TransformComponent wrapperStyle={WRAPPER_STYLE} contentStyle={CONTENT_STYLE}>
                         {loading && (
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <Loader2 className="text-white animate-spin" size={32} />
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3" aria-hidden="true">
+                                <div className="w-[min(70vw,420px)] aspect-[3/4] rounded-2xl bg-white/5 border border-white/10 animate-pulse flex items-center justify-center">
+                                    <Loader2 className="text-white/70 animate-spin" size={32} />
+                                </div>
+                                <p className="text-white/50 text-xs">Laster bilde…</p>
                             </div>
                         )}
                         <img

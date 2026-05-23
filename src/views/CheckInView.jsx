@@ -17,9 +17,11 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
     const [lightbox, setLightbox] = useState({ isOpen: false, images: [], index: 0 });
     const [isCompressing, setIsCompressing] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+    const [weightFieldError, setWeightFieldError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState(INITIAL_FORM_DATA);
     const [restoredDraft, setRestoredDraft] = useState(false);
+    const weightInputRef = React.useRef(null);
     const confirmDialog = useConfirm();
     const storageKey = `jnm_checkin_draft_${draftKey}`;
 
@@ -124,6 +126,13 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
 
     const handleSubmit = useCallback(async (e) => {
         e.preventDefault();
+        const weightNum = parseFloat(formData.weight);
+        if (!formData.weight || isNaN(weightNum) || weightNum < 20 || weightNum > 500) {
+            setWeightFieldError('Skriv inn en gyldig vekt mellom 20 og 500 kg.');
+            weightInputRef.current?.focus();
+            return;
+        }
+        setWeightFieldError('');
         setIsSubmitting(true);
         setErrorMessage('');
         try {
@@ -163,7 +172,10 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
     }, []);
 
     // Stabile onChange-handlers for å ikke bryte React.memo på SelectField
-    const handleWeightChange = useCallback((e) => updateField('weight', e.target.value), [updateField]);
+    const handleWeightChange = useCallback((e) => {
+        updateField('weight', e.target.value);
+        if (weightFieldError) setWeightFieldError('');
+    }, [updateField, weightFieldError]);
     const handleEnergyChange = useCallback((val) => updateField('energy', val), [updateField]);
     const handleSleepChange = useCallback((val) => updateField('sleep', val), [updateField]);
     const handleAccuracyChange = useCallback((val) => updateField('accuracy', val), [updateField]);
@@ -228,19 +240,24 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
                             <div className="relative">
                                 <Scale className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" size={18} />
                                 <input
+                                    ref={weightInputRef}
                                     type="number"
                                     inputMode="decimal"
                                     step="0.1"
                                     min="20"
                                     max="500"
                                     required
+                                    aria-invalid={!!weightFieldError}
+                                    aria-describedby={weightFieldError ? 'weight-error' : undefined}
                                     value={formData.weight}
                                     onChange={handleWeightChange}
-                                    className="w-full pl-12 pr-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-accent focus:border-accent font-medium text-lg placeholder-ink-faint"
+                                    className={`w-full pl-12 pr-4 py-3.5 bg-surface-50 border rounded-xl outline-none focus:ring-2 focus:ring-accent focus:border-accent font-medium text-lg placeholder-ink-faint ${weightFieldError ? 'border-red-300' : 'border-surface-200'}`}
                                     placeholder="f.eks. 83.5"
                                 />
                             </div>
-                            {lastWeight && (
+                            {weightFieldError ? (
+                                <p id="weight-error" className="text-red-600 text-xs mt-1.5">{weightFieldError}</p>
+                            ) : lastWeight && (
                                 <p className="text-xs text-ink-muted mt-1.5">Forrige: {formatWeight(lastWeight)} kg</p>
                             )}
                         </div>

@@ -734,7 +734,7 @@ const App = () => {
             toast('Lagret');
         } catch (e) {
             if (previousData) setCurrentData(previousData);
-            toast('Lagring feilet', 'error');
+            toast('Kunne ikke lagre – endringene ble tilbakestilt. Prøv igjen.', 'error');
         } finally {
             if (isPeriodAction) {
                 periodActionSavingRef.current = false;
