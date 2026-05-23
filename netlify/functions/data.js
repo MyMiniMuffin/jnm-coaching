@@ -316,11 +316,18 @@ exports.handler = async (event) => {
         return { statusCode: 404, body: JSON.stringify({ error: 'Brukeren ble ikke funnet' }) };
       }
 
-      const isArchivedAthlete = targetUser.role === 'athlete' && targetUser.is_archived;
-      if (isArchivedAthlete) {
-        const canViewArchivedData = event.httpMethod === 'GET';
-        const canCoachMarkRead = event.httpMethod === 'POST' && authResult.role === 'coach' && body?.type === 'mark_checkins_read';
-        if (!canViewArchivedData && !canCoachMarkRead) {
+      // Alle mutasjoner skal kun gjelde utøvere — aldri en annen coach
+      if (targetUser.role !== 'athlete') {
+        return {
+          statusCode: 403,
+          body: JSON.stringify({ error: 'Kan kun endre data for utøvere.' })
+        };
+      }
+
+      if (targetUser.is_archived) {
+        // Arkiverte utøvere kan kun få "mark_checkins_read" fra coach
+        const canCoachMarkRead = authResult.role === 'coach' && type === 'mark_checkins_read';
+        if (!canCoachMarkRead) {
           return {
             statusCode: 403,
             body: JSON.stringify({ error: 'Kontoen er arkivert og kan ikke endres.' })
@@ -537,15 +544,8 @@ exports.handler = async (event) => {
       }
 
       else if (type === 'mark_checkins_read') {
-        // Kun coach kan markere innsjekk som lest
-        if (authResult.role !== 'coach') {
-          return { statusCode: 403, body: JSON.stringify({ error: 'Kun coach kan markere rapporter som lest' }) };
-        }
-        // Verifiser at target-bruker er en utøver, ikke en annen coach
-        if (targetUser.role !== 'athlete') {
-          return { statusCode: 400, body: JSON.stringify({ error: 'Kan bare markere rapporter for utøvere' }) };
-        }
-        await sql`UPDATE checkins SET is_read = true WHERE user_id = ${userId}`;
+        // Coach-only sjekkes via COACH_ONLY_TYPES, target.role === 'athlete' sjekkes generelt
+        await sql`UPDATE checkins SET is_read = true WHERE user_id = ${userId} AND is_read = false`;
       }
       
       else if (type === 'create_period') {
@@ -584,6 +584,9 @@ exports.handler = async (event) => {
           RETURNING (SELECT id FROM new_period) AS period_id
         `;
 
+        if (!result[0]) {
+          return { statusCode: 500, body: JSON.stringify({ error: 'Kunne ikke opprette runde' }) };
+        }
         const newPeriodId = result[0].period_id;
 
         return {

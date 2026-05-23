@@ -206,6 +206,7 @@ const App = () => {
     const latestUiStateRef = useRef(null);
     const hasRestoredUiStateRef = useRef(false);
     const restoreScrollYRef = useRef(null);
+    const skipNextAthleteFetchRef = useRef(false);
 
     const deliverCoachCheckinAlert = useCallback((clientsWithNewCheckins) => {
         if (!clientsWithNewCheckins.length) return;
@@ -311,9 +312,10 @@ const App = () => {
             throw new Error('Mangler VITE_WEB_PUSH_PUBLIC_KEY');
         }
 
+        // Bruk eksisterende registrering (registreres én gang i useEffect ved oppstart)
         let registration = serviceWorkerRegistrationRef.current;
         if (!registration) {
-            registration = await navigator.serviceWorker.register('/sw.js');
+            registration = await navigator.serviceWorker.ready;
             serviceWorkerRegistrationRef.current = registration;
         }
 
@@ -535,7 +537,6 @@ const App = () => {
         });
     }, [currentUser?.role, notificationPermission, ensureCoachPushSubscription]);
 
-    const skipNextAthleteFetchRef = useRef(false);
     useEffect(() => {
         if (viewingClient && currentUser?.role === 'athlete') {
             if (skipNextAthleteFetchRef.current) {

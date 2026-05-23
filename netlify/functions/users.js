@@ -194,29 +194,33 @@ exports.handler = async (event) => {
         return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig JSON i request body' }) };
       }
       const { id } = parsed;
+      const userId = parseInt(id, 10);
 
-      if (!id || isNaN(parseInt(id, 10))) {
+      if (!id || isNaN(userId) || userId <= 0) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig bruker-ID' }) };
       }
 
       // Hindre at coach sletter seg selv
-      if (parseInt(id, 10) === parseInt(authResult.userId, 10)) {
+      if (userId === parseInt(authResult.userId, 10)) {
         return { statusCode: 403, body: JSON.stringify({ error: 'Du kan ikke slette din egen bruker' }) };
       }
 
       // Hindre at coach sletter andre coaches
-      const targetUser = await sql`SELECT role FROM users WHERE id = ${id}`;
-      if (targetUser.length > 0 && targetUser[0].role === 'coach') {
+      const targetUser = await sql`SELECT role FROM users WHERE id = ${userId}`;
+      if (targetUser.length === 0) {
+        return { statusCode: 404, body: JSON.stringify({ error: 'Brukeren ble ikke funnet' }) };
+      }
+      if (targetUser[0].role === 'coach') {
         return { statusCode: 403, body: JSON.stringify({ error: 'Kan ikke slette en annen coach' }) };
       }
 
       // Slett brukerens relaterte data først (pga database-regler)
       await Promise.all([
-        sql`DELETE FROM checkins WHERE user_id = ${id}`,
-        sql`DELETE FROM coaching_periods WHERE user_id = ${id}`,
-        sql`DELETE FROM gallery_images WHERE user_id = ${id}`
+        sql`DELETE FROM checkins WHERE user_id = ${userId}`,
+        sql`DELETE FROM coaching_periods WHERE user_id = ${userId}`,
+        sql`DELETE FROM gallery_images WHERE user_id = ${userId}`
       ]);
-      await sql`DELETE FROM users WHERE id = ${id}`;
+      await sql`DELETE FROM users WHERE id = ${userId}`;
       
       const allUsers = await getFormattedUsersList();
       return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(allUsers) };
