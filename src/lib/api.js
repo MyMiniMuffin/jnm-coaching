@@ -235,6 +235,23 @@ export const api = {
         cache.invalidate(`user-data-${userId}`);
         return { authError: false, data: await res.json() };
     },
+    updateCheckin: async (userId, checkinId, updates) => {
+        const res = await fetch('/.netlify/functions/data', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ userId, type: 'update_checkin', data: { checkinId, ...updates } })
+        });
+        if (res.status === 401) {
+            console.warn('[API] 401 ved updateCheckin');
+            return { authError: true };
+        }
+        if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Oppdatering feilet');
+        }
+        cache.invalidate(`user-data-${userId}`);
+        return { authError: false, data: await res.json() };
+    },
     deleteCheckin: async (userId, checkinId) => {
         const res = await fetch('/.netlify/functions/data', {
             method: 'POST',

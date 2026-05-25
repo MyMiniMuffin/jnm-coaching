@@ -747,6 +747,37 @@ const App = () => {
     const handleSaveDietPlan = useCallback((val) => handleUpdateData('dietPlan', val), [handleUpdateData]);
     const handleSaveWorkoutPlan = useCallback((val) => handleUpdateData('workoutPlan', val), [handleUpdateData]);
 
+    const handleUpdateCheckin = useCallback(async (checkinId, updates) => {
+        if (!viewingClient) return;
+        let previousCheckins;
+        setCurrentData(prev => {
+            previousCheckins = prev.checkins;
+            return {
+                ...prev,
+                checkins: prev.checkins.map(c => c.id === checkinId ? { ...c, ...updates } : c)
+            };
+        });
+        try {
+            const result = await api.updateCheckin(viewingClient.id, checkinId, updates);
+            if (result.authError) {
+                setShowReauthPrompt(true);
+                setCurrentData(prev => ({ ...prev, checkins: previousCheckins }));
+                return;
+            }
+            const saved = result.data?.checkin;
+            if (saved) {
+                setCurrentData(prev => ({
+                    ...prev,
+                    checkins: prev.checkins.map(c => c.id === checkinId ? saved : c)
+                }));
+            }
+            toast('Rapport oppdatert');
+        } catch (e) {
+            toast(e.message || 'Kunne ikke oppdatere rapporten', 'error');
+            setCurrentData(prev => ({ ...prev, checkins: previousCheckins }));
+        }
+    }, [viewingClient, toast]);
+
     const handleDeleteCheckin = useCallback(async (checkinId) => {
         if (!viewingClient) return;
         let previousCheckins;
@@ -1251,7 +1282,7 @@ const App = () => {
                             /> :
                             activeTab === 'diet' ? <PlanSection type="diet" content={currentData.dietPlan} onSave={handleSaveDietPlan} isReadOnly={!isCoach} /> :
                             activeTab === 'workout' ? <PlanSection type="workout" content={currentData.workoutPlan} onSave={handleSaveWorkoutPlan} isReadOnly={!isCoach} /> :
-                            <CheckInView checkins={currentData.checkins} onNewCheckin={handleNewCheckin} onDelete={handleDeleteCheckin} isReadOnly={isCoach} canDelete={Boolean(viewingClient)} stepGoal={currentData.stepGoal} draftKey={viewingClient?.id || currentUser?.id || 'default'} uploadUserId={viewingClient?.id} />}
+                            <CheckInView checkins={currentData.checkins} onNewCheckin={handleNewCheckin} onDelete={handleDeleteCheckin} onUpdate={handleUpdateCheckin} canEdit={Boolean(viewingClient)} isReadOnly={isCoach} canDelete={Boolean(viewingClient)} stepGoal={currentData.stepGoal} draftKey={viewingClient?.id || currentUser?.id || 'default'} uploadUserId={viewingClient?.id} />}
                         </div>
                     </Suspense></ViewErrorBoundary>
                 )}

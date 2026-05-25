@@ -525,6 +525,80 @@ exports.handler = async (event) => {
         };
       }
       
+      else if (type === 'update_checkin') {
+        if (!data.checkinId) {
+          return { statusCode: 400, body: JSON.stringify({ error: 'Mangler checkin-ID' }) };
+        }
+
+        // SIKKERHET: Verifiser at checkin tilhører valgt bruker.
+        // Coach kan oppdatere for en utøver de har åpnet; athlete kan kun oppdatere egne.
+        const checkinMatch = await sql`
+          SELECT id FROM checkins WHERE id = ${data.checkinId} AND user_id = ${userId}
+        `;
+
+        if (checkinMatch.length === 0) {
+          return { statusCode: 403, body: JSON.stringify({ error: 'Ingen tilgang til denne rapporten' }) };
+        }
+
+        // Valider feltene som faktisk er sendt med
+        const fieldsToValidate = {};
+        ['weight', 'sleep', 'energy', 'accuracy', 'strengthSessions', 'cardioSessions', 'comment'].forEach(f => {
+          if (data[f] !== undefined) fieldsToValidate[f] = data[f];
+        });
+        const validationErrors = validateCheckinData(fieldsToValidate);
+        if (validationErrors.length > 0) {
+          return { statusCode: 400, body: JSON.stringify({ error: validationErrors.join(', ') }) };
+        }
+        if (data.comment !== undefined && typeof data.comment === 'string' && data.comment.length > 5000) {
+          return { statusCode: 400, body: JSON.stringify({ error: 'Kommentar er for lang (maks 5 000 tegn)' }) };
+        }
+
+        const hasWeight = data.weight !== undefined;
+        const hasSleep = data.sleep !== undefined;
+        const hasEnergy = data.energy !== undefined;
+        const hasAccuracy = data.accuracy !== undefined;
+        const hasStrength = data.strengthSessions !== undefined;
+        const hasCardio = data.cardioSessions !== undefined;
+        const hasSteps = data.stepsReached !== undefined;
+        const hasSupp = data.takenSupplements !== undefined;
+        const hasComment = data.comment !== undefined;
+
+        const updated = await sql`
+          UPDATE checkins SET
+            weight = CASE WHEN ${hasWeight} THEN ${hasWeight ? parseFloat(data.weight) : null} ELSE weight END,
+            sleep = CASE WHEN ${hasSleep} THEN ${hasSleep ? parseInt(data.sleep) : null} ELSE sleep END,
+            energy = CASE WHEN ${hasEnergy} THEN ${hasEnergy ? parseInt(data.energy) : null} ELSE energy END,
+            accuracy = CASE WHEN ${hasAccuracy} THEN ${hasAccuracy ? parseInt(data.accuracy) : null} ELSE accuracy END,
+            strength_sessions = CASE WHEN ${hasStrength} THEN ${hasStrength ? parseInt(data.strengthSessions, 10) || 0 : 0} ELSE strength_sessions END,
+            cardio_sessions = CASE WHEN ${hasCardio} THEN ${hasCardio ? parseInt(data.cardioSessions, 10) || 0 : 0} ELSE cardio_sessions END,
+            steps_reached = CASE WHEN ${hasSteps} THEN ${hasSteps ? Boolean(data.stepsReached) : false} ELSE steps_reached END,
+            taken_supplements = CASE WHEN ${hasSupp} THEN ${hasSupp ? Boolean(data.takenSupplements) : false} ELSE taken_supplements END,
+            comment = CASE WHEN ${hasComment} THEN ${hasComment ? (data.comment || '') : ''} ELSE comment END
+          WHERE id = ${data.checkinId} AND user_id = ${userId}
+          RETURNING
+            id, date, weight, sleep, energy, accuracy,
+            strength_sessions as "strengthSessions",
+            cardio_sessions as "cardioSessions",
+            steps_reached as "stepsReached",
+            taken_supplements as "takenSupplements",
+            comment, image_url, images, created_at as timestamp,
+            period_id as "periodId", is_read as "isRead"
+        `;
+
+        if (!updated[0]) {
+          return { statusCode: 500, body: JSON.stringify({ error: 'Kunne ikke oppdatere rapporten' }) };
+        }
+
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            success: true,
+            checkin: formatCheckinRecord(updated[0])
+          })
+        };
+      }
+
       else if (type === 'delete_checkin') {
         if (!data.checkinId) {
           return { statusCode: 400, body: JSON.stringify({ error: 'Mangler checkin-ID' }) };

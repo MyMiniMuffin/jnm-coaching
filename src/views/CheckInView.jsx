@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   Check, Camera, X, Trash2, Loader2, Scale,
-  Activity, Footprints, AlertCircle, Save
+  Activity, Footprints, AlertCircle, Save, Pencil
 } from 'lucide-react';
 import { Card, Badge, Button, InputLabel, SegmentedControl } from '../components/ui';
 import ImageModal from '../components/ImageModal';
@@ -12,7 +12,7 @@ import { createConfetti } from '../lib/confetti';
 import { formatDateNO, formatWeight, getThumbnail } from '../lib/formatters';
 import { OPTIONS_1_TO_10, OPTIONS_0_TO_7, INITIAL_FORM_DATA } from '../lib/config';
 
-const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, canDelete = !isReadOnly, stepGoal, hideForm = false, draftKey = 'default', uploadUserId }) => {
+const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, onUpdate, canEdit = false, isReadOnly, canDelete = !isReadOnly, stepGoal, hideForm = false, draftKey = 'default', uploadUserId }) => {
     const [step, setStep] = useState('form');
     const [lightbox, setLightbox] = useState({ isOpen: false, images: [], index: 0 });
     const [isCompressing, setIsCompressing] = useState(false);
@@ -21,6 +21,11 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState(INITIAL_FORM_DATA);
     const [restoredDraft, setRestoredDraft] = useState(false);
+    const [editingId, setEditingId] = useState(null);
+    const [editForm, setEditForm] = useState(null);
+    const [editError, setEditError] = useState('');
+    const [editWeightError, setEditWeightError] = useState('');
+    const [isSavingEdit, setIsSavingEdit] = useState(false);
     const weightInputRef = React.useRef(null);
     const confirmDialog = useConfirm();
     const storageKey = `jnm_checkin_draft_${draftKey}`;
@@ -185,6 +190,67 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
     const handleSupplementsChange = useCallback((e) => updateField('takenSupplements', e.target.checked), [updateField]);
     const handleCommentChange = useCallback((e) => updateField('comment', e.target.value), [updateField]);
     const dismissDraftNotice = useCallback(() => setRestoredDraft(false), []);
+
+    const startEdit = useCallback((entry) => {
+        setEditingId(entry.id);
+        setEditForm({
+            weight: entry.weight != null ? String(entry.weight) : '',
+            energy: String(entry.energy ?? 5),
+            sleep: String(entry.sleep ?? 5),
+            accuracy: String(entry.accuracy ?? 5),
+            strengthSessions: String(entry.strengthSessions ?? 0),
+            cardioSessions: String(entry.cardioSessions ?? 0),
+            stepsReached: Boolean(entry.stepsReached),
+            takenSupplements: Boolean(entry.takenSupplements),
+            comment: entry.comment || ''
+        });
+        setEditError('');
+        setEditWeightError('');
+    }, []);
+
+    const cancelEdit = useCallback(() => {
+        setEditingId(null);
+        setEditForm(null);
+        setEditError('');
+        setEditWeightError('');
+    }, []);
+
+    const updateEditField = useCallback((field, value) => {
+        setEditForm(prev => prev ? { ...prev, [field]: value } : prev);
+    }, []);
+
+    const submitEdit = useCallback(async (e) => {
+        e.preventDefault();
+        if (!editForm || !editingId) return;
+        const weightNum = parseFloat(editForm.weight);
+        if (!editForm.weight || isNaN(weightNum) || weightNum < 20 || weightNum > 500) {
+            setEditWeightError('Skriv inn en gyldig vekt mellom 20 og 500 kg.');
+            return;
+        }
+        setEditWeightError('');
+        setIsSavingEdit(true);
+        setEditError('');
+        try {
+            await onUpdate(editingId, {
+                weight: weightNum,
+                energy: parseInt(editForm.energy, 10),
+                sleep: parseInt(editForm.sleep, 10),
+                accuracy: parseInt(editForm.accuracy, 10),
+                strengthSessions: parseInt(editForm.strengthSessions, 10) || 0,
+                cardioSessions: parseInt(editForm.cardioSessions, 10) || 0,
+                stepsReached: Boolean(editForm.stepsReached),
+                takenSupplements: Boolean(editForm.takenSupplements),
+                comment: editForm.comment || ''
+            });
+            setEditingId(null);
+            setEditForm(null);
+        } catch (err) {
+            console.error('Edit feilet:', err);
+            setEditError('Kunne ikke lagre endringene. Prøv igjen.');
+        } finally {
+            setIsSavingEdit(false);
+        }
+    }, [editForm, editingId, onUpdate]);
 
     if (step === 'success') {
         return (
@@ -428,6 +494,121 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
                             // Filtrer ut ugyldige verdier
                             const displayImages = imageArray.filter(img => img && typeof img === 'string' && img.trim() !== '');
 
+                            const isEditing = editingId === entry.id;
+                            if (isEditing && editForm) {
+                                return (
+                                    <Card key={entry.id} className="p-5">
+                                        <form onSubmit={submitEdit} className="space-y-5">
+                                            <div className="flex items-center justify-between">
+                                                <p className="font-medium">{formatDateNO(entry.date)}</p>
+                                                <span className="text-xs text-ink-muted">Redigerer</span>
+                                            </div>
+                                            <div>
+                                                <InputLabel>Vekt (kg)</InputLabel>
+                                                <div className="relative">
+                                                    <Scale className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" size={18} />
+                                                    <input
+                                                        type="number"
+                                                        inputMode="decimal"
+                                                        step="0.1"
+                                                        min="20"
+                                                        max="500"
+                                                        required
+                                                        aria-invalid={!!editWeightError}
+                                                        value={editForm.weight}
+                                                        onChange={(e) => { updateEditField('weight', e.target.value); if (editWeightError) setEditWeightError(''); }}
+                                                        className={`w-full pl-12 pr-4 py-3.5 bg-surface-50 border rounded-xl outline-none focus:ring-2 focus:ring-accent focus:border-accent font-medium text-lg ${editWeightError ? 'border-red-300' : 'border-surface-200'}`}
+                                                    />
+                                                </div>
+                                                {editWeightError && (
+                                                    <p className="text-red-600 text-xs mt-1.5">{editWeightError}</p>
+                                                )}
+                                            </div>
+                                            <SegmentedControl
+                                                label="Energi (1–10)"
+                                                value={editForm.energy}
+                                                onChange={(v) => updateEditField('energy', v)}
+                                                options={OPTIONS_1_TO_10}
+                                                colorize
+                                            />
+                                            <SegmentedControl
+                                                label="Søvnkvalitet (1–10)"
+                                                value={editForm.sleep}
+                                                onChange={(v) => updateEditField('sleep', v)}
+                                                options={OPTIONS_1_TO_10}
+                                                colorize
+                                            />
+                                            <SegmentedControl
+                                                label="Nøyaktighet (1–10)"
+                                                value={editForm.accuracy}
+                                                onChange={(v) => updateEditField('accuracy', v)}
+                                                options={OPTIONS_1_TO_10}
+                                                colorize
+                                            />
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <SegmentedControl
+                                                    label="Styrkeøkter"
+                                                    value={editForm.strengthSessions}
+                                                    onChange={(v) => updateEditField('strengthSessions', v)}
+                                                    options={OPTIONS_0_TO_7}
+                                                />
+                                                <SegmentedControl
+                                                    label="Cardio"
+                                                    value={editForm.cardioSessions}
+                                                    onChange={(v) => updateEditField('cardioSessions', v)}
+                                                    options={OPTIONS_0_TO_7}
+                                                />
+                                            </div>
+                                            <div className="space-y-3">
+                                                <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-all ${editForm.stepsReached ? 'bg-emerald-50 border-emerald-200' : 'bg-surface-50 border-surface-200'}`}>
+                                                    <input type="checkbox" checked={editForm.stepsReached} onChange={(e) => updateEditField('stepsReached', e.target.checked)} className="sr-only" />
+                                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200 ${editForm.stepsReached ? 'bg-emerald-500 text-white' : 'bg-surface-200 text-surface-200'}`}>
+                                                        <Check size={14} strokeWidth={2.5} />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-medium">Skrittmål oppnådd</p>
+                                                        <p className="text-sm text-ink-muted">{stepGoal?.toLocaleString() || '10 000'} skritt</p>
+                                                    </div>
+                                                </label>
+                                                <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-all ${editForm.takenSupplements ? 'bg-emerald-50 border-emerald-200' : 'bg-surface-50 border-surface-200'}`}>
+                                                    <input type="checkbox" checked={editForm.takenSupplements} onChange={(e) => updateEditField('takenSupplements', e.target.checked)} className="sr-only" />
+                                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200 ${editForm.takenSupplements ? 'bg-emerald-500 text-white' : 'bg-surface-200 text-surface-200'}`}>
+                                                        <Check size={14} strokeWidth={2.5} />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-medium">Kosttilskudd tatt</p>
+                                                        <p className="text-sm text-ink-muted">Tatt jevnlig denne uken</p>
+                                                    </div>
+                                                </label>
+                                            </div>
+                                            <div>
+                                                <InputLabel>Kommentar</InputLabel>
+                                                <textarea
+                                                    value={editForm.comment}
+                                                    onChange={(e) => updateEditField('comment', e.target.value)}
+                                                    maxLength={5000}
+                                                    className="w-full px-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl h-28 outline-none resize-none focus:ring-2 focus:ring-accent focus:border-accent"
+                                                />
+                                            </div>
+                                            {editError && (
+                                                <div className="flex items-center gap-3 bg-red-50 border border-red-100 text-red-700 px-4 py-3 rounded-xl text-sm">
+                                                    <AlertCircle size={18} />
+                                                    {editError}
+                                                </div>
+                                            )}
+                                            <div className="flex gap-2">
+                                                <Button type="button" variant="ghost" onClick={cancelEdit} disabled={isSavingEdit} className="flex-1">
+                                                    Avbryt
+                                                </Button>
+                                                <Button type="submit" disabled={isSavingEdit} className="flex-1">
+                                                    {isSavingEdit ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
+                                                    {isSavingEdit ? 'Lagrer...' : 'Lagre'}
+                                                </Button>
+                                            </div>
+                                        </form>
+                                    </Card>
+                                );
+                            }
                             return (
                                 <Card key={entry.id} className="p-5 group">
                                     <div className="flex justify-between items-start mb-4">
@@ -436,6 +617,15 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, isReadOnly, 
                                             <p className="text-xs text-ink-muted">{new Date(entry.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
                                         </div>
                                         <div className="flex items-center gap-2">
+                                            {canEdit && onUpdate && (
+                                                <button
+                                                    onClick={() => startEdit(entry)}
+                                                    aria-label="Rediger rapport"
+                                                    className="p-2 text-ink-faint hover:text-accent transition-colors"
+                                                >
+                                                    <Pencil size={16} />
+                                                </button>
+                                            )}
                                             {canDelete && onDelete && (
                                                 <button
                                                     onClick={async () => { if(await confirmDialog('Slett denne rapporten?', { title: 'Slett rapport', confirmText: 'Slett', destructive: true })) onDelete(entry.id); }}
