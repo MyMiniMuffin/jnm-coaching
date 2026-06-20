@@ -3,33 +3,61 @@ import { Loader2 } from 'lucide-react';
 
 // --- SWIPE HOOK ---
 export const useSwipe = (onSwipeLeft, onSwipeRight, options = {}) => {
-    const { threshold = 50, enabled = true } = options;
+    const {
+        threshold = 50,
+        velocityThreshold = 0.48,
+        verticalTolerance = 42,
+        enabled = true,
+        onEdgeSwipe,
+        ignoreSelector = 'input, textarea, select, button, a, [role="dialog"], .hide-scrollbar, [data-swipe-ignore="true"]'
+    } = options;
     const touchStart = React.useRef(null);
     const touchEnd = React.useRef(null);
 
     const onTouchStart = useCallback((e) => {
         if (!enabled) return;
+        if (ignoreSelector && e.target?.closest?.(ignoreSelector)) {
+            touchStart.current = null;
+            touchEnd.current = null;
+            return;
+        }
         touchEnd.current = null;
-        touchStart.current = e.targetTouches[0].clientX;
-    }, [enabled]);
+        const touch = e.targetTouches[0];
+        touchStart.current = { x: touch.clientX, y: touch.clientY, time: Date.now() };
+    }, [enabled, ignoreSelector]);
 
     const onTouchMove = useCallback((e) => {
-        if (!enabled) return;
-        touchEnd.current = e.targetTouches[0].clientX;
+        if (!enabled || !touchStart.current) return;
+        const touch = e.targetTouches[0];
+        touchEnd.current = { x: touch.clientX, y: touch.clientY };
     }, [enabled]);
 
     const onTouchEnd = useCallback(() => {
         if (!enabled || !touchStart.current || !touchEnd.current) return;
-        const distance = touchStart.current - touchEnd.current;
-        const isLeftSwipe = distance > threshold;
-        const isRightSwipe = distance < -threshold;
+        const distance = touchStart.current.x - touchEnd.current.x;
+        const verticalDistance = Math.abs(touchStart.current.y - touchEnd.current.y);
+        const elapsed = Math.max(1, Date.now() - touchStart.current.time);
+        const velocity = Math.abs(distance) / elapsed;
+        if (verticalDistance > verticalTolerance || Math.abs(distance) < verticalDistance * 1.35) {
+            touchStart.current = null;
+            touchEnd.current = null;
+            return;
+        }
 
-        if (isLeftSwipe && onSwipeLeft) onSwipeLeft();
-        if (isRightSwipe && onSwipeRight) onSwipeRight();
+        const hasIntent = Math.abs(distance) > threshold || (Math.abs(distance) > threshold * 0.55 && velocity > velocityThreshold);
+        const isLeftSwipe = hasIntent && distance > 0;
+        const isRightSwipe = hasIntent && distance < 0;
+
+        let handled = false;
+        if (isLeftSwipe && onSwipeLeft) handled = onSwipeLeft({ distance, velocity }) !== false;
+        if (isRightSwipe && onSwipeRight) handled = onSwipeRight({ distance, velocity }) !== false;
+        if ((isLeftSwipe || isRightSwipe) && !handled && onEdgeSwipe) {
+            onEdgeSwipe(isLeftSwipe ? 'left' : 'right');
+        }
 
         touchStart.current = null;
         touchEnd.current = null;
-    }, [enabled, threshold, onSwipeLeft, onSwipeRight]);
+    }, [enabled, threshold, velocityThreshold, verticalTolerance, onSwipeLeft, onSwipeRight, onEdgeSwipe]);
 
     return { onTouchStart, onTouchMove, onTouchEnd };
 };

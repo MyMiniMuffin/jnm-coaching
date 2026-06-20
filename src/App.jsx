@@ -219,6 +219,8 @@ const App = () => {
     const [isUsersLoading, setIsUsersLoading] = useState(false);
     const [showReauthPrompt, setShowReauthPrompt] = useState(false);
     const [notificationPermission, setNotificationPermission] = useState(getNotificationPermission);
+    const [swipeDirection, setSwipeDirection] = useState('none');
+    const [swipeEdge, setSwipeEdge] = useState(null);
     const coachUnreadSnapshotRef = useRef(new Map());
     const hasPrimedCoachNotificationsRef = useRef(false);
     const serviceWorkerRegistrationRef = useRef(null);
@@ -1099,32 +1101,56 @@ const App = () => {
     const handleCloseWeightHistory = useCallback(() => setShowWeightHistory(false), []);
 
     const handleTabChange = useCallback((tab) => {
+        const nextIndex = TAB_ORDER.indexOf(tab);
+        const previousIndex = TAB_ORDER.indexOf(activeTab);
+        if (nextIndex !== -1 && previousIndex !== -1 && nextIndex !== previousIndex) {
+            setSwipeDirection(nextIndex > previousIndex ? 'left' : 'right');
+        } else {
+            setSwipeDirection('none');
+        }
         setActiveTab(tab);
         setShowWeightHistory(false);
-    }, []);
+    }, [activeTab]);
 
     // Swipe og pull-to-refresh hooks MÅ være før alle returns
     const currentTabIndex = TAB_ORDER.indexOf(activeTab);
 
     const handleSwipeLeft = useCallback(() => {
         if (currentTabIndex < TAB_ORDER.length - 1 && !showWeightHistory) {
+            setSwipeDirection('left');
+            setSwipeEdge(null);
             setActiveTab(TAB_ORDER[currentTabIndex + 1]);
             window.scrollTo({ top: 0, behavior: 'instant' });
+            return true;
         }
+        return false;
     }, [currentTabIndex, showWeightHistory]);
 
     const handleSwipeRight = useCallback(() => {
         if (currentTabIndex > 0 && !showWeightHistory) {
+            setSwipeDirection('right');
+            setSwipeEdge(null);
             setActiveTab(TAB_ORDER[currentTabIndex - 1]);
             window.scrollTo({ top: 0, behavior: 'instant' });
+            return true;
         } else if (currentTabIndex === 0 && currentUser?.role === 'coach' && viewingClient) {
             handleClearClient();
+            return true;
         }
+        return false;
     }, [currentTabIndex, showWeightHistory, currentUser?.role, viewingClient, handleClearClient]);
+
+    const handleEdgeSwipe = useCallback((direction) => {
+        setSwipeEdge(direction);
+        setTimeout(() => setSwipeEdge(null), 220);
+    }, []);
 
     const swipeHandlers = useSwipe(handleSwipeLeft, handleSwipeRight, {
         threshold: 60,
-        enabled: !isClientLoading && !showWeightHistory && !!viewingClient
+        velocityThreshold: 0.46,
+        verticalTolerance: 38,
+        onEdgeSwipe: handleEdgeSwipe,
+        enabled: !isClientLoading && !showWeightHistory && currentTabIndex >= 0
     });
 
     const handleRefresh = useCallback(async () => {
@@ -1141,6 +1167,21 @@ const App = () => {
     const { handlers: pullHandlers, pullIndicator } = usePullToRefresh(handleRefresh, {
         enabled: !isClientLoading && !!viewingClient
     });
+
+    const appTouchHandlers = {
+        onTouchStart: (event) => {
+            swipeHandlers.onTouchStart(event);
+            pullHandlers.onTouchStart(event);
+        },
+        onTouchMove: (event) => {
+            swipeHandlers.onTouchMove(event);
+            pullHandlers.onTouchMove(event);
+        },
+        onTouchEnd: (event) => {
+            swipeHandlers.onTouchEnd(event);
+            pullHandlers.onTouchEnd(event);
+        }
+    };
 
     if (isLoading) {
         return (
@@ -1253,8 +1294,7 @@ const App = () => {
     return (
         <div
             className="max-w-md mx-auto min-h-screen app-shell"
-            {...swipeHandlers}
-            {...pullHandlers}
+            {...appTouchHandlers}
         >
             {showReauthPrompt && <ReauthPrompt onReauth={handleReauth} onLogout={handleLogout} />}
             {pullIndicator}
@@ -1281,7 +1321,10 @@ const App = () => {
                     </div>
                 ) : (
                     <ViewErrorBoundary><Suspense fallback={<ViewSkeleton tab={activeTab} />}>
-                        <div key={activeTab} className="view-enter">
+                        <div
+                            key={activeTab}
+                            className={`view-enter view-enter-${swipeDirection} ${swipeEdge ? `view-edge-${swipeEdge}` : ''}`}
+                        >
                             {activeTab === 'dashboard' ? (
                                 showWeightHistory ? (
                                     <WeightProgressView

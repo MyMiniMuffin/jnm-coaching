@@ -318,10 +318,49 @@ input:focus, textarea:focus, select:focus, button:focus-visible {
 /* View transition — subtil fade ved tab-bytte */
 .view-enter {
     animation: viewEnter 0.2s ease-out;
+    will-change: opacity, transform;
+}
+
+.view-enter-left {
+    animation-name: viewEnterLeft;
+    animation-duration: 0.24s;
+    animation-timing-function: cubic-bezier(0.2, 0.85, 0.25, 1);
+}
+
+.view-enter-right {
+    animation-name: viewEnterRight;
+    animation-duration: 0.24s;
+    animation-timing-function: cubic-bezier(0.2, 0.85, 0.25, 1);
+}
+
+.view-edge-left {
+    animation: viewEdgeLeft 0.22s cubic-bezier(0.2, 0.85, 0.25, 1);
+}
+
+.view-edge-right {
+    animation: viewEdgeRight 0.22s cubic-bezier(0.2, 0.85, 0.25, 1);
 }
 @keyframes viewEnter {
     from { opacity: 0; transform: translateY(6px); }
     to { opacity: 1; transform: translateY(0); }
+}
+@keyframes viewEnterLeft {
+    from { opacity: 0; transform: translateX(22px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+@keyframes viewEnterRight {
+    from { opacity: 0; transform: translateX(-22px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+@keyframes viewEdgeLeft {
+    0% { transform: translateX(0); }
+    45% { transform: translateX(-10px); }
+    100% { transform: translateX(0); }
+}
+@keyframes viewEdgeRight {
+    0% { transform: translateX(0); }
+    45% { transform: translateX(10px); }
+    100% { transform: translateX(0); }
 }
 
 /* Nav pill indicator */
