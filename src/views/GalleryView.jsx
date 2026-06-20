@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Camera, X, Trash2, Loader2, Plus, Check, Eye, ChevronLeft, ChevronRight, Scale, ArrowRight, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { Card, Badge, Button, InputLabel } from '../components/ui';
@@ -8,6 +8,8 @@ import { useConfirm } from '../components/ConfirmDialog';
 import { useEscapeKey, useFocusTrap } from '../hooks';
 import { api } from '../lib/api';
 import { formatDateNO, formatWeight, getThumbnail, getFullSizeImage } from '../lib/formatters';
+
+const IMAGE_BATCH_SIZE = 60;
 
 // GalleryView - samler alle bilder fra checkins for lett sammenligning
 const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false, uploadUserId, onAddGalleryImage, onDeleteGalleryImage }) => {
@@ -21,6 +23,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
     const [showUploadModal, setShowUploadModal] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [uploadForm, setUploadForm] = useState({ label: 'Startbilde', date: new Date().toISOString().split('T')[0], weight: '' });
+    const [visibleImageCount, setVisibleImageCount] = useState(IMAGE_BATCH_SIZE);
 
     // Samle alle bilder med metadata, sortert fra nyeste til eldste
     const allImages = useMemo(() => {
@@ -117,6 +120,30 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
         });
         return Object.entries(grouped).sort((a, b) => b[0].localeCompare(a[0]));
     }, [allImages]);
+
+    useEffect(() => {
+        setVisibleImageCount(IMAGE_BATCH_SIZE);
+    }, [allImages.length, viewMode]);
+
+    const visibleImages = useMemo(
+        () => allImages.slice(0, visibleImageCount),
+        [allImages, visibleImageCount]
+    );
+
+    const visibleImagesByMonth = useMemo(() => {
+        const visibleIndexes = new Set(visibleImages.map(img => img.globalIndex));
+        return imagesByMonth
+            .map(([monthKey, group]) => [
+                monthKey,
+                { ...group, images: group.images.filter(img => visibleIndexes.has(img.globalIndex)) }
+            ])
+            .filter(([, group]) => group.images.length > 0);
+    }, [imagesByMonth, visibleImages]);
+
+    const hasMoreImages = visibleImageCount < allImages.length;
+    const handleShowMoreImages = useCallback(() => {
+        setVisibleImageCount(count => Math.min(count + IMAGE_BATCH_SIZE, allImages.length));
+    }, [allImages.length]);
 
     const closeLightbox = useCallback(() => {
         setLightbox(prev => ({ ...prev, isOpen: false }));
@@ -632,7 +659,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                     <div>
                         <p className="section-label mb-3">Velg bilder</p>
                         <div className="grid grid-cols-4 gap-1.5">
-                            {allImages.map((img, idx) => {
+                            {visibleImages.map((img, idx) => {
                                 const isSelected = compareImages.before?.url === img.url || compareImages.after?.url === img.url;
                                 const isBefore = compareImages.before?.url === img.url;
                                 return (
@@ -644,6 +671,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                                         <img 
                                             src={getThumbnail(img.url)} 
                                             loading="lazy"
+                                            decoding="async"
                                             className="w-full h-full object-cover"
                                             alt={`Fremgang ${formatDateNO(img.date)}`}
                                         />
@@ -656,59 +684,73 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                                 );
                             })}
                         </div>
+                        {hasMoreImages && (
+                            <Button variant="secondary" size="md" className="w-full mt-3" onClick={handleShowMoreImages}>
+                                Vis flere bilder ({Math.min(IMAGE_BATCH_SIZE, allImages.length - visibleImageCount)})
+                            </Button>
+                        )}
                     </div>
                 </div>
             )}
 
             {viewMode === 'grid' && (
                 /* Grid-visning - kompakt oversikt */
-                <div className="grid grid-cols-3 gap-1.5">
-                    {allImages.map((img, idx) => (
-                        <div 
-                            key={img.isGalleryImage ? `gallery-${img.galleryImageId}` : `${img.checkinId}-${idx}`}
-                            className="relative aspect-square cursor-pointer group"
-                            onClick={() => handleImageClick(img, idx)}
-                        >
-                            <img 
-                                src={getThumbnail(img.url)} 
-                                loading="lazy"
-                                className="w-full h-full object-cover rounded-lg"
-                                alt={img.label || `Fremgang ${formatDateNO(img.date)}`}
-                            />
-                            {/* Label badge for gallery-bilder */}
-                            {img.isGalleryImage && img.label && (
-                                <div className="absolute top-1.5 left-1.5 bg-ink/80 text-white text-[10px] font-medium px-2 py-0.5 rounded-full backdrop-blur-sm">
-                                    {img.label}
-                                </div>
-                            )}
-                            {/* Slett-knapp for coach på gallery-bilder - alltid synlig */}
-                            {isCoach && img.isGalleryImage && onDeleteGalleryImage && (
-                                <button
-                                    type="button"
-                                    onClick={(e) => { e.stopPropagation(); handleDeleteGalleryImage(img.galleryImageId); }}
-                                    aria-label="Slett bilde"
-                                    className="absolute top-1.5 right-1.5 bg-red-500 text-white p-1.5 rounded-full shadow-lg active:scale-95 transition-transform z-10"
-                                >
-                                    <X size={14} />
-                                </button>
-                            )}
-                            <div className="absolute inset-0 bg-gradient-to-t from-ink/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
-                                <div className="absolute bottom-2 left-2 right-2">
-                                    <p className="text-white text-xs font-medium">{formatDateNO(img.date)}</p>
-                                    {img.weight && (
-                                        <p className="text-white/70 text-[10px]">{formatWeight(img.weight)} kg</p>
-                                    )}
+                <>
+                    <div className="grid grid-cols-3 gap-1.5">
+                        {visibleImages.map((img, idx) => (
+                            <div 
+                                key={img.isGalleryImage ? `gallery-${img.galleryImageId}` : `${img.checkinId}-${idx}`}
+                                className="relative aspect-square cursor-pointer group"
+                                onClick={() => handleImageClick(img, idx)}
+                            >
+                                <img 
+                                    src={getThumbnail(img.url)} 
+                                    loading={idx < 12 ? 'eager' : 'lazy'}
+                                    decoding="async"
+                                    fetchPriority={idx < 6 ? 'high' : 'auto'}
+                                    className="w-full h-full object-cover rounded-lg"
+                                    alt={img.label || `Fremgang ${formatDateNO(img.date)}`}
+                                />
+                                {/* Label badge for gallery-bilder */}
+                                {img.isGalleryImage && img.label && (
+                                    <div className="absolute top-1.5 left-1.5 bg-ink/80 text-white text-[10px] font-medium px-2 py-0.5 rounded-full backdrop-blur-sm">
+                                        {img.label}
+                                    </div>
+                                )}
+                                {/* Slett-knapp for coach på gallery-bilder - alltid synlig */}
+                                {isCoach && img.isGalleryImage && onDeleteGalleryImage && (
+                                    <button
+                                        type="button"
+                                        onClick={(e) => { e.stopPropagation(); handleDeleteGalleryImage(img.galleryImageId); }}
+                                        aria-label="Slett bilde"
+                                        className="absolute top-1.5 right-1.5 bg-red-500 text-white p-1.5 rounded-full shadow-lg active:scale-95 transition-transform z-10"
+                                    >
+                                        <X size={14} />
+                                    </button>
+                                )}
+                                <div className="absolute inset-0 bg-gradient-to-t from-ink/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
+                                    <div className="absolute bottom-2 left-2 right-2">
+                                        <p className="text-white text-xs font-medium">{formatDateNO(img.date)}</p>
+                                        {img.weight && (
+                                            <p className="text-white/70 text-[10px]">{formatWeight(img.weight)} kg</p>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                    {hasMoreImages && (
+                        <Button variant="secondary" size="md" className="w-full mt-4" onClick={handleShowMoreImages}>
+                            Vis flere bilder ({Math.min(IMAGE_BATCH_SIZE, allImages.length - visibleImageCount)})
+                        </Button>
+                    )}
+                </>
             )}
 
             {viewMode === 'timeline' && (
                 /* Timeline-visning - gruppert etter måned */
                 <div className="space-y-6">
-                    {imagesByMonth.map(([monthKey, { label, images }]) => (
+                    {visibleImagesByMonth.map(([monthKey, { label, images }]) => (
                         <div key={monthKey}>
                             <div className="flex items-center gap-3 mb-3">
                                 <h3 className="text-sm font-medium text-ink-muted capitalize">{label}</h3>
@@ -726,6 +768,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                                             <img 
                                                 src={getThumbnail(img.url)} 
                                                 loading="lazy"
+                                                decoding="async"
                                                 className="w-full h-full object-cover rounded-lg"
                                                 alt={img.label || `Fremgang ${formatDateNO(img.date)}`}
                                             />
@@ -760,6 +803,11 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                             </div>
                         </div>
                     ))}
+                    {hasMoreImages && (
+                        <Button variant="secondary" size="md" className="w-full" onClick={handleShowMoreImages}>
+                            Vis flere bilder ({Math.min(IMAGE_BATCH_SIZE, allImages.length - visibleImageCount)})
+                        </Button>
+                    )}
                 </div>
             )}
 
