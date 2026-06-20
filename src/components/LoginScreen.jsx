@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ArrowRight, AlertCircle, Loader2, Eye, EyeOff } from 'lucide-react';
-import { Button } from './ui';
+import { Button, TextField } from './ui';
 import { api } from '../lib/api';
 import { APP_ICON } from '../lib/config';
 
@@ -53,19 +53,16 @@ const LoginScreen = React.memo(({ onLogin }) => {
 
             <div className="w-full max-w-sm rounded-xl border border-surface-200 bg-white/90 p-5 shadow-[0_18px_48px_rgba(23,23,23,0.08)] backdrop-blur">
                 <form onSubmit={handleLogin} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-ink-muted mb-2">Brukernavn</label>
-                        <input
-                            type="text"
-                            value={username}
-                            onChange={handleUsernameChange}
-                            disabled={isLoading}
-                            className="w-full px-4 py-3.5 bg-white border border-surface-200 rounded-xl focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-all disabled:opacity-50"
-                            placeholder="Skriv inn brukernavn"
-                            autoFocus
-                            autoComplete="username"
-                        />
-                    </div>
+                    <TextField
+                        label="Brukernavn"
+                        type="text"
+                        value={username}
+                        onChange={handleUsernameChange}
+                        disabled={isLoading}
+                        placeholder="Skriv inn brukernavn"
+                        autoFocus
+                        autoComplete="username"
+                    />
                     <div>
                         <label className="block text-sm font-medium text-ink-muted mb-2">Passord</label>
                         <div className="relative">
@@ -77,7 +74,7 @@ const LoginScreen = React.memo(({ onLogin }) => {
                                 onKeyUp={handlePasswordKeyState}
                                 onFocus={handlePasswordKeyState}
                                 disabled={isLoading}
-                                className="w-full px-4 py-3.5 pr-12 bg-white border border-surface-200 rounded-xl focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-all disabled:opacity-50"
+                                className="w-full px-4 py-3.5 pr-12 bg-surface-50 border border-surface-200 rounded-xl focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-all disabled:opacity-50 font-medium placeholder-ink-faint"
                                 placeholder="••••••••"
                                 autoComplete="current-password"
                             />

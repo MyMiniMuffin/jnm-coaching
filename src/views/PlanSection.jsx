@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Utensils, Dumbbell, Pencil, Loader2, Check, Eye, FileText, Heading1, List, ListOrdered, Bold, RotateCcw } from 'lucide-react';
+import { Utensils, Dumbbell, Pencil, Loader2, Check, FileText, Heading1, List, ListOrdered, Bold, RotateCcw } from 'lucide-react';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
-import { Card, Button } from '../components/ui';
+import { Card, Button, IconButton, ToggleGroup } from '../components/ui';
 
 // Konfigurer marked (kun brukt her)
 marked.setOptions({ breaks: true, gfm: true });
@@ -214,43 +214,29 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                     <div className="border-b border-surface-100 bg-white/95 backdrop-blur-sm">
                         <div className="px-5 py-4 space-y-4">
                             <div className="flex items-center justify-between gap-3 flex-wrap">
-                                <div className="inline-flex rounded-xl bg-surface-100 p-1">
-                                    <button
-                                        type="button"
-                                        onClick={() => setActivePane('write')}
-                                        className={`px-4 py-2 text-sm font-medium rounded-xl transition-all ${activePane === 'write' ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}
-                                    >
-                                        <span className="inline-flex items-center gap-2">
-                                            <Pencil size={16} /> Skriv
-                                        </span>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setActivePane('preview')}
-                                        className={`px-4 py-2 text-sm font-medium rounded-xl transition-all ${activePane === 'preview' ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}
-                                    >
-                                        <span className="inline-flex items-center gap-2">
-                                            <Eye size={16} /> Forhåndsvis
-                                        </span>
-                                    </button>
-                                </div>
+                                <ToggleGroup
+                                    value={activePane}
+                                    onChange={setActivePane}
+                                    options={[
+                                        { value: 'write', label: 'Skriv' },
+                                        { value: 'preview', label: 'Forhåndsvis' }
+                                    ]}
+                                    className="min-w-[14rem]"
+                                />
 
                                 <div className="flex items-center gap-2 flex-wrap">
                                     <Button variant="secondary" size="sm" onClick={handleInsertTemplate}>
                                         <FileText size={16} /> Sett inn mal
                                     </Button>
                                     {toolbarButtons.map(({ icon: ToolbarIcon, label, onClick }) => (
-                                        <button
+                                        <IconButton
                                             key={label}
-                                            type="button"
                                             onClick={onClick}
-                                            className="inline-flex items-center gap-2 rounded-xl border border-surface-200 bg-white px-3 py-2 text-sm text-ink-muted hover:text-ink hover:border-surface-300 transition-colors"
                                             aria-label={label}
                                             title={label}
                                         >
                                             <ToolbarIcon size={16} />
-                                            <span className="hidden sm:inline">{label}</span>
-                                        </button>
+                                        </IconButton>
                                     ))}
                                 </div>
                             </div>

@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { Camera, X, Trash2, Loader2, Plus, Check, Eye, ChevronLeft, ChevronRight, Scale, ArrowRight, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Camera, X, Loader2, Plus, Eye, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
-import { Card, Badge, Button, InputLabel } from '../components/ui';
+import { Card, Button, EmptyState, IconButton, TextField, ToggleGroup } from '../components/ui';
 import ImageModal from '../components/ImageModal';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
@@ -285,45 +285,15 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
             <Card ref={uploadModalRef} className="w-full max-w-sm p-6 animate-scale-in" role="dialog" aria-modal="true" aria-labelledby="upload-images-title">
                 <div className="flex justify-between items-center mb-6">
                     <h2 id="upload-images-title" className="section-title text-[1.05rem]">Last opp bilder</h2>
-                    <button type="button" onClick={closeUploadModal} aria-label="Lukk" className="text-ink-muted hover:text-ink p-2">
+                    <IconButton onClick={closeUploadModal} aria-label="Lukk">
                         <X size={20} />
-                    </button>
+                    </IconButton>
                 </div>
 
                 <div className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-ink-muted mb-2">Bildetekst</label>
-                        <input
-                            type="text"
-                            value={uploadForm.label}
-                            onChange={handleLabelChange}
-                            placeholder="F.eks. Startbilde"
-                            className="w-full px-4 py-3 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-ink-muted mb-2">Dato</label>
-                        <input
-                            type="date"
-                            value={uploadForm.date}
-                            onChange={handleDateChange}
-                            className="w-full px-4 py-3 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-ink-muted mb-2">Vekt (kg, valgfritt)</label>
-                        <input
-                            type="number"
-                            inputMode="decimal"
-                            step="0.1"
-                            value={uploadForm.weight}
-                            onChange={handleWeightChange}
-                            placeholder="0.0"
-                            className="w-full px-4 py-3 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-ink"
-                        />
-                    </div>
+                    <TextField label="Bildetekst" type="text" value={uploadForm.label} onChange={handleLabelChange} placeholder="F.eks. Startbilde" />
+                    <TextField label="Dato" type="date" value={uploadForm.date} onChange={handleDateChange} />
+                    <TextField label="Vekt (kg, valgfritt)" type="number" inputMode="decimal" step="0.1" value={uploadForm.weight} onChange={handleWeightChange} placeholder="0.0" />
 
                     <label className={`flex flex-col items-center justify-center p-8 border-2 border-dashed border-surface-200 rounded-xl cursor-pointer hover:border-surface-300 hover:bg-surface-50 transition-all ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}>
                         {isUploading ? (
@@ -347,18 +317,18 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
 
     if (allImages.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center h-[60vh] animate-fade-in text-center px-6">
+            <div className="flex flex-col items-center justify-center h-[60vh] animate-fade-in">
                 {uploadModal}
-                <div className="w-16 h-16 bg-surface-100 rounded-xl flex items-center justify-center text-ink-muted mb-6">
-                    <Camera size={32} />
-                </div>
-                <p className="text-ink-muted font-display text-[1.35rem] italic mb-2">Ingen bilder enda</p>
-                <p className="text-ink-faint text-sm mb-6">Bilder fra ukesrapporter vil vises her</p>
-                {isCoach && onAddGalleryImage && (
-                    <Button variant="primary" size="md" onClick={() => setShowUploadModal(true)}>
-                        <Plus size={18} /> Last opp startbilde
-                    </Button>
-                )}
+                <EmptyState
+                    icon={Camera}
+                    title="Ingen bilder enda"
+                    description="Bilder fra ukesrapporter vil vises her"
+                    action={isCoach && onAddGalleryImage ? (
+                        <Button variant="primary" size="md" onClick={() => setShowUploadModal(true)}>
+                            <Plus size={18} /> Last opp startbilde
+                        </Button>
+                    ) : null}
+                />
             </div>
         );
     }
@@ -503,33 +473,15 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                     ) : null}
                 </div>
                 {viewMode !== 'compare' && (
-                    <div className="flex gap-1 bg-surface-100 p-1 rounded-lg">
-                        <button
-                            type="button"
-                            onClick={() => setViewMode('grid')}
-                            aria-pressed={viewMode === 'grid'}
-                            className={`flex-1 px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-ink' : 'text-ink-muted'}`}
-                        >
-                            Rutenett
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setViewMode('timeline')}
-                            aria-pressed={viewMode === 'timeline'}
-                            className={`flex-1 px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-colors ${viewMode === 'timeline' ? 'bg-white shadow-sm text-ink' : 'text-ink-muted'}`}
-                        >
-                            Tidslinje
-                        </button>
-                        {allImages.length >= 2 && (
-                            <button
-                                type="button"
-                                onClick={startCompare}
-                                className="flex-1 px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-colors text-ink-muted hover:text-ink"
-                            >
-                                Sammenlign
-                            </button>
-                        )}
-                    </div>
+                    <ToggleGroup
+                        value={viewMode}
+                        onChange={(value) => value === 'compare' ? startCompare() : setViewMode(value)}
+                        options={[
+                            { value: 'grid', label: 'Rutenett' },
+                            { value: 'timeline', label: 'Tidslinje' },
+                            ...(allImages.length >= 2 ? [{ value: 'compare', label: 'Sammenlign' }] : [])
+                        ]}
+                    />
                 )}
             </div>
 

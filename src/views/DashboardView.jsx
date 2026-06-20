@@ -3,7 +3,7 @@ import {
   Scale, Footprints, Pencil, ChevronRight, TrendingUp, TrendingDown, Minus,
   X, Plus, Check, Loader2, Calendar, Pause, Play, Activity, ArrowRight
 } from 'lucide-react';
-import { Card, Badge, Button, InputLabel } from '../components/ui';
+import { Card, Badge, Button, IconButton, InputLabel } from '../components/ui';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
 import { useEscapeKey } from '../hooks';
@@ -93,9 +93,9 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
             <Card className="w-full max-w-md p-6 max-h-[80vh] overflow-y-auto animate-scale-in" role="dialog" aria-modal="true" aria-labelledby="period-modal-title">
                 <div className="flex justify-between items-center mb-6">
                     <h2 id="period-modal-title" className="text-xl font-display">Coaching-runder</h2>
-                    <button type="button" onClick={onClose} aria-label="Lukk" className="text-ink-muted hover:text-ink p-2">
+                    <IconButton onClick={onClose} aria-label="Lukk">
                         <X size={20} />
-                    </button>
+                    </IconButton>
                 </div>
 
                 {view === 'list' ? (
@@ -146,15 +146,15 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                         </div>
                                         <div className="flex items-center gap-2">
                                             {editingPeriodId !== activePeriod.id && (
-                                                <button
+                                                <IconButton
                                                     type="button"
                                                     onClick={() => handleStartRename(activePeriod)}
-                                                    className="p-2 text-emerald-700/70 hover:text-emerald-900 transition-colors"
                                                     aria-label={`Rediger navn på ${activePeriod.name}`}
                                                     disabled={isLoading}
+                                                    tone="accent"
                                                 >
                                                     <Pencil size={16} />
-                                                </button>
+                                                </IconButton>
                                             )}
                                             <Badge variant="success">Aktiv</Badge>
                                         </div>
@@ -253,15 +253,15 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                                     )}
                                                 </div>
                                                 {editingPeriodId !== period.id && (
-                                                    <button
+                                                    <IconButton
                                                         type="button"
                                                         onClick={() => handleStartRename(period)}
-                                                        className="p-2 text-ink-faint hover:text-ink transition-colors"
                                                         aria-label={`Rediger navn på ${period.name}`}
                                                         disabled={isLoading}
+                                                        tone="accent"
                                                     >
                                                         <Pencil size={16} />
-                                                    </button>
+                                                    </IconButton>
                                                 )}
                                             </div>
                                             <div className="flex gap-2 text-xs">
@@ -409,9 +409,9 @@ const PlanSettingsModal = React.memo(({ userData, onClose, onUpdateData, onOpenP
             <Card className="w-full max-w-md p-6 max-h-[80vh] overflow-y-auto overflow-x-hidden animate-scale-in" role="dialog" aria-modal="true" aria-labelledby="plan-settings-title">
                 <div className="flex justify-between items-center mb-6">
                     <h2 id="plan-settings-title" className="text-xl font-display">Plan-innstillinger</h2>
-                    <button type="button" onClick={onClose} aria-label="Lukk" className="text-ink-muted hover:text-ink p-2">
+                    <IconButton onClick={onClose} aria-label="Lukk">
                         <X size={20} />
-                    </button>
+                    </IconButton>
                 </div>
 
                 <div className="space-y-5">

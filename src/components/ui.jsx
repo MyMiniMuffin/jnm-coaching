@@ -10,7 +10,7 @@ const SEGMENT_COLORS = (n) => {
 export const SegmentedControl = React.memo(({ label, value, onChange, options, colorize = false }) => (
     <div>
         <label className="block text-sm font-medium text-ink-muted mb-2">{label}</label>
-        <div className="flex gap-1">
+        <div className="flex gap-1 rounded-xl bg-surface-100 p-1">
             {options.map(opt => {
                 const isSelected = Number(value) === Number(opt);
                 const selectedCls = colorize ? SEGMENT_COLORS(Number(opt)) : 'bg-ink text-white';
@@ -19,10 +19,10 @@ export const SegmentedControl = React.memo(({ label, value, onChange, options, c
                         key={opt}
                         type="button"
                         onClick={() => onChange(opt)}
-                        className={`flex-1 min-h-[44px] py-2.5 rounded-md text-sm font-semibold transition-all duration-150 active:scale-95 tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 ${
+                        className={`flex-1 min-h-[42px] py-2 rounded-lg text-sm font-semibold transition-all duration-150 active:scale-95 tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 ${
                             isSelected
-                                ? selectedCls
-                                : 'bg-surface-100 text-ink-muted hover:bg-surface-200'
+                                ? `${selectedCls} shadow-[0_6px_14px_rgba(23,23,23,0.12)]`
+                                : 'text-ink-muted hover:bg-white/70'
                         }`}
                     >
                         {opt}
@@ -72,6 +72,23 @@ export const Button = React.memo(({ children, variant = 'primary', size = 'md', 
     </button>
 ));
 
+export const IconButton = React.memo(({ children, className = '', tone = 'neutral', ...props }) => {
+    const toneClass = tone === 'danger'
+        ? 'text-ink-faint hover:text-red-500'
+        : tone === 'accent'
+            ? 'text-ink-faint hover:text-accent'
+            : 'text-ink-muted hover:text-ink';
+    return (
+        <button
+            type="button"
+            className={`inline-flex min-h-[40px] min-w-[40px] items-center justify-center rounded-xl p-2 transition-all hover:bg-white/70 hover:shadow-[0_6px_16px_rgba(23,23,23,0.06)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${toneClass} ${className}`}
+            {...props}
+        >
+            {children}
+        </button>
+    );
+});
+
 export const Card = React.memo(React.forwardRef(({ children, className = "", interactive = false, ...props }, ref) => (
     <div
         ref={ref}
@@ -84,6 +101,68 @@ export const Card = React.memo(React.forwardRef(({ children, className = "", int
 
 export const InputLabel = React.memo(({ children }) => (
     <label className="block text-sm font-medium text-ink-muted mb-2">{children}</label>
+));
+
+export const TextField = React.memo(React.forwardRef(({
+    label,
+    icon: Icon,
+    className = '',
+    inputClassName = '',
+    error,
+    hint,
+    id,
+    ...props
+}, ref) => (
+    <div className={className}>
+        {label && <label htmlFor={id} className="block text-sm font-medium text-ink-muted mb-2">{label}</label>}
+        <div className="relative">
+            {Icon && <Icon className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" size={18} />}
+            <input
+                id={id}
+                ref={ref}
+                className={`w-full ${Icon ? 'pl-12' : 'px-4'} pr-4 py-3.5 bg-surface-50 border rounded-xl outline-none transition-all focus:ring-2 focus:ring-accent focus:border-accent font-medium placeholder-ink-faint disabled:opacity-50 ${error ? 'border-red-300' : 'border-surface-200'} ${inputClassName}`}
+                aria-invalid={error ? true : undefined}
+                {...props}
+            />
+        </div>
+        {error ? (
+            <p className="text-red-600 text-xs mt-1.5">{error}</p>
+        ) : hint ? (
+            <p className="text-xs text-ink-muted mt-1.5">{hint}</p>
+        ) : null}
+    </div>
+)));
+
+export const EmptyState = React.memo(({ icon: Icon, title, description, action }) => (
+    <div className="text-center py-12 px-6">
+        {Icon && (
+            <div className="w-14 h-14 bg-surface-100 rounded-xl flex items-center justify-center text-ink-muted mx-auto mb-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]">
+                <Icon size={24} />
+            </div>
+        )}
+        <p className="text-ink-muted font-display text-[1.35rem] italic mb-1">{title}</p>
+        {description && <p className="text-ink-faint text-sm">{description}</p>}
+        {action && <div className="mt-6">{action}</div>}
+    </div>
+));
+
+export const ToggleGroup = React.memo(({ options, value, onChange, className = '' }) => (
+    <div className={`flex gap-1.5 items-center rounded-xl bg-white/70 border border-surface-200 p-1 shadow-[0_1px_2px_rgba(23,23,23,0.035)] ${className}`}>
+        {options.map((option) => {
+            const isSelected = value === option.value;
+            return (
+                <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => onChange(option.value)}
+                    aria-pressed={isSelected}
+                    className={`flex-1 px-3 py-1.5 text-sm font-medium rounded-lg transition-all whitespace-nowrap ${isSelected ? 'bg-ink text-white shadow-[0_6px_14px_rgba(23,23,23,0.14)]' : 'text-ink-muted hover:bg-surface-100 hover:text-ink'}`}
+                >
+                    {option.label}
+                </button>
+            );
+        })}
+    </div>
 ));
 
 let selectFieldCounter = 0;

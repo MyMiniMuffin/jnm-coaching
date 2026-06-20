@@ -3,7 +3,7 @@ import {
   Check, Camera, X, Trash2, Loader2, Scale,
   Activity, Footprints, AlertCircle, Save, Pencil
 } from 'lucide-react';
-import { Card, Badge, Button, InputLabel, SegmentedControl } from '../components/ui';
+import { Card, Badge, Button, EmptyState, IconButton, InputLabel, SegmentedControl } from '../components/ui';
 import ImageModal from '../components/ImageModal';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
@@ -471,13 +471,11 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, onUpdate, ca
                 </div>
 
                 {sortedCheckins.length === 0 ? (
-                    <div className="text-center py-12">
-                        <div className="w-14 h-14 bg-surface-100 rounded-xl flex items-center justify-center text-ink-muted mx-auto mb-4">
-                            <Activity size={24} />
-                        </div>
-                        <p className="text-ink-muted font-display text-[1.35rem] italic mb-1">Ingen rapporter enda</p>
-                        <p className="text-ink-faint text-sm">Fyll ut skjemaet over for å sende din første ukesrapport</p>
-                    </div>
+                    <EmptyState
+                        icon={Activity}
+                        title="Ingen rapporter enda"
+                        description="Fyll ut skjemaet over for å sende din første ukesrapport"
+                    />
                 ) : (
                     <div className="space-y-3">
                         {sortedCheckins.map((entry) => {
@@ -624,24 +622,24 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, onUpdate, ca
                                         </div>
                                         <div className="flex items-center gap-2">
                                             {canEdit && onUpdate && (
-                                                <button
+                                                <IconButton
                                                     type="button"
                                                     onClick={() => startEdit(entry)}
                                                     aria-label="Rediger rapport"
-                                                    className="p-2 text-ink-faint hover:text-accent transition-colors"
+                                                    tone="accent"
                                                 >
                                                     <Pencil size={16} />
-                                                </button>
+                                                </IconButton>
                                             )}
                                             {canDelete && onDelete && (
-                                                <button
+                                                <IconButton
                                                     type="button"
                                                     onClick={async () => { if(await confirmDialog('Slett denne rapporten?', { title: 'Slett rapport', confirmText: 'Slett', destructive: true })) onDelete(entry.id); }}
                                                     aria-label="Slett rapport"
-                                                    className="p-2 text-ink-faint hover:text-red-500 transition-colors"
+                                                    tone="danger"
                                                 >
                                                     <Trash2 size={16} />
-                                                </button>
+                                                </IconButton>
                                             )}
                                             <Badge className="tabular-nums">{formatWeight(entry.weight)} kg</Badge>
                                         </div>

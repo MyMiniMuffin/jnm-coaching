@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { ChevronLeft, TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import { Card, Badge, Button } from '../components/ui';
+import { Card, Badge, Button, EmptyState } from '../components/ui';
 import { formatWeight, formatDateNO } from '../lib/formatters';
 
 const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
@@ -16,9 +16,11 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
     const reversedCheckins = useMemo(() => [...validCheckins].reverse(), [validCheckins]);
 
     if (validCheckins.length === 0) return (
-        <div className="flex flex-col items-center justify-center h-[60vh] animate-fade-in text-center px-6">
-            <p className="text-ink-muted font-display text-[1.35rem] italic mb-6">Ingen vektdata enda</p>
-            <Button variant="secondary" onClick={onBack}>Tilbake</Button>
+        <div className="flex flex-col items-center justify-center h-[60vh] animate-fade-in">
+            <EmptyState
+                title="Ingen vektdata enda"
+                action={<Button variant="secondary" onClick={onBack}>Tilbake</Button>}
+            />
         </div>
     );
 

@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { Plus, X, Trash2, Pause, Play, User, ChevronRight, Loader2, KeyRound, BellRing } from 'lucide-react';
-import { Card, Badge, Button } from '../components/ui';
+import { Card, Badge, Button, EmptyState, IconButton, TextField, ToggleGroup } from '../components/ui';
 import { useEscapeKey } from '../hooks';
 import { useConfirm } from '../components/ConfirmDialog';
 
@@ -117,14 +117,14 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
                     <Card className="w-full max-w-sm p-6 animate-scale-in" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="new-athlete-title">
                         <div className="flex justify-between items-center mb-6">
                             <h2 id="new-athlete-title" className="text-xl font-display">Ny utøver</h2>
-                            <button type="button" onClick={closeModal} aria-label="Lukk" className="text-ink-muted hover:text-ink p-2">
+                            <IconButton onClick={closeModal} aria-label="Lukk">
                                 <X size={20} />
-                            </button>
+                            </IconButton>
                         </div>
                         <form onSubmit={handleFormSubmit} className="space-y-4">
-                            <input ref={newAthleteNameRef} required name="name" type="text" placeholder="Fullt navn" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-accent" />
-                            <input required name="username" type="text" placeholder="Brukernavn" autoComplete="off" pattern="[a-zA-Z0-9_]+" title="Kun bokstaver, tall og understrek" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-accent" />
-                            <input required name="password" type="password" minLength="6" placeholder="Passord (min. 6 tegn)" autoComplete="new-password" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-accent" />
+                            <TextField ref={newAthleteNameRef} required name="name" type="text" placeholder="Fullt navn" />
+                            <TextField required name="username" type="text" placeholder="Brukernavn" autoComplete="off" pattern="[a-zA-Z0-9_]+" title="Kun bokstaver, tall og understrek" />
+                            <TextField required name="password" type="password" minLength="6" placeholder="Passord (min. 6 tegn)" autoComplete="new-password" />
                             <Button type="submit" size="lg" className="w-full" disabled={isCreating}>
                                 {isCreating ? <><Loader2 size={18} className="animate-spin" /> Oppretter...</> : 'Opprett utøver'}
                             </Button>
@@ -139,13 +139,13 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
                     <Card className="w-full max-w-sm p-6 animate-scale-in" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="reset-password-title" aria-describedby="reset-password-description">
                         <div className="flex justify-between items-center mb-6">
                             <h2 id="reset-password-title" className="text-xl font-display">Tilbakestill passord</h2>
-                            <button type="button" onClick={closeResetModal} aria-label="Lukk" className="text-ink-muted hover:text-ink p-2">
+                            <IconButton onClick={closeResetModal} aria-label="Lukk">
                                 <X size={20} />
-                            </button>
+                            </IconButton>
                         </div>
                         <p id="reset-password-description" className="text-sm text-ink-muted mb-4">Nytt passord for <span className="font-medium text-ink">{resetTarget.name}</span></p>
                         <form onSubmit={handleResetSubmit} className="space-y-4">
-                            <input ref={resetPasswordInputRef} required name="password" type="password" minLength="6" placeholder="Nytt passord (min. 6 tegn)" autoComplete="new-password" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-accent" />
+                            <TextField ref={resetPasswordInputRef} required name="password" type="password" minLength="6" placeholder="Nytt passord (min. 6 tegn)" autoComplete="new-password" />
                             <Button type="submit" size="lg" className="w-full" disabled={isResetting}>
                                 {isResetting ? <><Loader2 size={18} className="animate-spin" /> Tilbakestiller...</> : <><KeyRound size={18} /> Tilbakestill passord</>}
                             </Button>
@@ -197,23 +197,15 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
 
             {/* Toggle og Ny-knapp */}
             <div className="flex justify-between items-center gap-3">
-                <div className="flex gap-1.5 items-center rounded-xl bg-white/70 border border-surface-200 p-1 shadow-[0_1px_2px_rgba(23,23,23,0.035)]">
-                    <button
-                        type="button"
-                        onClick={showActive}
-                        aria-pressed={!showArchived}
-                        className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${!showArchived ? 'bg-ink text-white shadow-[0_6px_14px_rgba(23,23,23,0.14)]' : 'text-ink-muted hover:bg-surface-100'}`}
-                    >
-                        Aktive ({activeClients.length})
-                    </button>
-                    <button
-                        type="button"
-                        onClick={showArchivedClients}
-                        aria-pressed={showArchived}
-                        className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${showArchived ? 'bg-ink text-white shadow-[0_6px_14px_rgba(23,23,23,0.14)]' : 'text-ink-muted hover:bg-surface-100'}`}
-                    >
-                        Arkivert ({archivedClients.length})
-                    </button>
+                <div className="flex items-center gap-2 min-w-0">
+                    <ToggleGroup
+                        value={showArchived ? 'archived' : 'active'}
+                        onChange={(value) => value === 'archived' ? showArchivedClients() : showActive()}
+                        options={[
+                            { value: 'active', label: `Aktive (${activeClients.length})` },
+                            { value: 'archived', label: `Arkivert (${archivedClients.length})` }
+                        ]}
+                    />
                     {isLoading && displayedClients.length > 0 && (
                         <Loader2 size={14} className="animate-spin text-ink-faint ml-1" aria-label="Oppdaterer" />
                     )}
@@ -241,13 +233,11 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
                         ))}
                     </div>
                 ) : displayedClients.length === 0 ? (
-                    <div className="text-center py-12">
-                        <div className="w-14 h-14 bg-surface-100 rounded-xl flex items-center justify-center text-ink-muted mx-auto mb-4">
-                            <User size={24} />
-                        </div>
-                        <p className="text-ink-muted font-display text-[1.35rem] italic mb-1">{showArchived ? 'Ingen arkiverte utøvere' : 'Ingen utøvere enda'}</p>
-                        {!showArchived && <p className="text-ink-faint text-sm">Trykk «Ny» for å legge til din første utøver</p>}
-                    </div>
+                    <EmptyState
+                        icon={User}
+                        title={showArchived ? 'Ingen arkiverte utøvere' : 'Ingen utøvere enda'}
+                        description={!showArchived ? 'Trykk «Ny» for å legge til din første utøver' : undefined}
+                    />
                 ) : (
                     displayedClients.map(client => {
                         const isPending = pendingClientAction?.clientId === client.id;
