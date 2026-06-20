@@ -155,7 +155,7 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
             )}
 
             {/* Hero Stats Card */}
-            <div className="px-5 py-4 hero-tint text-white rounded-xl relative overflow-hidden">
+            <div className="px-5 py-4 hero-tint text-white rounded-xl relative overflow-hidden ring-1 ring-white/10">
                 <div className="relative z-10 flex items-center justify-between gap-4">
                     <div className="min-w-0">
                         <p className="text-white/60 text-xs">Velkommen tilbake</p>
@@ -178,16 +178,16 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
                             )}
                         </div>
                     </div>
-                    <div className="flex gap-4 shrink-0">
-                        <div className="text-center">
+                    <div className="flex gap-3 shrink-0">
+                        <div className="text-center rounded-xl bg-white/7 px-2.5 py-2 ring-1 ring-white/10">
                             <p className="text-2xl font-semibold leading-none">{activeClients.length}</p>
                             <p className="text-white/55 text-xs mt-1">Aktive</p>
                         </div>
-                        <div className="text-center border-x border-white/10 px-4">
+                        <div className="text-center rounded-xl bg-white/7 px-2.5 py-2 ring-1 ring-white/10">
                             <p className="text-2xl font-semibold leading-none">{archivedClients.length}</p>
                             <p className="text-white/55 text-xs mt-1">Arkivert</p>
                         </div>
-                        <div className="text-center">
+                        <div className="text-center rounded-xl bg-white/7 px-2.5 py-2 ring-1 ring-white/10">
                             <p className="text-2xl font-semibold leading-none">{totalUnreadCheckins}</p>
                             <p className="text-white/55 text-xs mt-1">Uleste</p>
                         </div>
@@ -196,13 +196,13 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
             </div>
 
             {/* Toggle og Ny-knapp */}
-            <div className="flex justify-between items-center">
-                <div className="flex gap-2 items-center">
+            <div className="flex justify-between items-center gap-3">
+                <div className="flex gap-1.5 items-center rounded-xl bg-white/70 border border-surface-200 p-1 shadow-[0_1px_2px_rgba(23,23,23,0.035)]">
                     <button
                         type="button"
                         onClick={showActive}
                         aria-pressed={!showArchived}
-                        className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${!showArchived ? 'bg-ink text-white' : 'text-ink-muted hover:bg-surface-100'}`}
+                        className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${!showArchived ? 'bg-ink text-white shadow-[0_6px_14px_rgba(23,23,23,0.14)]' : 'text-ink-muted hover:bg-surface-100'}`}
                     >
                         Aktive ({activeClients.length})
                     </button>
@@ -210,7 +210,7 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
                         type="button"
                         onClick={showArchivedClients}
                         aria-pressed={showArchived}
-                        className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${showArchived ? 'bg-ink text-white' : 'text-ink-muted hover:bg-surface-100'}`}
+                        className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${showArchived ? 'bg-ink text-white shadow-[0_6px_14px_rgba(23,23,23,0.14)]' : 'text-ink-muted hover:bg-surface-100'}`}
                     >
                         Arkivert ({archivedClients.length})
                     </button>

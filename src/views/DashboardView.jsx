@@ -647,7 +647,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
             )}
 
             {/* Hero Card */}
-            <div className="px-5 py-4 hero-tint text-white rounded-xl relative overflow-hidden">
+            <div className="px-5 py-4 hero-tint text-white rounded-xl relative overflow-hidden ring-1 ring-white/10">
                 <div className="relative z-10">
                     <div className="flex justify-between items-start mb-3">
                         <div>
@@ -677,7 +677,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                                 type="button"
                                 onClick={handleOpenPlanSettings}
                                 aria-label="Åpne plan-innstillinger"
-                                className="p-2 rounded-lg hover:bg-white/10 text-white/60 transition-colors"
+                                className="p-2 rounded-lg bg-white/5 hover:bg-white/12 text-white/70 transition-colors"
                             >
                                 <Pencil size={18} />
                             </button>
@@ -690,9 +690,9 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                                 <span className="text-white/60">Fremdrift</span>
                                 <span className="font-medium">{Math.round(progress)}%</span>
                             </div>
-                            <div className="h-1.5 bg-white/20 rounded-full overflow-hidden">
+                            <div className="h-2 bg-white/18 rounded-full overflow-hidden shadow-[inset_0_1px_2px_rgba(0,0,0,0.18)]">
                                 <div
-                                    className="h-full bg-white rounded-full transition-all duration-500"
+                                    className="h-full bg-white rounded-full transition-all duration-500 shadow-[0_0_18px_rgba(255,255,255,0.42)]"
                                     style={{ width: `${progress}%` }}
                                 />
                             </div>
@@ -730,11 +730,12 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
 
             {/* Stats Grid */}
             <div className="grid grid-cols-2 gap-4">
-                <Card 
-                    className="p-5 group"
+                <Card
+                    className="p-5 group overflow-hidden relative"
                     interactive
                     onClick={onOpenWeightHistory}
                 >
+                    <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#B5603A] via-[#d8aa87] to-[#edf3ea]" />
                     <div className="flex justify-between items-start mb-3">
                         <div className="w-10 h-10 bg-surface-100 rounded-xl flex items-center justify-center text-ink-muted group-hover:bg-surface-200 transition-colors">
                             <Scale size={20} />
@@ -748,7 +749,8 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                     </p>
                 </Card>
 
-                <Card className="p-5 relative soft-panel">
+                <Card className="p-5 relative soft-panel overflow-hidden">
+                    <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#edf3ea] via-[#d8c4a8] to-[#B5603A]" />
                     <div className="flex justify-between items-start mb-3">
                         <div className="w-10 h-10 bg-surface-100 rounded-xl flex items-center justify-center text-ink-muted">
                             <Footprints size={20} />

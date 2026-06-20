@@ -51,8 +51,8 @@ export const Badge = React.memo(({ children, variant = 'default', className = ''
 ));
 
 const BUTTON_VARIANTS = {
-    primary: 'bg-ink text-white hover:bg-ink/85 active:scale-[0.98]',
-    secondary: 'bg-surface-100 text-ink hover:bg-[#ece4d7] active:scale-[0.98]',
+    primary: 'bg-ink text-white shadow-[0_10px_24px_rgba(23,23,23,0.14)] hover:bg-ink/85 hover:shadow-[0_12px_28px_rgba(23,23,23,0.18)] active:scale-[0.98]',
+    secondary: 'bg-surface-100 text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.68)] hover:bg-[#ece4d7] active:scale-[0.98]',
     ghost: 'text-ink-muted hover:text-ink hover:bg-surface-100',
     danger: 'bg-red-50 text-red-600 hover:bg-red-100',
 };
@@ -75,7 +75,7 @@ export const Button = React.memo(({ children, variant = 'primary', size = 'md', 
 export const Card = React.memo(React.forwardRef(({ children, className = "", interactive = false, ...props }, ref) => (
     <div
         ref={ref}
-        className={`bg-white rounded-xl border border-surface-200 shadow-[0_1px_2px_rgba(23,23,23,0.035)] ${interactive ? 'hover:border-surface-300 hover:shadow-[0_10px_28px_rgba(23,23,23,0.075)] cursor-pointer transition-all' : ''} ${className}`}
+        className={`surface-card rounded-xl border border-surface-200 ${interactive ? 'surface-card-interactive hover:border-surface-300 cursor-pointer' : ''} ${className}`}
         {...props}
     >
         {children}
