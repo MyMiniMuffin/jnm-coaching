@@ -34,7 +34,7 @@ export const SegmentedControl = React.memo(({ label, value, onChange, options, c
 ));
 
 export const Skeleton = React.memo(({ className }) => (
-    <div className={`bg-surface-200 animate-pulse rounded-xl ${className}`} />
+    <div className={`bg-surface-200 animate-pulse rounded-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.55)] ${className}`} />
 ));
 
 const BADGE_VARIANTS = {
@@ -75,7 +75,7 @@ export const Button = React.memo(({ children, variant = 'primary', size = 'md', 
 export const Card = React.memo(React.forwardRef(({ children, className = "", interactive = false, ...props }, ref) => (
     <div
         ref={ref}
-        className={`bg-white rounded-xl border border-surface-200 ${interactive ? 'hover:border-surface-300 hover:shadow-sm hover:shadow-[#d9cfbf33] cursor-pointer transition-all' : ''} ${className}`}
+        className={`bg-white rounded-xl border border-surface-200 shadow-[0_1px_2px_rgba(23,23,23,0.035)] ${interactive ? 'hover:border-surface-300 hover:shadow-[0_10px_28px_rgba(23,23,23,0.075)] cursor-pointer transition-all' : ''} ${className}`}
         {...props}
     >
         {children}

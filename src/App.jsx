@@ -1142,7 +1142,7 @@ const App = () => {
     // Arkivert bruker - begrenset tilgang
     if (isArchived) {
         return (
-            <div className="max-w-md mx-auto min-h-screen bg-surface-50">
+            <div className="max-w-md mx-auto min-h-screen app-shell">
                 {showReauthPrompt && <ReauthPrompt onReauth={handleReauth} onLogout={handleLogout} />}
                 <Header title="Konto pauset" user={currentUser} onLogout={handleLogout} />
                 <main className="p-4">
@@ -1205,7 +1205,7 @@ const App = () => {
 
     if (isCoach && !viewingClient) {
         return (
-            <div className="max-w-md mx-auto min-h-screen bg-surface-50">
+            <div className="max-w-md mx-auto min-h-screen app-shell">
                 {showReauthPrompt && <ReauthPrompt onReauth={handleReauth} onLogout={handleLogout} />}
                 <Header title="Oversikt" user={currentUser} onLogout={handleLogout} />
                 <main className="p-4">
@@ -1232,7 +1232,7 @@ const App = () => {
 
     return (
         <div
-            className="max-w-md mx-auto min-h-screen bg-surface-50"
+            className="max-w-md mx-auto min-h-screen app-shell"
             {...swipeHandlers}
             {...pullHandlers}
         >
