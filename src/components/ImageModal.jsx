@@ -56,12 +56,24 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
     if (!images || images.length === 0) return null;
 
     const currentImage = images[index];
+    const imageLabel = `Bilde ${index + 1} av ${images.length}`;
     const hasNext = index < images.length - 1;
     const hasPrev = index > 0;
 
     return (
-        <div className="fixed inset-0 z-[100] bg-ink/95 flex items-center justify-center animate-fade-in">
-            <button onClick={onClose} className="absolute right-4 text-white/60 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors z-[120]" style={{ top: 'calc(env(safe-area-inset-top, 20px) + 12px)' }}>
+        <div
+            className="fixed inset-0 z-[100] bg-ink/95 flex items-center justify-center animate-fade-in"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Bildevisning"
+        >
+            <button
+                type="button"
+                onClick={onClose}
+                aria-label="Lukk bildevisning"
+                className="absolute right-4 text-white/60 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors z-[120]"
+                style={{ top: 'calc(env(safe-area-inset-top, 20px) + 12px)' }}
+            >
                 <X size={28} />
             </button>
 
@@ -85,19 +97,30 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
                         <img
                             src={getFullSizeImage(currentImage)}
                             onLoad={() => setLoading(false)}
+                            onError={() => setLoading(false)}
                             className={`max-w-full max-h-[90vh] object-contain select-none transition-opacity duration-300 ${loading ? 'opacity-0' : 'opacity-100'}`}
-                            alt="Fullskjerm"
+                            alt={imageLabel}
                         />
                     </TransformComponent>
                 </TransformWrapper>
 
                 {hasPrev && (
-                    <button onClick={handlePrev} className="absolute left-4 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all z-[110]">
+                    <button
+                        type="button"
+                        onClick={handlePrev}
+                        aria-label="Vis forrige bilde"
+                        className="absolute left-4 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all z-[110]"
+                    >
                         <ChevronLeft size={28} />
                     </button>
                 )}
                 {hasNext && (
-                    <button onClick={handleNext} className="absolute right-4 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all z-[110]">
+                    <button
+                        type="button"
+                        onClick={handleNext}
+                        aria-label="Vis neste bilde"
+                        className="absolute right-4 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all z-[110]"
+                    >
                         <ChevronRight size={28} />
                     </button>
                 )}

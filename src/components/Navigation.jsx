@@ -6,7 +6,10 @@ const NavButton = React.memo(({ item, isActive, onClick }) => {
     const Icon = item.icon;
     return (
         <button
+            type="button"
             onClick={() => onClick(item.id)}
+            aria-label={item.label}
+            aria-current={isActive ? 'page' : undefined}
             className={`relative z-10 flex flex-col items-center justify-center gap-1 min-h-[44px] min-w-[44px] rounded-xl transition-colors duration-200 active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${isActive ? 'text-ink' : 'text-ink-faint'}`}
         >
             <Icon size={22} strokeWidth={isActive ? 2 : 1.5} />
@@ -29,7 +32,7 @@ const Navigation = React.memo(({ activeTab, setActiveTab }) => {
     }), [activeIndex]);
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 glass-nav z-50 border-t border-surface-200">
+        <nav className="fixed bottom-0 left-0 right-0 glass-nav z-50 border-t border-surface-200" aria-label="Hovednavigasjon">
             <div className="relative grid grid-cols-5 h-16 max-w-md mx-auto">
                 {/* Glidende pill-indikator */}
                 <div
@@ -42,7 +45,7 @@ const Navigation = React.memo(({ activeTab, setActiveTab }) => {
                 ))}
             </div>
             <div className="safe-area-pb" />
-        </div>
+        </nav>
     );
 });
 

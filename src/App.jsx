@@ -25,7 +25,7 @@ const GalleryView = React.lazy(() => import('./views/GalleryView'));
 const PlanSection = React.lazy(() => import('./views/PlanSection'));
 const CheckInView = React.lazy(() => import('./views/CheckInView'));
 
-// Error Boundary for lazy-loadede views
+// Error Boundary for lazy-loaded views
 class ViewErrorBoundary extends React.Component {
     constructor(props) {
         super(props);
@@ -1178,7 +1178,7 @@ const App = () => {
                     {activeTab === 'history' && (
                         <div className="fixed inset-0 bg-surface-50 z-50 overflow-auto">
                             <div className="sticky top-0 bg-surface-50/95 backdrop-blur-md border-b border-surface-200 px-4 py-4 flex items-center gap-3">
-                                <button onClick={() => setActiveTab('dashboard')} className="p-2 hover:bg-surface-100 rounded-xl">
+                                <button type="button" onClick={() => setActiveTab('dashboard')} aria-label="Tilbake til dashboard" className="p-2 hover:bg-surface-100 rounded-xl">
                                     <ChevronLeft size={24} />
                                 </button>
                                 <h2 className="text-xl font-display">Din historikk</h2>
