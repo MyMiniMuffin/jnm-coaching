@@ -114,7 +114,7 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
 
     return (
         <div className="space-y-6 animate-slide-up pb-32">
-            <button onClick={onBack} className="flex items-center gap-2 text-ink-muted hover:text-ink transition-colors">
+            <button type="button" onClick={onBack} className="flex items-center gap-2 text-ink-muted hover:text-ink transition-colors">
                 <ChevronLeft size={20} />
                 <span className="text-sm font-medium">Tilbake</span>
             </button>

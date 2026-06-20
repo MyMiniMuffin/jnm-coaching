@@ -619,6 +619,7 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, onUpdate, ca
                                         <div className="flex items-center gap-2">
                                             {canEdit && onUpdate && (
                                                 <button
+                                                    type="button"
                                                     onClick={() => startEdit(entry)}
                                                     aria-label="Rediger rapport"
                                                     className="p-2 text-ink-faint hover:text-accent transition-colors"
@@ -628,6 +629,7 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, onUpdate, ca
                                             )}
                                             {canDelete && onDelete && (
                                                 <button
+                                                    type="button"
                                                     onClick={async () => { if(await confirmDialog('Slett denne rapporten?', { title: 'Slett rapport', confirmText: 'Slett', destructive: true })) onDelete(entry.id); }}
                                                     aria-label="Slett rapport"
                                                     className="p-2 text-ink-faint hover:text-red-500 transition-colors"

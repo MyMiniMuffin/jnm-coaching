@@ -64,6 +64,7 @@ const BUTTON_SIZES = {
 
 export const Button = React.memo(({ children, variant = 'primary', size = 'md', className = '', ...props }) => (
     <button
+        type="button"
         className={`font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${BUTTON_VARIANTS[variant]} ${BUTTON_SIZES[size]} ${className}`}
         {...props}
     >

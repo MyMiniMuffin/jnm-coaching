@@ -47,6 +47,7 @@ class ViewErrorBoundary extends React.Component {
                     <h2 className="text-lg font-display mb-2">Noe gikk galt</h2>
                     <p className="text-ink-muted text-sm mb-4">Denne visningen kunne ikke lastes.</p>
                     <button
+                        type="button"
                         className="px-4 py-2 bg-ink text-white rounded-xl text-sm font-medium"
                         onClick={() => this.setState({ hasError: false })}
                     >

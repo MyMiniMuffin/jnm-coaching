@@ -90,10 +90,10 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
 
     return (
         <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-            <Card className="w-full max-w-md p-6 max-h-[80vh] overflow-y-auto animate-scale-in">
+            <Card className="w-full max-w-md p-6 max-h-[80vh] overflow-y-auto animate-scale-in" role="dialog" aria-modal="true" aria-labelledby="period-modal-title">
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-display">Coaching-runder</h2>
-                    <button onClick={onClose} aria-label="Lukk" className="text-ink-muted hover:text-ink p-2">
+                    <h2 id="period-modal-title" className="text-xl font-display">Coaching-runder</h2>
+                    <button type="button" onClick={onClose} aria-label="Lukk" className="text-ink-muted hover:text-ink p-2">
                         <X size={20} />
                     </button>
                 </div>
@@ -406,10 +406,10 @@ const PlanSettingsModal = React.memo(({ userData, onClose, onUpdateData, onOpenP
 
     return (
         <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-            <Card className="w-full max-w-md p-6 max-h-[80vh] overflow-y-auto overflow-x-hidden animate-scale-in">
+            <Card className="w-full max-w-md p-6 max-h-[80vh] overflow-y-auto overflow-x-hidden animate-scale-in" role="dialog" aria-modal="true" aria-labelledby="plan-settings-title">
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-display">Plan-innstillinger</h2>
-                    <button onClick={onClose} aria-label="Lukk" className="text-ink-muted hover:text-ink p-2">
+                    <h2 id="plan-settings-title" className="text-xl font-display">Plan-innstillinger</h2>
+                    <button type="button" onClick={onClose} aria-label="Lukk" className="text-ink-muted hover:text-ink p-2">
                         <X size={20} />
                     </button>
                 </div>
@@ -674,7 +674,9 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                         </div>
                         {isCoach && (
                             <button
+                                type="button"
                                 onClick={handleOpenPlanSettings}
+                                aria-label="Åpne plan-innstillinger"
                                 className="p-2 rounded-lg hover:bg-white/10 text-white/60 transition-colors"
                             >
                                 <Pencil size={18} />

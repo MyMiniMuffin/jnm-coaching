@@ -255,10 +255,10 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
     // Felles upload-modal (brukes i både tom- og normal-visning)
     const uploadModal = showUploadModal && (
         <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-            <Card ref={uploadModalRef} className="w-full max-w-sm p-6 animate-scale-in">
+            <Card ref={uploadModalRef} className="w-full max-w-sm p-6 animate-scale-in" role="dialog" aria-modal="true" aria-labelledby="upload-images-title">
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="section-title text-[1.05rem]">Last opp bilder</h2>
-                    <button onClick={closeUploadModal} aria-label="Lukk" className="text-ink-muted hover:text-ink p-2">
+                    <h2 id="upload-images-title" className="section-title text-[1.05rem]">Last opp bilder</h2>
+                    <button type="button" onClick={closeUploadModal} aria-label="Lukk" className="text-ink-muted hover:text-ink p-2">
                         <X size={20} />
                     </button>
                 </div>
@@ -359,6 +359,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                                 <p className="font-medium">{daysDiff} dager</p>
                             </div>
                             <button
+                                type="button"
                                 onClick={() => setFullscreenCompare(false)}
                                 aria-label="Lukk fullskjerm"
                                 className="text-white/60 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors"
@@ -477,19 +478,24 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                 {viewMode !== 'compare' && (
                     <div className="flex gap-1 bg-surface-100 p-1 rounded-lg">
                         <button
+                            type="button"
                             onClick={() => setViewMode('grid')}
+                            aria-pressed={viewMode === 'grid'}
                             className={`flex-1 px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-ink' : 'text-ink-muted'}`}
                         >
                             Rutenett
                         </button>
                         <button
+                            type="button"
                             onClick={() => setViewMode('timeline')}
+                            aria-pressed={viewMode === 'timeline'}
                             className={`flex-1 px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-colors ${viewMode === 'timeline' ? 'bg-white shadow-sm text-ink' : 'text-ink-muted'}`}
                         >
                             Tidslinje
                         </button>
                         {allImages.length >= 2 && (
                             <button
+                                type="button"
                                 onClick={startCompare}
                                 className="flex-1 px-3 py-1.5 text-sm font-medium rounded-md whitespace-nowrap transition-colors text-ink-muted hover:text-ink"
                             >
@@ -678,6 +684,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                             {/* Slett-knapp for coach på gallery-bilder - alltid synlig */}
                             {isCoach && img.isGalleryImage && onDeleteGalleryImage && (
                                 <button
+                                    type="button"
                                     onClick={(e) => { e.stopPropagation(); handleDeleteGalleryImage(img.galleryImageId); }}
                                     aria-label="Slett bilde"
                                     className="absolute top-1.5 right-1.5 bg-red-500 text-white p-1.5 rounded-full shadow-lg active:scale-95 transition-transform z-10"
@@ -731,7 +738,9 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                                             {/* Slett-knapp for coach på gallery-bilder - alltid synlig */}
                                             {isCoach && img.isGalleryImage && onDeleteGalleryImage && (
                                                 <button
+                                                    type="button"
                                                     onClick={(e) => { e.stopPropagation(); handleDeleteGalleryImage(img.galleryImageId); }}
+                                                    aria-label="Slett bilde"
                                                     className="absolute top-1.5 right-1.5 bg-red-500 text-white p-1.5 rounded-full shadow-lg active:scale-95 transition-transform z-10"
                                                 >
                                                     <X size={14} />

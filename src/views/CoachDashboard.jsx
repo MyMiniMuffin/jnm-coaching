@@ -114,10 +114,10 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
         <div className="space-y-5 pb-32 animate-slide-up">
             {showModal && (
                 <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in" onClick={closeModal}>
-                    <Card className="w-full max-w-sm p-6 animate-scale-in" onClick={e => e.stopPropagation()}>
+                    <Card className="w-full max-w-sm p-6 animate-scale-in" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="new-athlete-title">
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-display">Ny utøver</h2>
-                            <button onClick={closeModal} aria-label="Lukk" className="text-ink-muted hover:text-ink p-2">
+                            <h2 id="new-athlete-title" className="text-xl font-display">Ny utøver</h2>
+                            <button type="button" onClick={closeModal} aria-label="Lukk" className="text-ink-muted hover:text-ink p-2">
                                 <X size={20} />
                             </button>
                         </div>
@@ -136,14 +136,14 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
             {/* Passord-reset modal */}
             {resetTarget && (
                 <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in" onClick={closeResetModal}>
-                    <Card className="w-full max-w-sm p-6 animate-scale-in" onClick={e => e.stopPropagation()}>
+                    <Card className="w-full max-w-sm p-6 animate-scale-in" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="reset-password-title" aria-describedby="reset-password-description">
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-display">Tilbakestill passord</h2>
-                            <button onClick={closeResetModal} aria-label="Lukk" className="text-ink-muted hover:text-ink p-2">
+                            <h2 id="reset-password-title" className="text-xl font-display">Tilbakestill passord</h2>
+                            <button type="button" onClick={closeResetModal} aria-label="Lukk" className="text-ink-muted hover:text-ink p-2">
                                 <X size={20} />
                             </button>
                         </div>
-                        <p className="text-sm text-ink-muted mb-4">Nytt passord for <span className="font-medium text-ink">{resetTarget.name}</span></p>
+                        <p id="reset-password-description" className="text-sm text-ink-muted mb-4">Nytt passord for <span className="font-medium text-ink">{resetTarget.name}</span></p>
                         <form onSubmit={handleResetSubmit} className="space-y-4">
                             <input ref={resetPasswordInputRef} required name="password" type="password" minLength="6" placeholder="Nytt passord (min. 6 tegn)" autoComplete="new-password" className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-accent" />
                             <Button type="submit" size="lg" className="w-full" disabled={isResetting}>
@@ -172,7 +172,7 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
                                             : 'Varsler ikke aktivert'}
                             </span>
                             {notificationPermission === 'default' && (
-                                <button onClick={onEnableNotifications} className="underline underline-offset-2 text-white/80 hover:text-white">
+                                <button type="button" onClick={onEnableNotifications} className="underline underline-offset-2 text-white/80 hover:text-white">
                                     Slå på
                                 </button>
                             )}
@@ -199,13 +199,17 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
             <div className="flex justify-between items-center">
                 <div className="flex gap-2 items-center">
                     <button
+                        type="button"
                         onClick={showActive}
+                        aria-pressed={!showArchived}
                         className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${!showArchived ? 'bg-ink text-white' : 'text-ink-muted hover:bg-surface-100'}`}
                     >
                         Aktive ({activeClients.length})
                     </button>
                     <button
+                        type="button"
                         onClick={showArchivedClients}
+                        aria-pressed={showArchived}
                         className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${showArchived ? 'bg-ink text-white' : 'text-ink-muted hover:bg-surface-100'}`}
                     >
                         Arkivert ({archivedClients.length})
@@ -273,6 +277,7 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
                                 <div className="flex items-center gap-0.5 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
                                     {/* Arkiver/Gjenopprett knapp */}
                                     <button
+                                        type="button"
                                         onClick={(e) => handleArchiveToggle(e, client)}
                                         className="p-2 text-ink-faint hover:text-ink transition-colors"
                                         aria-label={client.is_archived ? 'Gjenopprett' : 'Arkiver'}
@@ -283,6 +288,7 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
                                     </button>
                                     {/* Tilbakestill passord */}
                                     <button
+                                        type="button"
                                         onClick={(e) => openResetModal(e, client)}
                                         className="p-2 text-ink-faint hover:text-ink transition-colors"
                                         aria-label="Tilbakestill passord"
@@ -293,6 +299,7 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
                                     </button>
                                     {/* Slett knapp */}
                                     <button
+                                        type="button"
                                         onClick={(e) => handleDelete(e, client.id)}
                                         className="p-2 text-ink-faint hover:text-red-500 transition-colors"
                                         aria-label="Slett utøver"

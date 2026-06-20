@@ -8,6 +8,7 @@ const Header = React.memo(({ title, user, viewingClient, onLogout, onClearClient
             /* Coach viewing a client — standard back-nav pattern */
             <div className="flex items-center max-w-md mx-auto px-2 py-2.5 gap-2">
                 <button
+                    type="button"
                     onClick={onClearClient}
                     aria-label="Tilbake til klientliste"
                     className="flex items-center gap-0.5 px-2 py-2 rounded-xl text-accent hover:bg-surface-100 transition-colors shrink-0"
@@ -31,7 +32,7 @@ const Header = React.memo(({ title, user, viewingClient, onLogout, onClearClient
                         {user.name}
                     </span>
                 </div>
-                <button onClick={onLogout} aria-label="Logg ut" className="text-ink-faint hover:text-ink p-2 rounded-xl hover:bg-surface-100 transition-colors">
+                <button type="button" onClick={onLogout} aria-label="Logg ut" className="text-ink-faint hover:text-ink p-2 rounded-xl hover:bg-surface-100 transition-colors">
                     <LogOut size={20} />
                 </button>
             </div>
