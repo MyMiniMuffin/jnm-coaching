@@ -11,10 +11,12 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
     const safeInitialIndex = Math.max(0, Math.min(initialIndex || 0, (images?.length || 1) - 1));
     const [index, setIndex] = useState(safeInitialIndex);
     const [loading, setLoading] = useState(true);
+    const [direction, setDirection] = useState(0);
 
     // Bruk refs for stabile referanser i keydown-listener
     const indexRef = useRef(index);
     const onCloseRef = useRef(onClose);
+    const touchStartRef = useRef(null);
     indexRef.current = index;
     onCloseRef.current = onClose;
 
@@ -23,35 +25,71 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
         return () => { document.body.style.overflow = 'unset'; };
     }, []);
 
+    useEffect(() => {
+        if (!images || images.length === 0) return;
+        [index - 1, index + 1].forEach((targetIndex) => {
+            if (targetIndex < 0 || targetIndex >= images.length) return;
+            const img = new Image();
+            img.src = getFullSizeImage(images[targetIndex]);
+        });
+    }, [images, index]);
+
+    const goToIndex = useCallback((nextIndex, nextDirection) => {
+        const boundedIndex = Math.max(0, Math.min(nextIndex, (images?.length || 1) - 1));
+        if (boundedIndex === indexRef.current) return;
+        setDirection(nextDirection);
+        setLoading(true);
+        setIndex(boundedIndex);
+    }, [images?.length]);
+
     const handleNext = useCallback((e) => {
         if(e) e.stopPropagation();
-        setLoading(true);
-        setIndex(prev => Math.min(prev + 1, (images?.length || 1) - 1));
-    }, [images?.length]);
+        goToIndex(indexRef.current + 1, 1);
+    }, [goToIndex]);
 
     const handlePrev = useCallback((e) => {
         if(e) e.stopPropagation();
-        setLoading(true);
-        setIndex(prev => Math.max(prev - 1, 0));
+        goToIndex(indexRef.current - 1, -1);
+    }, [goToIndex]);
+
+    const handleTouchStart = useCallback((e) => {
+        const touch = e.touches?.[0];
+        if (!touch) return;
+        touchStartRef.current = { x: touch.clientX, y: touch.clientY };
     }, []);
+
+    const handleTouchEnd = useCallback((e) => {
+        const start = touchStartRef.current;
+        const touch = e.changedTouches?.[0];
+        touchStartRef.current = null;
+        if (!start || !touch) return;
+
+        const deltaX = touch.clientX - start.x;
+        const deltaY = touch.clientY - start.y;
+        if (Math.abs(deltaX) < 54 || Math.abs(deltaX) < Math.abs(deltaY) * 1.35) return;
+
+        if (deltaX < 0 && indexRef.current < (images?.length || 1) - 1) {
+            goToIndex(indexRef.current + 1, 1);
+        } else if (deltaX > 0 && indexRef.current > 0) {
+            goToIndex(indexRef.current - 1, -1);
+        }
+    }, [goToIndex, images?.length]);
 
     // Stabil keydown-listener — bindes kun én gang
     useEffect(() => {
         if (!images || images.length === 0) return;
         const handleKeyDown = (e) => {
             if (e.key === 'ArrowRight') {
-                setLoading(true);
-                setIndex(prev => Math.min(prev + 1, (images.length || 1) - 1));
+                goToIndex(indexRef.current + 1, 1);
             } else if (e.key === 'ArrowLeft') {
-                setLoading(true);
-                setIndex(prev => Math.max(prev - 1, 0));
+                goToIndex(indexRef.current - 1, -1);
             } else if (e.key === 'Escape') {
                 onCloseRef.current();
             }
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [images?.length]);
+    }, [goToIndex, images?.length]);
 
     if (!images || images.length === 0) return null;
 
@@ -62,22 +100,37 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
 
     return (
         <div
-            className="fixed inset-0 z-[100] bg-ink/95 flex items-center justify-center animate-fade-in"
+            className="fixed inset-0 z-[100] bg-[#080807]/96 flex items-center justify-center animate-fade-in overflow-hidden"
             role="dialog"
             aria-modal="true"
             aria-label="Bildevisning"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
         >
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(255,255,255,0.10),transparent_28rem)] pointer-events-none" />
+            <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/55 to-transparent pointer-events-none" />
+            <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+
             <button
                 type="button"
                 onClick={onClose}
                 aria-label="Lukk bildevisning"
-                className="absolute right-4 text-white/60 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors z-[120]"
+                className="absolute right-4 text-white/75 hover:text-white min-h-[44px] min-w-[44px] p-2 rounded-full bg-white/10 hover:bg-white/18 backdrop-blur-md ring-1 ring-white/10 transition-all z-[120]"
                 style={{ top: 'calc(env(safe-area-inset-top, 20px) + 12px)' }}
             >
-                <X size={28} />
+                <X size={24} />
             </button>
 
-            <div className="relative w-full h-full flex items-center justify-center">
+            {images.length > 1 && (
+                <div
+                    className="absolute left-4 text-white/75 font-medium bg-white/10 px-3 py-2 rounded-full text-sm z-[120] backdrop-blur-md ring-1 ring-white/10"
+                    style={{ top: 'calc(env(safe-area-inset-top, 20px) + 14px)' }}
+                >
+                    {index + 1} / {images.length}
+                </div>
+            )}
+
+            <div className="relative w-full h-full flex items-center justify-center px-0 sm:px-6">
                 <TransformWrapper
                     key={index}
                     initialScale={1}
@@ -88,7 +141,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
                     <TransformComponent wrapperStyle={WRAPPER_STYLE} contentStyle={CONTENT_STYLE}>
                         {loading && (
                             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3" aria-hidden="true">
-                                <div className="w-[min(70vw,420px)] aspect-[3/4] rounded-2xl bg-white/5 border border-white/10 animate-pulse flex items-center justify-center">
+                                <div className="w-[min(70vw,420px)] aspect-[3/4] rounded-2xl bg-white/7 border border-white/10 animate-pulse flex items-center justify-center shadow-[0_24px_70px_rgba(0,0,0,0.35)]">
                                     <Loader2 className="text-white/70 animate-spin" size={32} />
                                 </div>
                                 <p className="text-white/50 text-xs">Laster bilde…</p>
@@ -98,7 +151,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
                             src={getFullSizeImage(currentImage)}
                             onLoad={() => setLoading(false)}
                             onError={() => setLoading(false)}
-                            className={`max-w-full max-h-[90vh] object-contain select-none transition-opacity duration-300 ${loading ? 'opacity-0' : 'opacity-100'}`}
+                            className={`max-w-full max-h-[88vh] object-contain select-none rounded-sm shadow-[0_24px_90px_rgba(0,0,0,0.32)] transition-all duration-300 ease-out ${loading ? `opacity-0 ${direction > 0 ? 'translate-x-4' : direction < 0 ? '-translate-x-4' : 'scale-[0.99]'}` : 'opacity-100 translate-x-0 scale-100'}`}
                             alt={imageLabel}
                         />
                     </TransformComponent>
@@ -109,9 +162,9 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
                         type="button"
                         onClick={handlePrev}
                         aria-label="Vis forrige bilde"
-                        className="absolute left-4 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all z-[110]"
+                        className="absolute left-3 sm:left-5 min-h-[48px] min-w-[48px] p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md ring-1 ring-white/10 transition-all active:scale-95 z-[110]"
                     >
-                        <ChevronLeft size={28} />
+                        <ChevronLeft size={26} />
                     </button>
                 )}
                 {hasNext && (
@@ -119,16 +172,14 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
                         type="button"
                         onClick={handleNext}
                         aria-label="Vis neste bilde"
-                        className="absolute right-4 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all z-[110]"
+                        className="absolute right-3 sm:right-5 min-h-[48px] min-w-[48px] p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md ring-1 ring-white/10 transition-all active:scale-95 z-[110]"
                     >
-                        <ChevronRight size={28} />
+                        <ChevronRight size={26} />
                     </button>
                 )}
-                {images.length > 1 && (
-                    <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/80 font-medium bg-white/10 px-4 py-2 rounded-full text-sm z-[110]">
-                        {index + 1} / {images.length}
-                    </div>
-                )}
+                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/55 bg-white/10 px-3 py-1.5 rounded-full text-xs z-[110] backdrop-blur-md ring-1 ring-white/10">
+                    Sveip eller knip for å navigere
+                </div>
             </div>
         </div>
     );

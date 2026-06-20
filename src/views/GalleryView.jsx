@@ -347,9 +347,12 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
 
             {/* Fullskjerm sammenligning */}
             {fullscreenCompare && compareImages.before && compareImages.after && (
-                <div className="fixed inset-0 z-[100] bg-ink flex flex-col animate-fade-in">
+                <div className="fixed inset-0 z-[100] bg-[#080807]/96 flex flex-col animate-fade-in overflow-hidden">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(255,255,255,0.10),transparent_28rem)] pointer-events-none" />
+                    <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/55 to-transparent pointer-events-none" />
+                    <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
                     {/* Header */}
-                    <div className="safe-area-pt">
+                    <div className="safe-area-pt relative z-[120]">
                         <div className="flex justify-between items-center p-4">
                             <div className="text-white">
                                 <p className="text-sm text-white/60">Sammenligning</p>
@@ -359,15 +362,15 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                                 type="button"
                                 onClick={() => setFullscreenCompare(false)}
                                 aria-label="Lukk fullskjerm"
-                                className="text-white/60 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors"
+                                className="text-white/75 hover:text-white min-h-[44px] min-w-[44px] p-2 rounded-full bg-white/10 hover:bg-white/18 backdrop-blur-md ring-1 ring-white/10 transition-all"
                             >
-                                <X size={28} />
+                                <X size={24} />
                             </button>
                         </div>
                     </div>
 
                     {/* Bilder side-by-side med zoom */}
-                    <div className="flex-1 flex overflow-hidden">
+                    <div className="relative z-10 flex-1 flex overflow-hidden">
                         {/* Før */}
                         <div className="flex-1 relative overflow-hidden">
                             <TransformWrapper
@@ -382,15 +385,15 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                                 >
                                     <img 
                                         src={getFullSizeImage(compareImages.before.url)} 
-                                        className="max-w-full max-h-full object-contain"
+                                        className="max-w-full max-h-full object-contain shadow-[0_24px_90px_rgba(0,0,0,0.30)]"
                                         alt="Før"
                                     />
                                 </TransformComponent>
                             </TransformWrapper>
-                            <div className="absolute top-4 left-4 bg-black/50 text-white px-3 py-1.5 rounded-full text-sm font-medium backdrop-blur-sm pointer-events-none">
+                            <div className="absolute top-4 left-4 bg-white/10 text-white px-3 py-1.5 rounded-full text-sm font-medium backdrop-blur-md ring-1 ring-white/10 pointer-events-none">
                                 FØR
                             </div>
-                            <div className="absolute bottom-4 left-4 right-4 bg-black/50 backdrop-blur-sm rounded-xl p-3 pointer-events-none">
+                            <div className="absolute bottom-4 left-4 right-4 bg-black/45 backdrop-blur-md rounded-xl p-3 ring-1 ring-white/10 pointer-events-none">
                                 <p className="text-white font-medium">{formatDateNO(compareImages.before.date)}</p>
                                 {compareImages.before.weight && (
                                     <p className="text-white/70 text-sm">{formatWeight(compareImages.before.weight)} kg</p>
@@ -415,15 +418,15 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                                 >
                                     <img 
                                         src={getFullSizeImage(compareImages.after.url)} 
-                                        className="max-w-full max-h-full object-contain"
+                                        className="max-w-full max-h-full object-contain shadow-[0_24px_90px_rgba(0,0,0,0.30)]"
                                         alt="Etter"
                                     />
                                 </TransformComponent>
                             </TransformWrapper>
-                            <div className="absolute top-4 right-4 bg-black/50 text-white px-3 py-1.5 rounded-full text-sm font-medium backdrop-blur-sm pointer-events-none">
+                            <div className="absolute top-4 right-4 bg-white/10 text-white px-3 py-1.5 rounded-full text-sm font-medium backdrop-blur-md ring-1 ring-white/10 pointer-events-none">
                                 ETTER
                             </div>
-                            <div className="absolute bottom-4 left-4 right-4 bg-black/50 backdrop-blur-sm rounded-xl p-3 pointer-events-none">
+                            <div className="absolute bottom-4 left-4 right-4 bg-black/45 backdrop-blur-md rounded-xl p-3 ring-1 ring-white/10 pointer-events-none">
                                 <p className="text-white font-medium">{formatDateNO(compareImages.after.date)}</p>
                                 {compareImages.after.weight && (
                                     <p className="text-white/70 text-sm">{formatWeight(compareImages.after.weight)} kg</p>
@@ -433,17 +436,17 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                     </div>
 
                     {/* Footer med statistikk */}
-                    <div className="p-4 safe-area-pb">
+                    <div className="relative z-[120] p-4 safe-area-pb">
                         <div className="flex items-center justify-center gap-4">
                             {weightDiff && (
-                                <div className={`flex items-center gap-2 py-2 px-4 rounded-full ${parseFloat(weightDiff) < 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-white'}`}>
+                                <div className={`flex items-center gap-2 py-2 px-4 rounded-full backdrop-blur-md ring-1 ring-white/10 ${parseFloat(weightDiff) < 0 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-white/10 text-white'}`}>
                                     {parseFloat(weightDiff) < 0 ? <TrendingDown size={18} /> : parseFloat(weightDiff) > 0 ? <TrendingUp size={18} /> : <Minus size={18} />}
                                     <span className="font-semibold">
                                         {parseFloat(weightDiff) > 0 ? '+' : ''}{weightDiff.replace('.', ',')} kg
                                     </span>
                                 </div>
                             )}
-                            <div className="bg-white/10 text-white/60 py-2 px-4 rounded-full text-sm">
+                            <div className="bg-white/10 text-white/65 py-2 px-4 rounded-full text-sm backdrop-blur-md ring-1 ring-white/10">
                                 Knip for å zoome
                             </div>
                         </div>
