@@ -1,27 +1,35 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 
 // --- Toast Notification System ---
 const ToastContext = React.createContext();
 
 export const ToastProvider = ({ children }) => {
     const [toasts, setToasts] = useState([]);
+    const timersRef = useRef([]);
+
+    useEffect(() => () => {
+        timersRef.current.forEach(clearTimeout);
+        timersRef.current = [];
+    }, []);
+
     const show = useCallback((message, type = 'success') => {
-        const id = Date.now();
-        setToasts(prev => [...prev, { id, message, type, exiting: false }]);
+        const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        setToasts(prev => [...prev.slice(-2), { id, message, type, exiting: false }]);
         // Start fade-out 2.5s in, remove at 3s
-        setTimeout(() => setToasts(prev => prev.map(t => t.id === id ? { ...t, exiting: true } : t)), 2500);
-        setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000);
+        const fadeTimer = setTimeout(() => setToasts(prev => prev.map(t => t.id === id ? { ...t, exiting: true } : t)), 2500);
+        const removeTimer = setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000);
+        timersRef.current.push(fadeTimer, removeTimer);
     }, []);
     return (
         <ToastContext.Provider value={show}>
             {children}
             {toasts.length > 0 && (
-                <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[300] flex flex-col gap-2" role="status" aria-live="polite" aria-atomic="true">
+                <div className="fixed bottom-20 left-1/2 z-[300] flex w-[min(calc(100vw-2rem),24rem)] -translate-x-1/2 flex-col gap-2" role="status" aria-live="polite" aria-atomic="true">
                     {toasts.map(t => (
                         <div
                             key={t.id}
                             role={t.type === 'error' ? 'alert' : undefined}
-                            className={`px-4 py-3 rounded-xl shadow-lg text-sm font-medium animate-slide-up whitespace-nowrap transition-opacity duration-500 ${
+                            className={`px-4 py-3 rounded-xl shadow-lg text-sm font-medium animate-slide-up text-center transition-opacity duration-500 ${
                                 t.exiting ? 'opacity-0' : 'opacity-100'
                             } ${
                                 t.type === 'success' ? 'bg-emerald-600 text-white' :

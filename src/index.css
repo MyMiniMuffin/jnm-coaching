@@ -16,6 +16,13 @@ body {
     color: #171717;
     letter-spacing: 0;
     line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+button,
+a {
+    touch-action: manipulation;
 }
 
 .font-display {
@@ -361,6 +368,17 @@ input:focus, textarea:focus, select:focus, button:focus-visible {
     0% { transform: translateX(0); }
     45% { transform: translateX(10px); }
     100% { transform: translateX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+    }
 }
 
 /* Nav pill indicator */

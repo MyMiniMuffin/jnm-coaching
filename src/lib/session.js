@@ -21,7 +21,6 @@ export const saveSession = (userData) => {
             savedAt: Date.now()
         };
         localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
-        console.log('[Session] Lagret for:', userData.username);
     } catch (e) {
         console.error('[Session] Lagringsfeil:', e);
     }
@@ -32,7 +31,6 @@ export const getSession = () => {
     try {
         const data = localStorage.getItem(SESSION_KEY);
         if (!data) {
-            console.log('[Session] Ingen session funnet');
             return null;
         }
 
@@ -40,16 +38,12 @@ export const getSession = () => {
 
         // Sjekk utløpstid
         if (session.expiresAt && Date.now() > session.expiresAt) {
-            console.log('[Session] Utløpt, sletter');
             localStorage.removeItem(SESSION_KEY);
             return null;
         }
 
         // Returner brukerdata - håndter både gammelt og nytt format
         const user = session.user || (session.id ? session : null);
-        if (user) {
-            console.log('[Session] Gyldig session:', user.username);
-        }
         return user;
     } catch (e) {
         console.error('[Session] Parse-feil:', e);
@@ -73,7 +67,6 @@ export const getToken = () => {
 
 // Slett session - KUN ved eksplisitt utlogging
 export const clearSession = () => {
-    console.log('[Session] Eksplisitt sletting');
     localStorage.removeItem(SESSION_KEY);
 };
 

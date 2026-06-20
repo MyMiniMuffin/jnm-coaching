@@ -27,8 +27,15 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, onUpdate, ca
     const [editWeightError, setEditWeightError] = useState('');
     const [isSavingEdit, setIsSavingEdit] = useState(false);
     const weightInputRef = React.useRef(null);
+    const successResetTimeoutRef = React.useRef(null);
     const confirmDialog = useConfirm();
     const storageKey = `jnm_checkin_draft_${draftKey}`;
+
+    useEffect(() => () => {
+        if (successResetTimeoutRef.current) {
+            clearTimeout(successResetTimeoutRef.current);
+        }
+    }, []);
 
     useEffect(() => {
         if (isReadOnly || hideForm) return;
@@ -91,23 +98,19 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, onUpdate, ca
         }
         setIsCompressing(true);
         setErrorMessage('');
-        console.log('[CheckIn] Starter opplasting av', files.length, 'bilder');
         try {
             const uploadPromises = files.map(async (file) => {
-                console.log('[CheckIn] Leser fil:', file.name, 'størrelse:', file.size);
                 const base64Image = await new Promise((resolve, reject) => {
                     const reader = new FileReader();
                     reader.onload = () => resolve(reader.result);
                     reader.onerror = () => reject(new Error('Kunne ikke lese fil: ' + file.name));
                     reader.readAsDataURL(file);
                 });
-                console.log('[CheckIn] Base64-lengde:', base64Image.length);
 
                 const result = await api.uploadImage(base64Image, uploadUserId, 'checkin');
                 if (result.authError) {
                     throw new Error('Autentisering feilet');
                 }
-                console.log('[CheckIn] Opplasting fullført:', result.data.url);
                 return result.data.url;
             });
             const results = await Promise.allSettled(uploadPromises);
@@ -122,7 +125,6 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, onUpdate, ca
             if (failedCount > 0) {
                 setErrorMessage(`${failedCount} av ${results.length} bilder kunne ikke lastes opp.`);
             }
-            console.log(`[CheckIn] ${uploadedUrls.length}/${results.length} bilder lastet opp`);
         } catch (err) {
             console.error('[CheckIn] Bildeopplasting feilet:', err);
             setErrorMessage('Bildeopplasting feilet. Sjekk tilkoblingen og prøv igjen.');
@@ -158,9 +160,13 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, onUpdate, ca
             setRestoredDraft(false);
             setStep('success');
             createConfetti(); // 🎉 Konfetti!
-            setTimeout(() => {
+            if (successResetTimeoutRef.current) {
+                clearTimeout(successResetTimeoutRef.current);
+            }
+            successResetTimeoutRef.current = setTimeout(() => {
                 setStep('form');
                 setFormData(INITIAL_FORM_DATA);
+                successResetTimeoutRef.current = null;
             }, 2500);
         } catch (error) {
             console.error('Checkin-innsending feilet:', error);

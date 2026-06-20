@@ -228,6 +228,7 @@ const App = () => {
     const hasRestoredUiStateRef = useRef(false);
     const restoreScrollYRef = useRef(null);
     const skipNextAthleteFetchRef = useRef(false);
+    const swipeEdgeTimeoutRef = useRef(null);
 
     const deliverCoachCheckinAlert = useCallback((clientsWithNewCheckins) => {
         if (!clientsWithNewCheckins.length) return;
@@ -394,14 +395,11 @@ const App = () => {
     // ============================================
     useEffect(() => {
         const init = async () => {
-            console.log('[Init] Starter app...');
-
             // 1. Sjekk lokal session FØRST - bruk den umiddelbart
             const sessionUser = getSession();
             const token = getToken();
 
             if (sessionUser && token) {
-                console.log('[Init] Bruker cached session:', sessionUser.username);
                 setCurrentUser(sessionUser);
 
                 if (sessionUser.role === 'athlete') {
@@ -489,7 +487,6 @@ const App = () => {
     useEffect(() => {
         const handleVisibility = () => {
             if (document.visibilityState === 'visible' && currentUser) {
-                console.log('[Visibility] App ble synlig, sjekker session');
                 setNotificationPermission(getNotificationPermission());
                 if (!hasValidSession()) {
                     console.warn('[Visibility] Session borte - viser re-auth prompt');
@@ -574,8 +571,6 @@ const App = () => {
                         setShowReauthPrompt(true);
                     } else if (result.data) {
                         setCurrentData(result.data);
-                    } else if (result.networkError) {
-                        console.log('[App] Nettverksfeil - bruker eksisterende data');
                     }
                 })
                 .catch(() => {
@@ -597,7 +592,6 @@ const App = () => {
     }, []);
 
     const handleLogout = useCallback(() => {
-        console.log('[App] Bruker logger ut');
         clearSession();
         clearUiState();
         hasRestoredUiStateRef.current = false;
@@ -609,7 +603,6 @@ const App = () => {
     }, []);
 
     const handleReauth = useCallback(() => {
-        console.log('[App] Bruker må logge inn på nytt');
         clearSession();
         clearUiState();
         hasRestoredUiStateRef.current = false;
@@ -966,7 +959,7 @@ const App = () => {
         restoreScrollYRef.current = null;
 
         let timeoutId = null;
-        const restore = () => window.scrollTo({ top: scrollY, behavior: 'instant' });
+        const restore = () => window.scrollTo({ top: scrollY, behavior: 'auto' });
         const firstFrame = window.requestAnimationFrame(() => {
             restore();
             timeoutId = window.setTimeout(restore, 250);
@@ -1120,7 +1113,7 @@ const App = () => {
             setSwipeDirection('left');
             setSwipeEdge(null);
             setActiveTab(TAB_ORDER[currentTabIndex + 1]);
-            window.scrollTo({ top: 0, behavior: 'instant' });
+            window.scrollTo({ top: 0, behavior: 'auto' });
             return true;
         }
         return false;
@@ -1131,7 +1124,7 @@ const App = () => {
             setSwipeDirection('right');
             setSwipeEdge(null);
             setActiveTab(TAB_ORDER[currentTabIndex - 1]);
-            window.scrollTo({ top: 0, behavior: 'instant' });
+            window.scrollTo({ top: 0, behavior: 'auto' });
             return true;
         } else if (currentTabIndex === 0 && currentUser?.role === 'coach' && viewingClient) {
             handleClearClient();
@@ -1141,8 +1134,20 @@ const App = () => {
     }, [currentTabIndex, showWeightHistory, currentUser?.role, viewingClient, handleClearClient]);
 
     const handleEdgeSwipe = useCallback((direction) => {
+        if (swipeEdgeTimeoutRef.current) {
+            window.clearTimeout(swipeEdgeTimeoutRef.current);
+        }
         setSwipeEdge(direction);
-        setTimeout(() => setSwipeEdge(null), 220);
+        swipeEdgeTimeoutRef.current = window.setTimeout(() => {
+            setSwipeEdge(null);
+            swipeEdgeTimeoutRef.current = null;
+        }, 220);
+    }, []);
+
+    useEffect(() => () => {
+        if (swipeEdgeTimeoutRef.current) {
+            window.clearTimeout(swipeEdgeTimeoutRef.current);
+        }
     }, []);
 
     const swipeHandlers = useSwipe(handleSwipeLeft, handleSwipeRight, {

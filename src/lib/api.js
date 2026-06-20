@@ -127,7 +127,6 @@ export const api = {
         }
     },
     createUser: async (newUser) => {
-        console.log('[API] Oppretter ny bruker:', newUser.name);
         const res = await fetch('/.netlify/functions/users', {
             method: 'POST',
             headers: getAuthHeaders(),
@@ -143,7 +142,6 @@ export const api = {
             throw new Error(errorData.error || 'Feil ved opprettelse');
         }
         const result = await res.json();
-        console.log('[API] Bruker opprettet suksessfullt');
         return { authError: false, data: result };
     },
     deleteUser: async (userId) => {

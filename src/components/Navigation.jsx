@@ -23,7 +23,7 @@ const Navigation = React.memo(({ activeTab, setActiveTab }) => {
 
     const handleTabClick = useCallback((id) => {
         setActiveTab(id);
-        window.scrollTo({ top: 0, behavior: 'instant' });
+        window.scrollTo({ top: 0, behavior: 'auto' });
     }, [setActiveTab]);
 
     const pillStyle = useMemo(() => ({
