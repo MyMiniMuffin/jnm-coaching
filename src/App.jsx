@@ -437,18 +437,6 @@ const App = () => {
                 }
             }
 
-            // Ikke-innlogget eller athlete — hent brukerliste for login
-            if (!sessionUser) {
-                try {
-                    const result = await api.getUsers();
-                    if (!result.networkError && !result.authError) {
-                        setAllUsers(result.data || []);
-                    }
-                } catch (e) {
-                    // Ikke kritisk for login
-                }
-            }
-
             setIsLoading(false);
         };
         init();
@@ -459,27 +447,41 @@ const App = () => {
     }, [currentUser?.role]);
 
     useEffect(() => {
-        if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+        if (!currentUser || typeof window === 'undefined' || !('serviceWorker' in navigator)) {
             return;
         }
 
-        navigator.serviceWorker.register('/sw.js')
-            .then(registration => {
-                serviceWorkerRegistrationRef.current = registration;
-            })
-            .catch(error => {
-                console.error('[Push] Kunne ikke registrere service worker:', error);
-            });
-    }, []);
+        const registerServiceWorker = () => {
+            navigator.serviceWorker.register('/sw.js')
+                .then(registration => {
+                    serviceWorkerRegistrationRef.current = registration;
+                })
+                .catch(error => {
+                    console.error('[Push] Kunne ikke registrere service worker:', error);
+                });
+        };
+
+        if ('requestIdleCallback' in window) {
+            const idleId = requestIdleCallback(registerServiceWorker, { timeout: 3000 });
+            return () => cancelIdleCallback(idleId);
+        }
+
+        const timeoutId = setTimeout(registerServiceWorker, 1500);
+        return () => clearTimeout(timeoutId);
+    }, [currentUser]);
 
     // Prefetch view-chunks når appen er lastet (gjør tab-bytte instant)
     useEffect(() => {
+        if (!currentUser) return;
+
         if ('requestIdleCallback' in window) {
-            requestIdleCallback(prefetchViews);
+            const idleId = requestIdleCallback(prefetchViews, { timeout: 3000 });
+            return () => cancelIdleCallback(idleId);
         } else {
-            setTimeout(prefetchViews, 2000);
+            const timeoutId = setTimeout(prefetchViews, 2000);
+            return () => clearTimeout(timeoutId);
         }
-    }, []);
+    }, [currentUser]);
 
     // Visibility change handler - sjekk session når app blir synlig
     useEffect(() => {
