@@ -46,26 +46,32 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, onUpdate, ca
 
     useEffect(() => {
         if (isReadOnly || hideForm) return;
-        try {
-            if (
-                formData.weight ||
-                formData.comment ||
-                formData.images.length > 0 ||
-                formData.energy !== INITIAL_FORM_DATA.energy ||
-                formData.sleep !== INITIAL_FORM_DATA.sleep ||
-                formData.accuracy !== INITIAL_FORM_DATA.accuracy ||
-                formData.strengthSessions !== INITIAL_FORM_DATA.strengthSessions ||
-                formData.cardioSessions !== INITIAL_FORM_DATA.cardioSessions ||
-                formData.stepsReached !== INITIAL_FORM_DATA.stepsReached ||
-                formData.takenSupplements !== INITIAL_FORM_DATA.takenSupplements
-            ) {
-                localStorage.setItem(storageKey, JSON.stringify(formData));
-            } else {
-                localStorage.removeItem(storageKey);
+
+        const hasDraftContent =
+            formData.weight ||
+            formData.comment ||
+            formData.images.length > 0 ||
+            formData.energy !== INITIAL_FORM_DATA.energy ||
+            formData.sleep !== INITIAL_FORM_DATA.sleep ||
+            formData.accuracy !== INITIAL_FORM_DATA.accuracy ||
+            formData.strengthSessions !== INITIAL_FORM_DATA.strengthSessions ||
+            formData.cardioSessions !== INITIAL_FORM_DATA.cardioSessions ||
+            formData.stepsReached !== INITIAL_FORM_DATA.stepsReached ||
+            formData.takenSupplements !== INITIAL_FORM_DATA.takenSupplements;
+
+        const timeoutId = setTimeout(() => {
+            try {
+                if (hasDraftContent) {
+                    localStorage.setItem(storageKey, JSON.stringify(formData));
+                } else {
+                    localStorage.removeItem(storageKey);
+                }
+            } catch (e) {
+                console.error('[CheckIn] Kunne ikke lagre utkast:', e);
             }
-        } catch (e) {
-            console.error('[CheckIn] Kunne ikke lagre utkast:', e);
-        }
+        }, 350);
+
+        return () => clearTimeout(timeoutId);
     }, [formData, storageKey, isReadOnly, hideForm]);
 
     const closeLightbox = useCallback(() => {
@@ -162,7 +168,7 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, onUpdate, ca
         } finally {
             setIsSubmitting(false);
         }
-    }, [formData, onNewCheckin]);
+    }, [formData, onNewCheckin, storageKey]);
 
     const sortedCheckins = checkins;
 

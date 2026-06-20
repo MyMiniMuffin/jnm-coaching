@@ -118,14 +118,32 @@ const ViewSkeleton = ({ tab }) => {
     );
 };
 
-// Prefetch alle views i bakgrunnen når browser er idle
+const VIEW_PREFETCHERS = [
+    () => import('./views/DashboardView'),
+    () => import('./views/CheckInView'),
+    () => import('./views/GalleryView'),
+    () => import('./views/PlanSection'),
+    () => import('./views/WeightProgressView'),
+    () => import('./views/CoachDashboard')
+];
+
+const shouldPrefetchViews = () => {
+    if (typeof navigator === 'undefined') return true;
+    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    if (!connection) return true;
+    if (connection.saveData) return false;
+    return !['slow-2g', '2g'].includes(connection.effectiveType);
+};
+
+// Prefetch views forsiktig i bakgrunnen, uten å lage en parse/network-burst.
 const prefetchViews = () => {
-    import('./views/DashboardView');
-    import('./views/GalleryView');
-    import('./views/CheckInView');
-    import('./views/PlanSection');
-    import('./views/WeightProgressView');
-    import('./views/CoachDashboard');
+    if (!shouldPrefetchViews()) return;
+    VIEW_PREFETCHERS.forEach((prefetch, index) => {
+        setTimeout(() => {
+            if (typeof document !== 'undefined' && document.hidden) return;
+            prefetch();
+        }, index * 250);
+    });
 };
 
 const supportsPushNotifications = () => {

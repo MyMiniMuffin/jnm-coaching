@@ -4,6 +4,24 @@ import { getToken } from './session';
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutter
 const CACHE_PREFIX = 'jnm_cache_';
 
+const runWhenIdle = (callback) => {
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+        window.requestIdleCallback(callback, { timeout: 2000 });
+        return;
+    }
+    setTimeout(callback, 0);
+};
+
+const persistCacheItem = (key, item) => {
+    runWhenIdle(() => {
+        try {
+            localStorage.setItem(CACHE_PREFIX + key, JSON.stringify(item));
+        } catch (e) {
+            // localStorage full eller ikke tilgjengelig
+        }
+    });
+};
+
 export const cache = {
     store: {},
 
@@ -40,12 +58,8 @@ export const cache = {
         };
         cache.store[key] = item;
 
-        // Lagre til localStorage for persistent cache
-        try {
-            localStorage.setItem(CACHE_PREFIX + key, JSON.stringify(item));
-        } catch (e) {
-            // localStorage full eller ikke tilgjengelig
-        }
+        // Lagre persistent cache uten å blokkere neste frame.
+        persistCacheItem(key, item);
     },
 
     invalidate: (key) => {
