@@ -78,7 +78,7 @@ const sendCoachPushNotifications = async ({ athleteId, athleteName, unreadCount 
 };
 
 // Validering av checkin-data
-const validateCheckinData = (data) => {
+const validateCheckinData = (data, { requireRequiredFields = true } = {}) => {
   const errors = [];
   const requiredFields = ['weight', 'sleep', 'energy', 'accuracy'];
 
@@ -86,11 +86,13 @@ const validateCheckinData = (data) => {
     return ['Mangler rapportdata'];
   }
 
-  requiredFields.forEach((field) => {
-    if (data[field] === undefined || data[field] === null || data[field] === '') {
-      errors.push(`${field} må fylles ut`);
-    }
-  });
+  if (requireRequiredFields) {
+    requiredFields.forEach((field) => {
+      if (data[field] === undefined || data[field] === null || data[field] === '') {
+        errors.push(`${field} må fylles ut`);
+      }
+    });
+  }
   
   if (data.weight !== undefined) {
     const weight = parseFloat(data.weight);
@@ -545,7 +547,7 @@ exports.handler = async (event) => {
         ['weight', 'sleep', 'energy', 'accuracy', 'strengthSessions', 'cardioSessions', 'comment'].forEach(f => {
           if (data[f] !== undefined) fieldsToValidate[f] = data[f];
         });
-        const validationErrors = validateCheckinData(fieldsToValidate);
+        const validationErrors = validateCheckinData(fieldsToValidate, { requireRequiredFields: false });
         if (validationErrors.length > 0) {
           return { statusCode: 400, body: JSON.stringify({ error: validationErrors.join(', ') }) };
         }
