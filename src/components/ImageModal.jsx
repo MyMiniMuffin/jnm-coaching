@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { X, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { getFullSizeImage } from '../lib/formatters';
@@ -92,15 +93,14 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [goToIndex, images?.length]);
 
-    if (!images || images.length === 0) return null;
-
-    const currentImage = images[index];
+    const currentImage = images?.[index];
     const currentImageSrc = getFullSizeImage(currentImage);
-    const imageLabel = `Bilde ${index + 1} av ${images.length}`;
-    const hasNext = index < images.length - 1;
+    const imageLabel = `Bilde ${index + 1} av ${images?.length || 0}`;
+    const hasNext = index < (images?.length || 0) - 1;
     const hasPrev = index > 0;
 
     useEffect(() => {
+        if (!currentImageSrc) return;
         setLoading(true);
         const image = imageRef.current;
         if (!image) return;
@@ -109,7 +109,9 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
         }
     }, [currentImageSrc]);
 
-    return (
+    if (!images || images.length === 0) return null;
+
+    const modal = (
         <div
             className="fixed inset-0 z-[100] bg-[#080807]/96 flex items-center justify-center animate-fade-in overflow-hidden"
             role="dialog"
@@ -196,6 +198,8 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
             </div>
         </div>
     );
+
+    return createPortal(modal, document.body);
 });
 
 export default ImageModal;
