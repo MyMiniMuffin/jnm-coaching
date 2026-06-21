@@ -8,8 +8,16 @@ import { useConfirm } from '../components/ConfirmDialog';
 import { useEscapeKey, useFocusTrap } from '../hooks';
 import { api } from '../lib/api';
 import { formatDateNO, formatWeight, getThumbnail, getFullSizeImage } from '../lib/formatters';
+import { IMAGE_ZOOM_PROPS } from '../lib/zoomConfig';
 
 const IMAGE_BATCH_SIZE = 60;
+const TRANSFORM_WRAPPER_STYLE = { width: "100%", height: "100%" };
+const TRANSFORM_CONTENT_STYLE = { width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" };
+
+const getImageKey = (img, fallbackIndex) => {
+    if (img.isGalleryImage) return `gallery-${img.galleryImageId}`;
+    return `checkin-${img.checkinId}-${fallbackIndex}`;
+};
 
 // GalleryView - samler alle bilder fra checkins for lett sammenligning
 const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false, uploadUserId, onAddGalleryImage, onDeleteGalleryImage }) => {
@@ -163,6 +171,14 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
             openLightbox(idx);
         }
     }, [selectingFor, openLightbox]);
+
+    const handleCompareImageClick = useCallback((img) => {
+        setCompareImages(prev => {
+            const target = selectingFor || (!prev.before ? 'before' : !prev.after ? 'after' : 'after');
+            return { ...prev, [target]: img };
+        });
+        setSelectingFor(null);
+    }, [selectingFor]);
 
     const handleTilePointerDown = useCallback((e, img, idx) => {
         tilePointerRef.current = {
@@ -400,14 +416,11 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                         {/* Før */}
                         <div className="flex-1 relative overflow-hidden">
                             <TransformWrapper
-                                initialScale={1}
-                                minScale={0.5}
-                                maxScale={4}
-                                centerOnInit={true}
+                                {...IMAGE_ZOOM_PROPS}
                             >
                                 <TransformComponent
-                                    wrapperStyle={{ width: "100%", height: "100%" }}
-                                    contentStyle={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}
+                                    wrapperStyle={TRANSFORM_WRAPPER_STYLE}
+                                    contentStyle={TRANSFORM_CONTENT_STYLE}
                                 >
                                     <img 
                                         src={getFullSizeImage(compareImages.before.url)} 
@@ -433,14 +446,11 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                         {/* Etter */}
                         <div className="flex-1 relative overflow-hidden">
                             <TransformWrapper
-                                initialScale={1}
-                                minScale={0.5}
-                                maxScale={4}
-                                centerOnInit={true}
+                                {...IMAGE_ZOOM_PROPS}
                             >
                                 <TransformComponent
-                                    wrapperStyle={{ width: "100%", height: "100%" }}
-                                    contentStyle={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}
+                                    wrapperStyle={TRANSFORM_WRAPPER_STYLE}
+                                    contentStyle={TRANSFORM_CONTENT_STYLE}
                                 >
                                     <img 
                                         src={getFullSizeImage(compareImages.after.url)} 
@@ -645,9 +655,9 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                                 const isBefore = compareImages.before?.url === img.url;
                                 return (
                                     <div 
-                                        key={`${img.checkinId}-${idx}`}
+                                        key={getImageKey(img, idx)}
                                         className={`relative aspect-square cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${isSelected ? 'border-ink' : 'border-transparent'} ${selectingFor ? 'hover:scale-105' : ''}`}
-                                        onClick={() => handleImageClick(img, idx)}
+                                        onClick={() => handleCompareImageClick(img)}
                                     >
                                         <img 
                                             src={getThumbnail(img.url)} 
@@ -680,7 +690,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                     <div className="grid grid-cols-3 gap-1.5">
                         {visibleImages.map((img, idx) => (
                             <div 
-                                key={img.isGalleryImage ? `gallery-${img.galleryImageId}` : `${img.checkinId}-${idx}`}
+                                key={getImageKey(img, idx)}
                                 className="relative aspect-square cursor-pointer group"
                                 role="button"
                                 tabIndex={0}
@@ -747,7 +757,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                                 {images.map((img, idx) => {
                                     return (
                                         <div 
-                                            key={img.isGalleryImage ? `gallery-${img.galleryImageId}` : `${img.checkinId}-${idx}`}
+                                            key={getImageKey(img, img.globalIndex)}
                                             className="relative aspect-square cursor-pointer group"
                                             role="button"
                                             tabIndex={0}

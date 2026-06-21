@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { X, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { getFullSizeImage } from '../lib/formatters';
+import { IMAGE_ZOOM_PROPS } from '../lib/zoomConfig';
 
 // Stil-konstanter — opprettes én gang, ikke på hver render
 const WRAPPER_STYLE = { width: "100%", height: "100%" };
@@ -146,10 +147,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
             <div className="relative w-full h-full flex items-center justify-center px-0 sm:px-6">
                 <TransformWrapper
                     key={index}
-                    initialScale={1}
-                    minScale={0.5}
-                    maxScale={4}
-                    centerOnInit={true}
+                    {...IMAGE_ZOOM_PROPS}
                 >
                     <TransformComponent wrapperStyle={WRAPPER_STYLE} contentStyle={CONTENT_STYLE}>
                         {loading && (
