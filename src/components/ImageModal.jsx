@@ -127,7 +127,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
 
     const modal = (
         <div
-            className="fixed inset-0 z-[100] bg-[#080807]/96 flex flex-col animate-fade-in overflow-hidden"
+            className="fixed inset-0 z-[100] bg-[#050504] flex flex-col animate-fade-in overflow-hidden"
             role="dialog"
             aria-modal="true"
             aria-label="Bildevisning"
@@ -135,7 +135,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
             onTouchEnd={handleTouchEnd}
             style={{ height: '100dvh' }}
         >
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(255,255,255,0.10),transparent_28rem)] pointer-events-none" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(255,255,255,0.07),transparent_28rem)] pointer-events-none" />
             <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/55 to-transparent pointer-events-none" />
             <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
 

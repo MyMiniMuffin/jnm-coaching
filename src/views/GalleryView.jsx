@@ -83,13 +83,13 @@ const FullscreenCompareModal = React.memo(({ before, after, daysDiff, weightDiff
 
     return createPortal(
         <div
-            className="fixed inset-0 z-[100] isolate bg-[#080807]/96 animate-fade-in overflow-hidden"
+            className="fixed inset-0 z-[100] isolate bg-[#050504] animate-fade-in overflow-hidden"
             role="dialog"
             aria-modal="true"
             aria-label="Sammenligning i fullskjerm"
             style={{ width: '100vw', height: '100dvh', top: 0, left: 0, overscrollBehavior: 'contain' }}
         >
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(255,255,255,0.10),transparent_28rem)] pointer-events-none" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(255,255,255,0.07),transparent_28rem)] pointer-events-none" />
             <div className="absolute inset-x-0 top-0 z-[105] h-28 bg-gradient-to-b from-black/60 to-transparent pointer-events-none" />
             <div className="absolute inset-x-0 bottom-0 z-[105] h-32 bg-gradient-to-t from-black/65 to-transparent pointer-events-none" />
 
