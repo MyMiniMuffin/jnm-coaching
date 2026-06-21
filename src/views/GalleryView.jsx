@@ -59,6 +59,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
     const [uploadForm, setUploadForm] = useState({ label: 'Startbilde', date: new Date().toISOString().split('T')[0], weight: '' });
     const [visibleImageCount, setVisibleImageCount] = useState(IMAGE_BATCH_SIZE);
     const tilePointerRef = React.useRef(null);
+    const compareTopRef = React.useRef(null);
 
     // Samle alle bilder med metadata, sortert fra nyeste til eldste
     const allImages = useMemo(() => {
@@ -159,6 +160,13 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
     useEffect(() => {
         setVisibleImageCount(IMAGE_BATCH_SIZE);
     }, [allImages.length, viewMode]);
+
+    useEffect(() => {
+        if (viewMode !== 'compare') return;
+        window.requestAnimationFrame(() => {
+            compareTopRef.current?.scrollIntoView({ block: 'start' });
+        });
+    }, [viewMode]);
 
     const visibleImages = useMemo(
         () => allImages.slice(0, visibleImageCount),
@@ -491,7 +499,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
             )}
 
             {/* Header med visningsvalg */}
-            <div className="space-y-3">
+            <div ref={compareTopRef} className="space-y-3 scroll-mt-4">
                 <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                         <h2 className="text-[1.55rem] leading-none font-display">
@@ -533,7 +541,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                         <div className="space-y-2">
                             <p className="section-label text-center">Før</p>
                             <div 
-                                className={`relative aspect-[3/4] rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${selectingFor === 'before' ? 'border-ink ring-2 ring-ink/20' : 'border-surface-200'}`}
+                                className={`relative aspect-[4/5] max-h-[42vh] rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${selectingFor === 'before' ? 'border-ink ring-2 ring-ink/20' : 'border-surface-200'}`}
                                 onClick={() => setSelectingFor(selectingFor === 'before' ? null : 'before')}
                             >
                                 {compareImages.before ? (
@@ -570,7 +578,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                         <div className="space-y-2">
                             <p className="section-label text-center">Etter</p>
                             <div 
-                                className={`relative aspect-[3/4] rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${selectingFor === 'after' ? 'border-ink ring-2 ring-ink/20' : 'border-surface-200'}`}
+                                className={`relative aspect-[4/5] max-h-[42vh] rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${selectingFor === 'after' ? 'border-ink ring-2 ring-ink/20' : 'border-surface-200'}`}
                                 onClick={() => setSelectingFor(selectingFor === 'after' ? null : 'after')}
                             >
                                 {compareImages.after ? (
