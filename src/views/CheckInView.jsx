@@ -183,6 +183,49 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, onUpdate, ca
         return last ? parseFloat(last.weight) : null;
     }, [sortedCheckins]);
 
+    const historySummary = useMemo(() => {
+        const recent = sortedCheckins.slice(0, 4);
+        if (recent.length === 0) return null;
+
+        const numbers = recent.reduce((acc, entry) => {
+            const weight = parseFloat(entry.weight);
+            if (!isNaN(weight) && weight > 0) acc.weights.push(weight);
+            acc.energy += parseInt(entry.energy, 10) || 0;
+            acc.sleep += parseInt(entry.sleep, 10) || 0;
+            acc.accuracy += parseInt(entry.accuracy, 10) || 0;
+            acc.strength += parseInt(entry.strengthSessions, 10) || 0;
+            acc.cardio += parseInt(entry.cardioSessions, 10) || 0;
+            if (entry.stepsReached) acc.stepsHit += 1;
+            return acc;
+        }, {
+            weights: [],
+            energy: 0,
+            sleep: 0,
+            accuracy: 0,
+            strength: 0,
+            cardio: 0,
+            stepsHit: 0
+        });
+
+        const newestWeight = numbers.weights[0] ?? null;
+        const oldestWeight = numbers.weights[numbers.weights.length - 1] ?? null;
+        const weightChange = newestWeight !== null && oldestWeight !== null && numbers.weights.length > 1
+            ? newestWeight - oldestWeight
+            : null;
+        const average = (value) => (value / recent.length).toFixed(1).replace('.', ',');
+
+        return {
+            count: recent.length,
+            weightChange,
+            avgEnergy: average(numbers.energy),
+            avgSleep: average(numbers.sleep),
+            avgAccuracy: average(numbers.accuracy),
+            totalStrength: numbers.strength,
+            totalCardio: numbers.cardio,
+            stepsHit: numbers.stepsHit
+        };
+    }, [sortedCheckins]);
+
     // Form field handlers - memoized
     const updateField = useCallback((field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -484,6 +527,53 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, onUpdate, ca
                     />
                 ) : (
                     <div className="space-y-3">
+                        {historySummary && (
+                            <Card className="p-4 bg-surface-50">
+                                <div className="flex items-center justify-between gap-3 mb-3">
+                                    <div>
+                                        <p className="font-medium">Siste {historySummary.count} rapport{historySummary.count > 1 ? 'er' : ''}</p>
+                                        <p className="text-xs text-ink-muted">Rask status fra nyeste innsendinger</p>
+                                    </div>
+                                    <Badge
+                                        variant={
+                                            historySummary.weightChange === null || Math.abs(historySummary.weightChange) < 0.05
+                                                ? 'muted'
+                                                : historySummary.weightChange < 0
+                                                    ? 'success'
+                                                    : 'warning'
+                                        }
+                                        className="tabular-nums"
+                                    >
+                                        <Scale size={12} />
+                                        {historySummary.weightChange === null
+                                            ? 'Vekttrend -'
+                                            : `${historySummary.weightChange > 0 ? '+' : ''}${formatWeight(historySummary.weightChange)} kg`}
+                                    </Badge>
+                                </div>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                                    <div className="rounded-lg bg-white p-3 border border-surface-100">
+                                        <p className="text-ink-faint">Snitt score</p>
+                                        <p className="font-semibold text-ink mt-1 tabular-nums">{historySummary.avgAccuracy} nøyakt.</p>
+                                        <p className="text-ink-muted tabular-nums">{historySummary.avgEnergy} energi / {historySummary.avgSleep} søvn</p>
+                                    </div>
+                                    <div className="rounded-lg bg-white p-3 border border-surface-100">
+                                        <p className="text-ink-faint">Økter</p>
+                                        <p className="font-semibold text-ink mt-1 tabular-nums">{historySummary.totalStrength} styrke</p>
+                                        <p className="text-ink-muted tabular-nums">{historySummary.totalCardio} cardio</p>
+                                    </div>
+                                    <div className="rounded-lg bg-white p-3 border border-surface-100">
+                                        <p className="text-ink-faint">Skrittmål</p>
+                                        <p className="font-semibold text-ink mt-1 tabular-nums">{historySummary.stepsHit}/{historySummary.count}</p>
+                                        <p className="text-ink-muted">uker oppnådd</p>
+                                    </div>
+                                    <div className="rounded-lg bg-white p-3 border border-surface-100">
+                                        <p className="text-ink-faint">Rapporter</p>
+                                        <p className="font-semibold text-ink mt-1 tabular-nums">{sortedCheckins.length}</p>
+                                        <p className="text-ink-muted">totalt lagret</p>
+                                    </div>
+                                </div>
+                            </Card>
+                        )}
                         {sortedCheckins.map((entry) => {
                             // Sikre at images alltid er en array
                             let imageArray = [];

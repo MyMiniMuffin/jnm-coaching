@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { Plus, X, Trash2, Pause, Play, User, ChevronRight, Loader2, KeyRound, BellRing } from 'lucide-react';
-import { Card, Badge, Button, EmptyState, IconButton, TextField, ToggleGroup } from '../components/ui';
+import { Plus, X, Trash2, Pause, Play, User, ChevronRight, Loader2, KeyRound, BellRing, Search, ArrowUpDown } from 'lucide-react';
+import { Card, Button, EmptyState, IconButton, TextField, ToggleGroup, SelectField } from '../components/ui';
 import { useEscapeKey } from '../hooks';
 import { useConfirm } from '../components/ConfirmDialog';
 
@@ -11,6 +11,8 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
     const [resetTarget, setResetTarget] = useState(null);
     const [isResetting, setIsResetting] = useState(false);
     const [pendingClientAction, setPendingClientAction] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [sortBy, setSortBy] = useState('unread');
     const confirm = useConfirm();
 
     // Memoize filtrerte lister
@@ -24,7 +26,31 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
         [activeClients]
     );
 
-    const displayedClients = showArchived ? archivedClients : activeClients;
+    const displayedClients = useMemo(() => {
+        const source = showArchived ? archivedClients : activeClients;
+        const query = searchTerm.trim().toLowerCase();
+        const filtered = query
+            ? source.filter(client => (
+                client.name?.toLowerCase().includes(query) ||
+                client.username?.toLowerCase().includes(query)
+            ))
+            : source;
+
+        return [...filtered].sort((a, b) => {
+            if (sortBy === 'name') {
+                return (a.name || '').localeCompare(b.name || '', 'nb');
+            }
+            if (sortBy === 'lastCheckin') {
+                const aParsed = a.lastCheckinDate ? new Date(a.lastCheckinDate).getTime() : 0;
+                const bParsed = b.lastCheckinDate ? new Date(b.lastCheckinDate).getTime() : 0;
+                const aTime = Number.isNaN(aParsed) ? 0 : aParsed;
+                const bTime = Number.isNaN(bParsed) ? 0 : bParsed;
+                return bTime - aTime;
+            }
+            return (Number(b.unreadCheckins) || 0) - (Number(a.unreadCheckins) || 0)
+                || (a.name || '').localeCompare(b.name || '', 'nb');
+        });
+    }, [activeClients, archivedClients, searchTerm, showArchived, sortBy]);
 
     const closeModal = useCallback(() => setShowModal(false), []);
     const openModal = useCallback(() => setShowModal(true), []);
@@ -45,6 +71,8 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
     }, [resetTarget]);
     const showActive = useCallback(() => setShowArchived(false), []);
     const showArchivedClients = useCallback(() => setShowArchived(true), []);
+    const handleSearchChange = useCallback((e) => setSearchTerm(e.target.value), []);
+    const handleSortChange = useCallback((e) => setSortBy(e.target.value), []);
 
     const handleFormSubmit = useCallback(async (e) => {
         e.preventDefault();
@@ -215,6 +243,33 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
                 </Button>
             </div>
 
+            {(activeClients.length > 0 || archivedClients.length > 0) && (
+                <div className="grid grid-cols-1 sm:grid-cols-[1fr_12rem] gap-3">
+                    <TextField
+                        icon={Search}
+                        value={searchTerm}
+                        onChange={handleSearchChange}
+                        placeholder="Søk etter utøver"
+                        aria-label="Søk etter utøver"
+                    />
+                    <div className="relative">
+                        <ArrowUpDown className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted z-10" size={18} />
+                        <SelectField
+                            value={sortBy}
+                            onChange={handleSortChange}
+                            options={['unread', 'lastCheckin', 'name']}
+                            aria-label="Sorter utøvere"
+                            displayLabels={{
+                                unread: 'Uleste først',
+                                lastCheckin: 'Siste rapport',
+                                name: 'Navn'
+                            }}
+                            selectClassName="pl-12"
+                        />
+                    </div>
+                </div>
+            )}
+
             {/* Client List */}
             <div className="space-y-2">
                 {displayedClients.length === 0 && isLoading ? (
@@ -235,8 +290,8 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
                 ) : displayedClients.length === 0 ? (
                     <EmptyState
                         icon={User}
-                        title={showArchived ? 'Ingen arkiverte utøvere' : 'Ingen utøvere enda'}
-                        description={!showArchived ? 'Trykk «Ny» for å legge til din første utøver' : undefined}
+                        title={searchTerm ? 'Ingen treff' : (showArchived ? 'Ingen arkiverte utøvere' : 'Ingen utøvere enda')}
+                        description={searchTerm ? 'Prøv et annet navn eller brukernavn' : (!showArchived ? 'Trykk «Ny» for å legge til din første utøver' : undefined)}
                     />
                 ) : (
                     displayedClients.map(client => {

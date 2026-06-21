@@ -166,19 +166,30 @@ export const ToggleGroup = React.memo(({ options, value, onChange, className = '
 ));
 
 let selectFieldCounter = 0;
-export const SelectField = React.memo(({ label, value, onChange, options, id: providedId }) => {
+export const SelectField = React.memo(({
+    label,
+    value,
+    onChange,
+    options,
+    id: providedId,
+    displayLabels = {},
+    className = '',
+    selectClassName = '',
+    ...props
+}) => {
     const [autoId] = React.useState(() => providedId || `select-field-${++selectFieldCounter}`);
     return (
-        <div>
-            <label htmlFor={autoId} className="block text-sm font-medium text-ink-muted mb-2">{label}</label>
+        <div className={className}>
+            {label && <label htmlFor={autoId} className="block text-sm font-medium text-ink-muted mb-2">{label}</label>}
             <div className="relative">
                 <select
                     id={autoId}
                     value={value}
                     onChange={onChange}
-                    className="w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl appearance-none focus:ring-2 focus:ring-accent focus:border-accent outline-none font-medium cursor-pointer"
+                    className={`w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl appearance-none focus:ring-2 focus:ring-accent focus:border-accent outline-none font-medium cursor-pointer ${selectClassName}`}
+                    {...props}
                 >
-                    {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                    {options.map(opt => <option key={opt} value={opt}>{displayLabels[opt] || opt}</option>)}
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" size={18} />
             </div>
