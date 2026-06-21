@@ -46,6 +46,98 @@ const CompareZoomImage = React.memo(({ image, label }) => (
     </TransformWrapper>
 ));
 
+const ComparePanel = React.memo(({ image, label, align = 'left' }) => (
+    <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden bg-black/10">
+        <CompareZoomImage image={image} label={label} />
+        <div className={`absolute top-3 ${align === 'right' ? 'right-3' : 'left-3'} bg-white/10 text-white px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium backdrop-blur-md ring-1 ring-white/10 pointer-events-none`}>
+            {label.toUpperCase()}
+        </div>
+        <div className="absolute bottom-3 left-3 right-3 bg-black/45 backdrop-blur-md rounded-lg p-2.5 sm:p-3 ring-1 ring-white/10 pointer-events-none">
+            <p className="text-white text-sm sm:text-base font-medium">{formatDateNO(image.date)}</p>
+            {image.weight && (
+                <p className="text-white/70 text-xs sm:text-sm">{formatWeight(image.weight)} kg</p>
+            )}
+        </div>
+    </div>
+));
+
+const FullscreenCompareModal = React.memo(({ before, after, daysDiff, weightDiff, onClose }) => {
+    useEffect(() => {
+        const previousBodyOverflow = document.body.style.overflow;
+        const previousHtmlOverflow = document.documentElement.style.overflow;
+        document.body.style.overflow = 'hidden';
+        document.documentElement.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = previousBodyOverflow;
+            document.documentElement.style.overflow = previousHtmlOverflow;
+        };
+    }, []);
+
+    useEffect(() => {
+        const handleKeyDown = (event) => {
+            if (event.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onClose]);
+
+    return createPortal(
+        <div
+            className="fixed inset-0 z-[100] isolate bg-[#080807]/96 animate-fade-in overflow-hidden"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Sammenligning i fullskjerm"
+            style={{ width: '100vw', height: '100dvh', top: 0, left: 0, overscrollBehavior: 'contain' }}
+        >
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(255,255,255,0.10),transparent_28rem)] pointer-events-none" />
+            <div className="absolute inset-x-0 top-0 z-[105] h-28 bg-gradient-to-b from-black/60 to-transparent pointer-events-none" />
+            <div className="absolute inset-x-0 bottom-0 z-[105] h-32 bg-gradient-to-t from-black/65 to-transparent pointer-events-none" />
+
+            <header className="absolute inset-x-0 top-0 z-[120] safe-area-pt">
+                <div className="flex items-center justify-between gap-3 p-3 sm:p-4">
+                    <div className="min-w-0 text-white">
+                        <p className="text-xs sm:text-sm text-white/60">Sammenligning</p>
+                        <p className="font-medium">{daysDiff ?? 0} dager</p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        aria-label="Lukk fullskjerm"
+                        className="text-white/75 hover:text-white min-h-[44px] min-w-[44px] p-2 rounded-full bg-white/10 hover:bg-white/18 backdrop-blur-md ring-1 ring-white/10 transition-all"
+                    >
+                        <X size={24} />
+                    </button>
+                </div>
+            </header>
+
+            <main className="relative z-10 h-full w-full pt-[calc(env(safe-area-inset-top,0px)+4.75rem)] pb-[calc(env(safe-area-inset-bottom,0px)+4.75rem)]">
+                <div className="flex h-full min-h-0 w-full flex-col sm:flex-row">
+                    <ComparePanel image={before} label="Før" />
+                    <div className="h-px w-full shrink-0 bg-white/20 sm:h-full sm:w-px" />
+                    <ComparePanel image={after} label="Etter" align="right" />
+                </div>
+            </main>
+
+            <footer className="absolute inset-x-0 bottom-0 z-[120] safe-area-pb">
+                <div className="flex items-center justify-center gap-2 sm:gap-4 p-3 sm:p-4">
+                    {weightDiff && (
+                        <div className={`flex items-center gap-2 py-2 px-3 sm:px-4 rounded-full backdrop-blur-md ring-1 ring-white/10 ${parseFloat(weightDiff) < 0 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-white/10 text-white'}`}>
+                            {parseFloat(weightDiff) < 0 ? <TrendingDown size={18} /> : parseFloat(weightDiff) > 0 ? <TrendingUp size={18} /> : <Minus size={18} />}
+                            <span className="font-semibold text-sm sm:text-base">
+                                {parseFloat(weightDiff) > 0 ? '+' : ''}{weightDiff.replace('.', ',')} kg
+                            </span>
+                        </div>
+                    )}
+                    <div className="bg-white/10 text-white/65 py-2 px-3 sm:px-4 rounded-full text-xs sm:text-sm backdrop-blur-md ring-1 ring-white/10">
+                        Zoom og panorer
+                    </div>
+                </div>
+            </footer>
+        </div>,
+        document.body
+    );
+});
+
 // GalleryView - samler alle bilder fra checkins for lett sammenligning
 const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false, uploadUserId, onAddGalleryImage, onDeleteGalleryImage }) => {
     const toast = useToast();
@@ -168,18 +260,6 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
             compareTopRef.current?.scrollIntoView({ block: 'start' });
         });
     }, [viewMode]);
-
-    useEffect(() => {
-        if (!fullscreenCompare) return;
-        const previousBodyOverflow = document.body.style.overflow;
-        const previousHtmlOverflow = document.documentElement.style.overflow;
-        document.body.style.overflow = 'hidden';
-        document.documentElement.style.overflow = 'hidden';
-        return () => {
-            document.body.style.overflow = previousBodyOverflow;
-            document.documentElement.style.overflow = previousHtmlOverflow;
-        };
-    }, [fullscreenCompare]);
 
     const visibleImages = useMemo(
         () => allImages.slice(0, visibleImageCount),
@@ -370,7 +450,6 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
     }, []);
 
     useEscapeKey(closeUploadModal, showUploadModal);
-    useEscapeKey(closeFullscreenCompare, fullscreenCompare);
     const uploadModalRef = useFocusTrap(showUploadModal);
 
     // Felles upload-modal (brukes i både tom- og normal-visning)
@@ -440,81 +519,14 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
             )}
 
             {/* Fullskjerm sammenligning */}
-            {fullscreenCompare && compareImages.before && compareImages.after && createPortal(
-                <div className="fixed inset-0 z-[100] bg-[#080807]/96 flex flex-col animate-fade-in overflow-hidden" style={{ height: '100dvh' }}>
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(255,255,255,0.10),transparent_28rem)] pointer-events-none" />
-                    <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/55 to-transparent pointer-events-none" />
-                    <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
-                    {/* Header */}
-                    <div className="safe-area-pt relative z-[120]">
-                        <div className="flex justify-between items-center p-4">
-                            <div className="text-white">
-                                <p className="text-sm text-white/60">Sammenligning</p>
-                                <p className="font-medium">{daysDiff} dager</p>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={closeFullscreenCompare}
-                                aria-label="Lukk fullskjerm"
-                                className="text-white/75 hover:text-white min-h-[44px] min-w-[44px] p-2 rounded-full bg-white/10 hover:bg-white/18 backdrop-blur-md ring-1 ring-white/10 transition-all"
-                            >
-                                <X size={24} />
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Bilder side-by-side med zoom */}
-                    <div className="relative z-10 flex-1 flex min-h-0 overflow-hidden">
-                        {/* Før */}
-                        <div className="flex-1 min-w-0 h-full relative overflow-hidden">
-                            <CompareZoomImage image={compareImages.before} label="Før" />
-                            <div className="absolute top-4 left-4 bg-white/10 text-white px-3 py-1.5 rounded-full text-sm font-medium backdrop-blur-md ring-1 ring-white/10 pointer-events-none">
-                                FØR
-                            </div>
-                            <div className="absolute bottom-4 left-4 right-4 bg-black/45 backdrop-blur-md rounded-xl p-3 ring-1 ring-white/10 pointer-events-none">
-                                <p className="text-white font-medium">{formatDateNO(compareImages.before.date)}</p>
-                                {compareImages.before.weight && (
-                                    <p className="text-white/70 text-sm">{formatWeight(compareImages.before.weight)} kg</p>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Skillelinje */}
-                        <div className="w-0.5 bg-white/20" />
-
-                        {/* Etter */}
-                        <div className="flex-1 min-w-0 h-full relative overflow-hidden">
-                            <CompareZoomImage image={compareImages.after} label="Etter" />
-                            <div className="absolute top-4 right-4 bg-white/10 text-white px-3 py-1.5 rounded-full text-sm font-medium backdrop-blur-md ring-1 ring-white/10 pointer-events-none">
-                                ETTER
-                            </div>
-                            <div className="absolute bottom-4 left-4 right-4 bg-black/45 backdrop-blur-md rounded-xl p-3 ring-1 ring-white/10 pointer-events-none">
-                                <p className="text-white font-medium">{formatDateNO(compareImages.after.date)}</p>
-                                {compareImages.after.weight && (
-                                    <p className="text-white/70 text-sm">{formatWeight(compareImages.after.weight)} kg</p>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Footer med statistikk */}
-                    <div className="relative z-[120] p-4 safe-area-pb">
-                        <div className="flex items-center justify-center gap-4">
-                            {weightDiff && (
-                                <div className={`flex items-center gap-2 py-2 px-4 rounded-full backdrop-blur-md ring-1 ring-white/10 ${parseFloat(weightDiff) < 0 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-white/10 text-white'}`}>
-                                    {parseFloat(weightDiff) < 0 ? <TrendingDown size={18} /> : parseFloat(weightDiff) > 0 ? <TrendingUp size={18} /> : <Minus size={18} />}
-                                    <span className="font-semibold">
-                                        {parseFloat(weightDiff) > 0 ? '+' : ''}{weightDiff.replace('.', ',')} kg
-                                    </span>
-                                </div>
-                            )}
-                            <div className="bg-white/10 text-white/65 py-2 px-4 rounded-full text-sm backdrop-blur-md ring-1 ring-white/10">
-                                Knip for å zoome
-                            </div>
-                        </div>
-                    </div>
-                </div>,
-                document.body
+            {fullscreenCompare && compareImages.before && compareImages.after && (
+                <FullscreenCompareModal
+                    before={compareImages.before}
+                    after={compareImages.after}
+                    daysDiff={daysDiff}
+                    weightDiff={weightDiff}
+                    onClose={closeFullscreenCompare}
+                />
             )}
 
             {/* Header med visningsvalg */}
