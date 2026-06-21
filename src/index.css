@@ -82,6 +82,18 @@ input[type="checkbox"]:checked {
 .hide-scrollbar::-webkit-scrollbar { display: none; }
 .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+.compare-zoom-wrapper,
+.compare-zoom-content {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.compare-zoom-content {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+}
+
 .prose p { margin-bottom: 1em; line-height: 1.7; }
 .prose h1 { font-size: 1.75em; margin-top: 1.5em; margin-bottom: 0.5em; }
 .prose h2 { font-size: 1.375em; margin-top: 1.5em; margin-bottom: 0.5em; }

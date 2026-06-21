@@ -19,6 +19,32 @@ const getImageKey = (img, fallbackIndex) => {
     return `checkin-${img.checkinId}-${fallbackIndex}`;
 };
 
+const CompareZoomImage = React.memo(({ image, label }) => (
+    <TransformWrapper
+        key={image.url}
+        {...IMAGE_ZOOM_PROPS}
+    >
+        <TransformComponent
+            wrapperClass="compare-zoom-wrapper"
+            contentClass="compare-zoom-content"
+            wrapperStyle={TRANSFORM_WRAPPER_STYLE}
+            contentStyle={TRANSFORM_CONTENT_STYLE}
+        >
+            <img
+                src={getFullSizeImage(image.url)}
+                onError={(event) => {
+                    if (event.currentTarget.src !== image.url) {
+                        event.currentTarget.src = image.url;
+                    }
+                }}
+                className="block h-full w-full object-contain select-none shadow-[0_24px_90px_rgba(0,0,0,0.30)]"
+                alt={label}
+                draggable={false}
+            />
+        </TransformComponent>
+    </TransformWrapper>
+));
+
 // GalleryView - samler alle bilder fra checkins for lett sammenligning
 const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false, uploadUserId, onAddGalleryImage, onDeleteGalleryImage }) => {
     const toast = useToast();
@@ -412,23 +438,10 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                     </div>
 
                     {/* Bilder side-by-side med zoom */}
-                    <div className="relative z-10 flex-1 flex overflow-hidden">
+                    <div className="relative z-10 flex-1 flex min-h-0 overflow-hidden">
                         {/* Før */}
-                        <div className="flex-1 relative overflow-hidden">
-                            <TransformWrapper
-                                {...IMAGE_ZOOM_PROPS}
-                            >
-                                <TransformComponent
-                                    wrapperStyle={TRANSFORM_WRAPPER_STYLE}
-                                    contentStyle={TRANSFORM_CONTENT_STYLE}
-                                >
-                                    <img 
-                                        src={getFullSizeImage(compareImages.before.url)} 
-                                        className="max-w-full max-h-full object-contain shadow-[0_24px_90px_rgba(0,0,0,0.30)]"
-                                        alt="Før"
-                                    />
-                                </TransformComponent>
-                            </TransformWrapper>
+                        <div className="flex-1 min-w-0 h-full relative overflow-hidden">
+                            <CompareZoomImage image={compareImages.before} label="Før" />
                             <div className="absolute top-4 left-4 bg-white/10 text-white px-3 py-1.5 rounded-full text-sm font-medium backdrop-blur-md ring-1 ring-white/10 pointer-events-none">
                                 FØR
                             </div>
@@ -444,21 +457,8 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                         <div className="w-0.5 bg-white/20" />
 
                         {/* Etter */}
-                        <div className="flex-1 relative overflow-hidden">
-                            <TransformWrapper
-                                {...IMAGE_ZOOM_PROPS}
-                            >
-                                <TransformComponent
-                                    wrapperStyle={TRANSFORM_WRAPPER_STYLE}
-                                    contentStyle={TRANSFORM_CONTENT_STYLE}
-                                >
-                                    <img 
-                                        src={getFullSizeImage(compareImages.after.url)} 
-                                        className="max-w-full max-h-full object-contain shadow-[0_24px_90px_rgba(0,0,0,0.30)]"
-                                        alt="Etter"
-                                    />
-                                </TransformComponent>
-                            </TransformWrapper>
+                        <div className="flex-1 min-w-0 h-full relative overflow-hidden">
+                            <CompareZoomImage image={compareImages.after} label="Etter" />
                             <div className="absolute top-4 right-4 bg-white/10 text-white px-3 py-1.5 rounded-full text-sm font-medium backdrop-blur-md ring-1 ring-white/10 pointer-events-none">
                                 ETTER
                             </div>
@@ -539,7 +539,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                                 {compareImages.before ? (
                                     <>
                                         <img 
-                                            src={getFullSizeImage(compareImages.before.url)} 
+                                            src={getThumbnail(compareImages.before.url)} 
                                             className="w-full h-full object-cover"
                                             alt="Før"
                                         />
@@ -576,7 +576,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                                 {compareImages.after ? (
                                     <>
                                         <img 
-                                            src={getFullSizeImage(compareImages.after.url)} 
+                                            src={getThumbnail(compareImages.after.url)} 
                                             className="w-full h-full object-cover"
                                             alt="Etter"
                                         />
