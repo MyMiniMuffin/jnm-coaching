@@ -17,6 +17,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
     const indexRef = useRef(index);
     const onCloseRef = useRef(onClose);
     const touchStartRef = useRef(null);
+    const imageRef = useRef(null);
     indexRef.current = index;
     onCloseRef.current = onClose;
 
@@ -94,9 +95,19 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
     if (!images || images.length === 0) return null;
 
     const currentImage = images[index];
+    const currentImageSrc = getFullSizeImage(currentImage);
     const imageLabel = `Bilde ${index + 1} av ${images.length}`;
     const hasNext = index < images.length - 1;
     const hasPrev = index > 0;
+
+    useEffect(() => {
+        setLoading(true);
+        const image = imageRef.current;
+        if (!image) return;
+        if (image.complete && image.naturalWidth > 0) {
+            setLoading(false);
+        }
+    }, [currentImageSrc]);
 
     return (
         <div
@@ -148,7 +159,9 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
                             </div>
                         )}
                         <img
-                            src={getFullSizeImage(currentImage)}
+                            ref={imageRef}
+                            key={currentImageSrc}
+                            src={currentImageSrc}
                             onLoad={() => setLoading(false)}
                             onError={() => setLoading(false)}
                             className={`max-w-full max-h-[88vh] object-contain select-none rounded-sm shadow-[0_24px_90px_rgba(0,0,0,0.32)] transition-all duration-300 ease-out ${loading ? `opacity-0 ${direction > 0 ? 'translate-x-4' : direction < 0 ? '-translate-x-4' : 'scale-[0.99]'}` : 'opacity-100 translate-x-0 scale-100'}`}

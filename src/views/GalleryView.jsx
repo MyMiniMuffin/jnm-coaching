@@ -24,6 +24,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
     const [isUploading, setIsUploading] = useState(false);
     const [uploadForm, setUploadForm] = useState({ label: 'Startbilde', date: new Date().toISOString().split('T')[0], weight: '' });
     const [visibleImageCount, setVisibleImageCount] = useState(IMAGE_BATCH_SIZE);
+    const tilePointerRef = React.useRef(null);
 
     // Samle alle bilder med metadata, sortert fra nyeste til eldste
     const allImages = useMemo(() => {
@@ -162,6 +163,31 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
             openLightbox(idx);
         }
     }, [selectingFor, openLightbox]);
+
+    const handleTilePointerDown = useCallback((e, img, idx) => {
+        tilePointerRef.current = {
+            x: e.clientX,
+            y: e.clientY,
+            img,
+            idx
+        };
+    }, []);
+
+    const handleTilePointerUp = useCallback((e) => {
+        const start = tilePointerRef.current;
+        tilePointerRef.current = null;
+        if (!start) return;
+        const deltaX = Math.abs(e.clientX - start.x);
+        const deltaY = Math.abs(e.clientY - start.y);
+        if (deltaX > 12 || deltaY > 12) return;
+        handleImageClick(start.img, start.idx);
+    }, [handleImageClick]);
+
+    const handleTileKeyDown = useCallback((e, img, idx) => {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        e.preventDefault();
+        handleImageClick(img, idx);
+    }, [handleImageClick]);
 
     const startCompare = useCallback(() => {
         // Auto-velg eldste og nyeste bilde som standard
@@ -656,7 +682,12 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                             <div 
                                 key={img.isGalleryImage ? `gallery-${img.galleryImageId}` : `${img.checkinId}-${idx}`}
                                 className="relative aspect-square cursor-pointer group"
-                                onClick={() => handleImageClick(img, idx)}
+                                role="button"
+                                tabIndex={0}
+                                data-swipe-ignore="true"
+                                onPointerDown={(e) => handleTilePointerDown(e, img, idx)}
+                                onPointerUp={handleTilePointerUp}
+                                onKeyDown={(e) => handleTileKeyDown(e, img, idx)}
                             >
                                 <img 
                                     src={getThumbnail(img.url)} 
@@ -718,7 +749,12 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                                         <div 
                                             key={img.isGalleryImage ? `gallery-${img.galleryImageId}` : `${img.checkinId}-${idx}`}
                                             className="relative aspect-square cursor-pointer group"
-                                            onClick={() => handleImageClick(img, img.globalIndex)}
+                                            role="button"
+                                            tabIndex={0}
+                                            data-swipe-ignore="true"
+                                            onPointerDown={(e) => handleTilePointerDown(e, img, img.globalIndex)}
+                                            onPointerUp={handleTilePointerUp}
+                                            onKeyDown={(e) => handleTileKeyDown(e, img, img.globalIndex)}
                                         >
                                             <img 
                                                 src={getThumbnail(img.url)} 
