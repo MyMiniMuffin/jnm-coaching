@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Camera, X, Loader2, Plus, Eye, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { Card, Button, EmptyState, IconButton, TextField, ToggleGroup } from '../components/ui';
@@ -167,6 +168,18 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
             compareTopRef.current?.scrollIntoView({ block: 'start' });
         });
     }, [viewMode]);
+
+    useEffect(() => {
+        if (!fullscreenCompare) return;
+        const previousBodyOverflow = document.body.style.overflow;
+        const previousHtmlOverflow = document.documentElement.style.overflow;
+        document.body.style.overflow = 'hidden';
+        document.documentElement.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = previousBodyOverflow;
+            document.documentElement.style.overflow = previousHtmlOverflow;
+        };
+    }, [fullscreenCompare]);
 
     const visibleImages = useMemo(
         () => allImages.slice(0, visibleImageCount),
@@ -352,7 +365,12 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
         setShowUploadModal(false);
     }, []);
 
+    const closeFullscreenCompare = useCallback(() => {
+        setFullscreenCompare(false);
+    }, []);
+
     useEscapeKey(closeUploadModal, showUploadModal);
+    useEscapeKey(closeFullscreenCompare, fullscreenCompare);
     const uploadModalRef = useFocusTrap(showUploadModal);
 
     // Felles upload-modal (brukes i både tom- og normal-visning)
@@ -422,8 +440,8 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
             )}
 
             {/* Fullskjerm sammenligning */}
-            {fullscreenCompare && compareImages.before && compareImages.after && (
-                <div className="fixed inset-0 z-[100] bg-[#080807]/96 flex flex-col animate-fade-in overflow-hidden">
+            {fullscreenCompare && compareImages.before && compareImages.after && createPortal(
+                <div className="fixed inset-0 z-[100] bg-[#080807]/96 flex flex-col animate-fade-in overflow-hidden" style={{ height: '100dvh' }}>
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(255,255,255,0.10),transparent_28rem)] pointer-events-none" />
                     <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/55 to-transparent pointer-events-none" />
                     <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
@@ -436,7 +454,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                             </div>
                             <button
                                 type="button"
-                                onClick={() => setFullscreenCompare(false)}
+                                onClick={closeFullscreenCompare}
                                 aria-label="Lukk fullskjerm"
                                 className="text-white/75 hover:text-white min-h-[44px] min-w-[44px] p-2 rounded-full bg-white/10 hover:bg-white/18 backdrop-blur-md ring-1 ring-white/10 transition-all"
                             >
@@ -495,7 +513,8 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                             </div>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Header med visningsvalg */}
