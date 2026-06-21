@@ -20,12 +20,19 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
     const onCloseRef = useRef(onClose);
     const touchStartRef = useRef(null);
     const imageRef = useRef(null);
+    const scaleRef = useRef(1);
     indexRef.current = index;
     onCloseRef.current = onClose;
 
     useEffect(() => {
+        const previousBodyOverflow = document.body.style.overflow;
+        const previousHtmlOverflow = document.documentElement.style.overflow;
         document.body.style.overflow = 'hidden';
-        return () => { document.body.style.overflow = 'unset'; };
+        document.documentElement.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = previousBodyOverflow;
+            document.documentElement.style.overflow = previousHtmlOverflow;
+        };
     }, []);
 
     useEffect(() => {
@@ -40,6 +47,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
     const goToIndex = useCallback((nextIndex, nextDirection) => {
         const boundedIndex = Math.max(0, Math.min(nextIndex, (images?.length || 1) - 1));
         if (boundedIndex === indexRef.current) return;
+        scaleRef.current = 1;
         setDirection(nextDirection);
         setLoading(true);
         setIndex(boundedIndex);
@@ -56,6 +64,10 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
     }, [goToIndex]);
 
     const handleTouchStart = useCallback((e) => {
+        if (e.touches?.length !== 1) {
+            touchStartRef.current = null;
+            return;
+        }
         const touch = e.touches?.[0];
         if (!touch) return;
         touchStartRef.current = { x: touch.clientX, y: touch.clientY };
@@ -66,6 +78,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
         const touch = e.changedTouches?.[0];
         touchStartRef.current = null;
         if (!start || !touch) return;
+        if (scaleRef.current > 1.02) return;
 
         const deltaX = touch.clientX - start.x;
         const deltaY = touch.clientY - start.y;
@@ -114,12 +127,13 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
 
     const modal = (
         <div
-            className="fixed inset-0 z-[100] bg-[#080807]/96 flex items-center justify-center animate-fade-in overflow-hidden"
+            className="fixed inset-0 z-[100] bg-[#080807]/96 flex flex-col animate-fade-in overflow-hidden"
             role="dialog"
             aria-modal="true"
             aria-label="Bildevisning"
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
+            style={{ height: '100dvh' }}
         >
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(255,255,255,0.10),transparent_28rem)] pointer-events-none" />
             <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/55 to-transparent pointer-events-none" />
@@ -144,12 +158,20 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
                 </div>
             )}
 
-            <div className="relative w-full h-full flex items-center justify-center px-0 sm:px-6">
+            <div className="relative z-10 flex-1 min-h-0 w-full px-0 pt-[calc(env(safe-area-inset-top,0px)+4.25rem)] pb-[calc(env(safe-area-inset-bottom,0px)+4.75rem)] sm:px-6">
                 <TransformWrapper
                     key={index}
                     {...IMAGE_ZOOM_PROPS}
+                    onTransformed={(_, state) => {
+                        scaleRef.current = state.scale;
+                    }}
                 >
-                    <TransformComponent wrapperStyle={WRAPPER_STYLE} contentStyle={CONTENT_STYLE}>
+                    <TransformComponent
+                        wrapperClass="lightbox-zoom-wrapper"
+                        contentClass="lightbox-zoom-content"
+                        wrapperStyle={WRAPPER_STYLE}
+                        contentStyle={CONTENT_STYLE}
+                    >
                         {loading && (
                             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3" aria-hidden="true">
                                 <div className="w-[min(70vw,420px)] aspect-[3/4] rounded-2xl bg-white/7 border border-white/10 animate-pulse flex items-center justify-center shadow-[0_24px_70px_rgba(0,0,0,0.35)]">
@@ -163,9 +185,16 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
                             key={currentImageSrc}
                             src={currentImageSrc}
                             onLoad={() => setLoading(false)}
-                            onError={() => setLoading(false)}
-                            className={`max-w-full max-h-[88vh] object-contain select-none rounded-sm shadow-[0_24px_90px_rgba(0,0,0,0.32)] transition-all duration-300 ease-out ${loading ? `opacity-0 ${direction > 0 ? 'translate-x-4' : direction < 0 ? '-translate-x-4' : 'scale-[0.99]'}` : 'opacity-100 translate-x-0 scale-100'}`}
+                            onError={(event) => {
+                                if (event.currentTarget.src !== currentImage) {
+                                    event.currentTarget.src = currentImage;
+                                    return;
+                                }
+                                setLoading(false);
+                            }}
+                            className={`block h-full w-full object-contain select-none rounded-sm shadow-[0_24px_90px_rgba(0,0,0,0.32)] transition-all duration-300 ease-out ${loading ? `opacity-0 ${direction > 0 ? 'translate-x-4' : direction < 0 ? '-translate-x-4' : 'scale-[0.99]'}` : 'opacity-100 translate-x-0 scale-100'}`}
                             alt={imageLabel}
+                            draggable={false}
                         />
                     </TransformComponent>
                 </TransformWrapper>

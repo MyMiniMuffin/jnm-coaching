@@ -83,12 +83,15 @@ input[type="checkbox"]:checked {
 .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
 .compare-zoom-wrapper,
-.compare-zoom-content {
+.compare-zoom-content,
+.lightbox-zoom-wrapper,
+.lightbox-zoom-content {
     width: 100% !important;
     height: 100% !important;
 }
 
-.compare-zoom-content {
+.compare-zoom-content,
+.lightbox-zoom-content {
     display: flex !important;
     align-items: center;
     justify-content: center;
