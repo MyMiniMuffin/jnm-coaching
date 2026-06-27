@@ -161,6 +161,7 @@ const getNotificationPermission = () => {
 };
 
 const UI_STATE_KEY = 'jnm_ui_state';
+const UI_STATE_MAX_AGE_MS = 6 * 60 * 60 * 1000;
 
 const readUiState = () => {
     if (typeof window === 'undefined') return null;
@@ -194,6 +195,11 @@ const clearUiState = () => {
         console.error('[UI State] Kunne ikke slette lagret posisjon:', error);
     }
 };
+
+const isUiStateFresh = (state) => (
+    Number.isFinite(state?.savedAt) &&
+    Date.now() - state.savedAt <= UI_STATE_MAX_AGE_MS
+);
 
 const urlBase64ToUint8Array = (base64String) => {
     const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -877,6 +883,15 @@ const App = () => {
 
         const savedState = readUiState();
         if (!savedState || savedState.userId !== currentUser.id) {
+            hasRestoredUiStateRef.current = true;
+            return;
+        }
+
+        if (!isUiStateFresh(savedState)) {
+            clearUiState();
+            restoreScrollYRef.current = null;
+            setActiveTab('dashboard');
+            setShowWeightHistory(false);
             hasRestoredUiStateRef.current = true;
             return;
         }
