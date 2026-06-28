@@ -519,6 +519,21 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
     
     const lastCheckin = checkins.length > 0 ? checkins[0] : null;
 
+    // Mild relativ tidsangivelse for siste rapport ("i dag", "i går", ...)
+    const lastCheckinAgo = useMemo(() => {
+        if (!lastCheckin) return '';
+        const raw = lastCheckin.date || lastCheckin.timestamp;
+        if (!raw) return '';
+        const d = new Date(typeof raw === 'string' && raw.length === 10 ? raw + 'T00:00:00' : raw);
+        if (isNaN(d)) return '';
+        const startOfDay = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate());
+        const diffDays = Math.round((startOfDay(new Date()) - startOfDay(d)) / 86400000);
+        if (diffDays <= 0) return 'i dag';
+        if (diffDays === 1) return 'i går';
+        if (diffDays < 7) return `${diffDays} dager siden`;
+        return formatDateNO(d);
+    }, [lastCheckin]);
+
     // Memoize week calculation
     const { currentWeek, progress } = useMemo(() => {
         if (!userData.startDate) return { currentWeek: 0, progress: 0 };
@@ -762,55 +777,56 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
             </div>
 
             {/* Last Report */}
-            {lastCheckin && (
-                <div>
-                    <p className="section-label mb-3 px-1">Siste rapport</p>
-                    <Card className="p-4">
-                        <div className="grid grid-cols-5 gap-2 text-center">
-                            <div>
-                                <div className={`rounded-lg py-2 ${parseInt(lastCheckin.accuracy) >= 8 ? 'bg-emerald-50' : parseInt(lastCheckin.accuracy) >= 5 ? 'bg-amber-50' : 'bg-red-50'}`}>
-                                    <p className={`text-lg font-semibold tabular-nums ${parseInt(lastCheckin.accuracy) >= 8 ? 'text-emerald-700' : parseInt(lastCheckin.accuracy) >= 5 ? 'text-amber-700' : 'text-red-700'}`}>{lastCheckin.accuracy}</p>
-                                </div>
-                                <p className="text-[10px] text-ink-muted mt-1.5">Nøyakt.</p>
+            {lastCheckin && (() => {
+                const pct10 = (v) => Math.max(0, Math.min(100, (parseInt(v) || 0) * 10));
+                const pctSessions = (v) => Math.max(0, Math.min(100, Math.round(((parseInt(v) || 0) / 7) * 100)));
+                const metrics = [
+                    { label: 'Nøyakt.', value: lastCheckin.accuracy ?? 0, width: pct10(lastCheckin.accuracy), color: '#6f8a6b' },
+                    { label: 'Energi', value: lastCheckin.energy ?? 0, width: pct10(lastCheckin.energy), color: '#c08a52' },
+                    { label: 'Søvn', value: lastCheckin.sleep ?? 0, width: pct10(lastCheckin.sleep), color: '#b8857f' },
+                    { label: 'Styrke', value: lastCheckin.strengthSessions || 0, width: pctSessions(lastCheckin.strengthSessions), color: '#9a958c' },
+                    { label: 'Cardio', value: lastCheckin.cardioSessions || 0, width: pctSessions(lastCheckin.cardioSessions), color: '#9a958c' },
+                ];
+                const pillBase = {
+                    display: 'inline-flex', alignItems: 'center', gap: '5px',
+                    fontSize: '12px', fontWeight: 500, padding: '5px 11px', borderRadius: '99px',
+                };
+                const pillOn = { ...pillBase, background: '#edf3ea', color: '#4f6b52' };
+                const pillOff = { ...pillBase, background: '#f1ede4', color: '#9a958c' };
+                return (
+                    <div>
+                        <div className="flex items-center mb-3 px-1">
+                            <span style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(23,23,23,0.5)' }}>Siste rapport</span>
+                            {lastCheckinAgo && (
+                                <span style={{ marginLeft: 'auto', fontSize: '11px', color: '#A3A3A3' }}>{lastCheckinAgo}</span>
+                            )}
+                        </div>
+                        <div style={{ background: '#fff', border: '1px solid #E8E2D6', borderRadius: '18px', padding: '18px 16px', boxShadow: '0 1px 2px rgba(23,23,23,0.04), 0 12px 30px rgba(23,23,23,0.05)' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '10px', textAlign: 'center' }}>
+                                {metrics.map((m) => (
+                                    <div key={m.label}>
+                                        <p style={{ fontSize: '20px', fontWeight: 600, color: '#171717' }} className="tabular-nums">{m.value}</p>
+                                        <div style={{ height: '4px', borderRadius: '99px', background: '#ece7df', margin: '7px 4px 0', overflow: 'hidden' }}>
+                                            <div style={{ height: '100%', width: `${m.width}%`, borderRadius: '99px', background: m.color }} />
+                                        </div>
+                                        <p style={{ fontSize: '11px', color: '#525252', marginTop: '8px' }}>{m.label}</p>
+                                    </div>
+                                ))}
                             </div>
-                            <div>
-                                <div className={`rounded-lg py-2 ${parseInt(lastCheckin.energy) >= 8 ? 'bg-emerald-50' : parseInt(lastCheckin.energy) >= 5 ? 'bg-amber-50' : 'bg-red-50'}`}>
-                                    <p className={`text-lg font-semibold tabular-nums ${parseInt(lastCheckin.energy) >= 8 ? 'text-emerald-700' : parseInt(lastCheckin.energy) >= 5 ? 'text-amber-700' : 'text-red-700'}`}>{lastCheckin.energy}</p>
-                                </div>
-                                <p className="text-[10px] text-ink-muted mt-1.5">Energi</p>
-                            </div>
-                            <div>
-                                <div className={`rounded-lg py-2 ${parseInt(lastCheckin.sleep) >= 8 ? 'bg-emerald-50' : parseInt(lastCheckin.sleep) >= 5 ? 'bg-amber-50' : 'bg-red-50'}`}>
-                                    <p className={`text-lg font-semibold tabular-nums ${parseInt(lastCheckin.sleep) >= 8 ? 'text-emerald-700' : parseInt(lastCheckin.sleep) >= 5 ? 'text-amber-700' : 'text-red-700'}`}>{lastCheckin.sleep}</p>
-                                </div>
-                                <p className="text-[10px] text-ink-muted mt-1.5">Søvn</p>
-                            </div>
-                            <div>
-                                <div className="rounded-lg py-2 bg-surface-50">
-                                    <p className="text-lg font-semibold tabular-nums text-ink">{lastCheckin.strengthSessions || 0}</p>
-                                </div>
-                                <p className="text-[10px] text-ink-muted mt-1.5">Styrke</p>
-                            </div>
-                            <div>
-                                <div className="rounded-lg py-2 bg-surface-50">
-                                    <p className="text-lg font-semibold tabular-nums text-ink">{lastCheckin.cardioSessions || 0}</p>
-                                </div>
-                                <p className="text-[10px] text-ink-muted mt-1.5">Cardio</p>
+                            <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid #f0ebe2', display: 'flex', justifyContent: 'center', gap: '8px' }}>
+                                <span style={lastCheckin.stepsReached ? pillOn : pillOff}>
+                                    <Footprints size={12} />
+                                    {lastCheckin.stepsReached ? 'Skrittmål nådd' : 'Under skrittmål'}
+                                </span>
+                                <span style={lastCheckin.takenSupplements ? pillOn : pillOff}>
+                                    {lastCheckin.takenSupplements ? <Check size={12} /> : <X size={12} />}
+                                    Tilskudd
+                                </span>
                             </div>
                         </div>
-                        <div className="mt-3 flex justify-center gap-2">
-                            <Badge variant={lastCheckin.stepsReached ? 'success' : 'muted'}>
-                                <Footprints size={12} />
-                                {lastCheckin.stepsReached ? 'Skrittmål' : 'Under mål'}
-                            </Badge>
-                            <Badge variant={lastCheckin.takenSupplements ? 'success' : 'muted'}>
-                                {lastCheckin.takenSupplements ? <Check size={12} /> : <X size={12} />}
-                                Tilskudd
-                            </Badge>
-                        </div>
-                    </Card>
-                </div>
-            )}
+                    </div>
+                );
+            })()}
 
             {/* Totaloversikt - kun hvis det finnes data */}
             {stats && (
