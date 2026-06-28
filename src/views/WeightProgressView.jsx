@@ -124,7 +124,7 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
             <div className="grid grid-cols-2 gap-4">
                 <Card className="p-5">
                     <p className="section-label mb-1">Endring</p>
-                    <div className={`text-2xl font-semibold flex items-center gap-2 ${isDown ? 'text-emerald-600' : isSame ? 'text-ink-muted' : 'text-ink'}`}>
+                    <div className={`text-2xl font-semibold flex items-center gap-2 ${isDown ? '' : isSame ? 'text-ink-muted' : 'text-ink'}`} style={isDown ? { color: '#4f6b52' } : undefined}>
                         {totalChange > 0 ? '+' : ''}{totalChange.replace('.', ',')} kg
                         {isDown ? <TrendingDown size={20} /> : isSame ? <Minus size={20} /> : <TrendingUp size={20} />}
                     </div>
