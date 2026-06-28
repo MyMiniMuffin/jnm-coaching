@@ -757,7 +757,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                         </div>
                         <ChevronRight size={16} className="text-ink-faint" />
                     </div>
-                    <p className="section-label">Siste vekt</p>
+                    <p style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(23,23,23,0.5)' }}>Siste vekt</p>
                     <p className="text-2xl font-semibold mt-1 tabular-nums">
                         {lastCheckin ? formatWeight(lastCheckin.weight) : '-'}
                         <span className="text-sm font-normal text-ink-muted ml-1">kg</span>
@@ -771,7 +771,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                             <Footprints size={20} />
                         </div>
                     </div>
-                    <p className="section-label">Ukentlig skrittmål</p>
+                    <p style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(23,23,23,0.5)' }}>Ukentlig skrittmål</p>
                     <p className="text-2xl font-semibold mt-1">{(userData.stepGoal || 10000).toLocaleString()}</p>
                 </Card>
             </div>
