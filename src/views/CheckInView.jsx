@@ -741,39 +741,46 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, onUpdate, ca
                                         </div>
                                     </div>
                                     
-                                    <div className="grid grid-cols-5 gap-1.5 text-xs mb-4">
-                                        <div className={`py-2 rounded-lg text-center ${parseInt(entry.accuracy) >= 8 ? 'bg-emerald-50' : parseInt(entry.accuracy) >= 5 ? 'bg-amber-50' : 'bg-red-50'}`}>
-                                            <p className={`font-semibold tabular-nums ${parseInt(entry.accuracy) >= 8 ? 'text-emerald-700' : parseInt(entry.accuracy) >= 5 ? 'text-amber-700' : 'text-red-700'}`}>{entry.accuracy}</p>
-                                            <p className="text-[9px] text-ink-faint mt-0.5">Nøyakt.</p>
-                                        </div>
-                                        <div className={`py-2 rounded-lg text-center ${parseInt(entry.energy) >= 8 ? 'bg-emerald-50' : parseInt(entry.energy) >= 5 ? 'bg-amber-50' : 'bg-red-50'}`}>
-                                            <p className={`font-semibold tabular-nums ${parseInt(entry.energy) >= 8 ? 'text-emerald-700' : parseInt(entry.energy) >= 5 ? 'text-amber-700' : 'text-red-700'}`}>{entry.energy}</p>
-                                            <p className="text-[9px] text-ink-faint mt-0.5">Energi</p>
-                                        </div>
-                                        <div className={`py-2 rounded-lg text-center ${parseInt(entry.sleep) >= 8 ? 'bg-emerald-50' : parseInt(entry.sleep) >= 5 ? 'bg-amber-50' : 'bg-red-50'}`}>
-                                            <p className={`font-semibold tabular-nums ${parseInt(entry.sleep) >= 8 ? 'text-emerald-700' : parseInt(entry.sleep) >= 5 ? 'text-amber-700' : 'text-red-700'}`}>{entry.sleep}</p>
-                                            <p className="text-[9px] text-ink-faint mt-0.5">Søvn</p>
-                                        </div>
-                                        <div className="py-2 rounded-lg text-center bg-surface-50">
-                                            <p className="font-semibold tabular-nums text-ink">{entry.strengthSessions || 0}</p>
-                                            <p className="text-[9px] text-ink-faint mt-0.5">Styrke</p>
-                                        </div>
-                                        <div className="py-2 rounded-lg text-center bg-surface-50">
-                                            <p className="font-semibold tabular-nums text-ink">{entry.cardioSessions || 0}</p>
-                                            <p className="text-[9px] text-ink-faint mt-0.5">Cardio</p>
-                                        </div>
-                                    </div>
+                                    {(() => {
+                                        const pct10 = (v) => Math.max(0, Math.min(100, (parseInt(v) || 0) * 10));
+                                        const pctSessions = (v) => Math.max(0, Math.min(100, Math.round(((parseInt(v) || 0) / 7) * 100)));
+                                        const metrics = [
+                                            { label: 'Nøyakt.', value: entry.accuracy ?? 0, width: pct10(entry.accuracy), color: '#6f8a6b' },
+                                            { label: 'Energi', value: entry.energy ?? 0, width: pct10(entry.energy), color: '#c08a52' },
+                                            { label: 'Søvn', value: entry.sleep ?? 0, width: pct10(entry.sleep), color: '#b8857f' },
+                                            { label: 'Styrke', value: entry.strengthSessions || 0, width: pctSessions(entry.strengthSessions), color: '#9a958c' },
+                                            { label: 'Cardio', value: entry.cardioSessions || 0, width: pctSessions(entry.cardioSessions), color: '#9a958c' },
+                                        ];
+                                        const pillBase = { display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '12px', fontWeight: 500, padding: '5px 11px', borderRadius: '99px' };
+                                        const pillOn = { ...pillBase, background: '#edf3ea', color: '#4f6b52' };
+                                        const pillOff = { ...pillBase, background: '#f1ede4', color: '#9a958c' };
+                                        return (
+                                            <>
+                                                <div className="grid grid-cols-5 gap-2 text-center mb-4">
+                                                    {metrics.map((m) => (
+                                                        <div key={m.label}>
+                                                            <p className="tabular-nums" style={{ fontSize: '18px', fontWeight: 600, color: '#171717' }}>{m.value}</p>
+                                                            <div style={{ height: '4px', borderRadius: '99px', background: '#ece7df', margin: '6px 2px 0', overflow: 'hidden' }}>
+                                                                <div style={{ height: '100%', width: `${m.width}%`, borderRadius: '99px', background: m.color }} />
+                                                            </div>
+                                                            <p style={{ fontSize: '10px', color: '#525252', marginTop: '6px' }}>{m.label}</p>
+                                                        </div>
+                                                    ))}
+                                                </div>
 
-                                    <div className="flex gap-2 mb-4">
-                                        <Badge variant={entry.stepsReached ? 'success' : 'muted'}>
-                                            <Footprints size={12} />
-                                            {entry.stepsReached ? 'Skrittmål' : 'Under mål'}
-                                        </Badge>
-                                        <Badge variant={entry.takenSupplements ? 'success' : 'muted'}>
-                                            {entry.takenSupplements ? <Check size={12} /> : <X size={12} />}
-                                            Tilskudd
-                                        </Badge>
-                                    </div>
+                                                <div className="flex gap-2 mb-4">
+                                                    <span style={entry.stepsReached ? pillOn : pillOff}>
+                                                        <Footprints size={12} />
+                                                        {entry.stepsReached ? 'Skrittmål nådd' : 'Under skrittmål'}
+                                                    </span>
+                                                    <span style={entry.takenSupplements ? pillOn : pillOff}>
+                                                        {entry.takenSupplements ? <Check size={12} /> : <X size={12} />}
+                                                        Tilskudd
+                                                    </span>
+                                                </div>
+                                            </>
+                                        );
+                                    })()}
 
                                     {entry.comment && (
                                         <p className="text-sm text-ink-muted bg-surface-50 p-3 rounded-lg italic mb-4">"{entry.comment}"</p>
