@@ -831,35 +831,41 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
             {/* Totaloversikt - kun hvis det finnes data */}
             {stats && (
                 <div>
-                    <p className="section-label mb-3 px-1">Din reise så langt</p>
-                    <Card className="p-5">
+                    <p style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(23,23,23,0.5)', margin: '0 4px 12px' }}>Din reise så langt</p>
+                    <Card className="p-5" style={{ background: '#fff', border: '1px solid #E8E2D6', borderRadius: '18px', boxShadow: '0 1px 2px rgba(23,23,23,0.04), 0 12px 30px rgba(23,23,23,0.05)' }}>
                         <div className="grid grid-cols-4 gap-3 text-center mb-5">
                             <div>
-                                <div className="text-2xl font-semibold text-ink">{stats.totalStrength}</div>
-                                <div className="stat-label mt-1">Styrkeøkter</div>
+                                <div className="font-semibold text-ink" style={{ fontSize: '23px' }}>{stats.totalStrength}</div>
+                                <div className="stat-label mt-1">Styrke</div>
                             </div>
                             <div>
-                                <div className="text-2xl font-semibold text-ink">{stats.totalCardio}</div>
+                                <div className="font-semibold text-ink" style={{ fontSize: '23px' }}>{stats.totalCardio}</div>
                                 <div className="stat-label mt-1">Cardio</div>
                             </div>
                             <div>
-                                <div className="text-2xl font-semibold text-ink tabular-nums">{stats.stepsHit}/{stats.totalCheckins}</div>
+                                <div className="font-semibold text-ink tabular-nums" style={{ fontSize: '23px' }}>{stats.stepsHit}/{stats.totalCheckins}</div>
                                 <div className="stat-label mt-1">Skrittmål</div>
                             </div>
                             <div>
-                                <div className="text-2xl font-semibold text-ink tabular-nums">{stats.avgAccuracy}</div>
-                                <div className="stat-label mt-1">Snitt nøyakt.</div>
+                                <div className="font-semibold text-ink tabular-nums" style={{ fontSize: '23px' }}>{stats.avgAccuracy}</div>
+                                <div className="stat-label mt-1">Nøyakt.</div>
                             </div>
                         </div>
-                        
-                        {stats.weightChange && (
-                            <div className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl ${parseFloat(stats.weightChange) < 0 ? 'bg-emerald-50 text-emerald-700' : parseFloat(stats.weightChange) > 0 ? 'bg-surface-100 text-ink' : 'bg-surface-100 text-ink-muted'}`}>
-                                {parseFloat(stats.weightChange) < 0 ? <TrendingDown size={18} /> : parseFloat(stats.weightChange) > 0 ? <TrendingUp size={18} /> : <Minus size={18} />}
-                                <span className="font-medium tabular-nums">
-                                    {parseFloat(stats.weightChange) > 0 ? '+' : ''}{stats.weightChange.replace('.', ',')} kg total endring
-                                </span>
-                            </div>
-                        )}
+
+                        {stats.weightChange && (() => {
+                            const wc = parseFloat(stats.weightChange);
+                            return (
+                                <div
+                                    className={`flex items-center justify-center gap-2 ${wc > 0 ? 'bg-surface-100 text-ink' : wc === 0 ? 'bg-surface-100 text-ink-muted' : ''}`}
+                                    style={{ padding: '13px', borderRadius: '13px', ...(wc < 0 ? { background: 'rgba(111,138,107,0.12)', color: '#4f6b52' } : {}) }}
+                                >
+                                    {wc < 0 ? <TrendingDown size={18} /> : wc > 0 ? <TrendingUp size={18} /> : <Minus size={18} />}
+                                    <span className="tabular-nums" style={{ fontWeight: 600 }}>
+                                        {wc > 0 ? '+' : ''}{stats.weightChange.replace('.', ',')} kg total endring
+                                    </span>
+                                </div>
+                            );
+                        })()}
                     </Card>
                 </div>
             )}
