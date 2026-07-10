@@ -61,9 +61,9 @@ const AutoGrowTextarea = ({ value, onChange, ...props }) => {
 const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    const [draft, setDraft] = useState(() => parsePlan(content));
+    const [draft, setDraft] = useState(() => parsePlan(content, type));
     const [saveState, setSaveState] = useState('idle');
-    const parsedPlan = useMemo(() => parsePlan(content), [content]);
+    const parsedPlan = useMemo(() => parsePlan(content, type), [content, type]);
 
     useEffect(() => {
         if (isEditing) return;
@@ -81,7 +81,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
     const title = type === 'diet' ? 'Matplan' : 'Treningsplan';
     const itemPlaceholder = type === 'diet'
         ? 'For eksempel: Havregrøt med bær'
-        : 'For eksempel: Knebøy – 4 × 6';
+        : 'For eksempel: Knebøy';
     const canSave = saveState === 'dirty' && !isSaving;
 
     const markChanged = useCallback((update) => {
@@ -90,10 +90,10 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
     }, []);
 
     const handleStartEditing = useCallback(() => {
-        setDraft(parsePlan(content));
+        setDraft(parsePlan(content, type));
         setSaveState('idle');
         setIsEditing(true);
-    }, [content]);
+    }, [content, type]);
 
     const handleSave = useCallback(async () => {
         if (!canSave) return;
@@ -109,10 +109,10 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
     }, [canSave, draft, onSave]);
 
     const handleCancel = useCallback(() => {
-        setDraft(parsePlan(content));
+        setDraft(parsePlan(content, type));
         setSaveState('idle');
         setIsEditing(false);
-    }, [content]);
+    }, [content, type]);
 
     const updateSection = useCallback((sectionIndex, update) => {
         markChanged(current => ({
@@ -121,15 +121,15 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
         }));
     }, [markChanged]);
 
-    const updateItem = useCallback((sectionIndex, itemIndex, text) => {
+    const updateItem = useCallback((sectionIndex, itemIndex, field, value) => {
         updateSection(sectionIndex, section => ({
             ...section,
-            items: section.items.map((item, index) => index === itemIndex ? { ...item, text } : item)
+            items: section.items.map((item, index) => index === itemIndex ? { ...item, [field]: value } : item)
         }));
     }, [updateSection]);
 
     const addItem = useCallback((sectionIndex, afterIndex = null) => {
-        const newItem = createSection('', ['']).items[0];
+        const newItem = createSection('', [''], type).items[0];
         updateSection(sectionIndex, section => {
             const items = [...section.items];
             const insertAt = afterIndex === null ? items.length : afterIndex + 1;
@@ -142,7 +142,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
             const targetIndex = afterIndex === null ? (fields?.length || 1) - 1 : afterIndex + 1;
             fields?.[targetIndex]?.focus();
         });
-    }, [updateSection]);
+    }, [type, updateSection]);
 
     const removeItem = useCallback((sectionIndex, itemIndex) => {
         updateSection(sectionIndex, section => ({
@@ -159,9 +159,9 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
     }, [updateSection]);
 
     const addSection = useCallback(() => {
-        markChanged(current => ({ ...current, sections: [...current.sections, createSection('', [''])] }));
+        markChanged(current => ({ ...current, sections: [...current.sections, createSection('', [''], type)] }));
         requestAnimationFrame(() => document.querySelector('[data-new-section="true"]')?.focus());
-    }, [markChanged]);
+    }, [markChanged, type]);
 
     const removeSection = useCallback((sectionIndex) => {
         markChanged(current => ({
@@ -263,32 +263,83 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                                     </div>
 
                                     <div className="mt-4 space-y-2">
-                                        <p className="section-label">Punkter</p>
+                                        <p className="section-label">{type === 'workout' ? 'Øvelser' : 'Punkter'}</p>
                                         {section.items.map((item, itemIndex) => (
-                                            <div key={item.key} className="flex items-start gap-2 rounded-lg bg-white p-2 border border-surface-100">
-                                                <span className="mt-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface-100 text-xs font-semibold text-ink-muted">{itemIndex + 1}</span>
-                                                <AutoGrowTextarea
-                                                    data-item={itemIndex}
-                                                    value={item.text}
-                                                    onChange={event => updateItem(sectionIndex, itemIndex, event.target.value)}
-                                                    onKeyDown={event => {
-                                                        if (event.key === 'Enter' && !event.shiftKey) {
-                                                            event.preventDefault();
-                                                            addItem(sectionIndex, itemIndex);
-                                                        }
-                                                    }}
-                                                    className="min-h-[2.5rem] min-w-0 flex-1 resize-none overflow-hidden bg-transparent px-1 py-2 text-sm leading-6 outline-none placeholder:text-ink-faint"
-                                                    placeholder={itemPlaceholder}
-                                                />
-                                                <div className="flex shrink-0 items-center">
-                                                    <SmallIconButton label="Flytt punktet opp" disabled={itemIndex === 0} onClick={() => moveItem(sectionIndex, itemIndex, -1)}><ArrowUp size={15} /></SmallIconButton>
-                                                    <SmallIconButton label="Flytt punktet ned" disabled={itemIndex === section.items.length - 1} onClick={() => moveItem(sectionIndex, itemIndex, 1)}><ArrowDown size={15} /></SmallIconButton>
-                                                    <SmallIconButton label="Slett punktet" tone="danger" onClick={() => removeItem(sectionIndex, itemIndex)}><Trash2 size={15} /></SmallIconButton>
+                                            type === 'workout' ? (
+                                                <div key={item.key} className="rounded-lg bg-white p-3 border border-surface-100">
+                                                    <div className="mb-2 flex items-center justify-between gap-2">
+                                                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface-100 text-xs font-semibold text-ink-muted">{itemIndex + 1}</span>
+                                                        <div className="flex shrink-0 items-center">
+                                                            <SmallIconButton label="Flytt øvelsen opp" disabled={itemIndex === 0} onClick={() => moveItem(sectionIndex, itemIndex, -1)}><ArrowUp size={15} /></SmallIconButton>
+                                                            <SmallIconButton label="Flytt øvelsen ned" disabled={itemIndex === section.items.length - 1} onClick={() => moveItem(sectionIndex, itemIndex, 1)}><ArrowDown size={15} /></SmallIconButton>
+                                                            <SmallIconButton label="Slett øvelsen" tone="danger" onClick={() => removeItem(sectionIndex, itemIndex)}><Trash2 size={15} /></SmallIconButton>
+                                                        </div>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-[minmax(0,1fr)_5.5rem_7rem]">
+                                                        <label className="col-span-2 min-w-0 sm:col-span-1">
+                                                            <span className="section-label mb-1 block">Øvelse</span>
+                                                            <AutoGrowTextarea
+                                                                data-item={itemIndex}
+                                                                value={item.text}
+                                                                onChange={event => updateItem(sectionIndex, itemIndex, 'text', event.target.value)}
+                                                                onKeyDown={event => {
+                                                                    if (event.key === 'Enter' && !event.shiftKey) {
+                                                                        event.preventDefault();
+                                                                        addItem(sectionIndex, itemIndex);
+                                                                    }
+                                                                }}
+                                                                className="min-h-[2.65rem] w-full resize-none overflow-hidden rounded-lg border border-surface-200 bg-surface-50 px-3 py-2 text-sm leading-6 outline-none placeholder:text-ink-faint focus:border-accent focus:ring-2 focus:ring-accent"
+                                                                placeholder={itemPlaceholder}
+                                                            />
+                                                        </label>
+                                                        <label className="min-w-0">
+                                                            <span className="section-label mb-1 block">Sett</span>
+                                                            <input
+                                                                value={item.sets || ''}
+                                                                onChange={event => updateItem(sectionIndex, itemIndex, 'sets', event.target.value)}
+                                                                inputMode="numeric"
+                                                                className="h-[2.65rem] w-full rounded-lg border border-surface-200 bg-surface-50 px-3 text-sm font-medium outline-none focus:border-accent focus:ring-2 focus:ring-accent"
+                                                                placeholder="3"
+                                                            />
+                                                        </label>
+                                                        <label className="min-w-0">
+                                                            <span className="section-label mb-1 block">Reps</span>
+                                                            <input
+                                                                value={item.reps || ''}
+                                                                onChange={event => updateItem(sectionIndex, itemIndex, 'reps', event.target.value)}
+                                                                inputMode="text"
+                                                                className="h-[2.65rem] w-full rounded-lg border border-surface-200 bg-surface-50 px-3 text-sm font-medium outline-none focus:border-accent focus:ring-2 focus:ring-accent"
+                                                                placeholder="8–10"
+                                                            />
+                                                        </label>
+                                                    </div>
                                                 </div>
-                                            </div>
+                                            ) : (
+                                                <div key={item.key} className="flex items-start gap-2 rounded-lg bg-white p-2 border border-surface-100">
+                                                    <span className="mt-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface-100 text-xs font-semibold text-ink-muted">{itemIndex + 1}</span>
+                                                    <AutoGrowTextarea
+                                                        data-item={itemIndex}
+                                                        value={item.text}
+                                                        onChange={event => updateItem(sectionIndex, itemIndex, 'text', event.target.value)}
+                                                        onKeyDown={event => {
+                                                            if (event.key === 'Enter' && !event.shiftKey) {
+                                                                event.preventDefault();
+                                                                addItem(sectionIndex, itemIndex);
+                                                            }
+                                                        }}
+                                                        className="min-h-[2.5rem] min-w-0 flex-1 resize-none overflow-hidden bg-transparent px-1 py-2 text-sm leading-6 outline-none placeholder:text-ink-faint"
+                                                        placeholder={itemPlaceholder}
+                                                    />
+                                                    <div className="flex shrink-0 items-center">
+                                                        <SmallIconButton label="Flytt punktet opp" disabled={itemIndex === 0} onClick={() => moveItem(sectionIndex, itemIndex, -1)}><ArrowUp size={15} /></SmallIconButton>
+                                                        <SmallIconButton label="Flytt punktet ned" disabled={itemIndex === section.items.length - 1} onClick={() => moveItem(sectionIndex, itemIndex, 1)}><ArrowDown size={15} /></SmallIconButton>
+                                                        <SmallIconButton label="Slett punktet" tone="danger" onClick={() => removeItem(sectionIndex, itemIndex)}><Trash2 size={15} /></SmallIconButton>
+                                                    </div>
+                                                </div>
+                                            )
                                         ))}
                                         <Button variant="ghost" size="sm" onClick={() => addItem(sectionIndex)} className="mt-1">
-                                            <Plus size={16} /> Legg til punkt
+                                            <Plus size={16} /> {type === 'workout' ? 'Legg til øvelse' : 'Legg til punkt'}
                                         </Button>
                                     </div>
                                 </div>
@@ -308,7 +359,15 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                                             {section.items.map(item => (
                                                 <li key={item.key} className="flex items-start gap-3 text-[0.95rem] leading-6 text-ink/85">
                                                     <span className="mt-[0.6rem] h-1.5 w-1.5 shrink-0 rounded-full bg-accent/75" />
-                                                    <span className="whitespace-pre-wrap">{item.text}</span>
+                                                    <div className="flex min-w-0 flex-1 flex-wrap items-start gap-x-3 gap-y-1">
+                                                        <span className="min-w-[10rem] flex-1 whitespace-pre-wrap">{item.text}</span>
+                                                        {type === 'workout' && (item.sets || item.reps) && (
+                                                            <div className="flex shrink-0 flex-wrap gap-1.5">
+                                                                {item.sets && <span className="rounded-lg bg-surface-100 px-2 py-0.5 text-xs font-semibold text-ink-muted">{item.sets} sett</span>}
+                                                                {item.reps && <span className="rounded-lg bg-surface-100 px-2 py-0.5 text-xs font-semibold text-ink-muted">{item.reps} reps</span>}
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </li>
                                             ))}
                                         </ul>

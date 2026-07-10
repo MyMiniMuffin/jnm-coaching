@@ -1,15 +1,41 @@
 const PLAN_FORMAT = 'jnm-plan';
-const PLAN_VERSION = 1;
+const PLAN_VERSION = 2;
 
 let keyCounter = 0;
 const createKey = (prefix) => `${prefix}-${Date.now()}-${++keyCounter}`;
 
-const createItem = (text = '') => ({ key: createKey('item'), text });
+const splitWorkoutItem = (text) => {
+    const value = String(text || '').trim();
+    const match = value.match(/^(.*?)\s*(?::|–|-)\s*(\d+(?:\s*[-–]\s*\d+)?)\s*[x×]\s*(.+)$/i);
+    if (!match) return { text: value, sets: '', reps: '' };
 
-export const createSection = (title = '', items = ['']) => ({
+    return {
+        text: match[1].trim(),
+        sets: match[2].replace(/\s+/g, ''),
+        reps: match[3].trim()
+    };
+};
+
+const createItem = (item = '', type) => {
+    const source = typeof item === 'string' ? { text: item } : item || {};
+    const normalized = {
+        key: createKey('item'),
+        text: String(source.text || ''),
+        sets: String(source.sets || ''),
+        reps: String(source.reps || '')
+    };
+
+    if (type === 'workout' && !normalized.sets && !normalized.reps) {
+        return { ...normalized, ...splitWorkoutItem(normalized.text) };
+    }
+
+    return normalized;
+};
+
+export const createSection = (title = '', items = [''], type) => ({
     key: createKey('section'),
     title,
-    items: items.map(item => createItem(typeof item === 'string' ? item : item?.text || ''))
+    items: items.map(item => createItem(item, type))
 });
 
 const cleanMarkdown = (value) => value
@@ -31,13 +57,13 @@ const parseLegacyTableRow = (line) => {
     return cells.join(' · ');
 };
 
-const parseLegacyPlan = (content) => {
+const parseLegacyPlan = (content, type) => {
     const sections = [];
     let current = null;
 
     const ensureSection = () => {
         if (!current) {
-            current = createSection('Plan', []);
+            current = createSection('Plan', [], type);
             sections.push(current);
         }
         return current;
@@ -53,7 +79,7 @@ const parseLegacyPlan = (content) => {
             if (current && current.items.length === 0) {
                 current.title = title;
             } else {
-                current = createSection(title, []);
+                current = createSection(title, [], type);
                 sections.push(current);
             }
             return;
@@ -61,13 +87,13 @@ const parseLegacyPlan = (content) => {
 
         const tableRow = parseLegacyTableRow(line);
         const text = tableRow === null ? cleanMarkdown(line) : tableRow;
-        if (text) ensureSection().items.push(createItem(text));
+        if (text) ensureSection().items.push(createItem(text, type));
     });
 
     return { sections: sections.filter(section => section.title || section.items.length) };
 };
 
-export const parsePlan = (content) => {
+export const parsePlan = (content, type) => {
     if (!content || !String(content).trim()) return { sections: [] };
 
     try {
@@ -76,9 +102,8 @@ export const parsePlan = (content) => {
             return {
                 sections: parsed.sections.map(section => createSection(
                     typeof section?.title === 'string' ? section.title : '',
-                    Array.isArray(section?.items)
-                        ? section.items.map(item => typeof item === 'string' ? item : item?.text || '')
-                        : []
+                    Array.isArray(section?.items) ? section.items : [],
+                    type
                 ))
             };
         }
@@ -86,7 +111,7 @@ export const parsePlan = (content) => {
         // Eldre planer er lagret som Markdown og konverteres til blokker lokalt.
     }
 
-    return parseLegacyPlan(content);
+    return parseLegacyPlan(content, type);
 };
 
 export const serializePlan = (plan) => {
@@ -94,8 +119,12 @@ export const serializePlan = (plan) => {
         .map(section => ({
             title: String(section.title || '').trim(),
             items: (section.items || [])
-                .map(item => String(typeof item === 'string' ? item : item?.text || '').trim())
-                .filter(Boolean)
+                .map(item => ({
+                    text: String(typeof item === 'string' ? item : item?.text || '').trim(),
+                    sets: String(typeof item === 'string' ? '' : item?.sets || '').trim(),
+                    reps: String(typeof item === 'string' ? '' : item?.reps || '').trim()
+                }))
+                .filter(item => item.text || item.sets || item.reps)
         }))
         .filter(section => section.title || section.items.length);
 
@@ -118,8 +147,16 @@ export const getPlanTemplate = (type) => ({
             createSection('Fokus denne uken', ['Protein til hvert måltid', 'Følg avtalt måltidsrytme'])
         ]
         : [
-            createSection('Dag 1 – Underkropp', ['Knebøy – 4 × 6', 'Rumensk markløft – 3 × 8', 'Utfall – 3 × 10 per bein']),
-            createSection('Dag 2 – Overkropp', ['Benkpress – 4 × 6', 'Sittende roing – 4 × 8', 'Skulderpress – 3 × 10']),
+            createSection('Dag 1 – Underkropp', [
+                { text: 'Knebøy', sets: '4', reps: '6' },
+                { text: 'Rumensk markløft', sets: '3', reps: '8' },
+                { text: 'Utfall', sets: '3', reps: '10 per bein' }
+            ]),
+            createSection('Dag 2 – Overkropp', [
+                { text: 'Benkpress', sets: '4', reps: '6' },
+                { text: 'Sittende roing', sets: '4', reps: '8' },
+                { text: 'Skulderpress', sets: '3', reps: '10' }
+            ]),
             createSection('Kondisjon', ['2 rolige økter à 25–30 minutter']),
             createSection('Fokus denne uken', ['Kontrollerte repetisjoner', 'Stopp med 1–2 repetisjoner i reserve'])
         ]
