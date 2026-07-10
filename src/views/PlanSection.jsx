@@ -1,25 +1,75 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Utensils, Dumbbell, Pencil, Loader2, Check, FileText, Heading1, List, ListOrdered, Bold, RotateCcw } from 'lucide-react';
-import { marked } from 'marked';
-import DOMPurify from 'dompurify';
-import { Card, Button, IconButton, ToggleGroup } from '../components/ui';
+import {
+    Utensils,
+    Dumbbell,
+    Pencil,
+    Loader2,
+    Check,
+    FileText,
+    RotateCcw,
+    Plus,
+    Trash2,
+    ArrowUp,
+    ArrowDown,
+    ListChecks
+} from 'lucide-react';
+import { Card, Button, EmptyState } from '../components/ui';
+import { createSection, getPlanTemplate, parsePlan, serializePlan } from '../lib/planFormat';
 
-// Konfigurer marked (kun brukt her)
-marked.setOptions({ breaks: true, gfm: true });
+const moveInArray = (items, from, to) => {
+    if (to < 0 || to >= items.length) return items;
+    const next = [...items];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    return next;
+};
+
+const SmallIconButton = ({ label, disabled = false, tone = 'neutral', children, ...props }) => (
+    <button
+        type="button"
+        aria-label={label}
+        title={label}
+        disabled={disabled}
+        className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors disabled:opacity-25 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-accent ${tone === 'danger' ? 'text-ink-faint hover:bg-red-50 hover:text-red-600' : 'text-ink-muted hover:bg-surface-100 hover:text-ink'}`}
+        {...props}
+    >
+        {children}
+    </button>
+);
+
+const AutoGrowTextarea = ({ value, onChange, ...props }) => {
+    const ref = useRef(null);
+
+    useEffect(() => {
+        const field = ref.current;
+        if (!field) return;
+        field.style.height = 'auto';
+        field.style.height = `${field.scrollHeight}px`;
+    }, [value]);
+
+    return (
+        <textarea
+            ref={ref}
+            rows={1}
+            value={value}
+            onChange={onChange}
+            {...props}
+        />
+    );
+};
 
 const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    const [text, setText] = useState(content);
+    const [draft, setDraft] = useState(() => parsePlan(content));
     const [saveState, setSaveState] = useState('idle');
-    const [activePane, setActivePane] = useState('write');
-    const textareaRef = useRef(null);
+    const parsedPlan = useMemo(() => parsePlan(content), [content]);
 
     useEffect(() => {
         if (isEditing) return;
-        setText(content);
+        setDraft(parsedPlan);
         setSaveState('idle');
-    }, [content, isEditing]);
+    }, [parsedPlan, isEditing]);
 
     useEffect(() => {
         if (saveState !== 'saved') return;
@@ -29,32 +79,18 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
 
     const Icon = type === 'diet' ? Utensils : Dumbbell;
     const title = type === 'diet' ? 'Matplan' : 'Treningsplan';
-    const template = type === 'diet'
-        ? `# Ukeplan\n\n## Frokost\n- Velg 1 alternativ\n- Drikk vann eller kaffe\n\n## Lunsj\n- Protein\n- Karbohydrat\n- Grønnsaker\n\n## Middag\n- Protein\n- Poteter, ris eller pasta\n- Grønnsaker\n\n## Mellommåltid\n- Frukt eller yoghurt\n\n## Fokus denne uken\n- 8 000+ skritt daglig\n- Protein til hvert måltid\n`
-        : `# Treningsuke\n\n## Dag 1 - Underkropp\n- Knebøy: 4 x 6\n- Rumensk markløft: 3 x 8\n- Utfall: 3 x 10 per bein\n\n## Dag 2 - Overkropp\n- Benkpress: 4 x 6\n- Sittende roing: 4 x 8\n- Skulderpress: 3 x 10\n\n## Kondisjon\n- 2 rolige økter á 25-30 min\n\n## Fokus denne uken\n- Kontrollerte repetisjoner\n- Stopp med 1-2 reps i reserve\n`;
-    const canSave = text !== content && !isSaving;
+    const itemPlaceholder = type === 'diet'
+        ? 'For eksempel: Havregrøt med bær'
+        : 'For eksempel: Knebøy – 4 × 6';
+    const canSave = saveState === 'dirty' && !isSaving;
 
-    const applySelectionTransform = useCallback((transform) => {
-        const el = textareaRef.current;
-        if (!el) return;
-
-        const start = el.selectionStart;
-        const end = el.selectionEnd;
-        const selectedText = text.slice(start, end);
-        const { nextText, nextSelectionStart, nextSelectionEnd } = transform(text, selectedText, start, end);
-
-        setText(nextText);
+    const markChanged = useCallback((update) => {
+        setDraft(current => typeof update === 'function' ? update(current) : update);
         setSaveState('dirty');
-
-        requestAnimationFrame(() => {
-            el.focus();
-            el.setSelectionRange(nextSelectionStart, nextSelectionEnd);
-        });
-    }, [text]);
+    }, []);
 
     const handleStartEditing = useCallback(() => {
-        setText(content);
-        setActivePane('write');
+        setDraft(parsePlan(content));
         setSaveState('idle');
         setIsEditing(true);
     }, [content]);
@@ -64,142 +100,113 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
         setIsSaving(true);
         setSaveState('saving');
         try {
-            await onSave(text);
+            await onSave(serializePlan(draft));
             setSaveState('saved');
             setIsEditing(false);
         } finally {
             setIsSaving(false);
         }
-    }, [canSave, onSave, text]);
+    }, [canSave, draft, onSave]);
 
     const handleCancel = useCallback(() => {
-        setText(content);
+        setDraft(parsePlan(content));
         setSaveState('idle');
-        setActivePane('write');
         setIsEditing(false);
     }, [content]);
 
-    const handleTextChange = useCallback((e) => {
-        setText(e.target.value);
-        setSaveState('dirty');
-    }, []);
+    const updateSection = useCallback((sectionIndex, update) => {
+        markChanged(current => ({
+            ...current,
+            sections: current.sections.map((section, index) => index === sectionIndex ? update(section) : section)
+        }));
+    }, [markChanged]);
 
-    const handleInsertHeading = useCallback(() => {
-        applySelectionTransform((currentText, selectedText, start, end) => {
-            const insertion = selectedText ? `# ${selectedText}` : '# ';
-            const nextText = currentText.slice(0, start) + insertion + currentText.slice(end);
-            const caret = start + insertion.length;
-            return {
-                nextText,
-                nextSelectionStart: caret,
-                nextSelectionEnd: caret
-            };
+    const updateItem = useCallback((sectionIndex, itemIndex, text) => {
+        updateSection(sectionIndex, section => ({
+            ...section,
+            items: section.items.map((item, index) => index === itemIndex ? { ...item, text } : item)
+        }));
+    }, [updateSection]);
+
+    const addItem = useCallback((sectionIndex, afterIndex = null) => {
+        const newItem = createSection('', ['']).items[0];
+        updateSection(sectionIndex, section => {
+            const items = [...section.items];
+            const insertAt = afterIndex === null ? items.length : afterIndex + 1;
+            items.splice(insertAt, 0, newItem);
+            return { ...section, items };
         });
-    }, [applySelectionTransform]);
-
-    const handleInsertBold = useCallback(() => {
-        applySelectionTransform((currentText, selectedText, start, end) => {
-            const inner = selectedText || 'viktig';
-            const insertion = `**${inner}**`;
-            const nextText = currentText.slice(0, start) + insertion + currentText.slice(end);
-            const selectionStart = start + 2;
-            const selectionEnd = start + 2 + inner.length;
-            return {
-                nextText,
-                nextSelectionStart: selectionStart,
-                nextSelectionEnd: selectionEnd
-            };
-        });
-    }, [applySelectionTransform]);
-
-    const handleInsertBullets = useCallback(() => {
-        applySelectionTransform((currentText, selectedText, start, end) => {
-            const baseText = selectedText || 'Punkt';
-            const insertion = baseText
-                .split('\n')
-                .map(line => line.trim().length ? `- ${line}` : '- ')
-                .join('\n');
-            const nextText = currentText.slice(0, start) + insertion + currentText.slice(end);
-            return {
-                nextText,
-                nextSelectionStart: start,
-                nextSelectionEnd: start + insertion.length
-            };
-        });
-    }, [applySelectionTransform]);
-
-    const handleInsertNumbered = useCallback(() => {
-        applySelectionTransform((currentText, selectedText, start, end) => {
-            const baseText = selectedText || 'Steg';
-            const insertion = baseText
-                .split('\n')
-                .map((line, index) => `${index + 1}. ${line.trim().length ? line : ''}`)
-                .join('\n');
-            const nextText = currentText.slice(0, start) + insertion + currentText.slice(end);
-            return {
-                nextText,
-                nextSelectionStart: start,
-                nextSelectionEnd: start + insertion.length
-            };
-        });
-    }, [applySelectionTransform]);
-
-    const handleInsertTemplate = useCallback(() => {
-        setText(template);
-        setSaveState('dirty');
-        setActivePane('write');
         requestAnimationFrame(() => {
-            textareaRef.current?.focus();
-            textareaRef.current?.setSelectionRange(template.length, template.length);
+            const section = document.querySelector(`[data-section="${sectionIndex}"]`);
+            const fields = section?.querySelectorAll('textarea');
+            const targetIndex = afterIndex === null ? (fields?.length || 1) - 1 : afterIndex + 1;
+            fields?.[targetIndex]?.focus();
         });
-    }, [template]);
+    }, [updateSection]);
 
-    // Memoize parsed markdown (sanitert med DOMPurify)
-    const parsedContent = useMemo(() => {
-        if (!text) return '<p class="text-ink-muted italic text-center py-12">Ingen plan enda</p>';
-        const rawHtml = marked.parse(text);
-        const sanitizedHtml = DOMPurify.sanitize(rawHtml);
-        return sanitizedHtml
-            .replace(/<table>/g, '<div class="plan-table-wrap"><table>')
-            .replace(/<\/table>/g, '</table></div>');
-    }, [text]);
+    const removeItem = useCallback((sectionIndex, itemIndex) => {
+        updateSection(sectionIndex, section => ({
+            ...section,
+            items: section.items.filter((_, index) => index !== itemIndex)
+        }));
+    }, [updateSection]);
 
-    const toolbarButtons = [
-        { icon: Heading1, label: 'Overskrift', onClick: handleInsertHeading },
-        { icon: List, label: 'Punktliste', onClick: handleInsertBullets },
-        { icon: ListOrdered, label: 'Nummerert', onClick: handleInsertNumbered },
-        { icon: Bold, label: 'Fet tekst', onClick: handleInsertBold }
-    ];
+    const moveItem = useCallback((sectionIndex, itemIndex, direction) => {
+        updateSection(sectionIndex, section => ({
+            ...section,
+            items: moveInArray(section.items, itemIndex, itemIndex + direction)
+        }));
+    }, [updateSection]);
+
+    const addSection = useCallback(() => {
+        markChanged(current => ({ ...current, sections: [...current.sections, createSection('', [''])] }));
+        requestAnimationFrame(() => document.querySelector('[data-new-section="true"]')?.focus());
+    }, [markChanged]);
+
+    const removeSection = useCallback((sectionIndex) => {
+        markChanged(current => ({
+            ...current,
+            sections: current.sections.filter((_, index) => index !== sectionIndex)
+        }));
+    }, [markChanged]);
+
+    const moveSection = useCallback((sectionIndex, direction) => {
+        markChanged(current => ({
+            ...current,
+            sections: moveInArray(current.sections, sectionIndex, sectionIndex + direction)
+        }));
+    }, [markChanged]);
+
+    const insertTemplate = useCallback(() => markChanged(getPlanTemplate(type)), [markChanged, type]);
+
+    const displayPlan = isEditing ? draft : parsedPlan;
 
     return (
         <div className="space-y-5 pb-32 animate-slide-up">
             <Card className="overflow-hidden">
-                <div className="flex justify-between items-center p-5 border-b border-surface-100">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-surface-100 rounded-xl flex items-center justify-center text-ink-muted">
+                <div className="flex justify-between items-center gap-3 p-5 border-b border-surface-100">
+                    <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 shrink-0 bg-surface-100 rounded-xl flex items-center justify-center text-ink-muted">
                             <Icon size={20} />
                         </div>
-                        <div>
+                        <div className="min-w-0">
                             <h2 className="text-[1.05rem] font-semibold">{title}</h2>
-                            {!isReadOnly && saveState !== 'idle' && (
+                            {!isReadOnly && isEditing && (
                                 <p className="section-label mt-0.5">
-                                    {saveState === 'saving'
-                                        ? 'Lagrer endringer...'
-                                        : saveState === 'saved'
-                                            ? 'Lagret'
-                                            : 'Ulagrede endringer'}
+                                    {saveState === 'saving' ? 'Lagrer endringer...' : saveState === 'dirty' ? 'Ulagrede endringer' : 'Rediger seksjoner og punkter'}
                                 </p>
                             )}
                         </div>
                     </div>
                     {!isReadOnly && (
                         isEditing ? (
-                            <div className="flex items-center gap-2">
-                                <Button variant="ghost" size="sm" onClick={handleCancel} disabled={isSaving}>
-                                    <RotateCcw size={16} /> Avbryt
+                            <div className="flex items-center gap-1.5 shrink-0">
+                                <Button aria-label="Avbryt redigering" variant="ghost" size="sm" onClick={handleCancel} disabled={isSaving} className="px-2 sm:px-3">
+                                    <RotateCcw size={16} /> <span className="hidden sm:inline">Avbryt</span>
                                 </Button>
-                                <Button variant="primary" size="sm" onClick={handleSave} disabled={!canSave}>
-                                    {isSaving ? <><Loader2 size={16} className="animate-spin" /> Lagrer...</> : <><Check size={16} /> Lagre</>}
+                                <Button aria-label="Lagre planen" variant="primary" size="sm" onClick={handleSave} disabled={!canSave}>
+                                    {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                                    <span className="hidden sm:inline">{isSaving ? 'Lagrer...' : 'Lagre'}</span>
                                 </Button>
                             </div>
                         ) : (
@@ -211,65 +218,104 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                 </div>
 
                 {isEditing && !isReadOnly && (
-                    <div className="border-b border-surface-100 bg-white/95 backdrop-blur-sm">
-                        <div className="px-5 py-4 space-y-4">
-                            <div className="flex items-center justify-between gap-3 flex-wrap">
-                                <ToggleGroup
-                                    value={activePane}
-                                    onChange={setActivePane}
-                                    options={[
-                                        { value: 'write', label: 'Skriv' },
-                                        { value: 'preview', label: 'Forhåndsvis' }
-                                    ]}
-                                    className="min-w-[14rem]"
-                                />
-
-                                <div className="flex items-center gap-2 flex-wrap">
-                                    <Button variant="secondary" size="sm" onClick={handleInsertTemplate}>
-                                        <FileText size={16} /> Sett inn mal
-                                    </Button>
-                                    {toolbarButtons.map(({ icon: ToolbarIcon, label, onClick }) => (
-                                        <IconButton
-                                            key={label}
-                                            onClick={onClick}
-                                            aria-label={label}
-                                            title={label}
-                                        >
-                                            <ToolbarIcon size={16} />
-                                        </IconButton>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-surface-100 bg-surface-50/70 px-5 py-3.5">
+                        <p className="text-sm text-ink-muted">Én seksjon per måltid, treningsdag eller fokusområde.</p>
+                        <Button variant="secondary" size="sm" onClick={insertTemplate}>
+                            <FileText size={16} /> Bruk forslag
+                        </Button>
                     </div>
                 )}
 
                 <div className="p-5">
-                    {isEditing && !isReadOnly ? (
-                        <div className="space-y-4">
-                            {activePane === 'write' ? (
-                                <textarea
-                                    ref={textareaRef}
-                                    value={text}
-                                    onChange={handleTextChange}
-                                    autoFocus
-                                    className="w-full min-h-[58vh] p-5 bg-surface-50 rounded-xl border border-surface-200 focus:ring-2 focus:ring-accent focus:border-accent outline-none text-ink font-mono text-[15px] leading-7 resize-none shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]"
-                                    placeholder="Skriv planen her..."
-                                />
-                            ) : (
-                                <div className="rounded-xl border border-surface-200 bg-surface-50 p-5 min-h-[58vh]">
-                                    <div
-                                        className="plan-prose max-w-none"
-                                        dangerouslySetInnerHTML={{ __html: parsedContent }}
-                                    />
+                    {displayPlan.sections.length === 0 ? (
+                        <EmptyState
+                            icon={ListChecks}
+                            title="Ingen plan enda"
+                            description={isReadOnly ? 'Planen kommer her når coachen har lagt den inn.' : 'Start med et forslag eller bygg planen fra bunnen.'}
+                            action={isEditing && !isReadOnly ? (
+                                <div className="flex flex-wrap justify-center gap-2">
+                                    <Button variant="secondary" onClick={insertTemplate}><FileText size={17} /> Bruk forslag</Button>
+                                    <Button onClick={addSection}><Plus size={17} /> Ny seksjon</Button>
                                 </div>
-                            )}
+                            ) : null}
+                        />
+                    ) : isEditing && !isReadOnly ? (
+                        <div className="space-y-4">
+                            {displayPlan.sections.map((section, sectionIndex) => (
+                                <div key={section.key} data-section={sectionIndex} className="rounded-xl border border-surface-200 bg-surface-50/65 p-3.5 sm:p-4">
+                                    <div className="flex items-start gap-2">
+                                        <div className="min-w-0 flex-1">
+                                            <label className="section-label mb-1.5 block" htmlFor={`plan-section-${section.key}`}>Seksjonsnavn</label>
+                                            <input
+                                                id={`plan-section-${section.key}`}
+                                                data-new-section={sectionIndex === displayPlan.sections.length - 1 ? 'true' : undefined}
+                                                value={section.title}
+                                                onChange={event => updateSection(sectionIndex, current => ({ ...current, title: event.target.value }))}
+                                                className="w-full rounded-lg border border-surface-200 bg-white px-3.5 py-2.5 font-semibold outline-none focus:border-accent focus:ring-2 focus:ring-accent"
+                                                placeholder={type === 'diet' ? 'For eksempel: Frokost' : 'For eksempel: Dag 1 – Underkropp'}
+                                            />
+                                        </div>
+                                        <div className="flex items-center pt-5">
+                                            <SmallIconButton label="Flytt seksjonen opp" disabled={sectionIndex === 0} onClick={() => moveSection(sectionIndex, -1)}><ArrowUp size={16} /></SmallIconButton>
+                                            <SmallIconButton label="Flytt seksjonen ned" disabled={sectionIndex === displayPlan.sections.length - 1} onClick={() => moveSection(sectionIndex, 1)}><ArrowDown size={16} /></SmallIconButton>
+                                            <SmallIconButton label="Slett seksjonen" tone="danger" onClick={() => removeSection(sectionIndex)}><Trash2 size={16} /></SmallIconButton>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-4 space-y-2">
+                                        <p className="section-label">Punkter</p>
+                                        {section.items.map((item, itemIndex) => (
+                                            <div key={item.key} className="flex items-start gap-2 rounded-lg bg-white p-2 border border-surface-100">
+                                                <span className="mt-2 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface-100 text-xs font-semibold text-ink-muted">{itemIndex + 1}</span>
+                                                <AutoGrowTextarea
+                                                    data-item={itemIndex}
+                                                    value={item.text}
+                                                    onChange={event => updateItem(sectionIndex, itemIndex, event.target.value)}
+                                                    onKeyDown={event => {
+                                                        if (event.key === 'Enter' && !event.shiftKey) {
+                                                            event.preventDefault();
+                                                            addItem(sectionIndex, itemIndex);
+                                                        }
+                                                    }}
+                                                    className="min-h-[2.5rem] min-w-0 flex-1 resize-none overflow-hidden bg-transparent px-1 py-2 text-sm leading-6 outline-none placeholder:text-ink-faint"
+                                                    placeholder={itemPlaceholder}
+                                                />
+                                                <div className="flex shrink-0 items-center">
+                                                    <SmallIconButton label="Flytt punktet opp" disabled={itemIndex === 0} onClick={() => moveItem(sectionIndex, itemIndex, -1)}><ArrowUp size={15} /></SmallIconButton>
+                                                    <SmallIconButton label="Flytt punktet ned" disabled={itemIndex === section.items.length - 1} onClick={() => moveItem(sectionIndex, itemIndex, 1)}><ArrowDown size={15} /></SmallIconButton>
+                                                    <SmallIconButton label="Slett punktet" tone="danger" onClick={() => removeItem(sectionIndex, itemIndex)}><Trash2 size={15} /></SmallIconButton>
+                                                </div>
+                                            </div>
+                                        ))}
+                                        <Button variant="ghost" size="sm" onClick={() => addItem(sectionIndex)} className="mt-1">
+                                            <Plus size={16} /> Legg til punkt
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
+
+                            <Button variant="secondary" onClick={addSection} className="w-full border border-dashed border-surface-300 bg-transparent shadow-none">
+                                <Plus size={17} /> Legg til seksjon
+                            </Button>
                         </div>
                     ) : (
-                        <div
-                            className={`plan-prose max-w-none ${type === 'diet' ? 'plan-prose-compact' : ''}`}
-                            dangerouslySetInnerHTML={{ __html: parsedContent }}
-                        />
+                        <div className="space-y-4">
+                            {displayPlan.sections.map(section => (
+                                <section key={section.key} className="rounded-xl border border-surface-200 bg-gradient-to-b from-white to-surface-50/55 p-4 sm:p-5">
+                                    {section.title && <h3 className="font-display text-[1.3rem] leading-tight text-ink">{section.title}</h3>}
+                                    {section.items.length > 0 && (
+                                        <ul className={`${section.title ? 'mt-3' : ''} space-y-2.5`}>
+                                            {section.items.map(item => (
+                                                <li key={item.key} className="flex items-start gap-3 text-[0.95rem] leading-6 text-ink/85">
+                                                    <span className="mt-[0.6rem] h-1.5 w-1.5 shrink-0 rounded-full bg-accent/75" />
+                                                    <span className="whitespace-pre-wrap">{item.text}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </section>
+                            ))}
+                        </div>
                     )}
                 </div>
             </Card>

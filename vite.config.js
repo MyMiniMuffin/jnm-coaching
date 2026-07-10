@@ -20,10 +20,6 @@ export default defineConfig({
           if (id.includes('/node_modules/react/') || id.includes('/node_modules/react-dom/')) {
             return 'react-vendor';
           }
-          // Markdown-rendering - kun brukt i PlanSection
-          if (id.includes('/node_modules/marked/') || id.includes('/node_modules/dompurify/')) {
-            return 'markdown';
-          }
           // Zoom/pan - kun brukt i ImageModal og GalleryView
           if (id.includes('/node_modules/react-zoom-pan-pinch/')) {
             return 'zoom';
