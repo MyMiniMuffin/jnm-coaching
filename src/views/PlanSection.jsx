@@ -83,21 +83,6 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
         ? 'For eksempel: Havregrøt med bær'
         : 'For eksempel: Knebøy';
     const canSave = saveState === 'dirty' && !isSaving;
-    const theme = type === 'diet'
-        ? {
-            header: 'bg-gradient-to-r from-[#fbf5ec] via-white to-white',
-            icon: 'bg-[#f3e5d3] text-[#9a6544]',
-            sectionHeader: 'bg-[#fbf5ec]',
-            number: 'bg-[#ead8c1] text-[#885d42]',
-            stat: 'bg-[#f8efe4] text-[#7c5b45]'
-        }
-        : {
-            header: 'bg-gradient-to-r from-[#f0f5f0] via-white to-white',
-            icon: 'bg-[#dfeadf] text-[#587057]',
-            sectionHeader: 'bg-[#f0f5f0]',
-            number: 'bg-[#dce8dc] text-[#526a52]',
-            stat: 'bg-[#edf3ed] text-[#506650]'
-        };
 
     const markChanged = useCallback((update) => {
         setDraft(current => typeof update === 'function' ? update(current) : update);
@@ -198,10 +183,10 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
 
     return (
         <div className="space-y-5 pb-32 animate-slide-up">
-            <Card className="overflow-hidden shadow-[0_18px_48px_rgba(23,23,23,0.06)]">
-                <div className={`flex justify-between items-center gap-3 p-5 border-b border-surface-100 ${theme.header}`}>
+            <Card className="overflow-hidden">
+                <div className="flex justify-between items-center gap-3 p-5 border-b border-surface-100 bg-white">
                     <div className="flex items-center gap-3 min-w-0">
-                        <div className={`w-11 h-11 shrink-0 rounded-xl flex items-center justify-center shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] ${theme.icon}`}>
+                        <div className="w-10 h-10 shrink-0 rounded-lg bg-surface-100 flex items-center justify-center text-ink-muted">
                             <Icon size={20} />
                         </div>
                         <div className="min-w-0">
@@ -257,14 +242,11 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                     ) : isEditing && !isReadOnly ? (
                         <div className="space-y-4">
                             {displayPlan.sections.map((section, sectionIndex) => (
-                                <div key={section.key} data-section={sectionIndex} className="overflow-hidden rounded-xl border border-surface-200 bg-white shadow-[0_8px_24px_rgba(23,23,23,0.045)]">
-                                    <div className={`border-b border-surface-100 p-3.5 sm:p-4 ${theme.sectionHeader}`}>
-                                        <div className="mb-2.5 flex items-center justify-between gap-3">
-                                            <div className="flex items-center gap-2">
-                                                <span className={`flex h-7 w-7 items-center justify-center rounded-lg text-xs font-semibold ${theme.number}`}>{sectionIndex + 1}</span>
-                                                <span className="section-label">Seksjon</span>
-                                            </div>
-                                            <div className="flex items-center rounded-xl bg-white/75 p-0.5 shadow-[inset_0_0_0_1px_rgba(23,23,23,0.05)]">
+                                <div key={section.key} data-section={sectionIndex} className="border-t border-surface-200 pt-5 first:border-t-0 first:pt-0">
+                                    <div className="mb-4">
+                                        <div className="mb-2 flex items-center justify-between gap-3">
+                                            <span className="section-label tabular-nums">Seksjon {String(sectionIndex + 1).padStart(2, '0')}</span>
+                                            <div className="flex items-center">
                                                 <SmallIconButton label="Flytt seksjonen opp" disabled={sectionIndex === 0} onClick={() => moveSection(sectionIndex, -1)}><ArrowUp size={16} /></SmallIconButton>
                                                 <SmallIconButton label="Flytt seksjonen ned" disabled={sectionIndex === displayPlan.sections.length - 1} onClick={() => moveSection(sectionIndex, 1)}><ArrowDown size={16} /></SmallIconButton>
                                                 <SmallIconButton label="Slett seksjonen" tone="danger" onClick={() => removeSection(sectionIndex)}><Trash2 size={16} /></SmallIconButton>
@@ -276,66 +258,66 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                                             data-new-section={sectionIndex === displayPlan.sections.length - 1 ? 'true' : undefined}
                                             value={section.title}
                                             onChange={event => updateSection(sectionIndex, current => ({ ...current, title: event.target.value }))}
-                                            className="w-full rounded-xl border border-white/80 bg-white px-3.5 py-3 text-[1rem] font-semibold shadow-[0_4px_14px_rgba(23,23,23,0.04)] outline-none focus:border-accent focus:ring-2 focus:ring-accent"
+                                            className="w-full border-0 border-b border-surface-300 bg-transparent px-0 py-2 font-display text-[1.4rem] leading-tight outline-none focus:border-accent focus:ring-0"
                                             placeholder={type === 'diet' ? 'For eksempel: Frokost' : 'For eksempel: Dag 1 – Underkropp'}
                                         />
                                     </div>
 
-                                    <div className="space-y-2.5 bg-surface-50/45 p-3.5 sm:p-4">
-                                        <p className="section-label px-0.5">{type === 'workout' ? 'Øvelser' : 'Punkter'}</p>
+                                    <div>
+                                        {type === 'workout' && section.items.length > 0 && (
+                                            <div className="grid grid-cols-[minmax(0,1fr)_3.75rem_5rem] gap-2 border-y border-surface-200 bg-surface-50 px-3 py-2">
+                                                <span className="section-label">Øvelse</span>
+                                                <span className="section-label text-center">Sett</span>
+                                                <span className="section-label text-center">Reps</span>
+                                            </div>
+                                        )}
                                         {section.items.map((item, itemIndex) => (
                                             type === 'workout' ? (
-                                                <div key={item.key} className="rounded-xl bg-white p-3 border border-surface-100 shadow-[0_5px_16px_rgba(23,23,23,0.035)]">
-                                                    <div className="mb-2 flex items-center justify-between gap-2">
-                                                        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-semibold ${theme.number}`}>{itemIndex + 1}</span>
-                                                        <div className="flex shrink-0 items-center rounded-xl bg-surface-50 p-0.5">
+                                                <div key={item.key} className="border-b border-surface-200 px-3 py-3 last:border-b-0">
+                                                    <div className="grid grid-cols-[minmax(0,1fr)_3.75rem_5rem] items-start gap-2">
+                                                        <AutoGrowTextarea
+                                                            aria-label={`Øvelse ${itemIndex + 1}`}
+                                                            data-item={itemIndex}
+                                                            value={item.text}
+                                                            onChange={event => updateItem(sectionIndex, itemIndex, 'text', event.target.value)}
+                                                            onKeyDown={event => {
+                                                                if (event.key === 'Enter' && !event.shiftKey) {
+                                                                    event.preventDefault();
+                                                                    addItem(sectionIndex, itemIndex);
+                                                                }
+                                                            }}
+                                                            className="min-h-[2.5rem] w-full resize-none overflow-hidden rounded-lg border border-surface-200 bg-white px-3 py-2 text-sm leading-6 outline-none placeholder:text-ink-faint focus:border-accent focus:ring-2 focus:ring-accent"
+                                                            placeholder={itemPlaceholder}
+                                                        />
+                                                        <input
+                                                            aria-label={`Sett for øvelse ${itemIndex + 1}`}
+                                                            value={item.sets || ''}
+                                                            onChange={event => updateItem(sectionIndex, itemIndex, 'sets', event.target.value)}
+                                                            inputMode="numeric"
+                                                            className="h-[2.5rem] w-full rounded-lg border border-surface-200 bg-white px-2 text-center text-sm font-semibold tabular-nums outline-none focus:border-accent focus:ring-2 focus:ring-accent"
+                                                            placeholder="3"
+                                                        />
+                                                        <input
+                                                            aria-label={`Reps for øvelse ${itemIndex + 1}`}
+                                                            value={item.reps || ''}
+                                                            onChange={event => updateItem(sectionIndex, itemIndex, 'reps', event.target.value)}
+                                                            inputMode="text"
+                                                            className="h-[2.5rem] w-full rounded-lg border border-surface-200 bg-white px-2 text-center text-sm font-semibold tabular-nums outline-none focus:border-accent focus:ring-2 focus:ring-accent"
+                                                            placeholder="8–10"
+                                                        />
+                                                    </div>
+                                                    <div className="mt-1.5 flex items-center justify-between">
+                                                        <span className="text-[11px] tabular-nums text-ink-faint">{String(itemIndex + 1).padStart(2, '0')}</span>
+                                                        <div className="flex items-center">
                                                             <SmallIconButton label="Flytt øvelsen opp" disabled={itemIndex === 0} onClick={() => moveItem(sectionIndex, itemIndex, -1)}><ArrowUp size={15} /></SmallIconButton>
                                                             <SmallIconButton label="Flytt øvelsen ned" disabled={itemIndex === section.items.length - 1} onClick={() => moveItem(sectionIndex, itemIndex, 1)}><ArrowDown size={15} /></SmallIconButton>
                                                             <SmallIconButton label="Slett øvelsen" tone="danger" onClick={() => removeItem(sectionIndex, itemIndex)}><Trash2 size={15} /></SmallIconButton>
                                                         </div>
                                                     </div>
-                                                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-[minmax(0,1fr)_5.5rem_7rem]">
-                                                        <label className="col-span-2 min-w-0 sm:col-span-1">
-                                                            <span className="section-label mb-1 block">Øvelse</span>
-                                                            <AutoGrowTextarea
-                                                                data-item={itemIndex}
-                                                                value={item.text}
-                                                                onChange={event => updateItem(sectionIndex, itemIndex, 'text', event.target.value)}
-                                                                onKeyDown={event => {
-                                                                    if (event.key === 'Enter' && !event.shiftKey) {
-                                                                        event.preventDefault();
-                                                                        addItem(sectionIndex, itemIndex);
-                                                                    }
-                                                                }}
-                                                                className="min-h-[2.65rem] w-full resize-none overflow-hidden rounded-lg border border-surface-200 bg-white px-3 py-2 text-sm leading-6 outline-none placeholder:text-ink-faint focus:border-accent focus:ring-2 focus:ring-accent"
-                                                                placeholder={itemPlaceholder}
-                                                            />
-                                                        </label>
-                                                        <label className="min-w-0">
-                                                            <span className="section-label mb-1 block">Sett</span>
-                                                            <input
-                                                                value={item.sets || ''}
-                                                                onChange={event => updateItem(sectionIndex, itemIndex, 'sets', event.target.value)}
-                                                                inputMode="numeric"
-                                                                className={`h-[2.65rem] w-full rounded-lg border border-transparent px-3 text-center text-sm font-semibold tabular-nums outline-none focus:border-accent focus:ring-2 focus:ring-accent ${theme.stat}`}
-                                                                placeholder="3"
-                                                            />
-                                                        </label>
-                                                        <label className="min-w-0">
-                                                            <span className="section-label mb-1 block">Reps</span>
-                                                            <input
-                                                                value={item.reps || ''}
-                                                                onChange={event => updateItem(sectionIndex, itemIndex, 'reps', event.target.value)}
-                                                                inputMode="text"
-                                                                className={`h-[2.65rem] w-full rounded-lg border border-transparent px-3 text-center text-sm font-semibold tabular-nums outline-none focus:border-accent focus:ring-2 focus:ring-accent ${theme.stat}`}
-                                                                placeholder="8–10"
-                                                            />
-                                                        </label>
-                                                    </div>
                                                 </div>
                                             ) : (
-                                                <div key={item.key} className="flex items-start gap-2 rounded-xl bg-white p-2.5 border border-surface-100 shadow-[0_5px_16px_rgba(23,23,23,0.03)]">
-                                                    <span className={`mt-1.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-semibold ${theme.number}`}>{itemIndex + 1}</span>
+                                                <div key={item.key} className="flex items-start gap-2 border-b border-surface-200 py-2.5 last:border-b-0">
+                                                    <span className="mt-2 w-5 shrink-0 text-[11px] tabular-nums text-ink-faint">{String(itemIndex + 1).padStart(2, '0')}</span>
                                                     <AutoGrowTextarea
                                                         data-item={itemIndex}
                                                         value={item.text}
@@ -357,52 +339,50 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                                                 </div>
                                             )
                                         ))}
-                                        <Button variant="ghost" size="sm" onClick={() => addItem(sectionIndex)} className="mt-1">
+                                        <Button variant="ghost" size="sm" onClick={() => addItem(sectionIndex)} className="mt-2">
                                             <Plus size={16} /> {type === 'workout' ? 'Legg til øvelse' : 'Legg til punkt'}
                                         </Button>
                                     </div>
                                 </div>
                             ))}
 
-                            <Button variant="secondary" onClick={addSection} className="w-full border border-dashed border-surface-300 bg-white/55 py-3 shadow-none">
+                            <Button variant="secondary" onClick={addSection} className="w-full border border-dashed border-surface-300 bg-transparent py-3 shadow-none">
                                 <Plus size={17} /> Legg til seksjon
                             </Button>
                         </div>
                     ) : (
-                        <div className="space-y-3.5">
-                            {displayPlan.sections.map((section, sectionIndex) => (
-                                <section key={section.key} className="overflow-hidden rounded-xl border border-surface-200 bg-white shadow-[0_8px_24px_rgba(23,23,23,0.045)]">
-                                    {section.title && (
-                                        <div className={`flex items-center gap-3 border-b border-surface-100 px-4 py-3.5 sm:px-5 ${theme.sectionHeader}`}>
-                                            <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-semibold ${theme.number}`}>{sectionIndex + 1}</span>
-                                            <h3 className="font-display text-[1.3rem] leading-tight text-ink">{section.title}</h3>
-                                        </div>
-                                    )}
+                        <div className="divide-y divide-surface-200">
+                            {displayPlan.sections.map(section => (
+                                <section key={section.key} className="py-5 first:pt-0 last:pb-0">
+                                    {section.title && <h3 className="font-display text-[1.4rem] leading-tight text-ink">{section.title}</h3>}
                                     {section.items.length > 0 && (
-                                        <ul className="divide-y divide-surface-100">
-                                            {section.items.map((item, itemIndex) => (
-                                                <li key={item.key} className="flex items-center gap-3 px-4 py-3.5 text-[0.95rem] leading-6 text-ink/85 sm:px-5">
-                                                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-surface-50 text-[11px] font-semibold text-ink-faint">{itemIndex + 1}</span>
-                                                    <span className="min-w-0 flex-1 whitespace-pre-wrap font-medium">{item.text}</span>
-                                                    {type === 'workout' && (item.sets || item.reps) && (
-                                                        <div className="flex shrink-0 gap-1.5">
-                                                            {item.sets && (
-                                                                <span className={`min-w-[3.25rem] rounded-lg px-2 py-1 text-center ${theme.stat}`}>
-                                                                    <span className="block text-sm font-semibold tabular-nums leading-4">{item.sets}</span>
-                                                                    <span className="block text-[9px] font-medium uppercase tracking-[0.08em] opacity-70">sett</span>
-                                                                </span>
-                                                            )}
-                                                            {item.reps && (
-                                                                <span className={`min-w-[3.25rem] max-w-[6.5rem] rounded-lg px-2 py-1 text-center ${theme.stat}`}>
-                                                                    <span className="block truncate text-sm font-semibold tabular-nums leading-4">{item.reps}</span>
-                                                                    <span className="block text-[9px] font-medium uppercase tracking-[0.08em] opacity-70">reps</span>
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                </li>
-                                            ))}
-                                        </ul>
+                                        type === 'workout' && section.items.some(item => item.sets || item.reps) ? (
+                                            <div className={`${section.title ? 'mt-3' : ''} overflow-hidden border-y border-surface-200`}>
+                                                <div className="grid grid-cols-[minmax(0,1fr)_3.75rem_5rem] gap-2 bg-surface-50 px-3 py-2">
+                                                    <span className="section-label">Øvelse</span>
+                                                    <span className="section-label text-center">Sett</span>
+                                                    <span className="section-label text-center">Reps</span>
+                                                </div>
+                                                <ul className="divide-y divide-surface-200">
+                                                    {section.items.map(item => (
+                                                        <li key={item.key} className="grid grid-cols-[minmax(0,1fr)_3.75rem_5rem] items-center gap-2 px-3 py-3 text-[0.95rem] leading-6 text-ink/85">
+                                                            <span className="min-w-0 whitespace-pre-wrap font-medium">{item.text}</span>
+                                                            <span className="text-center font-semibold tabular-nums text-ink">{item.sets || '—'}</span>
+                                                            <span className="truncate text-center font-semibold tabular-nums text-ink">{item.reps || '—'}</span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        ) : (
+                                            <ul className={`${section.title ? 'mt-3' : ''} divide-y divide-surface-200 border-y border-surface-200`}>
+                                                {section.items.map(item => (
+                                                    <li key={item.key} className="flex items-start gap-3 px-1 py-3 text-[0.95rem] leading-6 text-ink/85">
+                                                        <span className="mt-[0.6rem] h-1.5 w-1.5 shrink-0 rounded-full bg-ink/45" />
+                                                        <span className="whitespace-pre-wrap">{item.text}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )
                                     )}
                                 </section>
                             ))}
