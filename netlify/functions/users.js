@@ -1,6 +1,7 @@
 const { neon } = require('@neondatabase/serverless');
 const bcrypt = require('bcryptjs');
 const { requireAuth } = require('./auth-middleware');
+const { parseJsonBody } = require('./http-utils');
 
 const SALT_ROUNDS = 12;
 
@@ -87,13 +88,9 @@ exports.handler = async (event) => {
     // LAGE NY BRUKER (POST)
     if (event.httpMethod === 'POST') {
       try {
-        let parsed;
-        try {
-          parsed = JSON.parse(event.body || '');
-        } catch (e) {
-          return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig JSON i request body' }) };
-        }
-        const { name, username, password } = parsed;
+        const parsedBody = parseJsonBody(event);
+        if (!parsedBody.ok) return parsedBody.response;
+        const { name, username, password } = parsedBody.data;
 
         console.log('Users POST: Oppretter ny utøver:', { name, username });
 
@@ -146,13 +143,9 @@ exports.handler = async (event) => {
 
     // OPPDATERE BRUKER (PATCH) - For arkivering etc.
     if (event.httpMethod === 'PATCH') {
-      let parsed;
-      try {
-        parsed = JSON.parse(event.body || '');
-      } catch (e) {
-        return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig JSON i request body' }) };
-      }
-      const { id, is_archived, new_password } = parsed;
+      const parsedBody = parseJsonBody(event);
+      if (!parsedBody.ok) return parsedBody.response;
+      const { id, is_archived, new_password } = parsedBody.data;
       const userId = parseInt(id, 10);
 
       if (!id || isNaN(userId) || userId <= 0) {
@@ -187,13 +180,9 @@ exports.handler = async (event) => {
 
     // SLETTE BRUKER (DELETE)
     if (event.httpMethod === 'DELETE') {
-      let parsed;
-      try {
-        parsed = JSON.parse(event.body || '');
-      } catch (e) {
-        return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig JSON i request body' }) };
-      }
-      const { id } = parsed;
+      const parsedBody = parseJsonBody(event);
+      if (!parsedBody.ok) return parsedBody.response;
+      const { id } = parsedBody.data;
       const userId = parseInt(id, 10);
 
       if (!id || isNaN(userId) || userId <= 0) {

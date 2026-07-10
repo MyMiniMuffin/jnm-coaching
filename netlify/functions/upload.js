@@ -1,6 +1,7 @@
 const cloudinary = require('cloudinary').v2;
 const { neon } = require('@neondatabase/serverless');
 const { requireOwnership } = require('./auth-middleware');
+const { parseJsonBody } = require('./http-utils');
 
 if (!process.env.NETLIFY_DATABASE_URL) {
   throw new Error('NETLIFY_DATABASE_URL miljøvariabel er ikke satt');
@@ -29,13 +30,9 @@ exports.handler = async (event) => {
       };
     }
 
-    let parsed;
-    try {
-      parsed = JSON.parse(event.body || '');
-    } catch (e) {
-      return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig JSON i request body' }) };
-    }
-    const { image, userId, purpose } = parsed;
+    const parsedBody = parseJsonBody(event);
+    if (!parsedBody.ok) return parsedBody.response;
+    const { image, userId, purpose } = parsedBody.data;
 
     if (!userId || !['checkin', 'gallery'].includes(purpose)) {
       return {

@@ -1,5 +1,6 @@
 const { neon } = require('@neondatabase/serverless');
 const { requireOwnership } = require('./auth-middleware');
+const { parseJsonBody } = require('./http-utils');
 
 // Sjekk at database-URL er satt
 if (!process.env.NETLIFY_DATABASE_URL) {
@@ -295,13 +296,9 @@ exports.handler = async (event) => {
 
     // --- POST: Handlinger ---
     if (event.httpMethod === 'POST') {
-      let body;
-      try {
-        body = JSON.parse(event.body || '');
-      } catch (e) {
-        return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig JSON i request body' }) };
-      }
-      const { userId, type, data = {} } = body;
+      const parsedBody = parseJsonBody(event);
+      if (!parsedBody.ok) return parsedBody.response;
+      const { userId, type, data = {} } = parsedBody.data;
 
       if (!userId) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Mangler bruker-ID' }) };
