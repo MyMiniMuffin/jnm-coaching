@@ -23,7 +23,11 @@ const LoginScreen = React.memo(({ onLogin }) => {
     };
 
     const handlePasswordKeyState = (e) => {
-        setIsCapsLockOn(e.getModifierState('CapsLock'));
+        if (typeof e.getModifierState === 'function') {
+            setIsCapsLockOn(Boolean(e.getModifierState('CapsLock')));
+        } else if (typeof e.nativeEvent?.getModifierState === 'function') {
+            setIsCapsLockOn(Boolean(e.nativeEvent.getModifierState('CapsLock')));
+        }
     };
 
     const handleLogin = async (e) => {
@@ -72,7 +76,7 @@ const LoginScreen = React.memo(({ onLogin }) => {
                                 onChange={handlePasswordChange}
                                 onKeyDown={handlePasswordKeyState}
                                 onKeyUp={handlePasswordKeyState}
-                                onFocus={handlePasswordKeyState}
+                                onBlur={() => setIsCapsLockOn(false)}
                                 disabled={isLoading}
                                 className="w-full px-4 py-3.5 pr-12 bg-surface-50 border border-surface-200 rounded-xl focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-all disabled:opacity-50 font-medium placeholder-ink-faint"
                                 placeholder="••••••••"

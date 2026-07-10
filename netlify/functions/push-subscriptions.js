@@ -1,5 +1,6 @@
 const { neon } = require('@neondatabase/serverless');
 const { requireAuth } = require('./auth-middleware');
+const { getHeader, parseJsonBody } = require('./http-utils');
 
 if (!process.env.NETLIFY_DATABASE_URL) {
   throw new Error('NETLIFY_DATABASE_URL miljøvariabel er ikke satt');
@@ -39,14 +40,9 @@ exports.handler = async (event) => {
 
   try {
     if (event.httpMethod === 'POST') {
-      let parsed;
-      try {
-        parsed = JSON.parse(event.body || '');
-      } catch (error) {
-        return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig JSON i request body' }) };
-      }
-
-      const subscription = normalizeSubscription(parsed.subscription);
+      const parsedBody = parseJsonBody(event);
+      if (!parsedBody.ok) return parsedBody.response;
+      const subscription = normalizeSubscription(parsedBody.data.subscription);
       if (!subscription) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig push-abonnement' }) };
       }
@@ -58,7 +54,7 @@ exports.handler = async (event) => {
           ${subscription.endpoint},
           ${subscription.p256dh},
           ${subscription.auth},
-          ${event.headers['user-agent'] || event.headers['User-Agent'] || null},
+          ${getHeader(event, 'user-agent') || null},
           NOW()
         )
         ON CONFLICT (endpoint)
@@ -78,14 +74,9 @@ exports.handler = async (event) => {
     }
 
     if (event.httpMethod === 'DELETE') {
-      let parsed = {};
-      try {
-        parsed = event.body ? JSON.parse(event.body) : {};
-      } catch (error) {
-        return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig JSON i request body' }) };
-      }
-
-      const endpoint = typeof parsed.endpoint === 'string' ? parsed.endpoint.trim() : '';
+      const parsedBody = parseJsonBody(event, { allowEmpty: true });
+      if (!parsedBody.ok) return parsedBody.response;
+      const endpoint = typeof parsedBody.data.endpoint === 'string' ? parsedBody.data.endpoint.trim() : '';
       if (!endpoint) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Mangler endpoint' }) };
       }

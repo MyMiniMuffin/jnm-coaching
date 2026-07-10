@@ -5,6 +5,8 @@ import { Loader2, Pause, Eye, LogOut, ChevronLeft, WifiOff } from 'lucide-react'
 import { saveSession, getSession, getToken, clearSession, hasValidSession } from './lib/session';
 import { api, cache } from './lib/api';
 import { APP_ICON, INITIAL_DATA_STATE, TAB_ORDER } from './lib/config';
+import { clearUiState, isUiStateFresh, readUiState, saveUiState } from './lib/uiState';
+import { getNotificationPermission, prefetchViews, supportsPushNotifications, urlBase64ToUint8Array } from './lib/browserCapabilities';
 
 // Hooks
 import { useSwipe, usePullToRefresh, useOnlineStatus } from './hooks';
@@ -16,6 +18,7 @@ import LoginScreen from './components/LoginScreen';
 import ReauthPrompt from './components/ReauthPrompt';
 import Header from './components/Header';
 import Navigation from './components/Navigation';
+import { ViewErrorBoundary, ViewSkeleton } from './components/ViewBoundary';
 
 // Views (lazy loaded — each gets its own chunk)
 const CoachDashboard = React.lazy(() => import('./views/CoachDashboard'));
@@ -24,189 +27,6 @@ const WeightProgressView = React.lazy(() => import('./views/WeightProgressView')
 const GalleryView = React.lazy(() => import('./views/GalleryView'));
 const PlanSection = React.lazy(() => import('./views/PlanSection'));
 const CheckInView = React.lazy(() => import('./views/CheckInView'));
-
-// Error Boundary for lazy-loaded views
-class ViewErrorBoundary extends React.Component {
-    constructor(props) {
-        super(props);
-        this.state = { hasError: false };
-    }
-    static getDerivedStateFromError() {
-        return { hasError: true };
-    }
-    componentDidCatch(error, info) {
-        console.error('ViewErrorBoundary fanget feil:', error, info);
-    }
-    render() {
-        if (this.state.hasError) {
-            return (
-                <div className="flex flex-col items-center justify-center h-[50vh] text-center px-6">
-                    <div className="w-16 h-16 bg-red-50 rounded-xl flex items-center justify-center text-red-500 mb-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                    </div>
-                    <h2 className="text-lg font-display mb-2">Noe gikk galt</h2>
-                    <p className="text-ink-muted text-sm mb-4">Denne visningen kunne ikke lastes.</p>
-                    <button
-                        type="button"
-                        className="px-4 py-2 bg-ink text-white rounded-xl text-sm font-medium"
-                        onClick={() => this.setState({ hasError: false })}
-                    >
-                        Prøv igjen
-                    </button>
-                </div>
-            );
-        }
-        return this.props.children;
-    }
-}
-
-// View-spesifikke skeleton loading states
-const ViewSkeleton = ({ tab }) => {
-    if (tab === 'gallery') return (
-        <div className="space-y-4 animate-pulse">
-            <div className="flex gap-2">
-                {[1,2,3].map(i => <div key={i} className="h-8 w-20 bg-surface-200 rounded-full" />)}
-            </div>
-            <div className="grid grid-cols-3 gap-1.5">
-                {[1,2,3,4,5,6].map(i => <div key={i} className="aspect-square bg-surface-200 rounded-xl" />)}
-            </div>
-        </div>
-    );
-    if (tab === 'diet' || tab === 'workout') return (
-        <div className="animate-pulse">
-            <div className="bg-white rounded-xl border border-surface-200 overflow-hidden">
-                <div className="p-5 border-b border-surface-100 flex justify-between items-center">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-surface-200 rounded-xl" />
-                        <div className="h-6 w-24 bg-surface-200 rounded-lg" />
-                    </div>
-                    <div className="h-8 w-20 bg-surface-200 rounded-xl" />
-                </div>
-                <div className="p-5 space-y-3">
-                    <div className="h-4 bg-surface-200 rounded w-full" />
-                    <div className="h-4 bg-surface-200 rounded w-5/6" />
-                    <div className="h-4 bg-surface-200 rounded w-4/6" />
-                    <div className="h-4 bg-surface-200 rounded w-full" />
-                    <div className="h-4 bg-surface-200 rounded w-3/6" />
-                </div>
-            </div>
-        </div>
-    );
-    if (tab === 'checkin') return (
-        <div className="space-y-4 animate-pulse">
-            <div className="bg-white rounded-xl border border-surface-200 p-5 space-y-4">
-                <div className="h-6 w-32 bg-surface-200 rounded-lg" />
-                <div className="h-12 bg-surface-200 rounded-xl" />
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="h-20 bg-surface-200 rounded-xl" />
-                    <div className="h-20 bg-surface-200 rounded-xl" />
-                </div>
-                <div className="h-12 bg-surface-200 rounded-xl" />
-            </div>
-        </div>
-    );
-    // Dashboard default
-    return (
-        <div className="space-y-4 animate-pulse">
-            <div className="h-40 bg-surface-200 rounded-xl" />
-            <div className="grid grid-cols-2 gap-4">
-                <div className="h-32 bg-surface-200 rounded-xl" />
-                <div className="h-32 bg-surface-200 rounded-xl" />
-            </div>
-            <div className="h-24 bg-surface-200 rounded-xl" />
-        </div>
-    );
-};
-
-const VIEW_PREFETCHERS = [
-    () => import('./views/DashboardView'),
-    () => import('./views/CheckInView'),
-    () => import('./views/GalleryView'),
-    () => import('./views/PlanSection'),
-    () => import('./views/WeightProgressView'),
-    () => import('./views/CoachDashboard')
-];
-
-const shouldPrefetchViews = () => {
-    if (typeof navigator === 'undefined') return true;
-    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-    if (!connection) return true;
-    if (connection.saveData) return false;
-    return !['slow-2g', '2g'].includes(connection.effectiveType);
-};
-
-// Prefetch views forsiktig i bakgrunnen, uten å lage en parse/network-burst.
-const prefetchViews = () => {
-    if (!shouldPrefetchViews()) return;
-    VIEW_PREFETCHERS.forEach((prefetch, index) => {
-        setTimeout(() => {
-            if (typeof document !== 'undefined' && document.hidden) return;
-            prefetch();
-        }, index * 250);
-    });
-};
-
-const supportsPushNotifications = () => {
-    if (typeof window === 'undefined' || typeof navigator === 'undefined') {
-        return false;
-    }
-    return 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window;
-};
-
-const getNotificationPermission = () => {
-    if (!supportsPushNotifications()) {
-        return 'unsupported';
-    }
-    return Notification.permission;
-};
-
-const UI_STATE_KEY = 'jnm_ui_state';
-const UI_STATE_MAX_AGE_MS = 6 * 60 * 60 * 1000;
-
-const readUiState = () => {
-    if (typeof window === 'undefined') return null;
-    try {
-        const state = localStorage.getItem(UI_STATE_KEY);
-        return state ? JSON.parse(state) : null;
-    } catch (error) {
-        console.error('[UI State] Kunne ikke lese lagret posisjon:', error);
-        return null;
-    }
-};
-
-const saveUiState = (state) => {
-    if (typeof window === 'undefined' || !state?.userId) return;
-    try {
-        localStorage.setItem(UI_STATE_KEY, JSON.stringify({
-            ...state,
-            scrollY: Math.max(0, Math.round(window.scrollY || document.documentElement.scrollTop || 0)),
-            savedAt: Date.now()
-        }));
-    } catch (error) {
-        console.error('[UI State] Kunne ikke lagre posisjon:', error);
-    }
-};
-
-const clearUiState = () => {
-    if (typeof window === 'undefined') return;
-    try {
-        localStorage.removeItem(UI_STATE_KEY);
-    } catch (error) {
-        console.error('[UI State] Kunne ikke slette lagret posisjon:', error);
-    }
-};
-
-const isUiStateFresh = (state) => (
-    Number.isFinite(state?.savedAt) &&
-    Date.now() - state.savedAt <= UI_STATE_MAX_AGE_MS
-);
-
-const urlBase64ToUint8Array = (base64String) => {
-    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-    const rawData = window.atob(base64);
-    return Uint8Array.from([...rawData].map(char => char.charCodeAt(0)));
-};
 
 const App = () => {
     const toast = useToast();
@@ -587,6 +407,7 @@ const App = () => {
     }, [viewingClient, currentUser?.role]);
 
     const handleLogin = useCallback((user) => {
+        cache.invalidateAll();
         hasRestoredUiStateRef.current = false;
         setCurrentUser(user);
         saveSession(user);
@@ -599,6 +420,7 @@ const App = () => {
 
     const handleLogout = useCallback(() => {
         clearSession();
+        cache.invalidateAll();
         clearUiState();
         hasRestoredUiStateRef.current = false;
         restoreScrollYRef.current = null;
@@ -610,6 +432,7 @@ const App = () => {
 
     const handleReauth = useCallback(() => {
         clearSession();
+        cache.invalidateAll();
         clearUiState();
         hasRestoredUiStateRef.current = false;
         restoreScrollYRef.current = null;

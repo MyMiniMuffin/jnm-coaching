@@ -1,6 +1,7 @@
 const { neon } = require('@neondatabase/serverless');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { getHeader, parseJsonBody } = require('./http-utils');
 
 const SALT_ROUNDS = 12;
 
@@ -11,6 +12,11 @@ const MAX_ATTEMPTS = 10; // maks forsøk per vindu
 
 const checkRateLimit = (key) => {
   const now = Date.now();
+  if (loginAttempts.size > 1000) {
+    for (const [attemptKey, attempt] of loginAttempts) {
+      if (now - attempt.firstAttempt > RATE_LIMIT_WINDOW) loginAttempts.delete(attemptKey);
+    }
+  }
   const entry = loginAttempts.get(key);
   if (!entry || now - entry.firstAttempt > RATE_LIMIT_WINDOW) {
     loginAttempts.set(key, { count: 1, firstAttempt: now });
@@ -19,14 +25,6 @@ const checkRateLimit = (key) => {
   entry.count++;
   return entry.count <= MAX_ATTEMPTS;
 };
-
-// Rydd opp gamle entries periodisk
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of loginAttempts) {
-    if (now - entry.firstAttempt > RATE_LIMIT_WINDOW) loginAttempts.delete(key);
-  }
-}, 5 * 60 * 1000);
 
 // Sjekk at database-URL er satt
 if (!process.env.NETLIFY_DATABASE_URL) {
@@ -49,20 +47,16 @@ exports.handler = async (event) => {
 
   try {
     // Rate limiting basert på IP
-    const clientIp = event.headers['x-forwarded-for']?.split(',')[0]?.trim() || event.headers['client-ip'] || 'unknown';
+    const clientIp = getHeader(event, 'x-forwarded-for')?.split(',')[0]?.trim() || getHeader(event, 'client-ip') || 'unknown';
     if (!checkRateLimit(clientIp)) {
       return {
         statusCode: 429,
         body: JSON.stringify({ error: 'For mange innloggingsforsøk. Prøv igjen om noen minutter.' })
       };
     }
-    let parsed;
-    try {
-      parsed = JSON.parse(event.body || '');
-    } catch (e) {
-      return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig JSON i request body' }) };
-    }
-    const { username, password } = parsed;
+    const parsedBody = parseJsonBody(event);
+    if (!parsedBody.ok) return parsedBody.response;
+    const { username, password } = parsedBody.data;
 
     // Validering av input
     if (!username || !password || typeof username !== 'string' || typeof password !== 'string') {
@@ -111,6 +105,9 @@ exports.handler = async (event) => {
         body: JSON.stringify({ error: 'Feil brukernavn eller passord' })
       };
     }
+
+    // En vellykket innlogging skal ikke telle mot senere forsøk fra samme klient.
+    loginAttempts.delete(clientIp);
 
     // Generer JWT token
     const token = jwt.sign(

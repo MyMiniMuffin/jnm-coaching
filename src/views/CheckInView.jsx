@@ -310,7 +310,7 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, onUpdate, ca
     if (step === 'success') {
         return (
             <div className="flex flex-col items-center justify-center h-[60vh] animate-scale-in text-center px-6">
-                <div className="w-16 h-16 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 mb-6">
+                <div className="w-16 h-16 rounded-xl flex items-center justify-center mb-6" style={{ background: '#edf3ea', color: '#4f6b52' }}>
                     <Check size={32} strokeWidth={2.5} />
                 </div>
                 <h2 className="text-[2rem] font-display mb-2">Rapport sendt</h2>
@@ -328,16 +328,17 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, onUpdate, ca
             {!isReadOnly && !hideForm && (
                 <form onSubmit={handleSubmit} className="space-y-5">
                     {restoredDraft && (
-                        <Card className="p-4 border-emerald-200 bg-emerald-50">
+                        <Card className="p-4" style={{ background: 'rgba(111,138,107,0.10)', borderColor: 'rgba(111,138,107,0.28)' }}>
                             <div className="flex items-start justify-between gap-3">
                                 <div>
-                                    <p className="font-medium text-emerald-900">Utkast gjenopprettet</p>
-                                    <p className="text-sm text-emerald-800/80 mt-1">Du kan fortsette der du slapp og sende rapporten når du er klar.</p>
+                                    <p className="font-medium" style={{ color: '#3f5742' }}>Utkast gjenopprettet</p>
+                                    <p className="text-sm mt-1" style={{ color: '#4f6b52' }}>Du kan fortsette der du slapp og sende rapporten når du er klar.</p>
                                 </div>
                                 <button
                                     type="button"
                                     onClick={dismissDraftNotice}
-                                    className="text-emerald-700/70 hover:text-emerald-900 transition-colors"
+                                    className="transition-colors"
+                                    style={{ color: '#6f8a6b' }}
                                     aria-label="Skjul melding om gjenopprettet utkast"
                                 >
                                     <X size={16} />
@@ -420,9 +421,9 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, onUpdate, ca
                         </div>
 
                         <div className="space-y-3">
-                            <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-all ${formData.stepsReached ? 'bg-emerald-50 border-emerald-200' : 'bg-surface-50 border-surface-200'}`}>
+                            <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-all ${formData.stepsReached ? '' : 'bg-surface-50 border-surface-200'}`} style={formData.stepsReached ? { background: 'rgba(111,138,107,0.10)', borderColor: 'rgba(111,138,107,0.30)' } : undefined}>
                                 <input type="checkbox" checked={formData.stepsReached} onChange={handleStepsChange} className="sr-only" />
-                                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200 ${formData.stepsReached ? 'bg-emerald-500 text-white' : 'bg-surface-200 text-surface-200'}`}>
+                                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200 ${formData.stepsReached ? 'text-white' : 'bg-surface-200 text-surface-200'}`} style={formData.stepsReached ? { background: '#6f8a6b' } : undefined}>
                                     <Check size={14} strokeWidth={2.5} />
                                 </div>
                                 <div>
@@ -430,9 +431,9 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, onUpdate, ca
                                     <p className="text-sm text-ink-muted">{stepGoal?.toLocaleString() || '10 000'} skritt</p>
                                 </div>
                             </label>
-                            <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-all ${formData.takenSupplements ? 'bg-emerald-50 border-emerald-200' : 'bg-surface-50 border-surface-200'}`}>
+                            <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-all ${formData.takenSupplements ? '' : 'bg-surface-50 border-surface-200'}`} style={formData.takenSupplements ? { background: 'rgba(111,138,107,0.10)', borderColor: 'rgba(111,138,107,0.30)' } : undefined}>
                                 <input type="checkbox" checked={formData.takenSupplements} onChange={handleSupplementsChange} className="sr-only" />
-                                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200 ${formData.takenSupplements ? 'bg-emerald-500 text-white' : 'bg-surface-200 text-surface-200'}`}>
+                                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200 ${formData.takenSupplements ? 'text-white' : 'bg-surface-200 text-surface-200'}`} style={formData.takenSupplements ? { background: '#6f8a6b' } : undefined}>
                                     <Check size={14} strokeWidth={2.5} />
                                 </div>
                                 <div>
@@ -660,9 +661,9 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, onUpdate, ca
                                                 />
                                             </div>
                                             <div className="space-y-3">
-                                                <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-all ${editForm.stepsReached ? 'bg-emerald-50 border-emerald-200' : 'bg-surface-50 border-surface-200'}`}>
+                                                <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-all ${editForm.stepsReached ? '' : 'bg-surface-50 border-surface-200'}`} style={editForm.stepsReached ? { background: 'rgba(111,138,107,0.10)', borderColor: 'rgba(111,138,107,0.30)' } : undefined}>
                                                     <input type="checkbox" checked={editForm.stepsReached} onChange={(e) => updateEditField('stepsReached', e.target.checked)} className="sr-only" />
-                                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200 ${editForm.stepsReached ? 'bg-emerald-500 text-white' : 'bg-surface-200 text-surface-200'}`}>
+                                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200 ${editForm.stepsReached ? 'text-white' : 'bg-surface-200 text-surface-200'}`} style={editForm.stepsReached ? { background: '#6f8a6b' } : undefined}>
                                                         <Check size={14} strokeWidth={2.5} />
                                                     </div>
                                                     <div>
@@ -670,9 +671,9 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, onUpdate, ca
                                                         <p className="text-sm text-ink-muted">{stepGoal?.toLocaleString() || '10 000'} skritt</p>
                                                     </div>
                                                 </label>
-                                                <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-all ${editForm.takenSupplements ? 'bg-emerald-50 border-emerald-200' : 'bg-surface-50 border-surface-200'}`}>
+                                                <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-all ${editForm.takenSupplements ? '' : 'bg-surface-50 border-surface-200'}`} style={editForm.takenSupplements ? { background: 'rgba(111,138,107,0.10)', borderColor: 'rgba(111,138,107,0.30)' } : undefined}>
                                                     <input type="checkbox" checked={editForm.takenSupplements} onChange={(e) => updateEditField('takenSupplements', e.target.checked)} className="sr-only" />
-                                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200 ${editForm.takenSupplements ? 'bg-emerald-500 text-white' : 'bg-surface-200 text-surface-200'}`}>
+                                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200 ${editForm.takenSupplements ? 'text-white' : 'bg-surface-200 text-surface-200'}`} style={editForm.takenSupplements ? { background: '#6f8a6b' } : undefined}>
                                                         <Check size={14} strokeWidth={2.5} />
                                                     </div>
                                                     <div>

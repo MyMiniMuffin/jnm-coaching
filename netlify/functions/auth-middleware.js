@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { getHeader } = require('./http-utils');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
@@ -6,14 +7,10 @@ if (!JWT_SECRET) {
 }
 
 const verifyToken = (event) => {
-  // Sjekk alle mulige header-varianter (case-insensitive)
-  const authHeader = event.headers.authorization ||
-                     event.headers.Authorization ||
-                     event.headers['authorization'] ||
-                     event.headers['Authorization'];
+  const authHeader = getHeader(event, 'authorization');
 
   if (!authHeader) {
-    console.error('Auth middleware: Ingen authorization header funnet. Headers:', Object.keys(event.headers));
+    console.error('Auth middleware: Ingen authorization header funnet. Headers:', Object.keys(event.headers || {}));
     return {
       success: false,
       statusCode: 401,

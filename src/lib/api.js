@@ -3,6 +3,8 @@ import { getToken } from './session';
 // --- CACHE LAYER (med localStorage for persistent cache) ---
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutter
 const CACHE_PREFIX = 'jnm_cache_';
+const cacheVersions = new Map();
+let cacheGeneration = 0;
 
 const runWhenIdle = (callback) => {
     if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
@@ -12,8 +14,10 @@ const runWhenIdle = (callback) => {
     setTimeout(callback, 0);
 };
 
-const persistCacheItem = (key, item) => {
+const persistCacheItem = (key, item, version, generation) => {
     runWhenIdle(() => {
+        if (generation !== cacheGeneration || cacheVersions.get(key) !== version) return;
+
         try {
             localStorage.setItem(CACHE_PREFIX + key, JSON.stringify(item));
         } catch (e) {
@@ -57,22 +61,36 @@ export const cache = {
             timestamp: Date.now()
         };
         cache.store[key] = item;
+        const version = (cacheVersions.get(key) || 0) + 1;
+        cacheVersions.set(key, version);
 
         // Lagre persistent cache uten å blokkere neste frame.
-        persistCacheItem(key, item);
+        persistCacheItem(key, item, version, cacheGeneration);
     },
 
     invalidate: (key) => {
         // Slett spesifikk cache-nøkkel
         delete cache.store[key];
+        cacheVersions.set(key, (cacheVersions.get(key) || 0) + 1);
         try { localStorage.removeItem(CACHE_PREFIX + key); } catch (e) {}
     },
     invalidateAll: () => {
-        // Slett all cache
-        Object.keys(cache.store).forEach(key => {
-            delete cache.store[key];
-            try { localStorage.removeItem(CACHE_PREFIX + key); } catch (e) {}
-        });
+        cache.store = {};
+        cacheGeneration += 1;
+        cacheVersions.clear();
+
+        // Persistent cache kan inneholde nøkler som ikke er lastet inn i minnet.
+        // Fjern derfor alle app-cachede elementer direkte fra localStorage.
+        try {
+            const keys = [];
+            for (let index = 0; index < localStorage.length; index += 1) {
+                const key = localStorage.key(index);
+                if (key?.startsWith(CACHE_PREFIX)) keys.push(key);
+            }
+            keys.forEach(key => localStorage.removeItem(key));
+        } catch (e) {
+            // localStorage er ikke tilgjengelig i alle miljøer.
+        }
     }
 };
 
@@ -85,10 +103,6 @@ export const debounce = (fn, delay) => {
     };
 };
 
-// ============================================
-// API LAYER v3 - FIKSET: Ingen auto-logout
-// ============================================
-
 export const getAuthHeaders = () => {
     const token = getToken();
     const headers = {
@@ -100,6 +114,58 @@ export const getAuthHeaders = () => {
     return headers;
 };
 
+const readResponseBody = async (response) => {
+    const text = await response.text();
+    if (!text) return undefined;
+
+    try {
+        return JSON.parse(text);
+    } catch (e) {
+        return text;
+    }
+};
+
+const getErrorMessage = (body, fallback) => {
+    if (typeof body === 'string' && body.trim()) return body;
+    if (body && typeof body.error === 'string') return body.error;
+    return fallback;
+};
+
+const request = async (url, {
+    method = 'GET',
+    body,
+    auth = true,
+    errorMessage = 'Forespørselen feilet'
+} = {}) => {
+    const response = await fetch(url, {
+        method,
+        headers: auth ? getAuthHeaders() : { 'Content-Type': 'application/json' },
+        ...(body === undefined ? {} : { body: JSON.stringify(body) })
+    });
+
+    if (response.status === 401) {
+        return { authError: true };
+    }
+
+    const data = await readResponseBody(response);
+    if (!response.ok) {
+        throw new Error(getErrorMessage(data, errorMessage));
+    }
+
+    return { authError: false, data };
+};
+
+const mutateUserData = async (userId, type, data, errorMessage) => {
+    const result = await request('/.netlify/functions/data', {
+        method: 'POST',
+        body: { userId, type, data },
+        errorMessage
+    });
+
+    if (!result.authError) cache.invalidate(`user-data-${userId}`);
+    return result;
+};
+
 export const api = {
     getUsers: async (useCache = false) => {
         if (useCache) {
@@ -107,17 +173,12 @@ export const api = {
             if (cached) return { authError: false, data: cached, fromCache: true };
         }
         try {
-            const res = await fetch('/.netlify/functions/users', {
-                headers: getAuthHeaders()
+            const result = await request('/.netlify/functions/users', {
+                errorMessage: 'Kunne ikke hente brukere'
             });
-            if (res.status === 401) {
-                console.warn('[API] 401 ved getUsers - returnerer authError');
-                return { authError: true, data: [] };
-            }
-            if (!res.ok) throw new Error('Kunne ikke hente brukere');
-            const data = await res.json();
-            cache.set('users-list', data);
-            return { authError: false, data };
+            if (result.authError) return { ...result, data: [] };
+            cache.set('users-list', result.data);
+            return result;
         } catch (e) {
             console.error('[API] getUsers feil:', e);
             // Fallback til cache ved nettverksfeil
@@ -126,66 +187,26 @@ export const api = {
             return { authError: false, data: [], networkError: true };
         }
     },
-    createUser: async (newUser) => {
-        const res = await fetch('/.netlify/functions/users', {
+    createUser: (newUser) => request('/.netlify/functions/users', {
             method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify(newUser)
-        });
-        if (res.status === 401) {
-            console.warn('[API] 401 ved createUser');
-            return { authError: true };
-        }
-        if (!res.ok) {
-            const errorData = await res.json().catch(() => ({}));
-            console.error('[API] Feil ved opprettelse:', errorData);
-            throw new Error(errorData.error || 'Feil ved opprettelse');
-        }
-        const result = await res.json();
-        return { authError: false, data: result };
-    },
-    deleteUser: async (userId) => {
-        const res = await fetch('/.netlify/functions/users', {
+            body: newUser,
+            errorMessage: 'Feil ved opprettelse'
+        }),
+    deleteUser: (userId) => request('/.netlify/functions/users', {
             method: 'DELETE',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ id: userId })
-        });
-        if (res.status === 401) {
-            console.warn('[API] 401 ved deleteUser');
-            return { authError: true };
-        }
-        if (!res.ok) throw new Error('Feil ved sletting');
-        return { authError: false, data: await res.json() };
-    },
-    resetPassword: async (userId, newPassword) => {
-        const res = await fetch('/.netlify/functions/users', {
+            body: { id: userId },
+            errorMessage: 'Feil ved sletting'
+        }),
+    resetPassword: (userId, newPassword) => request('/.netlify/functions/users', {
             method: 'PATCH',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ id: userId, new_password: newPassword })
-        });
-        if (res.status === 401) {
-            console.warn('[API] 401 ved resetPassword');
-            return { authError: true };
-        }
-        if (!res.ok) {
-            const errorData = await res.json().catch(() => ({}));
-            throw new Error(errorData.error || 'Feil ved tilbakestilling av passord');
-        }
-        return { authError: false };
-    },
-    archiveUser: async (userId, archive) => {
-        const res = await fetch('/.netlify/functions/users', {
+            body: { id: userId, new_password: newPassword },
+            errorMessage: 'Feil ved tilbakestilling av passord'
+        }),
+    archiveUser: (userId, archive) => request('/.netlify/functions/users', {
             method: 'PATCH',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ id: userId, is_archived: archive })
-        });
-        if (res.status === 401) {
-            console.warn('[API] 401 ved archiveUser');
-            return { authError: true };
-        }
-        if (!res.ok) throw new Error('Feil ved arkivering');
-        return { authError: false, data: await res.json() };
-    },
+            body: { id: userId, is_archived: archive },
+            errorMessage: 'Feil ved arkivering'
+        }),
     getUserData: async (userId, useCache = true) => {
         const cacheKey = `user-data-${userId}`;
 
@@ -196,18 +217,12 @@ export const api = {
         }
 
         try {
-            const res = await fetch(`/.netlify/functions/data?id=${userId}`, {
-                headers: getAuthHeaders()
+            const result = await request(`/.netlify/functions/data?id=${encodeURIComponent(userId)}`, {
+                errorMessage: 'Feil ved henting av data'
             });
-            if (res.status === 401) {
-                console.warn('[API] 401 ved getUserData');
-                return { authError: true };
-            }
-            if (!res.ok) throw new Error('Feil ved henting av data');
-
-            const data = await res.json();
-            cache.set(cacheKey, data);
-            return { authError: false, data };
+            if (result.authError) return result;
+            cache.set(cacheKey, result.data);
+            return result;
         } catch (e) {
             console.error('[API] getUserData feil:', e);
             const cached = cache.get(cacheKey);
@@ -215,206 +230,78 @@ export const api = {
             return { authError: false, networkError: true };
         }
     },
-    saveUserData: async (userId, data) => {
-        const res = await fetch('/.netlify/functions/data', {
+    saveUserData: (userId, data) => mutateUserData(userId, 'plan_update', data, 'Lagring feilet'),
+    submitCheckin: (userId, entry) => mutateUserData(userId, 'new_checkin', entry, 'Innsending feilet'),
+    updateCheckin: (userId, checkinId, updates) => mutateUserData(
+        userId,
+        'update_checkin',
+        { checkinId, ...updates },
+        'Oppdatering feilet'
+    ),
+    deleteCheckin: (userId, checkinId) => mutateUserData(
+        userId,
+        'delete_checkin',
+        { checkinId },
+        'Sletting feilet'
+    ),
+    markCheckinsRead: (userId) => mutateUserData(
+        userId,
+        'mark_checkins_read',
+        {},
+        'Kunne ikke markere som lest'
+    ),
+    createPeriod: (userId, name, startingWeight, goalWeight = null) => mutateUserData(
+        userId,
+        'create_period',
+        { name, startingWeight, goalWeight },
+        'Kunne ikke opprette periode'
+    ),
+    endPeriod: (userId, periodId) => mutateUserData(
+        userId,
+        'end_period',
+        { periodId },
+        'Kunne ikke avslutte periode'
+    ),
+    updatePeriod: (userId, periodId, updates) => mutateUserData(
+        userId,
+        'update_period',
+        { periodId, ...updates },
+        'Kunne ikke oppdatere periode'
+    ),
+    addGalleryImage: (userId, imageUrl, label, date, weight) => mutateUserData(
+        userId,
+        'add_gallery_image',
+        { imageUrl, label, date, weight },
+        'Kunne ikke legge til bilde'
+    ),
+    deleteGalleryImage: (userId, imageId) => mutateUserData(
+        userId,
+        'delete_gallery_image',
+        { imageId },
+        'Kunne ikke slette bilde'
+    ),
+    uploadImage: (base64Image, userId, purpose) => request('/.netlify/functions/upload', {
             method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ userId, type: 'plan_update', data })
-        });
-        if (res.status === 401) {
-            console.warn('[API] 401 ved saveUserData');
-            return { authError: true };
-        }
-        if (!res.ok) throw new Error('Lagring feilet');
-        cache.invalidate(`user-data-${userId}`);
-        return { authError: false, data };
-    },
-    submitCheckin: async (userId, entry) => {
-        const payload = JSON.stringify({ userId, type: 'new_checkin', data: entry });
-        const res = await fetch('/.netlify/functions/data', {
+            body: { image: base64Image, userId, purpose },
+            errorMessage: 'Opplasting feilet'
+        }),
+    savePushSubscription: (subscription) => request('/.netlify/functions/push-subscriptions', {
             method: 'POST',
-            headers: getAuthHeaders(),
-            body: payload
-        });
-        if (res.status === 401) {
-            console.warn('[API] 401 ved submitCheckin');
-            return { authError: true };
-        }
-        if (!res.ok) {
-            const errorText = await res.text();
-            throw new Error(errorText || 'Innsending feilet');
-        }
-        cache.invalidate(`user-data-${userId}`);
-        return { authError: false, data: await res.json() };
-    },
-    updateCheckin: async (userId, checkinId, updates) => {
-        const res = await fetch('/.netlify/functions/data', {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ userId, type: 'update_checkin', data: { checkinId, ...updates } })
-        });
-        if (res.status === 401) {
-            console.warn('[API] 401 ved updateCheckin');
-            return { authError: true };
-        }
-        if (!res.ok) {
-            const errorData = await res.json().catch(() => ({}));
-            throw new Error(errorData.error || 'Oppdatering feilet');
-        }
-        cache.invalidate(`user-data-${userId}`);
-        return { authError: false, data: await res.json() };
-    },
-    deleteCheckin: async (userId, checkinId) => {
-        const res = await fetch('/.netlify/functions/data', {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ userId, type: 'delete_checkin', data: { checkinId } })
-        });
-        if (res.status === 401) {
-            console.warn('[API] 401 ved deleteCheckin');
-            return { authError: true };
-        }
-        if (!res.ok) {
-            const errorData = await res.json().catch(() => ({}));
-            throw new Error(errorData.error || 'Sletting feilet');
-        }
-        cache.invalidate(`user-data-${userId}`);
-        return { authError: false };
-    },
-    markCheckinsRead: async (userId) => {
-        const res = await fetch('/.netlify/functions/data', {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ userId, type: 'mark_checkins_read', data: {} })
-        });
-        if (res.status === 401) {
-            console.warn('[API] 401 ved markCheckinsRead');
-            return { authError: true };
-        }
-        if (!res.ok) throw new Error('Kunne ikke markere som lest');
-        cache.invalidate(`user-data-${userId}`);
-        return { authError: false };
-    },
-    createPeriod: async (userId, name, startingWeight, goalWeight = null) => {
-        const res = await fetch('/.netlify/functions/data', {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ userId, type: 'create_period', data: { name, startingWeight, goalWeight } })
-        });
-        if (res.status === 401) {
-            console.warn('[API] 401 ved createPeriod');
-            return { authError: true };
-        }
-        if (!res.ok) throw new Error('Kunne ikke opprette periode');
-        cache.invalidate(`user-data-${userId}`);
-        return { authError: false, data: await res.json() };
-    },
-    endPeriod: async (userId, periodId) => {
-        const res = await fetch('/.netlify/functions/data', {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ userId, type: 'end_period', data: { periodId } })
-        });
-        if (res.status === 401) {
-            console.warn('[API] 401 ved endPeriod');
-            return { authError: true };
-        }
-        if (!res.ok) throw new Error('Kunne ikke avslutte periode');
-        cache.invalidate(`user-data-${userId}`);
-        return { authError: false, data: await res.json() };
-    },
-    updatePeriod: async (userId, periodId, updates) => {
-        const res = await fetch('/.netlify/functions/data', {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ userId, type: 'update_period', data: { periodId, ...updates } })
-        });
-        if (res.status === 401) {
-            console.warn('[API] 401 ved updatePeriod');
-            return { authError: true };
-        }
-        if (!res.ok) throw new Error('Kunne ikke oppdatere periode');
-        cache.invalidate(`user-data-${userId}`);
-        return { authError: false, data: await res.json() };
-    },
-    addGalleryImage: async (userId, imageUrl, label, date, weight) => {
-        const res = await fetch('/.netlify/functions/data', {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ userId, type: 'add_gallery_image', data: { imageUrl, label, date, weight } })
-        });
-        if (res.status === 401) {
-            console.warn('[API] 401 ved addGalleryImage');
-            return { authError: true };
-        }
-        if (!res.ok) throw new Error('Kunne ikke legge til bilde');
-        cache.invalidate(`user-data-${userId}`);
-        return { authError: false };
-    },
-    deleteGalleryImage: async (userId, imageId) => {
-        const res = await fetch('/.netlify/functions/data', {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ userId, type: 'delete_gallery_image', data: { imageId } })
-        });
-        if (res.status === 401) {
-            console.warn('[API] 401 ved deleteGalleryImage');
-            return { authError: true };
-        }
-        if (!res.ok) throw new Error('Kunne ikke slette bilde');
-        cache.invalidate(`user-data-${userId}`);
-        return { authError: false };
-    },
-    uploadImage: async (base64Image, userId, purpose) => {
-        const res = await fetch('/.netlify/functions/upload', {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ image: base64Image, userId, purpose })
-        });
-        if (res.status === 401) {
-            console.warn('[API] 401 ved uploadImage');
-            return { authError: true };
-        }
-        if (!res.ok) {
-            const errorData = await res.json().catch(() => ({}));
-            throw new Error(errorData.error || 'Opplasting feilet');
-        }
-        return { authError: false, data: await res.json() };
-    },
-    savePushSubscription: async (subscription) => {
-        const res = await fetch('/.netlify/functions/push-subscriptions', {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ subscription })
-        });
-        if (res.status === 401) {
-            console.warn('[API] 401 ved savePushSubscription');
-            return { authError: true };
-        }
-        if (!res.ok) throw new Error('Kunne ikke lagre push-abonnement');
-        return { authError: false, data: await res.json() };
-    },
-    deletePushSubscription: async (endpoint) => {
-        const res = await fetch('/.netlify/functions/push-subscriptions', {
+            body: { subscription },
+            errorMessage: 'Kunne ikke lagre push-abonnement'
+        }),
+    deletePushSubscription: (endpoint) => request('/.netlify/functions/push-subscriptions', {
             method: 'DELETE',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ endpoint })
-        });
-        if (res.status === 401) {
-            console.warn('[API] 401 ved deletePushSubscription');
-            return { authError: true };
-        }
-        if (!res.ok) throw new Error('Kunne ikke slette push-abonnement');
-        return { authError: false };
-    },
+            body: { endpoint },
+            errorMessage: 'Kunne ikke slette push-abonnement'
+        }),
     login: async (username, password) => {
-        const res = await fetch('/.netlify/functions/auth', {
+        const result = await request('/.netlify/functions/auth', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password })
+            body: { username, password },
+            auth: false,
+            errorMessage: 'Login feilet'
         });
-        if (res.status === 401) return null;
-        if (!res.ok) throw new Error('Login feilet');
-        return await res.json();
-    }
+        return result.authError ? null : result.data;
+    },
 };
