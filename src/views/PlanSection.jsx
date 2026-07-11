@@ -11,10 +11,19 @@ import {
     Trash2,
     ArrowUp,
     ArrowDown,
-    ListChecks
+    ListChecks,
+    Download,
+    Upload
 } from 'lucide-react';
 import { Card, Button, EmptyState } from '../components/ui';
-import { createSection, getPlanTemplate, parsePlan, serializePlan } from '../lib/planFormat';
+import {
+    createSection,
+    getPlanTemplate,
+    parsePlainTextPlan,
+    parsePlan,
+    serializePlan,
+    serializePlanAsPlainText
+} from '../lib/planFormat';
 
 const moveInArray = (items, from, to) => {
     if (to < 0 || to >= items.length) return items;
@@ -63,6 +72,10 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
     const [isSaving, setIsSaving] = useState(false);
     const [draft, setDraft] = useState(() => parsePlan(content, type));
     const [saveState, setSaveState] = useState('idle');
+    const [showTextImport, setShowTextImport] = useState(false);
+    const [importText, setImportText] = useState('');
+    const [importError, setImportError] = useState('');
+    const importFileRef = useRef(null);
     const parsedPlan = useMemo(() => parsePlan(content, type), [content, type]);
 
     useEffect(() => {
@@ -95,6 +108,9 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
     const handleStartEditing = useCallback(() => {
         setDraft(parsePlan(content, type));
         setSaveState('idle');
+        setShowTextImport(false);
+        setImportText('');
+        setImportError('');
         setIsEditing(true);
     }, [content, type]);
 
@@ -114,6 +130,9 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
     const handleCancel = useCallback(() => {
         setDraft(parsePlan(content, type));
         setSaveState('idle');
+        setShowTextImport(false);
+        setImportText('');
+        setImportError('');
         setIsEditing(false);
     }, [content, type]);
 
@@ -182,6 +201,52 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
 
     const insertTemplate = useCallback(() => markChanged(getPlanTemplate(type)), [markChanged, type]);
 
+    const handleExportText = useCallback(() => {
+        const text = serializePlanAsPlainText(isEditing ? draft : parsedPlan);
+        if (!text) return;
+
+        const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'matplan.txt';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+    }, [draft, isEditing, parsedPlan]);
+
+    const handleOpenTextImport = useCallback(() => {
+        setImportText('');
+        setImportError('');
+        setShowTextImport(true);
+    }, []);
+
+    const handleCloseTextImport = useCallback(() => {
+        setShowTextImport(false);
+        setImportText('');
+        setImportError('');
+    }, []);
+
+    const handleImportFile = useCallback(async (event) => {
+        const file = event.target.files?.[0];
+        event.target.value = '';
+        if (!file) return;
+        setImportText(await file.text());
+        setImportError('');
+        setShowTextImport(true);
+    }, []);
+
+    const handleApplyTextImport = useCallback(() => {
+        const importedPlan = parsePlainTextPlan(importText, 'diet');
+        if (!importedPlan.sections.length || importedPlan.sections.every(section => section.items.length === 0)) {
+            setImportError('Lim inn en matplan med minst én matvare.');
+            return;
+        }
+        markChanged(importedPlan);
+        handleCloseTextImport();
+    }, [handleCloseTextImport, importText, markChanged]);
+
     const displayPlan = isEditing ? draft : parsedPlan;
 
     return (
@@ -201,31 +266,84 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                             )}
                         </div>
                     </div>
-                    {!isReadOnly && (
-                        isEditing ? (
-                            <div className="flex items-center gap-1.5 shrink-0">
-                                <Button aria-label="Avbryt redigering" variant="ghost" size="sm" onClick={handleCancel} disabled={isSaving} className="px-2 sm:px-3">
-                                    <RotateCcw size={16} /> <span className="hidden sm:inline">Avbryt</span>
-                                </Button>
-                                <Button aria-label="Lagre planen" variant="primary" size="sm" onClick={handleSave} disabled={!canSave}>
-                                    {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
-                                    <span className="hidden sm:inline">{isSaving ? 'Lagrer...' : 'Lagre'}</span>
-                                </Button>
-                            </div>
-                        ) : (
-                            <Button variant="secondary" size="sm" onClick={handleStartEditing}>
-                                <Pencil size={16} /> Rediger
+                    <div className="flex shrink-0 items-center gap-1.5">
+                        {type === 'diet' && !isEditing && parsedPlan.sections.length > 0 && (
+                            <Button aria-label="Eksporter matplan som tekstfil" title="Eksporter matplan som tekstfil" variant="ghost" size="sm" onClick={handleExportText} className="px-2 sm:px-3">
+                                <Download size={16} /> <span className="hidden sm:inline">Eksporter</span>
                             </Button>
-                        )
-                    )}
+                        )}
+                        {!isReadOnly && (
+                            isEditing ? (
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                    <Button aria-label="Avbryt redigering" variant="ghost" size="sm" onClick={handleCancel} disabled={isSaving} className="px-2 sm:px-3">
+                                        <RotateCcw size={16} /> <span className="hidden sm:inline">Avbryt</span>
+                                    </Button>
+                                    <Button aria-label="Lagre planen" variant="primary" size="sm" onClick={handleSave} disabled={!canSave}>
+                                        {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                                        <span className="hidden sm:inline">{isSaving ? 'Lagrer...' : 'Lagre'}</span>
+                                    </Button>
+                                </div>
+                            ) : (
+                                <Button variant="secondary" size="sm" onClick={handleStartEditing}>
+                                    <Pencil size={16} /> Rediger
+                                </Button>
+                            )
+                        )}
+                    </div>
                 </div>
 
                 {isEditing && !isReadOnly && (
                     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-surface-100 bg-white px-5 py-3.5">
                         <p className="text-sm text-ink-muted">{editorHint}</p>
-                        <Button variant="secondary" size="sm" onClick={insertTemplate}>
-                            <FileText size={16} /> Bruk forslag
-                        </Button>
+                        <div className="flex flex-wrap gap-2">
+                            {type === 'diet' && (
+                                <>
+                                    <input ref={importFileRef} type="file" accept="text/plain,.txt" className="hidden" onChange={handleImportFile} />
+                                    <Button variant="ghost" size="sm" onClick={handleExportText} disabled={draft.sections.length === 0}>
+                                        <Download size={16} /> Eksporter
+                                    </Button>
+                                    <Button variant="secondary" size="sm" onClick={handleOpenTextImport}>
+                                        <Upload size={16} /> Importer tekst
+                                    </Button>
+                                </>
+                            )}
+                            <Button variant="secondary" size="sm" onClick={insertTemplate}>
+                                <FileText size={16} /> Bruk forslag
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
+                {type === 'diet' && isEditing && !isReadOnly && showTextImport && (
+                    <div className="border-b border-surface-100 bg-surface-50 p-4 sm:p-5">
+                        <div className="mb-3 flex items-start justify-between gap-4">
+                            <div>
+                                <h3 className="text-base font-semibold text-ink">Importer matplan fra tekst</h3>
+                                <p className="mt-1 text-sm text-ink-muted">Bruk hakeparenteser rundt måltider og én matvare per linje.</p>
+                            </div>
+                            <Button variant="ghost" size="sm" onClick={() => importFileRef.current?.click()} className="shrink-0 whitespace-nowrap">
+                                Velg .txt-fil
+                            </Button>
+                        </div>
+                        <textarea
+                            value={importText}
+                            onChange={event => {
+                                setImportText(event.target.value);
+                                setImportError('');
+                            }}
+                            rows={10}
+                            className={`w-full resize-y rounded-xl border bg-white px-4 py-3 text-sm leading-6 outline-none focus:border-accent focus:ring-2 focus:ring-accent ${importError ? 'border-error/40' : 'border-surface-200'}`}
+                            placeholder={'[Frokost]\nHavregrøt med bær\nKaffe eller vann\n\n[Lunsj]\nKylling, ris og grønnsaker'}
+                            aria-label="Matplan i ren tekst"
+                        />
+                        {importError && <p className="mt-1.5 text-xs text-error">{importError}</p>}
+                        <p className="mt-2 text-xs text-ink-muted">Importen erstatter innholdet i editoren. Endringen lagres først når du trykker «Lagre».</p>
+                        <div className="mt-4 flex justify-end gap-2">
+                            <Button variant="ghost" size="sm" onClick={handleCloseTextImport}>Avbryt</Button>
+                            <Button size="sm" onClick={handleApplyTextImport} disabled={!importText.trim()}>
+                                <Upload size={16} /> Bruk teksten
+                            </Button>
+                        </div>
                     </div>
                 )}
 

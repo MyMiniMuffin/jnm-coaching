@@ -137,6 +137,64 @@ export const serializePlan = (plan) => {
     });
 };
 
+export const serializePlanAsPlainText = (plan) => (plan?.sections || [])
+    .map(section => {
+        const title = String(section?.title || '').trim();
+        const items = (section?.items || [])
+            .map(item => String(typeof item === 'string' ? item : item?.text || '').trim())
+            .filter(Boolean);
+        return [title ? `[${title}]` : '', ...items].filter(Boolean).join('\n');
+    })
+    .filter(Boolean)
+    .join('\n\n');
+
+export const parsePlainTextPlan = (content, type = 'diet') => {
+    const normalized = String(content || '').replace(/\r\n?/g, '\n').trim();
+    if (!normalized) return { sections: [] };
+
+    const lines = normalized.split('\n');
+    const hasBracketHeadings = lines.some(line => /^\s*\[[^\]]+\]\s*$/.test(line));
+
+    if (hasBracketHeadings) {
+        const sections = [];
+        let current = null;
+
+        lines.forEach(rawLine => {
+            const line = rawLine.trim();
+            if (!line) return;
+
+            const heading = line.match(/^\[([^\]]+)\]$/);
+            if (heading) {
+                current = createSection(heading[1].trim(), [], type);
+                sections.push(current);
+                return;
+            }
+
+            if (!current) {
+                current = createSection('Plan', [], type);
+                sections.push(current);
+            }
+            current.items.push(createItem(cleanMarkdown(line), type));
+        });
+
+        return { sections: sections.filter(section => section.title || section.items.length) };
+    }
+
+    const blocks = normalized.split(/\n\s*\n+/).map(block => block
+        .split('\n')
+        .map(line => cleanMarkdown(line))
+        .filter(Boolean)
+    ).filter(block => block.length);
+
+    if (blocks.length > 1) {
+        return {
+            sections: blocks.map(block => createSection(block[0], block.slice(1), type))
+        };
+    }
+
+    return { sections: [createSection('Plan', blocks[0] || [], type)] };
+};
+
 export const getPlanTemplate = (type) => ({
     sections: type === 'diet'
         ? [
