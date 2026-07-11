@@ -229,7 +229,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                     </div>
                 )}
 
-                <div className="p-5">
+                <div className={type === 'diet' ? 'p-4 sm:p-5' : 'p-5'}>
                     {displayPlan.sections.length === 0 ? (
                         <EmptyState
                             icon={ListChecks}
@@ -261,7 +261,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                                             data-new-section={sectionIndex === displayPlan.sections.length - 1 ? 'true' : undefined}
                                             value={section.title}
                                             onChange={event => updateSection(sectionIndex, current => ({ ...current, title: event.target.value }))}
-                                            className="w-full border-0 border-b border-surface-300 bg-transparent px-0 py-2 font-display text-[1.4rem] leading-tight outline-none focus:border-accent focus:ring-0"
+                                            className={`w-full border-0 border-b border-surface-300 bg-transparent px-0 py-2 leading-tight outline-none focus:border-accent focus:ring-0 ${type === 'diet' ? 'text-[1.05rem] font-semibold' : 'font-display text-[1.4rem]'}`}
                                             placeholder={type === 'diet' ? 'For eksempel: Frokost' : 'For eksempel: Dag 1 – Underkropp'}
                                         />
                                     </div>
@@ -355,10 +355,12 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                             </Button>
                         </div>
                     ) : (
-                        <div className="space-y-7">
+                        <div className={type === 'diet' ? 'space-y-5' : 'space-y-7'}>
                             {displayPlan.sections.map(section => (
                                 <section key={section.key}>
-                                    {section.title && <h3 className="font-display text-[1.4rem] leading-tight text-ink">{section.title}</h3>}
+                                    {section.title && (
+                                        <h3 className={`leading-tight text-ink ${type === 'diet' ? 'text-[1.08rem] font-semibold' : 'font-display text-[1.4rem]'}`}>{section.title}</h3>
+                                    )}
                                     {section.items.length > 0 && (
                                         type === 'workout' && section.items.some(item => item.sets || item.reps) ? (
                                             <div className={`${section.title ? 'mt-3' : ''} overflow-hidden`}>
@@ -378,10 +380,10 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                                                 </ul>
                                             </div>
                                         ) : (
-                                            <ul className={`${section.title ? 'mt-3' : ''} space-y-1`}>
+                                            <ul className={`${section.title ? 'mt-2' : ''} space-y-0.5`}>
                                                 {section.items.map(item => (
-                                                    <li key={item.key} className="flex items-start gap-3 px-1 py-2 text-[0.95rem] leading-6 text-ink/85">
-                                                        <span className="mt-[0.6rem] h-1.5 w-1.5 shrink-0 rounded-full bg-ink/45" />
+                                                    <li key={item.key} className="flex items-start gap-2.5 px-1 py-1.5 text-sm leading-5 text-ink/80">
+                                                        <span className="mt-[0.45rem] h-1.5 w-1.5 shrink-0 rounded-full bg-ink/40" />
                                                         <span className="whitespace-pre-wrap">{item.text}</span>
                                                     </li>
                                                 ))}
