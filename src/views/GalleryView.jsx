@@ -50,7 +50,7 @@ const ComparePanel = React.memo(({ image, label, align = 'left' }) => (
     <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden bg-black/10">
         <CompareZoomImage image={image} label={label} />
         <div className={`absolute top-3 ${align === 'right' ? 'right-3' : 'left-3'} bg-white/10 text-white px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium backdrop-blur-md ring-1 ring-white/10 pointer-events-none`}>
-            {label.toUpperCase()}
+            {label}
         </div>
         <div className="absolute bottom-3 left-3 right-3 bg-black/45 backdrop-blur-md rounded-lg p-2.5 sm:p-3 ring-1 ring-white/10 pointer-events-none">
             <p className="text-white text-sm sm:text-base font-medium">{formatDateNO(image.date)}</p>
@@ -62,6 +62,9 @@ const ComparePanel = React.memo(({ image, label, align = 'left' }) => (
 ));
 
 const FullscreenCompareModal = React.memo(({ before, after, daysDiff, weightDiff, onClose }) => {
+    const modalRef = useFocusTrap(true);
+    useEscapeKey(onClose, true);
+
     useEffect(() => {
         const previousBodyOverflow = document.body.style.overflow;
         const previousHtmlOverflow = document.documentElement.style.overflow;
@@ -73,23 +76,16 @@ const FullscreenCompareModal = React.memo(({ before, after, daysDiff, weightDiff
         };
     }, []);
 
-    useEffect(() => {
-        const handleKeyDown = (event) => {
-            if (event.key === 'Escape') onClose();
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [onClose]);
-
     return createPortal(
         <div
-            className="fixed inset-0 z-[100] isolate bg-[#050504] animate-fade-in overflow-hidden"
+            ref={modalRef}
+            className="fixed inset-0 z-[100] isolate bg-ink animate-fade-in overflow-hidden"
             role="dialog"
             aria-modal="true"
-            aria-label="Sammenligning i fullskjerm"
+            aria-labelledby="fullscreen-compare-title"
             style={{ width: '100vw', height: '100dvh', top: 0, left: 0, overscrollBehavior: 'contain' }}
         >
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(255,255,255,0.07),transparent_28rem)] pointer-events-none" />
+            <h2 id="fullscreen-compare-title" className="sr-only">Sammenligning i fullskjerm</h2>
             <div className="absolute inset-x-0 top-0 z-[105] h-28 bg-gradient-to-b from-black/60 to-transparent pointer-events-none" />
             <div className="absolute inset-x-0 bottom-0 z-[105] h-32 bg-gradient-to-t from-black/65 to-transparent pointer-events-none" />
 
@@ -151,6 +147,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
     const [isUploading, setIsUploading] = useState(false);
     const [uploadForm, setUploadForm] = useState({ label: 'Startbilde', date: new Date().toISOString().split('T')[0], weight: '' });
     const [visibleImageCount, setVisibleImageCount] = useState(IMAGE_BATCH_SIZE);
+    const [deletingImageId, setDeletingImageId] = useState(null);
     const tilePointerRef = React.useRef(null);
     const compareTopRef = React.useRef(null);
 
@@ -271,7 +268,11 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
         return imagesByMonth
             .map(([monthKey, group]) => [
                 monthKey,
-                { ...group, images: group.images.filter(img => visibleIndexes.has(img.globalIndex)) }
+                {
+                    ...group,
+                    totalCount: group.images.length,
+                    images: group.images.filter(img => visibleIndexes.has(img.globalIndex))
+                }
             ])
             .filter(([, group]) => group.images.length > 0);
     }, [imagesByMonth, visibleImages]);
@@ -405,11 +406,14 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
 
     const handleDeleteGalleryImage = useCallback(async (imageId) => {
         if (await confirmDialog('Slett dette bildet fra galleriet?', { title: 'Slett bilde', confirmText: 'Slett', destructive: true })) {
+            setDeletingImageId(imageId);
             try {
                 await onDeleteGalleryImage(imageId);
             } catch (err) {
                 console.error(err);
-                toast('Kunne ikke slette bildet', 'error');
+                toast(err.message || 'Kunne ikke slette bildet', 'error');
+            } finally {
+                setDeletingImageId(null);
             }
         }
     }, [onDeleteGalleryImage, confirmDialog, toast]);
@@ -468,7 +472,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                     <TextField label="Dato" type="date" value={uploadForm.date} onChange={handleDateChange} />
                     <TextField label="Vekt (kg, valgfritt)" type="number" inputMode="decimal" step="0.1" value={uploadForm.weight} onChange={handleWeightChange} placeholder="0.0" />
 
-                    <label className={`flex flex-col items-center justify-center p-8 border-2 border-dashed border-surface-200 rounded-xl cursor-pointer hover:border-surface-300 hover:bg-surface-50 transition-all ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                    <label className={`flex flex-col items-center justify-center p-8 border-2 border-dashed border-surface-200 rounded-xl cursor-pointer hover:border-surface-300 hover:bg-surface-50 focus-within:ring-2 focus-within:ring-accent focus-within:border-accent transition-all ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}>
                         {isUploading ? (
                             <>
                                 <Loader2 className="animate-spin text-ink-muted" size={24} />
@@ -481,7 +485,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                                 <span className="text-xs text-ink-faint mt-1">Maks 5 bilder (JPG, PNG, HEIC)</span>
                             </>
                         )}
-                        <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} disabled={isUploading} />
+                        <input type="file" accept="image/*" multiple className="sr-only" onChange={handleImageUpload} disabled={isUploading} />
                     </label>
                 </div>
             </Card>
@@ -533,7 +537,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
             <div ref={compareTopRef} className="space-y-3 scroll-mt-4">
                 <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                        <h2 className="text-[1.55rem] leading-none font-display">
+                        <h2 className="text-[1.7rem] leading-none font-display">
                             {viewMode === 'compare' ? 'Sammenlign' : 'Fremgangsgalleri'}
                         </h2>
                         <p className="text-sm text-ink-muted">
@@ -571,9 +575,12 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                         {/* Før-bilde */}
                         <div className="space-y-2">
                             <p className="section-label text-center">Før</p>
-                            <div 
+                            <button
+                                type="button"
                                 className={`relative aspect-[4/5] max-h-[42vh] rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${selectingFor === 'before' ? 'border-ink ring-2 ring-ink/20' : 'border-surface-200'}`}
                                 onClick={() => setSelectingFor(selectingFor === 'before' ? null : 'before')}
+                                aria-pressed={selectingFor === 'before'}
+                                aria-label={compareImages.before ? `Bytt før-bilde, valgt ${formatDateNO(compareImages.before.date)}` : 'Velg før-bilde'}
                             >
                                 {compareImages.before ? (
                                     <>
@@ -602,15 +609,18 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                                         </span>
                                     </div>
                                 )}
-                            </div>
+                            </button>
                         </div>
 
                         {/* Etter-bilde */}
                         <div className="space-y-2">
                             <p className="section-label text-center">Etter</p>
-                            <div 
+                            <button
+                                type="button"
                                 className={`relative aspect-[4/5] max-h-[42vh] rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${selectingFor === 'after' ? 'border-ink ring-2 ring-ink/20' : 'border-surface-200'}`}
                                 onClick={() => setSelectingFor(selectingFor === 'after' ? null : 'after')}
+                                aria-pressed={selectingFor === 'after'}
+                                aria-label={compareImages.after ? `Bytt etter-bilde, valgt ${formatDateNO(compareImages.after.date)}` : 'Velg etter-bilde'}
                             >
                                 {compareImages.after ? (
                                     <>
@@ -639,7 +649,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                                         </span>
                                     </div>
                                 )}
-                            </div>
+                            </button>
                         </div>
                     </div>
 
@@ -693,10 +703,13 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                                 const isSelected = compareImages.before?.url === img.url || compareImages.after?.url === img.url;
                                 const isBefore = compareImages.before?.url === img.url;
                                 return (
-                                    <div 
+                                    <button
+                                        type="button"
                                         key={getImageKey(img, idx)}
-                                        className={`relative aspect-square cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${isSelected ? 'border-ink' : 'border-transparent'} ${selectingFor ? 'hover:scale-105' : ''}`}
+                                        className={`relative aspect-square min-h-[44px] cursor-pointer rounded-lg overflow-hidden border-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${isSelected ? 'border-ink' : 'border-transparent'} ${selectingFor ? 'hover:scale-[1.02]' : ''}`}
                                         onClick={() => handleCompareImageClick(img)}
+                                        aria-pressed={isSelected}
+                                        aria-label={`${isSelected ? (isBefore ? 'Valgt som før-bilde' : 'Valgt som etter-bilde') : 'Velg bilde'} fra ${formatDateNO(img.date)}`}
                                     >
                                         <img 
                                             src={getThumbnail(img.url)} 
@@ -710,7 +723,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                                                 {isBefore ? 'FØR' : 'ETTER'}
                                             </div>
                                         )}
-                                    </div>
+                                    </button>
                                 );
                             })}
                         </div>
@@ -730,47 +743,53 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                         {visibleImages.map((img, idx) => (
                             <div 
                                 key={getImageKey(img, idx)}
-                                className="relative aspect-square cursor-pointer group"
-                                role="button"
-                                tabIndex={0}
-                                data-swipe-ignore="true"
-                                onPointerDown={(e) => handleTilePointerDown(e, img, idx)}
-                                onPointerUp={handleTilePointerUp}
-                                onKeyDown={(e) => handleTileKeyDown(e, img, idx)}
+                                className="relative aspect-square group"
                             >
-                                <img 
-                                    src={getThumbnail(img.url)} 
-                                    loading={idx < 12 ? 'eager' : 'lazy'}
-                                    decoding="async"
-                                    fetchPriority={idx < 6 ? 'high' : 'auto'}
-                                    className="w-full h-full object-cover rounded-lg"
-                                    alt={img.label || `Fremgang ${formatDateNO(img.date)}`}
-                                />
-                                {/* Label badge for gallery-bilder */}
-                                {img.isGalleryImage && img.label && (
-                                    <div className="absolute top-1.5 left-1.5 bg-ink/80 text-white text-[10px] font-medium px-2 py-0.5 rounded-full backdrop-blur-sm">
-                                        {img.label}
-                                    </div>
-                                )}
+                                <button
+                                    type="button"
+                                    className="absolute inset-0 w-full overflow-hidden rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                                    data-swipe-ignore="true"
+                                    onPointerDown={(e) => handleTilePointerDown(e, img, idx)}
+                                    onPointerUp={handleTilePointerUp}
+                                    onKeyDown={(e) => handleTileKeyDown(e, img, idx)}
+                                    aria-label={`Vis ${img.label || 'fremgangsbilde'} fra ${formatDateNO(img.date)}`}
+                                >
+                                    <img
+                                        src={getThumbnail(img.url)}
+                                        loading={idx < 12 ? 'eager' : 'lazy'}
+                                        decoding="async"
+                                        fetchPriority={idx < 6 ? 'high' : 'auto'}
+                                        className="w-full h-full object-cover"
+                                        alt=""
+                                    />
+                                    {img.isGalleryImage && img.label && (
+                                        <span className={`absolute top-1.5 left-1.5 ${isCoach && onDeleteGalleryImage ? 'right-12' : 'right-1.5'} truncate bg-ink/80 text-white text-[10px] font-medium px-2 py-0.5 rounded-full backdrop-blur-sm`}>
+                                            {img.label}
+                                        </span>
+                                    )}
+                                    <span className="absolute inset-0 bg-gradient-to-t from-ink/70 via-transparent to-transparent rounded-lg">
+                                        <span className="absolute bottom-2 left-2 right-2">
+                                            <span className="block text-white text-xs font-medium">{formatDateNO(img.date)}</span>
+                                            {img.weight && (
+                                                <span className="block text-white/75 text-[10px]">{formatWeight(img.weight)} kg</span>
+                                            )}
+                                        </span>
+                                    </span>
+                                </button>
                                 {/* Slett-knapp for coach på gallery-bilder - alltid synlig */}
                                 {isCoach && img.isGalleryImage && onDeleteGalleryImage && (
-                                    <button
-                                        type="button"
+                                    <IconButton
                                         onClick={(e) => { e.stopPropagation(); handleDeleteGalleryImage(img.galleryImageId); }}
-                                        aria-label="Slett bilde"
-                                        className="absolute top-1.5 right-1.5 bg-error text-white p-1.5 rounded-full shadow-sm active:scale-95 transition-transform z-10"
+                                        aria-label={String(img.galleryImageId).startsWith('temp_') ? 'Bildet lagres fortsatt' : `Slett ${img.label || 'bilde'} fra ${formatDateNO(img.date)}`}
+                                        tone="danger"
+                                        disabled={String(img.galleryImageId).startsWith('temp_') || deletingImageId === img.galleryImageId}
+                                        className="absolute top-1 right-1 z-10 min-h-[40px] min-w-[40px] rounded-lg bg-white/90 text-error shadow-sm backdrop-blur-sm active:scale-[0.98] disabled:cursor-wait disabled:opacity-70"
                                     >
-                                        <X size={14} />
-                                    </button>
+                                        {String(img.galleryImageId).startsWith('temp_') || deletingImageId === img.galleryImageId
+                                            ? <Loader2 size={18} className="animate-spin" />
+                                            : <X size={18} />}
+                                    </IconButton>
                                 )}
-                                <div className="absolute inset-0 bg-gradient-to-t from-ink/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
-                                    <div className="absolute bottom-2 left-2 right-2">
-                                        <p className="text-white text-xs font-medium">{formatDateNO(img.date)}</p>
-                                        {img.weight && (
-                                            <p className="text-white/70 text-[10px]">{formatWeight(img.weight)} kg</p>
-                                        )}
-                                    </div>
-                                </div>
                             </div>
                         ))}
                     </div>
@@ -785,58 +804,64 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
             {viewMode === 'timeline' && (
                 /* Timeline-visning - gruppert etter måned */
                 <div className="space-y-6">
-                    {visibleImagesByMonth.map(([monthKey, { label, images }]) => (
+                    {visibleImagesByMonth.map(([monthKey, { label, images, totalCount }]) => (
                         <div key={monthKey}>
                             <div className="flex items-center gap-3 mb-3">
                                 <h3 className="text-sm font-medium text-ink-muted capitalize">{label}</h3>
                                 <div className="flex-1 h-px bg-surface-200" />
-                                <span className="text-xs text-ink-faint">{images.length} bilder</span>
+                                <span className="text-xs text-ink-muted">{totalCount} bilder</span>
                             </div>
                             <div className="grid grid-cols-3 gap-1.5">
                                 {images.map((img, idx) => {
                                     return (
                                         <div 
                                             key={getImageKey(img, img.globalIndex)}
-                                            className="relative aspect-square cursor-pointer group"
-                                            role="button"
-                                            tabIndex={0}
-                                            data-swipe-ignore="true"
-                                            onPointerDown={(e) => handleTilePointerDown(e, img, img.globalIndex)}
-                                            onPointerUp={handleTilePointerUp}
-                                            onKeyDown={(e) => handleTileKeyDown(e, img, img.globalIndex)}
+                                            className="relative aspect-square group"
                                         >
-                                            <img 
-                                                src={getThumbnail(img.url)} 
-                                                loading="lazy"
-                                                decoding="async"
-                                                className="w-full h-full object-cover rounded-lg"
-                                                alt={img.label || `Fremgang ${formatDateNO(img.date)}`}
-                                            />
-                                            {/* Label badge for gallery-bilder */}
-                                            {img.isGalleryImage && img.label && (
-                                                <div className="absolute top-1.5 left-1.5 bg-ink/80 text-white text-[10px] font-medium px-2 py-0.5 rounded-full backdrop-blur-sm">
-                                                    {img.label}
-                                                </div>
-                                            )}
+                                            <button
+                                                type="button"
+                                                className="absolute inset-0 w-full overflow-hidden rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                                                data-swipe-ignore="true"
+                                                onPointerDown={(e) => handleTilePointerDown(e, img, img.globalIndex)}
+                                                onPointerUp={handleTilePointerUp}
+                                                onKeyDown={(e) => handleTileKeyDown(e, img, img.globalIndex)}
+                                                aria-label={`Vis ${img.label || 'fremgangsbilde'} fra ${formatDateNO(img.date)}`}
+                                            >
+                                                <img
+                                                    src={getThumbnail(img.url)}
+                                                    loading="lazy"
+                                                    decoding="async"
+                                                    className="w-full h-full object-cover"
+                                                    alt=""
+                                                />
+                                                {img.isGalleryImage && img.label && (
+                                                    <span className={`absolute top-1.5 left-1.5 ${isCoach && onDeleteGalleryImage ? 'right-12' : 'right-1.5'} truncate bg-ink/80 text-white text-[10px] font-medium px-2 py-0.5 rounded-full backdrop-blur-sm`}>
+                                                        {img.label}
+                                                    </span>
+                                                )}
+                                                <span className="absolute inset-0 bg-gradient-to-t from-ink/70 via-transparent to-transparent rounded-lg">
+                                                    <span className="absolute bottom-2 left-2 right-2">
+                                                        <span className="block text-white text-xs font-medium">{formatDateNO(img.date)}</span>
+                                                        {img.weight && (
+                                                            <span className="block text-white/75 text-[10px]">{formatWeight(img.weight)} kg</span>
+                                                        )}
+                                                    </span>
+                                                </span>
+                                            </button>
                                             {/* Slett-knapp for coach på gallery-bilder - alltid synlig */}
                                             {isCoach && img.isGalleryImage && onDeleteGalleryImage && (
-                                                <button
-                                                    type="button"
+                                                <IconButton
                                                     onClick={(e) => { e.stopPropagation(); handleDeleteGalleryImage(img.galleryImageId); }}
-                                                    aria-label="Slett bilde"
-                                                    className="absolute top-1.5 right-1.5 bg-error text-white p-1.5 rounded-full shadow-sm active:scale-95 transition-transform z-10"
+                                                    aria-label={String(img.galleryImageId).startsWith('temp_') ? 'Bildet lagres fortsatt' : `Slett ${img.label || 'bilde'} fra ${formatDateNO(img.date)}`}
+                                                    tone="danger"
+                                                    disabled={String(img.galleryImageId).startsWith('temp_') || deletingImageId === img.galleryImageId}
+                                                    className="absolute top-1 right-1 z-10 min-h-[40px] min-w-[40px] rounded-lg bg-white/90 text-error shadow-sm backdrop-blur-sm active:scale-[0.98] disabled:cursor-wait disabled:opacity-70"
                                                 >
-                                                    <X size={14} />
-                                                </button>
+                                                    {String(img.galleryImageId).startsWith('temp_') || deletingImageId === img.galleryImageId
+                                                        ? <Loader2 size={18} className="animate-spin" />
+                                                        : <X size={18} />}
+                                                </IconButton>
                                             )}
-                                            <div className="absolute inset-0 bg-gradient-to-t from-ink/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
-                                                <div className="absolute bottom-2 left-2 right-2">
-                                                    <p className="text-white text-xs font-medium">{formatDateNO(img.date)}</p>
-                                                    {img.weight && (
-                                                        <p className="text-white/70 text-[10px]">{formatWeight(img.weight)} kg</p>
-                                                    )}
-                                                </div>
-                                            </div>
                                         </div>
                                     );
                                 })}

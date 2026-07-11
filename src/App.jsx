@@ -865,7 +865,9 @@ const App = () => {
 
     const handleAddGalleryImage = useCallback(async (imageUrl, label, date, weight) => {
         if (!viewingClient) return;
-        const tempId = 'temp_' + Date.now();
+        const tempId = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+            ? `temp_${crypto.randomUUID()}`
+            : `temp_${Date.now()}_${Math.random().toString(36).slice(2)}`;
         const optimisticImage = {
             id: tempId,
             url: imageUrl,
@@ -886,7 +888,17 @@ const App = () => {
                     ...prev,
                     galleryImages: (prev.galleryImages || []).filter(img => img.id !== tempId)
                 }));
+                return;
             }
+
+            const persistedId = result.data?.imageId;
+            if (!persistedId) throw new Error('Serveren returnerte ikke bilde-ID');
+            setCurrentData(prev => ({
+                ...prev,
+                galleryImages: (prev.galleryImages || []).map(img => (
+                    img.id === tempId ? { ...img, id: persistedId } : img
+                ))
+            }));
         } catch (e) {
             setCurrentData(prev => ({
                 ...prev,
@@ -894,39 +906,26 @@ const App = () => {
             }));
             toast('Kunne ikke lagre bildet', 'error');
         }
-    }, [viewingClient]);
+    }, [viewingClient, toast]);
 
     const handleDeleteGalleryImage = useCallback(async (imageId) => {
         if (!viewingClient) return;
-        let removedImage;
-        setCurrentData(prev => {
-            removedImage = (prev.galleryImages || []).find(img => img.id === imageId);
-            return {
-                ...prev,
-                galleryImages: (prev.galleryImages || []).filter(img => img.id !== imageId)
-            };
-        });
-        try {
-            const result = await api.deleteGalleryImage(viewingClient.id, imageId);
-            if (result.authError) {
-                setShowReauthPrompt(true);
-                if (removedImage) {
-                    setCurrentData(prev => ({
-                        ...prev,
-                        galleryImages: [...(prev.galleryImages || []), removedImage]
-                    }));
-                }
-            }
-        } catch (e) {
-            if (removedImage) {
-                setCurrentData(prev => ({
-                    ...prev,
-                    galleryImages: [...(prev.galleryImages || []), removedImage]
-                }));
-            }
-            toast('Kunne ikke slette bildet', 'error');
+        if (String(imageId).startsWith('temp_')) {
+            throw new Error('Bildet lagres fortsatt');
         }
-    }, [viewingClient]);
+
+        const result = await api.deleteGalleryImage(viewingClient.id, imageId);
+        if (result.authError) {
+            setShowReauthPrompt(true);
+            return;
+        }
+
+        setCurrentData(prev => ({
+            ...prev,
+            galleryImages: (prev.galleryImages || []).filter(img => img.id !== imageId)
+        }));
+        toast('Bildet er slettet');
+    }, [viewingClient, toast]);
 
     const handleOpenWeightHistory = useCallback(() => setShowWeightHistory(true), []);
     const handleCloseWeightHistory = useCallback(() => setShowWeightHistory(false), []);

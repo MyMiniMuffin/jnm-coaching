@@ -839,17 +839,25 @@ exports.handler = async (event) => {
         }
         const weight = data.weight ? parseFloat(data.weight) : null;
         
-        await sql`
+        const insertedImages = await sql`
           INSERT INTO gallery_images (user_id, image_url, label, date, weight)
           VALUES (${userId}, ${data.imageUrl}, ${label}, ${date}, ${weight})
+          RETURNING id
         `;
+
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ success: true, imageId: insertedImages[0].id })
+        };
       }
       
       else if (type === 'delete_gallery_image') {
-        if (!data.imageId) {
-          return { statusCode: 400, body: JSON.stringify({ error: 'Mangler bilde-ID' }) };
+        const imageId = Number(data.imageId);
+        if (!Number.isInteger(imageId) || imageId <= 0) {
+          return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig bilde-ID' }) };
         }
-        const deleteResult = await sql`DELETE FROM gallery_images WHERE id = ${data.imageId} AND user_id = ${userId} RETURNING id`;
+        const deleteResult = await sql`DELETE FROM gallery_images WHERE id = ${imageId} AND user_id = ${userId} RETURNING id`;
         if (deleteResult.length === 0) {
           return { statusCode: 404, body: JSON.stringify({ error: 'Bildet ble ikke funnet eller du har ikke tilgang' }) };
         }

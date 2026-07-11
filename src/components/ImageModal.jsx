@@ -4,6 +4,7 @@ import { X, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { getFullSizeImage } from '../lib/formatters';
 import { IMAGE_ZOOM_PROPS } from '../lib/zoomConfig';
+import { useFocusTrap } from '../hooks';
 
 // Stil-konstanter — opprettes én gang, ikke på hver render
 const WRAPPER_STYLE = { width: "100%", height: "100%" };
@@ -14,6 +15,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
     const [index, setIndex] = useState(safeInitialIndex);
     const [loading, setLoading] = useState(true);
     const [direction, setDirection] = useState(0);
+    const modalRef = useFocusTrap(true);
 
     // Bruk refs for stabile referanser i keydown-listener
     const indexRef = useRef(index);
@@ -127,15 +129,16 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
 
     const modal = (
         <div
-            className="fixed inset-0 z-[100] bg-[#050504] flex flex-col animate-fade-in overflow-hidden"
+            ref={modalRef}
+            className="fixed inset-0 z-[100] bg-ink flex flex-col animate-fade-in overflow-hidden"
             role="dialog"
             aria-modal="true"
-            aria-label="Bildevisning"
+            aria-labelledby="image-viewer-title"
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
             style={{ height: '100dvh' }}
         >
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(255,255,255,0.07),transparent_28rem)] pointer-events-none" />
+            <h2 id="image-viewer-title" className="sr-only">Bildevisning</h2>
             <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/55 to-transparent pointer-events-none" />
             <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
 
@@ -174,7 +177,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
                     >
                         {loading && (
                             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3" aria-hidden="true">
-                                <div className="w-[min(70vw,420px)] aspect-[3/4] rounded-2xl bg-white/7 border border-white/10 animate-pulse flex items-center justify-center shadow-[0_24px_70px_rgba(0,0,0,0.35)]">
+                                <div className="w-[min(70vw,420px)] aspect-[3/4] rounded-xl bg-white/7 border border-white/10 animate-pulse flex items-center justify-center shadow-[0_24px_70px_rgba(0,0,0,0.35)]">
                                     <Loader2 className="text-white/70 animate-spin" size={32} />
                                 </div>
                                 <p className="text-white/50 text-xs">Laster bilde…</p>
@@ -204,7 +207,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
                         type="button"
                         onClick={handlePrev}
                         aria-label="Vis forrige bilde"
-                        className="absolute left-3 sm:left-5 min-h-[48px] min-w-[48px] p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md ring-1 ring-white/10 transition-all active:scale-95 z-[110]"
+                        className="absolute left-3 top-1/2 -translate-y-1/2 sm:left-5 min-h-[48px] min-w-[48px] p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md ring-1 ring-white/10 transition-all active:scale-[0.98] z-[110]"
                     >
                         <ChevronLeft size={26} />
                     </button>
@@ -214,7 +217,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
                         type="button"
                         onClick={handleNext}
                         aria-label="Vis neste bilde"
-                        className="absolute right-3 sm:right-5 min-h-[48px] min-w-[48px] p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md ring-1 ring-white/10 transition-all active:scale-95 z-[110]"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 sm:right-5 min-h-[48px] min-w-[48px] p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md ring-1 ring-white/10 transition-all active:scale-[0.98] z-[110]"
                     >
                         <ChevronRight size={26} />
                     </button>

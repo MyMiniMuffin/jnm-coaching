@@ -147,7 +147,7 @@ export const EmptyState = React.memo(({ icon: Icon, title, description, action }
 ));
 
 export const ToggleGroup = React.memo(({ options, value, onChange, className = '' }) => (
-    <div className={`flex gap-1.5 items-center rounded-xl bg-surface-100 p-1 ${className}`}>
+    <div className={`flex gap-1.5 items-center rounded-xl bg-surface-100 p-1 ${className}`} role="group">
         {options.map((option) => {
             const isSelected = value === option.value;
             return (
@@ -156,7 +156,7 @@ export const ToggleGroup = React.memo(({ options, value, onChange, className = '
                     type="button"
                     onClick={() => onChange(option.value)}
                     aria-pressed={isSelected}
-                    className={`flex-1 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors whitespace-nowrap ${isSelected ? 'bg-ink text-white shadow-sm' : 'text-ink-muted hover:bg-white/70 hover:text-ink'}`}
+                    className={`flex-1 min-h-[40px] px-3 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 ${isSelected ? 'bg-ink text-white shadow-sm' : 'text-ink-muted hover:bg-white/70 hover:text-ink'}`}
                 >
                     {option.label}
                 </button>
