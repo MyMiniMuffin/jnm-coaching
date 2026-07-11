@@ -390,7 +390,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                     </div>
                 )}
 
-                <div className={type === 'diet' ? 'p-4 sm:p-5' : 'p-5'}>
+                <div className="p-4 sm:p-5">
                     {displayPlan.sections.length === 0 ? (
                         <EmptyState
                             icon={ListChecks}
@@ -422,7 +422,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                                             data-new-section={sectionIndex === displayPlan.sections.length - 1 ? 'true' : undefined}
                                             value={section.title}
                                             onChange={event => updateSection(sectionIndex, current => ({ ...current, title: event.target.value }))}
-                                            className={`w-full border-0 border-b border-surface-300 bg-transparent px-0 py-2 leading-tight outline-none focus:border-accent focus:ring-0 ${type === 'diet' ? 'text-[1.05rem] font-semibold' : 'font-display text-[1.4rem]'}`}
+                                            className="w-full border-0 border-b border-surface-300 bg-transparent px-0 py-2 text-[1.05rem] font-semibold leading-tight outline-none focus:border-accent focus:ring-0"
                                             placeholder={type === 'diet' ? 'For eksempel: Frokost' : 'For eksempel: Dag 1 – Underkropp'}
                                         />
                                     </div>
@@ -437,7 +437,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                                         )}
                                         {section.items.map((item, itemIndex) => (
                                             type === 'workout' ? (
-                                                <div key={item.key} className="px-3 py-2.5">
+                                                <div key={item.key} className="px-3 py-2">
                                                     <div className="grid grid-cols-[minmax(0,1fr)_3.75rem_5rem] items-start gap-2 sm:grid-cols-[minmax(0,1fr)_4.5rem_6.5rem]">
                                                         <AutoGrowTextarea
                                                             aria-label={`Øvelse ${itemIndex + 1}`}
@@ -551,15 +551,15 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                             </Button>
                         </div>
                     ) : (
-                        <div className={type === 'diet' ? 'space-y-4' : 'space-y-7'}>
+                        <div className="space-y-4">
                             {displayPlan.sections.map(section => (
                                 <section key={section.key}>
                                     {section.title && (
-                                        <h3 className={`leading-tight text-ink ${type === 'diet' ? 'text-[1.08rem] font-semibold' : 'font-display text-[1.4rem]'}`}>{section.title}</h3>
+                                        <h3 className="text-[1.08rem] font-semibold leading-tight text-ink">{section.title}</h3>
                                     )}
                                     {section.items.length > 0 && (
                                         type === 'workout' && section.items.some(item => item.sets || item.reps) ? (
-                                            <div className={`${section.title ? 'mt-3' : ''} overflow-hidden`}>
+                                            <div className={`${section.title ? 'mt-2' : ''} overflow-hidden`}>
                                                 <div className="grid grid-cols-[minmax(0,1fr)_3.75rem_5rem] gap-2 bg-surface-50 px-3 py-2 sm:grid-cols-[minmax(0,1fr)_4.5rem_6.5rem]">
                                                     <span className="section-label">Øvelse</span>
                                                     <span className="section-label text-center">Sett</span>
@@ -567,7 +567,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                                                 </div>
                                                 <ul className="divide-y divide-surface-100">
                                                     {section.items.map(item => (
-                                                        <li key={item.key} className="grid grid-cols-[minmax(0,1fr)_3.75rem_5rem] items-center gap-2 px-3 py-3 text-[0.95rem] leading-6 text-ink/85 sm:grid-cols-[minmax(0,1fr)_4.5rem_6.5rem]">
+                                                        <li key={item.key} className="grid grid-cols-[minmax(0,1fr)_3.75rem_5rem] items-center gap-2 px-3 py-2 text-sm leading-5 text-ink/85 sm:grid-cols-[minmax(0,1fr)_4.5rem_6.5rem]">
                                                             <span className="min-w-0 whitespace-pre-wrap font-medium">{item.text}</span>
                                                             <span className="text-center font-semibold tabular-nums text-ink">{item.sets || '—'}</span>
                                                             <span className="break-words text-center font-semibold tabular-nums leading-5 text-ink">{item.reps || '—'}</span>

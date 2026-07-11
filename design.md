@@ -180,7 +180,8 @@ Matplan og treningsplan skal være separate både i data, redigering og presenta
 
 - Øvelse, sett og reps skal være egne felter.
 - Bruk et stabilt kolonnemønster for «Øvelse / Sett / Reps» når dataene finnes.
-- Treningsdager kan ha mer visuell vekt enn måltider, men skal fortsatt være nøkterne.
+- Treningsplanen skal bruke samme typografiske størrelsesskala og innholdstetthet som matplanen.
+- Treningsdager skilles gjennom struktur og kolonner, ikke større overskrifter.
 - Gangetegnet skal ha god kontrast og nok avstand til tallene.
 
 ### Redigering
