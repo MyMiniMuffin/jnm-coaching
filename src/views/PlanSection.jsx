@@ -13,7 +13,8 @@ import {
     ArrowDown,
     ListChecks,
     Download,
-    Upload
+    Upload,
+    CornerDownRight
 } from 'lucide-react';
 import { Card, Button, EmptyState } from '../components/ui';
 import {
@@ -33,13 +34,13 @@ const moveInArray = (items, from, to) => {
     return next;
 };
 
-const SmallIconButton = ({ label, disabled = false, tone = 'neutral', children, ...props }) => (
+const SmallIconButton = ({ label, disabled = false, tone = 'neutral', compact = false, children, ...props }) => (
     <button
         type="button"
         aria-label={label}
         title={label}
         disabled={disabled}
-        className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors disabled:opacity-25 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-accent ${tone === 'danger' ? 'text-ink-faint hover:bg-error/10 hover:text-error' : 'text-ink-muted hover:bg-surface-100 hover:text-ink'}`}
+        className={`inline-flex shrink-0 items-center justify-center rounded-lg transition-colors disabled:opacity-25 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-accent ${compact ? 'h-9 w-9' : 'h-10 w-10'} ${tone === 'danger' ? 'text-ink-faint hover:bg-error/10 hover:text-error' : 'text-ink-muted hover:bg-surface-100 hover:text-ink'}`}
         {...props}
     >
         {children}
@@ -177,6 +178,48 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
         updateSection(sectionIndex, section => ({
             ...section,
             items: moveInArray(section.items, itemIndex, itemIndex + direction)
+        }));
+    }, [updateSection]);
+
+    const updateSubItem = useCallback((sectionIndex, itemIndex, subItemIndex, value) => {
+        updateSection(sectionIndex, section => ({
+            ...section,
+            items: section.items.map((item, index) => index === itemIndex ? {
+                ...item,
+                subItems: (item.subItems || []).map((subItem, subIndex) => subIndex === subItemIndex ? { ...subItem, text: value } : subItem)
+            } : item)
+        }));
+    }, [updateSection]);
+
+    const addSubItem = useCallback((sectionIndex, itemIndex) => {
+        const subItem = { key: `sub-item-${Date.now()}-${sectionIndex}-${itemIndex}`, text: '' };
+        updateSection(sectionIndex, section => ({
+            ...section,
+            items: section.items.map((item, index) => index === itemIndex ? {
+                ...item,
+                subItems: [...(item.subItems || []), subItem]
+            } : item)
+        }));
+        requestAnimationFrame(() => document.querySelector(`[data-sub-item="${sectionIndex}-${itemIndex}-new"]`)?.focus());
+    }, [updateSection]);
+
+    const removeSubItem = useCallback((sectionIndex, itemIndex, subItemIndex) => {
+        updateSection(sectionIndex, section => ({
+            ...section,
+            items: section.items.map((item, index) => index === itemIndex ? {
+                ...item,
+                subItems: (item.subItems || []).filter((_, subIndex) => subIndex !== subItemIndex)
+            } : item)
+        }));
+    }, [updateSection]);
+
+    const moveSubItem = useCallback((sectionIndex, itemIndex, subItemIndex, direction) => {
+        updateSection(sectionIndex, section => ({
+            ...section,
+            items: section.items.map((item, index) => index === itemIndex ? {
+                ...item,
+                subItems: moveInArray(item.subItems || [], subItemIndex, subItemIndex + direction)
+            } : item)
         }));
     }, [updateSection]);
 
@@ -319,7 +362,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                         <div className="mb-3 flex items-start justify-between gap-4">
                             <div>
                                 <h3 className="text-base font-semibold text-ink">Importer matplan fra tekst</h3>
-                                <p className="mt-1 text-sm text-ink-muted">Bruk hakeparenteser rundt måltider og én matvare per linje.</p>
+                                <p className="mt-1 text-sm text-ink-muted">Bruk hakeparenteser rundt måltider, én matvare per linje og innrykk for valg.</p>
                             </div>
                             <Button variant="ghost" size="sm" onClick={() => importFileRef.current?.click()} className="shrink-0 whitespace-nowrap">
                                 Velg .txt-fil
@@ -333,7 +376,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                             }}
                             rows={10}
                             className={`w-full resize-y rounded-xl border bg-white px-4 py-3 text-sm leading-6 outline-none focus:border-accent focus:ring-2 focus:ring-accent ${importError ? 'border-error/40' : 'border-surface-200'}`}
-                            placeholder={'[Frokost]\nHavregrøt med bær\nKaffe eller vann\n\n[Lunsj]\nKylling, ris og grønnsaker'}
+                            placeholder={'[Frokost]\nHavregrøt\n  - med bær\n  - med banan\nKaffe eller vann\n\n[Lunsj]\nKylling, ris og grønnsaker'}
                             aria-label="Matplan i ren tekst"
                         />
                         {importError && <p className="mt-1.5 text-xs text-error">{importError}</p>}
@@ -437,27 +480,62 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                                                     </div>
                                                 </div>
                                             ) : (
-                                                <div key={item.key} className="flex items-start gap-2 py-1.5">
-                                                    <span className="mt-2 w-5 shrink-0 text-[11px] tabular-nums text-ink-faint">{String(itemIndex + 1).padStart(2, '0')}</span>
-                                                    <AutoGrowTextarea
-                                                        aria-label={`Punkt ${itemIndex + 1}`}
-                                                        data-item={itemIndex}
-                                                        value={item.text}
-                                                        onChange={event => updateItem(sectionIndex, itemIndex, 'text', event.target.value)}
-                                                        onKeyDown={event => {
-                                                            if (event.key === 'Enter' && !event.shiftKey) {
-                                                                event.preventDefault();
-                                                                addItem(sectionIndex, itemIndex);
-                                                            }
-                                                        }}
-                                                        className="min-h-[2.5rem] min-w-0 flex-1 resize-none overflow-hidden bg-transparent px-1 py-2 text-sm leading-6 outline-none placeholder:text-ink-faint"
-                                                        placeholder={itemPlaceholder}
-                                                    />
-                                                    <div className="flex shrink-0 items-center">
-                                                        <SmallIconButton label="Flytt punktet opp" disabled={itemIndex === 0} onClick={() => moveItem(sectionIndex, itemIndex, -1)}><ArrowUp size={15} /></SmallIconButton>
-                                                        <SmallIconButton label="Flytt punktet ned" disabled={itemIndex === section.items.length - 1} onClick={() => moveItem(sectionIndex, itemIndex, 1)}><ArrowDown size={15} /></SmallIconButton>
-                                                        <SmallIconButton label="Slett punktet" tone="danger" onClick={() => removeItem(sectionIndex, itemIndex)}><Trash2 size={15} /></SmallIconButton>
+                                                <div key={item.key} className="py-0.5">
+                                                    <div className="flex items-start gap-1.5">
+                                                        <span className="mt-1.5 w-5 shrink-0 text-[11px] tabular-nums text-ink-faint">{String(itemIndex + 1).padStart(2, '0')}</span>
+                                                        <AutoGrowTextarea
+                                                            aria-label={`Punkt ${itemIndex + 1}`}
+                                                            data-item={itemIndex}
+                                                            value={item.text}
+                                                            onChange={event => updateItem(sectionIndex, itemIndex, 'text', event.target.value)}
+                                                            onKeyDown={event => {
+                                                                if (event.key === 'Enter' && !event.shiftKey) {
+                                                                    event.preventDefault();
+                                                                    addItem(sectionIndex, itemIndex);
+                                                                }
+                                                            }}
+                                                            className="min-h-8 min-w-0 flex-1 resize-none overflow-hidden bg-transparent px-1 py-1 text-sm leading-5 outline-none placeholder:text-ink-faint"
+                                                            placeholder={itemPlaceholder}
+                                                        />
+                                                        <div className="flex shrink-0 items-center">
+                                                            <SmallIconButton compact label="Flytt punktet opp" disabled={itemIndex === 0} onClick={() => moveItem(sectionIndex, itemIndex, -1)}><ArrowUp size={14} /></SmallIconButton>
+                                                            <SmallIconButton compact label="Flytt punktet ned" disabled={itemIndex === section.items.length - 1} onClick={() => moveItem(sectionIndex, itemIndex, 1)}><ArrowDown size={14} /></SmallIconButton>
+                                                            <SmallIconButton compact label="Slett punktet" tone="danger" onClick={() => removeItem(sectionIndex, itemIndex)}><Trash2 size={14} /></SmallIconButton>
+                                                        </div>
                                                     </div>
+
+                                                    {(item.subItems || []).map((subItem, subItemIndex) => (
+                                                        <div key={subItem.key} className="ml-6 flex items-start gap-1 border-l border-surface-200 pl-2">
+                                                            <CornerDownRight className="mt-2 shrink-0 text-ink-faint" size={13} />
+                                                            <AutoGrowTextarea
+                                                                aria-label={`Valg ${subItemIndex + 1} under punkt ${itemIndex + 1}`}
+                                                                data-sub-item={subItemIndex === (item.subItems || []).length - 1 ? `${sectionIndex}-${itemIndex}-new` : undefined}
+                                                                value={subItem.text}
+                                                                onChange={event => updateSubItem(sectionIndex, itemIndex, subItemIndex, event.target.value)}
+                                                                onKeyDown={event => {
+                                                                    if (event.key === 'Enter' && !event.shiftKey) {
+                                                                        event.preventDefault();
+                                                                        addSubItem(sectionIndex, itemIndex);
+                                                                    }
+                                                                }}
+                                                                className="min-h-8 min-w-0 flex-1 resize-none overflow-hidden bg-transparent px-1 py-1 text-[0.82rem] leading-5 text-ink-muted outline-none placeholder:text-ink-faint"
+                                                                placeholder="For eksempel: med bær"
+                                                            />
+                                                            <div className="flex shrink-0 items-center">
+                                                                <SmallIconButton compact label="Flytt valget opp" disabled={subItemIndex === 0} onClick={() => moveSubItem(sectionIndex, itemIndex, subItemIndex, -1)}><ArrowUp size={13} /></SmallIconButton>
+                                                                <SmallIconButton compact label="Flytt valget ned" disabled={subItemIndex === (item.subItems || []).length - 1} onClick={() => moveSubItem(sectionIndex, itemIndex, subItemIndex, 1)}><ArrowDown size={13} /></SmallIconButton>
+                                                                <SmallIconButton compact label="Slett valget" tone="danger" onClick={() => removeSubItem(sectionIndex, itemIndex, subItemIndex)}><Trash2 size={13} /></SmallIconButton>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => addSubItem(sectionIndex, itemIndex)}
+                                                        className="ml-7 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-ink-muted transition-colors hover:bg-surface-100 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                                                    >
+                                                        <CornerDownRight size={13} /> Legg til valg
+                                                    </button>
                                                 </div>
                                             )
                                         ))}
@@ -473,7 +551,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                             </Button>
                         </div>
                     ) : (
-                        <div className={type === 'diet' ? 'space-y-5' : 'space-y-7'}>
+                        <div className={type === 'diet' ? 'space-y-4' : 'space-y-7'}>
                             {displayPlan.sections.map(section => (
                                 <section key={section.key}>
                                     {section.title && (
@@ -498,11 +576,23 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                                                 </ul>
                                             </div>
                                         ) : (
-                                            <ul className={`${section.title ? 'mt-2' : ''} space-y-0.5`}>
+                                            <ul className={`${section.title ? 'mt-1.5' : ''} space-y-0`}>
                                                 {section.items.map(item => (
-                                                    <li key={item.key} className="flex items-start gap-2.5 px-1 py-1.5 text-sm leading-5 text-ink/80">
-                                                        <span className="mt-[0.45rem] h-1.5 w-1.5 shrink-0 rounded-full bg-ink/40" />
-                                                        <span className="whitespace-pre-wrap">{item.text}</span>
+                                                    <li key={item.key} className="px-1 py-0.5 text-sm leading-5 text-ink/80">
+                                                        <div className="flex items-start gap-2">
+                                                            <span className="mt-[0.45rem] h-1.5 w-1.5 shrink-0 rounded-full bg-ink/40" />
+                                                            <span className="whitespace-pre-wrap">{item.text}</span>
+                                                        </div>
+                                                        {(item.subItems || []).length > 0 && (
+                                                            <ul className="ml-4 mt-0.5 space-y-0 border-l border-surface-200 pl-2.5">
+                                                                {item.subItems.map(subItem => (
+                                                                    <li key={subItem.key} className="flex items-start gap-1.5 py-0 text-[0.82rem] leading-5 text-ink-muted">
+                                                                        <span className="text-ink-faint">–</span>
+                                                                        <span className="whitespace-pre-wrap">{subItem.text}</span>
+                                                                    </li>
+                                                                ))}
+                                                            </ul>
+                                                        )}
                                                     </li>
                                                 ))}
                                             </ul>

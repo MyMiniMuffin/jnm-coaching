@@ -1,8 +1,13 @@
 const PLAN_FORMAT = 'jnm-plan';
-const PLAN_VERSION = 2;
+const PLAN_VERSION = 3;
 
 let keyCounter = 0;
 const createKey = (prefix) => `${prefix}-${Date.now()}-${++keyCounter}`;
+
+const createSubItem = (item = '') => ({
+    key: createKey('sub-item'),
+    text: String(typeof item === 'string' ? item : item?.text || '')
+});
 
 const splitWorkoutItem = (text) => {
     const value = String(text || '').trim();
@@ -22,7 +27,8 @@ const createItem = (item = '', type) => {
         key: createKey('item'),
         text: String(source.text || ''),
         sets: String(source.sets || ''),
-        reps: String(source.reps || '')
+        reps: String(source.reps || ''),
+        subItems: Array.isArray(source.subItems) ? source.subItems.map(createSubItem) : []
     };
 
     if (type === 'workout' && !normalized.sets && !normalized.reps) {
@@ -46,6 +52,21 @@ const cleanMarkdown = (value) => value
     .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
     .replace(/[*_~`]/g, '')
     .trim();
+
+const isPlainTextSubLine = (rawLine) => /^(?:\s{2,}(?:[-+*•]\s*)?|\s*(?:↳|>)\s+)/.test(rawLine);
+
+const appendPlainTextLine = (section, rawLine, type) => {
+    const text = cleanMarkdown(rawLine.replace(/^\s*(?:↳|•)\s*/, ''));
+    if (!text) return;
+
+    if (type === 'diet' && isPlainTextSubLine(rawLine) && section.items.length > 0) {
+        const parent = section.items[section.items.length - 1];
+        parent.subItems = [...(parent.subItems || []), createSubItem(text)];
+        return;
+    }
+
+    section.items.push(createItem(text, type));
+};
 
 const parseLegacyTableRow = (line) => {
     if (!line.includes('|')) return null;
@@ -122,9 +143,12 @@ export const serializePlan = (plan) => {
                 .map(item => ({
                     text: String(typeof item === 'string' ? item : item?.text || '').trim(),
                     sets: String(typeof item === 'string' ? '' : item?.sets || '').trim(),
-                    reps: String(typeof item === 'string' ? '' : item?.reps || '').trim()
+                    reps: String(typeof item === 'string' ? '' : item?.reps || '').trim(),
+                    subItems: (typeof item === 'string' ? [] : item?.subItems || [])
+                        .map(subItem => String(typeof subItem === 'string' ? subItem : subItem?.text || '').trim())
+                        .filter(Boolean)
                 }))
-                .filter(item => item.text || item.sets || item.reps)
+                .filter(item => item.text || item.sets || item.reps || item.subItems.length)
         }))
         .filter(section => section.title || section.items.length);
 
@@ -141,8 +165,14 @@ export const serializePlanAsPlainText = (plan) => (plan?.sections || [])
     .map(section => {
         const title = String(section?.title || '').trim();
         const items = (section?.items || [])
-            .map(item => String(typeof item === 'string' ? item : item?.text || '').trim())
-            .filter(Boolean);
+            .flatMap(item => {
+                const text = String(typeof item === 'string' ? item : item?.text || '').trim();
+                const subItems = (typeof item === 'string' ? [] : item?.subItems || [])
+                    .map(subItem => String(typeof subItem === 'string' ? subItem : subItem?.text || '').trim())
+                    .filter(Boolean)
+                    .map(subItem => `  - ${subItem}`);
+                return [text, ...subItems].filter(Boolean);
+            });
         return [title ? `[${title}]` : '', ...items].filter(Boolean).join('\n');
     })
     .filter(Boolean)
@@ -174,25 +204,29 @@ export const parsePlainTextPlan = (content, type = 'diet') => {
                 current = createSection('Plan', [], type);
                 sections.push(current);
             }
-            current.items.push(createItem(cleanMarkdown(line), type));
+            appendPlainTextLine(current, rawLine, type);
         });
 
         return { sections: sections.filter(section => section.title || section.items.length) };
     }
 
-    const blocks = normalized.split(/\n\s*\n+/).map(block => block
-        .split('\n')
-        .map(line => cleanMarkdown(line))
-        .filter(Boolean)
-    ).filter(block => block.length);
+    const blocks = normalized.split(/\n\s*\n+/)
+        .map(block => block.split('\n').filter(line => line.trim()))
+        .filter(block => block.length);
 
     if (blocks.length > 1) {
         return {
-            sections: blocks.map(block => createSection(block[0], block.slice(1), type))
+            sections: blocks.map(block => {
+                const section = createSection(cleanMarkdown(block[0]), [], type);
+                block.slice(1).forEach(line => appendPlainTextLine(section, line, type));
+                return section;
+            })
         };
     }
 
-    return { sections: [createSection('Plan', blocks[0] || [], type)] };
+    const section = createSection('Plan', [], type);
+    (blocks[0] || []).forEach(line => appendPlainTextLine(section, line, type));
+    return { sections: [section] };
 };
 
 export const getPlanTemplate = (type) => ({
