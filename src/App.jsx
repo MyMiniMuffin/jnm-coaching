@@ -888,7 +888,7 @@ const App = () => {
                     ...prev,
                     galleryImages: (prev.galleryImages || []).filter(img => img.id !== tempId)
                 }));
-                return;
+                throw new Error('Autentisering feilet');
             }
 
             const persistedId = result.data?.imageId;
@@ -904,9 +904,9 @@ const App = () => {
                 ...prev,
                 galleryImages: (prev.galleryImages || []).filter(img => img.id !== tempId)
             }));
-            toast('Kunne ikke lagre bildet', 'error');
+            throw e;
         }
-    }, [viewingClient, toast]);
+    }, [viewingClient]);
 
     const handleDeleteGalleryImage = useCallback(async (imageId) => {
         if (!viewingClient) return;

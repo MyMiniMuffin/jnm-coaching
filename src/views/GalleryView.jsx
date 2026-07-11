@@ -146,6 +146,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
     const [showUploadModal, setShowUploadModal] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [uploadForm, setUploadForm] = useState({ label: 'Startbilde', date: new Date().toISOString().split('T')[0], weight: '' });
+    const [selectedUploadFiles, setSelectedUploadFiles] = useState([]);
     const [visibleImageCount, setVisibleImageCount] = useState(IMAGE_BATCH_SIZE);
     const [deletingImageId, setDeletingImageId] = useState(null);
     const tilePointerRef = React.useRef(null);
@@ -352,20 +353,35 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
     // Håndter bildeopplasting for coach
     const [uploadProgress, setUploadProgress] = useState('');
 
-    const handleImageUpload = useCallback(async (e) => {
+    const handleImageSelection = useCallback((e) => {
         const files = Array.from(e.target.files);
+        e.target.value = '';
         if (files.length === 0) return;
-        if (!uploadUserId) {
-            toast('Mangler bruker for opplasting', 'error');
-            return;
-        }
         if (files.length > 5) {
             toast('Maks 5 bilder om gangen', 'error');
             return;
         }
+
+        setSelectedUploadFiles(files);
+        setUploadProgress('');
+    }, [toast]);
+
+    const handleImageUpload = useCallback(async (e) => {
+        e.preventDefault();
+        const files = selectedUploadFiles;
+        if (files.length === 0) {
+            toast('Velg minst ett bilde', 'error');
+            return;
+        }
+        if (!uploadUserId) {
+            toast('Mangler bruker for opplasting', 'error');
+            return;
+        }
+
         setIsUploading(true);
         try {
-            setUploadProgress(`${files.length} bilde${files.length > 1 ? 'r' : ''}...`);
+            let completedUploads = 0;
+            setUploadProgress(`0 av ${files.length}`);
             const uploadedUrls = await Promise.all(
                 files.map(async (file) => {
                     const base64Image = await new Promise((resolve, reject) => {
@@ -376,17 +392,13 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                     });
                     const result = await api.uploadImage(base64Image, uploadUserId, 'gallery');
                     if (result.authError) throw new Error('Autentisering feilet');
+                    completedUploads += 1;
+                    setUploadProgress(`${completedUploads} av ${files.length}`);
                     return result.data.url;
                 })
             );
-            // Lukk modal umiddelbart — optimistisk UI i onAddGalleryImage viser bildene
+
             const { label, date, weight } = uploadForm;
-            setShowUploadModal(false);
-            setUploadForm({ label: 'Startbilde', date: new Date().toISOString().split('T')[0], weight: '' });
-            setIsUploading(false);
-            setUploadProgress('');
-            toast(`${uploadedUrls.length} bilde${uploadedUrls.length > 1 ? 'r' : ''} lagt til`);
-            // Lagre til server i bakgrunnen (optimistisk UI allerede vist)
             const results = await Promise.allSettled(
                 uploadedUrls.map(url => onAddGalleryImage(url, label, date, weight))
             );
@@ -394,15 +406,21 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
             if (failed.length > 0) {
                 console.error('Noen bilder kunne ikke lagres:', failed);
                 toast(`${failed.length} av ${uploadedUrls.length} bilder kunne ikke lagres`, 'error');
+            } else {
+                toast(`${uploadedUrls.length} bilde${uploadedUrls.length > 1 ? 'r' : ''} lagt til`);
             }
+
+            setShowUploadModal(false);
+            setSelectedUploadFiles([]);
+            setUploadForm({ label: 'Startbilde', date: new Date().toISOString().split('T')[0], weight: '' });
         } catch (err) {
             console.error(err);
-            toast('Bildeopplasting feilet', 'error');
+            toast(err.message || 'Bildeopplasting feilet', 'error');
         } finally {
             setIsUploading(false);
             setUploadProgress('');
         }
-    }, [onAddGalleryImage, uploadForm, uploadUserId, toast]);
+    }, [onAddGalleryImage, selectedUploadFiles, uploadForm, uploadUserId, toast]);
 
     const handleDeleteGalleryImage = useCallback(async (imageId) => {
         if (await confirmDialog('Slett dette bildet fra galleriet?', { title: 'Slett bilde', confirmText: 'Slett', destructive: true })) {
@@ -446,8 +464,12 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
     }, []);
 
     const closeUploadModal = useCallback(() => {
+        if (isUploading) return;
         setShowUploadModal(false);
-    }, []);
+        setSelectedUploadFiles([]);
+        setUploadProgress('');
+        setUploadForm({ label: 'Startbilde', date: new Date().toISOString().split('T')[0], weight: '' });
+    }, [isUploading]);
 
     const closeFullscreenCompare = useCallback(() => {
         setFullscreenCompare(false);
@@ -459,35 +481,57 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
     // Felles upload-modal (brukes i både tom- og normal-visning)
     const uploadModal = showUploadModal && (
         <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-            <Card ref={uploadModalRef} className="w-full max-w-sm p-6 animate-scale-in" role="dialog" aria-modal="true" aria-labelledby="upload-images-title">
-                <div className="flex justify-between items-center mb-6">
+            <Card ref={uploadModalRef} className="flex max-h-[calc(100dvh-2rem)] w-full max-w-sm flex-col overflow-hidden animate-scale-in" role="dialog" aria-modal="true" aria-labelledby="upload-images-title">
+                <div className="flex shrink-0 items-center justify-between px-6 pb-4 pt-6">
                     <h2 id="upload-images-title" className="section-title text-[1.05rem]">Last opp bilder</h2>
-                    <IconButton onClick={closeUploadModal} aria-label="Lukk">
+                    <IconButton onClick={closeUploadModal} aria-label="Lukk" disabled={isUploading}>
                         <X size={20} />
                     </IconButton>
                 </div>
 
-                <div className="space-y-4">
-                    <TextField label="Bildetekst" type="text" value={uploadForm.label} onChange={handleLabelChange} placeholder="F.eks. Startbilde" />
-                    <TextField label="Dato" type="date" value={uploadForm.date} onChange={handleDateChange} />
-                    <TextField label="Vekt (kg, valgfritt)" type="number" inputMode="decimal" step="0.1" value={uploadForm.weight} onChange={handleWeightChange} placeholder="0.0" />
-
-                    <label className={`flex flex-col items-center justify-center p-8 border-2 border-dashed border-surface-200 rounded-xl cursor-pointer hover:border-surface-300 hover:bg-surface-50 focus-within:ring-2 focus-within:ring-accent focus-within:border-accent transition-all ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                <form className="min-h-0 space-y-4 overflow-y-auto px-6 pb-6" onSubmit={handleImageUpload}>
+                    <label htmlFor="gallery-upload-files" className={`flex min-h-[132px] flex-col items-center justify-center rounded-xl border-2 border-dashed border-surface-200 p-5 text-center transition-all hover:border-surface-300 hover:bg-surface-50 focus-within:border-accent focus-within:ring-2 focus-within:ring-accent ${isUploading ? 'pointer-events-none opacity-60' : 'cursor-pointer'}`}>
                         {isUploading ? (
                             <>
                                 <Loader2 className="animate-spin text-ink-muted" size={24} />
-                                {uploadProgress && <span className="text-sm text-ink-muted mt-2">Laster opp {uploadProgress}</span>}
+                                <span className="mt-2 text-sm font-medium text-ink-muted">Laster opp {uploadProgress}</span>
+                            </>
+                        ) : selectedUploadFiles.length > 0 ? (
+                            <>
+                                <Camera size={24} className="mb-2 text-ink-muted" />
+                                <span className="font-medium text-ink">{selectedUploadFiles.length} bilde{selectedUploadFiles.length > 1 ? 'r' : ''} valgt</span>
+                                <span className="mt-1 max-w-full truncate text-xs text-ink-muted">
+                                    {selectedUploadFiles.map(file => file.name).join(', ')}
+                                </span>
+                                <span className="mt-2 text-xs font-medium text-accent">Trykk for å velge på nytt</span>
                             </>
                         ) : (
                             <>
                                 <Camera size={24} className="text-ink-muted mb-2" />
-                                <span className="font-medium text-ink-muted">Velg bilder</span>
-                                <span className="text-xs text-ink-faint mt-1">Maks 5 bilder (JPG, PNG, HEIC)</span>
+                                <span className="font-medium text-ink">Velg bilder</span>
+                                <span className="mt-1 text-xs text-ink-muted">Maks 5 bilder (JPG, PNG, HEIC)</span>
                             </>
                         )}
-                        <input type="file" accept="image/*" multiple className="sr-only" onChange={handleImageUpload} disabled={isUploading} />
+                        <input id="gallery-upload-files" type="file" accept="image/*" multiple className="sr-only" onChange={handleImageSelection} disabled={isUploading} />
                     </label>
-                </div>
+
+                    <div className="space-y-4">
+                        <p className="text-xs text-ink-muted">Detaljene gjelder alle valgte bilder og kan endres før opplasting.</p>
+                        <TextField id="gallery-upload-label" label="Bildetekst" type="text" value={uploadForm.label} onChange={handleLabelChange} placeholder="F.eks. Startbilde" disabled={isUploading} />
+                        <TextField id="gallery-upload-date" label="Dato" type="date" value={uploadForm.date} onChange={handleDateChange} disabled={isUploading} />
+                        <TextField id="gallery-upload-weight" label="Vekt (kg, valgfritt)" type="number" inputMode="decimal" step="0.1" value={uploadForm.weight} onChange={handleWeightChange} placeholder="0,0" disabled={isUploading} />
+                    </div>
+
+                    <div className="flex gap-3 pt-1">
+                        <Button variant="secondary" size="md" className="flex-1" onClick={closeUploadModal} disabled={isUploading}>
+                            Avbryt
+                        </Button>
+                        <Button type="submit" variant="primary" size="md" className="flex-1" disabled={selectedUploadFiles.length === 0 || isUploading}>
+                            {isUploading ? <Loader2 size={18} className="animate-spin" /> : <Camera size={18} />}
+                            {isUploading ? 'Laster opp' : 'Last opp'}
+                        </Button>
+                    </div>
+                </form>
             </Card>
         </div>
     );
