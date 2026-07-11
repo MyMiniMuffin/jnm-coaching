@@ -173,7 +173,7 @@ Matplan og treningsplan skal være separate både i data, redigering og presenta
 - Skal være tett, enkel og rask å skanne.
 - Måltidsoverskrift: omtrent `text-[1.05rem] font-semibold`.
 - Matvarer: `text-sm leading-5` med kompakte rader (`py-1.5`).
-- Bruk en subtil punktmarkør, ikke kort eller linje rundt hver matvare.
+- Matvarer vises som rene tekstlinjer uten punktmarkør, kort eller skillelinje.
 - Avstand skal skille måltider; ikke legg inn skillelinje mellom hver rad.
 
 ### Treningsplan

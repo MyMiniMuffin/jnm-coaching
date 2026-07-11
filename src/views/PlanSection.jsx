@@ -579,10 +579,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                                             <ul className={`${section.title ? 'mt-1.5' : ''} space-y-0`}>
                                                 {section.items.map(item => (
                                                     <li key={item.key} className="px-1 py-0.5 text-sm leading-5 text-ink/80">
-                                                        <div className="flex items-start gap-2">
-                                                            <span className="mt-[0.45rem] h-1.5 w-1.5 shrink-0 rounded-full bg-ink/40" />
-                                                            <span className="whitespace-pre-wrap">{item.text}</span>
-                                                        </div>
+                                                        <div className="whitespace-pre-wrap">{item.text}</div>
                                                         {(item.subItems || []).length > 0 && (
                                                             <ul className="ml-4 mt-0.5 space-y-0 border-l border-surface-200 pl-2.5">
                                                                 {item.subItems.map(subItem => (
