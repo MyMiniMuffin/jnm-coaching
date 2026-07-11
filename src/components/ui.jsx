@@ -2,9 +2,9 @@ import React from 'react';
 import { ChevronDown } from 'lucide-react';
 
 const SEGMENT_COLORS = (n) => {
-    if (n >= 8) return 'bg-emerald-500 text-white';
-    if (n >= 5) return 'bg-amber-400 text-white';
-    return 'bg-red-400 text-white';
+    if (n >= 8) return 'bg-success text-white';
+    if (n >= 5) return 'bg-warning text-white';
+    return 'bg-error text-white';
 };
 
 export const SegmentedControl = React.memo(({ label, value, onChange, options, colorize = false }) => (
@@ -21,7 +21,7 @@ export const SegmentedControl = React.memo(({ label, value, onChange, options, c
                         onClick={() => onChange(opt)}
                         className={`flex-1 min-h-[42px] py-2 rounded-lg text-sm font-semibold transition-all duration-150 active:scale-95 tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 ${
                             isSelected
-                                ? `${selectedCls} shadow-[0_6px_14px_rgba(23,23,23,0.12)]`
+                                ? `${selectedCls} shadow-sm`
                                 : 'text-ink-muted hover:bg-white/70'
                         }`}
                     >
@@ -34,14 +34,14 @@ export const SegmentedControl = React.memo(({ label, value, onChange, options, c
 ));
 
 export const Skeleton = React.memo(({ className }) => (
-    <div className={`bg-surface-200 animate-pulse rounded-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.55)] ${className}`} />
+    <div className={`bg-surface-200 animate-pulse rounded-xl ${className}`} />
 ));
 
 const BADGE_VARIANTS = {
     default: 'bg-surface-200 text-ink',
-    success: 'bg-[#edf3ea] text-[#4f6b52] border border-[#cfe0cf]',
-    warning: 'bg-[#f6ede2] text-[#946b45] border border-[#e7d2bb]',
-    muted: 'bg-[#f4ede2] text-ink-muted border border-[#e6ded0]',
+    success: 'bg-success/10 text-success border border-success/20',
+    warning: 'bg-warning/10 text-warning border border-warning/20',
+    muted: 'bg-surface-100 text-ink-muted border border-surface-200',
 };
 
 export const Badge = React.memo(({ children, variant = 'default', className = '' }) => (
@@ -51,10 +51,10 @@ export const Badge = React.memo(({ children, variant = 'default', className = ''
 ));
 
 const BUTTON_VARIANTS = {
-    primary: 'bg-ink text-white shadow-[0_10px_24px_rgba(23,23,23,0.14)] hover:bg-ink/85 hover:shadow-[0_12px_28px_rgba(23,23,23,0.18)] active:scale-[0.98]',
-    secondary: 'bg-surface-100 text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.68)] hover:bg-[#ece4d7] active:scale-[0.98]',
+    primary: 'bg-ink text-white shadow-sm hover:bg-ink/85 active:scale-[0.98]',
+    secondary: 'bg-surface-100 text-ink hover:bg-surface-200 active:scale-[0.98]',
     ghost: 'text-ink-muted hover:text-ink hover:bg-surface-100',
-    danger: 'bg-red-50 text-red-600 hover:bg-red-100',
+    danger: 'bg-error/10 text-error hover:bg-error/15',
 };
 const BUTTON_SIZES = {
     sm: 'px-3 py-1.5 text-sm',
@@ -74,14 +74,14 @@ export const Button = React.memo(({ children, variant = 'primary', size = 'md', 
 
 export const IconButton = React.memo(({ children, className = '', tone = 'neutral', ...props }) => {
     const toneClass = tone === 'danger'
-        ? 'text-ink-faint hover:text-red-500'
+        ? 'text-ink-faint hover:text-error'
         : tone === 'accent'
             ? 'text-ink-faint hover:text-accent'
             : 'text-ink-muted hover:text-ink';
     return (
         <button
             type="button"
-            className={`inline-flex min-h-[40px] min-w-[40px] items-center justify-center rounded-xl p-2 transition-all hover:bg-white/70 hover:shadow-[0_6px_16px_rgba(23,23,23,0.06)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${toneClass} ${className}`}
+            className={`inline-flex min-h-[40px] min-w-[40px] items-center justify-center rounded-lg p-2 transition-colors hover:bg-surface-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${toneClass} ${className}`}
             {...props}
         >
             {children}
@@ -120,13 +120,13 @@ export const TextField = React.memo(React.forwardRef(({
             <input
                 id={id}
                 ref={ref}
-                className={`w-full ${Icon ? 'pl-12' : 'px-4'} pr-4 py-3.5 bg-surface-50 border rounded-xl outline-none transition-all focus:ring-2 focus:ring-accent focus:border-accent font-medium placeholder-ink-faint disabled:opacity-50 ${error ? 'border-red-300' : 'border-surface-200'} ${inputClassName}`}
+                className={`w-full ${Icon ? 'pl-12' : 'px-4'} pr-4 py-3.5 bg-surface-50 border rounded-xl outline-none transition-all focus:ring-2 focus:ring-accent focus:border-accent font-medium placeholder-ink-faint disabled:opacity-50 ${error ? 'border-error/40' : 'border-surface-200'} ${inputClassName}`}
                 aria-invalid={error ? true : undefined}
                 {...props}
             />
         </div>
         {error ? (
-            <p className="text-red-600 text-xs mt-1.5">{error}</p>
+            <p className="text-error text-xs mt-1.5">{error}</p>
         ) : hint ? (
             <p className="text-xs text-ink-muted mt-1.5">{hint}</p>
         ) : null}
@@ -136,18 +136,18 @@ export const TextField = React.memo(React.forwardRef(({
 export const EmptyState = React.memo(({ icon: Icon, title, description, action }) => (
     <div className="text-center py-12 px-6">
         {Icon && (
-            <div className="w-14 h-14 bg-surface-100 rounded-xl flex items-center justify-center text-ink-muted mx-auto mb-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]">
+            <div className="w-14 h-14 bg-surface-100 rounded-xl flex items-center justify-center text-ink-muted mx-auto mb-4">
                 <Icon size={24} />
             </div>
         )}
-        <p className="text-ink-muted font-display text-[1.35rem] italic mb-1">{title}</p>
+        <p className="text-base font-semibold text-ink mb-1">{title}</p>
         {description && <p className="text-ink-faint text-sm">{description}</p>}
         {action && <div className="mt-6">{action}</div>}
     </div>
 ));
 
 export const ToggleGroup = React.memo(({ options, value, onChange, className = '' }) => (
-    <div className={`flex gap-1.5 items-center rounded-xl bg-white/70 border border-surface-200 p-1 shadow-[0_1px_2px_rgba(23,23,23,0.035)] ${className}`}>
+    <div className={`flex gap-1.5 items-center rounded-xl bg-surface-100 p-1 ${className}`}>
         {options.map((option) => {
             const isSelected = value === option.value;
             return (
@@ -156,7 +156,7 @@ export const ToggleGroup = React.memo(({ options, value, onChange, className = '
                     type="button"
                     onClick={() => onChange(option.value)}
                     aria-pressed={isSelected}
-                    className={`flex-1 px-3 py-1.5 text-sm font-medium rounded-lg transition-all whitespace-nowrap ${isSelected ? 'bg-ink text-white shadow-[0_6px_14px_rgba(23,23,23,0.14)]' : 'text-ink-muted hover:bg-surface-100 hover:text-ink'}`}
+                    className={`flex-1 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors whitespace-nowrap ${isSelected ? 'bg-ink text-white shadow-sm' : 'text-ink-muted hover:bg-white/70 hover:text-ink'}`}
                 >
                     {option.label}
                 </button>

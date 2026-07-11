@@ -1142,7 +1142,7 @@ const App = () => {
             {showReauthPrompt && <ReauthPrompt onReauth={handleReauth} onLogout={handleLogout} />}
             {pullIndicator}
             {!isOnline && (
-                <div className="sticky top-0 z-40 bg-amber-500 text-white text-center text-sm py-2 px-4 flex items-center justify-center gap-2">
+                <div className="sticky top-0 z-40 bg-warning text-white text-center text-sm py-2 px-4 flex items-center justify-center gap-2">
                     <WifiOff size={14} /> Ingen nettilkobling — viser lagrede data
                 </div>
             )}

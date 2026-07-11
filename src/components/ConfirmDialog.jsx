@@ -41,7 +41,7 @@ export const ConfirmProvider = ({ children }) => {
                         onClick={e => e.stopPropagation()}
                     >
                         <div className="flex items-start gap-4 mb-5">
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${state.destructive ? 'bg-red-50 text-red-600' : 'bg-surface-100 text-ink-muted'}`}>
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${state.destructive ? 'bg-error/10 text-error' : 'bg-surface-100 text-ink-muted'}`}>
                                 <AlertTriangle size={20} />
                             </div>
                             <div>

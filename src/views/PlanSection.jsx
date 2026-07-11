@@ -30,7 +30,7 @@ const SmallIconButton = ({ label, disabled = false, tone = 'neutral', children, 
         aria-label={label}
         title={label}
         disabled={disabled}
-        className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors disabled:opacity-25 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-accent ${tone === 'danger' ? 'text-ink-faint hover:bg-red-50 hover:text-red-600' : 'text-ink-muted hover:bg-surface-100 hover:text-ink'}`}
+        className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors disabled:opacity-25 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-accent ${tone === 'danger' ? 'text-ink-faint hover:bg-error/10 hover:text-error' : 'text-ink-muted hover:bg-surface-100 hover:text-ink'}`}
         {...props}
     >
         {children}

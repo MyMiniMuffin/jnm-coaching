@@ -2,7 +2,7 @@ import React from 'react';
 import { Briefcase, User, LogOut, ChevronLeft } from 'lucide-react';
 
 const Header = React.memo(({ title, user, viewingClient, onLogout, onClearClient }) => (
-    <header className="sticky top-0 z-40 border-b border-surface-200/80 bg-surface-50/86 backdrop-blur-xl shadow-[0_10px_30px_rgba(23,23,23,0.045)]">
+    <header className="sticky top-0 z-40 border-b border-surface-200/80 bg-surface-50/94 backdrop-blur-xl">
         <div className="safe-area-pt" />
         {viewingClient ? (
             /* Coach viewing a client — standard back-nav pattern */
@@ -11,7 +11,7 @@ const Header = React.memo(({ title, user, viewingClient, onLogout, onClearClient
                     type="button"
                     onClick={onClearClient}
                     aria-label="Tilbake til klientliste"
-                    className="flex items-center gap-0.5 px-2.5 py-2 rounded-xl text-accent hover:bg-white/70 hover:shadow-[0_6px_16px_rgba(23,23,23,0.06)] transition-all shrink-0"
+                    className="flex items-center gap-0.5 px-2.5 py-2 rounded-lg text-accent hover:bg-surface-100 transition-colors shrink-0"
                 >
                     <ChevronLeft size={20} strokeWidth={2.5} />
                     <span className="text-sm font-medium">Klienter</span>
@@ -32,7 +32,7 @@ const Header = React.memo(({ title, user, viewingClient, onLogout, onClearClient
                         {user.name}
                     </span>
                 </div>
-                <button type="button" onClick={onLogout} aria-label="Logg ut" className="text-ink-faint hover:text-ink p-2.5 rounded-xl hover:bg-white/70 hover:shadow-[0_6px_16px_rgba(23,23,23,0.06)] transition-all">
+                <button type="button" onClick={onLogout} aria-label="Logg ut" className="text-ink-faint hover:text-ink p-2.5 rounded-lg hover:bg-surface-100 transition-colors">
                     <LogOut size={20} />
                 </button>
             </div>

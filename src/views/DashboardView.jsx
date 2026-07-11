@@ -4,6 +4,7 @@ import {
   X, Plus, Check, Loader2, Calendar, Pause, Play, Activity, ArrowRight
 } from 'lucide-react';
 import { Card, Badge, Button, IconButton, InputLabel } from '../components/ui';
+import ReportMetrics from '../components/ReportMetrics';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
 import { useEscapeKey } from '../hooks';
@@ -104,7 +105,7 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                         {activePeriod && (
                             <div className="mb-6">
                                 <p className="text-xs text-ink-muted uppercase tracking-wide mb-3">Aktiv runde</p>
-                                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                                <div className="p-4 bg-success/5 border border-success/20 rounded-xl">
                                     <div className="flex justify-between items-start mb-3">
                                         <div>
                                             {editingPeriodId === activePeriod.id ? (
@@ -113,11 +114,11 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                                         type="text"
                                                         value={editingPeriod.name}
                                                         onChange={(e) => handleEditFieldChange('name', e.target.value)}
-                                                        className="w-full px-3 py-2 bg-white border border-emerald-200 rounded-lg outline-none focus:ring-2 focus:ring-accent"
+                                                        className="w-full px-3 py-2 bg-white border border-success/20 rounded-lg outline-none focus:ring-2 focus:ring-accent"
                                                         placeholder="Navn på runde"
                                                         autoFocus
                                                     />
-                                                    {editError && <p className="text-red-600 text-xs">{editError}</p>}
+                                                    {editError && <p className="text-error text-xs">{editError}</p>}
                                                     <div className="flex gap-2">
                                                         <Button
                                                             variant="secondary"
@@ -223,7 +224,7 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                                                     />
                                                                 </div>
                                                             </div>
-                                                            {editError && <p className="text-red-600 text-xs">{editError}</p>}
+                                                            {editError && <p className="text-error text-xs">{editError}</p>}
                                                             <div className="flex gap-2">
                                                                 <Button
                                                                     variant="secondary"
@@ -317,10 +318,10 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                     value={formData.startingWeight}
                                     onChange={handleStartingWeightChange}
                                     placeholder="0.0"
-                                    className={`w-full pl-12 pr-4 py-3.5 bg-surface-50 border rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium text-lg ${weightError ? 'border-red-300' : 'border-surface-200'}`}
+                                    className={`w-full pl-12 pr-4 py-3.5 bg-surface-50 border rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium text-lg ${weightError ? 'border-error/40' : 'border-surface-200'}`}
                                 />
                             </div>
-                            {weightError && <p className="text-red-600 text-xs mt-1.5">{weightError}</p>}
+                            {weightError && <p className="text-error text-xs mt-1.5">{weightError}</p>}
                         </div>
 
                         <div>
@@ -438,10 +439,10 @@ const PlanSettingsModal = React.memo(({ userData, onClose, onUpdateData, onOpenP
                             value={totalWeeks}
                             onChange={handleTotalWeeksChange}
                             aria-invalid={totalWeeks !== '' && (Number(totalWeeks) < 1 || Number(totalWeeks) > 52)}
-                            className={`w-full px-4 py-3.5 bg-surface-50 border rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium ${totalWeeks !== '' && (Number(totalWeeks) < 1 || Number(totalWeeks) > 52) ? 'border-red-300' : 'border-surface-200'}`}
+                            className={`w-full px-4 py-3.5 bg-surface-50 border rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium ${totalWeeks !== '' && (Number(totalWeeks) < 1 || Number(totalWeeks) > 52) ? 'border-error/40' : 'border-surface-200'}`}
                         />
                         {totalWeeks !== '' && (Number(totalWeeks) < 1 || Number(totalWeeks) > 52) && (
-                            <p className="text-red-600 text-xs mt-1.5">Velg mellom 1 og 52 uker.</p>
+                            <p className="text-error text-xs mt-1.5">Velg mellom 1 og 52 uker.</p>
                         )}
                     </div>
 
@@ -458,11 +459,11 @@ const PlanSettingsModal = React.memo(({ userData, onClose, onUpdateData, onOpenP
                                 value={stepGoal}
                                 onChange={handleStepGoalChange}
                                 aria-invalid={stepGoal !== '' && (Number(stepGoal) < 1000 || Number(stepGoal) > 100000)}
-                                className={`w-full pl-12 pr-4 py-3.5 bg-surface-50 border rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium ${stepGoal !== '' && (Number(stepGoal) < 1000 || Number(stepGoal) > 100000) ? 'border-red-300' : 'border-surface-200'}`}
+                                className={`w-full pl-12 pr-4 py-3.5 bg-surface-50 border rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium ${stepGoal !== '' && (Number(stepGoal) < 1000 || Number(stepGoal) > 100000) ? 'border-error/40' : 'border-surface-200'}`}
                             />
                         </div>
                         {stepGoal !== '' && (Number(stepGoal) < 1000 || Number(stepGoal) > 100000) && (
-                            <p className="text-red-600 text-xs mt-1.5">Velg mellom 1 000 og 100 000 skritt.</p>
+                            <p className="text-error text-xs mt-1.5">Velg mellom 1 000 og 100 000 skritt.</p>
                         )}
                     </div>
 
@@ -705,9 +706,9 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                                 <span className="text-white/60">Fremdrift</span>
                                 <span className="font-medium">{Math.round(progress)}%</span>
                             </div>
-                            <div className="h-2 bg-white/18 rounded-full overflow-hidden shadow-[inset_0_1px_2px_rgba(0,0,0,0.18)]">
+                            <div className="h-2 bg-white/20 rounded-full overflow-hidden">
                                 <div
-                                    className="h-full bg-white rounded-full transition-all duration-500 shadow-[0_0_18px_rgba(255,255,255,0.42)]"
+                                    className="h-full bg-white rounded-full transition-all duration-500"
                                     style={{ width: `${progress}%` }}
                                 />
                             </div>
@@ -746,108 +747,67 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
             {/* Stats Grid */}
             <div className="grid grid-cols-2 gap-4">
                 <Card
-                    className="p-5 group overflow-hidden relative"
+                    className="p-5 group"
                     interactive
                     onClick={onOpenWeightHistory}
                 >
-                    <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#B5603A] via-[#d8aa87] to-[#edf3ea]" />
                     <div className="flex justify-between items-start mb-3">
                         <div className="w-10 h-10 bg-surface-100 rounded-xl flex items-center justify-center text-ink-muted group-hover:bg-surface-200 transition-colors">
                             <Scale size={20} />
                         </div>
                         <ChevronRight size={16} className="text-ink-faint" />
                     </div>
-                    <p style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(23,23,23,0.5)' }}>Siste vekt</p>
+                    <p className="section-label">Siste vekt</p>
                     <p className="text-2xl font-semibold mt-1 tabular-nums">
                         {lastCheckin ? formatWeight(lastCheckin.weight) : '-'}
                         <span className="text-sm font-normal text-ink-muted ml-1">kg</span>
                     </p>
                 </Card>
 
-                <Card className="p-5 relative soft-panel overflow-hidden">
-                    <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#edf3ea] via-[#d8c4a8] to-[#B5603A]" />
+                <Card className="p-5 soft-panel">
                     <div className="flex justify-between items-start mb-3">
                         <div className="w-10 h-10 bg-surface-100 rounded-xl flex items-center justify-center text-ink-muted">
                             <Footprints size={20} />
                         </div>
                     </div>
-                    <p style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(23,23,23,0.5)' }}>Ukentlig skrittmål</p>
+                    <p className="section-label">Ukentlig skrittmål</p>
                     <p className="text-2xl font-semibold mt-1">{(userData.stepGoal || 10000).toLocaleString()}</p>
                 </Card>
             </div>
 
             {/* Last Report */}
-            {lastCheckin && (() => {
-                const pct10 = (v) => Math.max(0, Math.min(100, (parseInt(v) || 0) * 10));
-                const pctSessions = (v) => Math.max(0, Math.min(100, Math.round(((parseInt(v) || 0) / 7) * 100)));
-                const metrics = [
-                    { label: 'Nøyakt.', value: lastCheckin.accuracy ?? 0, width: pct10(lastCheckin.accuracy), color: '#6f8a6b' },
-                    { label: 'Energi', value: lastCheckin.energy ?? 0, width: pct10(lastCheckin.energy), color: '#c08a52' },
-                    { label: 'Søvn', value: lastCheckin.sleep ?? 0, width: pct10(lastCheckin.sleep), color: '#b8857f' },
-                    { label: 'Styrke', value: lastCheckin.strengthSessions || 0, width: pctSessions(lastCheckin.strengthSessions), color: '#9a958c' },
-                    { label: 'Cardio', value: lastCheckin.cardioSessions || 0, width: pctSessions(lastCheckin.cardioSessions), color: '#9a958c' },
-                ];
-                const pillBase = {
-                    display: 'inline-flex', alignItems: 'center', gap: '5px',
-                    fontSize: '12px', fontWeight: 500, padding: '5px 11px', borderRadius: '99px',
-                };
-                const pillOn = { ...pillBase, background: '#edf3ea', color: '#4f6b52' };
-                const pillOff = { ...pillBase, background: '#f1ede4', color: '#9a958c' };
-                return (
-                    <div>
-                        <div className="flex items-center mb-3 px-1">
-                            <span style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(23,23,23,0.5)' }}>Siste rapport</span>
-                            {lastCheckinAgo && (
-                                <span style={{ marginLeft: 'auto', fontSize: '11px', color: '#A3A3A3' }}>{lastCheckinAgo}</span>
-                            )}
-                        </div>
-                        <div style={{ background: '#fff', border: '1px solid #E8E2D6', borderRadius: '18px', padding: '18px 16px', boxShadow: '0 1px 2px rgba(23,23,23,0.04), 0 12px 30px rgba(23,23,23,0.05)' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '10px', textAlign: 'center' }}>
-                                {metrics.map((m) => (
-                                    <div key={m.label}>
-                                        <p style={{ fontSize: '20px', fontWeight: 600, color: '#171717' }} className="tabular-nums">{m.value}</p>
-                                        <div style={{ height: '4px', borderRadius: '99px', background: '#ece7df', margin: '7px 4px 0', overflow: 'hidden' }}>
-                                            <div style={{ height: '100%', width: `${m.width}%`, borderRadius: '99px', background: m.color }} />
-                                        </div>
-                                        <p style={{ fontSize: '11px', color: '#525252', marginTop: '8px' }}>{m.label}</p>
-                                    </div>
-                                ))}
-                            </div>
-                            <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid #f0ebe2', display: 'flex', justifyContent: 'center', gap: '8px' }}>
-                                <span style={lastCheckin.stepsReached ? pillOn : pillOff}>
-                                    <Footprints size={12} />
-                                    {lastCheckin.stepsReached ? 'Skrittmål nådd' : 'Under skrittmål'}
-                                </span>
-                                <span style={lastCheckin.takenSupplements ? pillOn : pillOff}>
-                                    {lastCheckin.takenSupplements ? <Check size={12} /> : <X size={12} />}
-                                    Tilskudd
-                                </span>
-                            </div>
-                        </div>
+            {lastCheckin && (
+                <div>
+                    <div className="mb-3 flex items-center px-1">
+                        <p className="section-label">Siste rapport</p>
+                        {lastCheckinAgo && <span className="ml-auto text-[11px] text-ink-faint">{lastCheckinAgo}</span>}
                     </div>
-                );
-            })()}
+                    <Card className="p-4">
+                        <ReportMetrics report={lastCheckin} />
+                    </Card>
+                </div>
+            )}
 
             {/* Totaloversikt - kun hvis det finnes data */}
             {stats && (
                 <div>
-                    <p style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(23,23,23,0.5)', margin: '0 4px 12px' }}>Din reise så langt</p>
-                    <Card className="p-5" style={{ background: '#fff', border: '1px solid #E8E2D6', borderRadius: '18px', boxShadow: '0 1px 2px rgba(23,23,23,0.04), 0 12px 30px rgba(23,23,23,0.05)' }}>
+                    <p className="section-label mx-1 mb-3">Din reise så langt</p>
+                    <Card className="p-5">
                         <div className="grid grid-cols-4 gap-3 text-center mb-5">
                             <div>
-                                <div className="font-semibold text-ink" style={{ fontSize: '23px' }}>{stats.totalStrength}</div>
+                                <div className="text-2xl font-semibold text-ink">{stats.totalStrength}</div>
                                 <div className="stat-label mt-1">Styrke</div>
                             </div>
                             <div>
-                                <div className="font-semibold text-ink" style={{ fontSize: '23px' }}>{stats.totalCardio}</div>
+                                <div className="text-2xl font-semibold text-ink">{stats.totalCardio}</div>
                                 <div className="stat-label mt-1">Cardio</div>
                             </div>
                             <div>
-                                <div className="font-semibold text-ink tabular-nums" style={{ fontSize: '23px' }}>{stats.stepsHit}/{stats.totalCheckins}</div>
+                                <div className="text-2xl font-semibold text-ink tabular-nums">{stats.stepsHit}/{stats.totalCheckins}</div>
                                 <div className="stat-label mt-1">Skrittmål</div>
                             </div>
                             <div>
-                                <div className="font-semibold text-ink tabular-nums" style={{ fontSize: '23px' }}>{stats.avgAccuracy}</div>
+                                <div className="text-2xl font-semibold text-ink tabular-nums">{stats.avgAccuracy}</div>
                                 <div className="stat-label mt-1">Nøyakt.</div>
                             </div>
                         </div>
@@ -856,11 +816,10 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                             const wc = parseFloat(stats.weightChange);
                             return (
                                 <div
-                                    className={`flex items-center justify-center gap-2 ${wc > 0 ? 'bg-surface-100 text-ink' : wc === 0 ? 'bg-surface-100 text-ink-muted' : ''}`}
-                                    style={{ padding: '13px', borderRadius: '13px', ...(wc < 0 ? { background: 'rgba(111,138,107,0.12)', color: '#4f6b52' } : {}) }}
+                                    className={`flex items-center justify-center gap-2 rounded-lg p-3 text-sm font-semibold ${wc < 0 ? 'bg-success/10 text-success' : wc > 0 ? 'bg-surface-100 text-ink' : 'bg-surface-100 text-ink-muted'}`}
                                 >
                                     {wc < 0 ? <TrendingDown size={18} /> : wc > 0 ? <TrendingUp size={18} /> : <Minus size={18} />}
-                                    <span className="tabular-nums" style={{ fontWeight: 600 }}>
+                                    <span className="tabular-nums">
                                         {wc > 0 ? '+' : ''}{stats.weightChange.replace('.', ',')} kg total endring
                                     </span>
                                 </div>
@@ -871,9 +830,9 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
             )}
 
             {/* Dagens motivasjon */}
-            <Card className="p-6 bg-gradient-to-br from-[#f4ede2] via-surface-50 to-[#edf3ea]">
+            <Card className="bg-surface-100 p-5">
                 <div className="text-center">
-                    <p className="font-display text-[1.35rem] text-ink italic leading-relaxed">"{todayQuote.text}"</p>
+                    <p className="font-display text-xl italic leading-relaxed text-ink">"{todayQuote.text}"</p>
                     <p className="text-xs text-ink-muted mt-3">- {todayQuote.author}</p>
                 </div>
             </Card>

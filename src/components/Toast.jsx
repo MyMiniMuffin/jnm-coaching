@@ -32,8 +32,8 @@ export const ToastProvider = ({ children }) => {
                             className={`px-4 py-3 rounded-xl shadow-lg text-sm font-medium animate-slide-up text-center transition-opacity duration-500 ${
                                 t.exiting ? 'opacity-0' : 'opacity-100'
                             } ${
-                                t.type === 'success' ? 'bg-emerald-600 text-white' :
-                                t.type === 'error' ? 'bg-red-600 text-white' : 'bg-ink text-white'
+                                t.type === 'success' ? 'bg-success text-white' :
+                                t.type === 'error' ? 'bg-error text-white' : 'bg-ink text-white'
                             }`}
                         >
                             {t.type === 'success' && '✓ '}{t.message}

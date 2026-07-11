@@ -299,17 +299,17 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
                         return (
                         <Card
                             key={client.id}
-                            className={`p-4 flex items-center justify-between group ${showArchived ? 'opacity-60' : client.unreadCheckins > 0 ? 'border-emerald-300 bg-emerald-50/50' : ''} ${isPending ? 'pointer-events-none opacity-70' : ''}`}
+                            className={`p-4 flex items-center justify-between group ${showArchived ? 'opacity-60' : client.unreadCheckins > 0 ? 'border-success/30 bg-success/5' : ''} ${isPending ? 'pointer-events-none opacity-70' : ''}`}
                             interactive={!isPending}
                             onClick={() => !isPending && onSelectClient(client)}
                         >
                             <div className="flex items-center gap-4">
-                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-lg font-semibold ${showArchived ? 'bg-surface-200 text-ink-muted' : client.unreadCheckins > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-surface-100 text-ink'}`}>
+                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-lg font-semibold ${showArchived ? 'bg-surface-200 text-ink-muted' : client.unreadCheckins > 0 ? 'bg-success/10 text-success' : 'bg-surface-100 text-ink'}`}>
                                     {client.name.charAt(0)}
                                 </div>
                                 <div>
                                     <p className="font-medium">{client.name}</p>
-                                    <p className={`text-sm ${client.unreadCheckins > 0 ? 'text-emerald-600 font-medium' : 'text-ink-muted'}`}>
+                                    <p className={`text-sm ${client.unreadCheckins > 0 ? 'text-success font-medium' : 'text-ink-muted'}`}>
                                         {client.unreadCheckins > 0
                                             ? `${client.unreadCheckins} ny${client.unreadCheckins > 1 ? 'e' : ''} rapport${client.unreadCheckins > 1 ? 'er' : ''}`
                                             : client.lastCheckinDate
@@ -346,7 +346,7 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
                                     <button
                                         type="button"
                                         onClick={(e) => handleDelete(e, client.id)}
-                                        className="p-2 text-ink-faint hover:text-red-500 transition-colors"
+                                        className="p-2 text-ink-faint hover:text-error transition-colors"
                                         aria-label="Slett utøver"
                                         disabled={isPending}
                                     >

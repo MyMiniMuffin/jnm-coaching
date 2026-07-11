@@ -48,14 +48,14 @@ const LoginScreen = React.memo(({ onLogin }) => {
     return (
         <div className="min-h-screen flex flex-col items-center justify-center p-6 relative animate-fade-in">
             <div className="text-center mb-8">
-                <div className="w-20 h-20 mx-auto mb-7 rounded-2xl bg-white p-2 shadow-[0_16px_38px_rgba(23,23,23,0.08)] ring-1 ring-surface-200">
+                <div className="w-20 h-20 mx-auto mb-7 rounded-xl bg-white p-2 shadow-sm ring-1 ring-surface-200">
                     <img src={APP_ICON} alt="Logo" className="w-full h-full" />
                 </div>
                 <h1 className="text-3xl font-display text-ink mb-2">JNM Coaching</h1>
                 <p className="text-ink-muted">Logg inn for å fortsette</p>
             </div>
 
-            <div className="w-full max-w-sm rounded-xl border border-surface-200 bg-white/90 p-5 shadow-[0_18px_48px_rgba(23,23,23,0.08)] backdrop-blur">
+            <div className="w-full max-w-sm rounded-xl border border-surface-200 bg-white p-5 shadow-sm">
                 <form onSubmit={handleLogin} className="space-y-4">
                     <TextField
                         label="Brukernavn"
@@ -92,14 +92,14 @@ const LoginScreen = React.memo(({ onLogin }) => {
                             </button>
                         </div>
                         {isCapsLockOn && (
-                            <p className="text-amber-700 bg-amber-50 border border-amber-100 px-3 py-2 rounded-xl text-sm mt-2">
+                            <p className="text-warning bg-warning/10 border border-warning/20 px-3 py-2 rounded-xl text-sm mt-2">
                                 Caps Lock er på. Det kan gjøre passordet feil.
                             </p>
                         )}
                     </div>
 
                     {error && (
-                        <div className="flex items-center gap-2 text-red-600 bg-red-50 border border-red-100 px-4 py-3 rounded-xl text-sm">
+                        <div className="flex items-center gap-2 text-error bg-error/10 border border-error/20 px-4 py-3 rounded-xl text-sm">
                             <AlertCircle size={16} />
                             {error}
                         </div>

@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { Card, Badge, Button, EmptyState, IconButton, InputLabel, SegmentedControl } from '../components/ui';
 import ImageModal from '../components/ImageModal';
+import ReportMetrics from '../components/ReportMetrics';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
 import { api } from '../lib/api';
@@ -310,7 +311,7 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, onUpdate, ca
     if (step === 'success') {
         return (
             <div className="flex flex-col items-center justify-center h-[60vh] animate-scale-in text-center px-6">
-                <div className="w-16 h-16 rounded-xl flex items-center justify-center mb-6" style={{ background: '#edf3ea', color: '#4f6b52' }}>
+                <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-xl bg-success/10 text-success">
                     <Check size={32} strokeWidth={2.5} />
                 </div>
                 <h2 className="text-[2rem] font-display mb-2">Rapport sendt</h2>
@@ -328,17 +329,16 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, onUpdate, ca
             {!isReadOnly && !hideForm && (
                 <form onSubmit={handleSubmit} className="space-y-5">
                     {restoredDraft && (
-                        <Card className="p-4" style={{ background: 'rgba(111,138,107,0.10)', borderColor: 'rgba(111,138,107,0.28)' }}>
+                        <Card className="border-success/20 bg-success/10 p-4">
                             <div className="flex items-start justify-between gap-3">
                                 <div>
-                                    <p className="font-medium" style={{ color: '#3f5742' }}>Utkast gjenopprettet</p>
-                                    <p className="text-sm mt-1" style={{ color: '#4f6b52' }}>Du kan fortsette der du slapp og sende rapporten når du er klar.</p>
+                                    <p className="font-medium text-success">Utkast gjenopprettet</p>
+                                    <p className="mt-1 text-sm text-success">Du kan fortsette der du slapp og sende rapporten når du er klar.</p>
                                 </div>
                                 <button
                                     type="button"
                                     onClick={dismissDraftNotice}
-                                    className="transition-colors"
-                                    style={{ color: '#6f8a6b' }}
+                                    className="text-success transition-colors hover:text-ink"
                                     aria-label="Skjul melding om gjenopprettet utkast"
                                 >
                                     <X size={16} />
@@ -373,12 +373,12 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, onUpdate, ca
                                     aria-describedby={weightFieldError ? 'weight-error' : undefined}
                                     value={formData.weight}
                                     onChange={handleWeightChange}
-                                    className={`w-full pl-12 pr-4 py-3.5 bg-surface-50 border rounded-xl outline-none focus:ring-2 focus:ring-accent focus:border-accent font-medium text-lg placeholder-ink-faint ${weightFieldError ? 'border-red-300' : 'border-surface-200'}`}
+                                    className={`w-full pl-12 pr-4 py-3.5 bg-surface-50 border rounded-xl outline-none focus:ring-2 focus:ring-accent focus:border-accent font-medium text-lg placeholder-ink-faint ${weightFieldError ? 'border-error/40' : 'border-surface-200'}`}
                                     placeholder="f.eks. 83.5"
                                 />
                             </div>
                             {weightFieldError ? (
-                                <p id="weight-error" className="text-red-600 text-xs mt-1.5">{weightFieldError}</p>
+                                <p id="weight-error" className="text-error text-xs mt-1.5">{weightFieldError}</p>
                             ) : lastWeight && (
                                 <p className="text-xs text-ink-muted mt-1.5">Forrige: {formatWeight(lastWeight)} kg</p>
                             )}
@@ -421,9 +421,9 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, onUpdate, ca
                         </div>
 
                         <div className="space-y-3">
-                            <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-all ${formData.stepsReached ? '' : 'bg-surface-50 border-surface-200'}`} style={formData.stepsReached ? { background: 'rgba(111,138,107,0.10)', borderColor: 'rgba(111,138,107,0.30)' } : undefined}>
+                            <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-colors ${formData.stepsReached ? 'bg-success/10 border-success/20' : 'bg-surface-50 border-surface-200'}`}>
                                 <input type="checkbox" checked={formData.stepsReached} onChange={handleStepsChange} className="sr-only" />
-                                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200 ${formData.stepsReached ? 'text-white' : 'bg-surface-200 text-surface-200'}`} style={formData.stepsReached ? { background: '#6f8a6b' } : undefined}>
+                                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${formData.stepsReached ? 'bg-success text-white' : 'bg-surface-200 text-surface-200'}`}>
                                     <Check size={14} strokeWidth={2.5} />
                                 </div>
                                 <div>
@@ -431,9 +431,9 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, onUpdate, ca
                                     <p className="text-sm text-ink-muted">{stepGoal?.toLocaleString() || '10 000'} skritt</p>
                                 </div>
                             </label>
-                            <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-all ${formData.takenSupplements ? '' : 'bg-surface-50 border-surface-200'}`} style={formData.takenSupplements ? { background: 'rgba(111,138,107,0.10)', borderColor: 'rgba(111,138,107,0.30)' } : undefined}>
+                            <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-colors ${formData.takenSupplements ? 'bg-success/10 border-success/20' : 'bg-surface-50 border-surface-200'}`}>
                                 <input type="checkbox" checked={formData.takenSupplements} onChange={handleSupplementsChange} className="sr-only" />
-                                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200 ${formData.takenSupplements ? 'text-white' : 'bg-surface-200 text-surface-200'}`} style={formData.takenSupplements ? { background: '#6f8a6b' } : undefined}>
+                                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${formData.takenSupplements ? 'bg-success text-white' : 'bg-surface-200 text-surface-200'}`}>
                                     <Check size={14} strokeWidth={2.5} />
                                 </div>
                                 <div>
@@ -494,7 +494,7 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, onUpdate, ca
                     </Card>
 
                     {errorMessage && (
-                        <div className="flex items-center gap-3 bg-red-50 border border-red-100 text-red-700 px-4 py-3 rounded-xl text-sm">
+                        <div className="flex items-center gap-3 bg-error/10 border border-error/20 text-error px-4 py-3 rounded-xl text-sm">
                             <AlertCircle size={18} />
                             {errorMessage}
                         </div>
@@ -618,11 +618,11 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, onUpdate, ca
                                                         aria-invalid={!!editWeightError}
                                                         value={editForm.weight}
                                                         onChange={(e) => { updateEditField('weight', e.target.value); if (editWeightError) setEditWeightError(''); }}
-                                                        className={`w-full pl-12 pr-4 py-3.5 bg-surface-50 border rounded-xl outline-none focus:ring-2 focus:ring-accent focus:border-accent font-medium text-lg ${editWeightError ? 'border-red-300' : 'border-surface-200'}`}
+                                                        className={`w-full pl-12 pr-4 py-3.5 bg-surface-50 border rounded-xl outline-none focus:ring-2 focus:ring-accent focus:border-accent font-medium text-lg ${editWeightError ? 'border-error/40' : 'border-surface-200'}`}
                                                     />
                                                 </div>
                                                 {editWeightError && (
-                                                    <p className="text-red-600 text-xs mt-1.5">{editWeightError}</p>
+                                                    <p className="text-error text-xs mt-1.5">{editWeightError}</p>
                                                 )}
                                             </div>
                                             <SegmentedControl
@@ -661,9 +661,9 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, onUpdate, ca
                                                 />
                                             </div>
                                             <div className="space-y-3">
-                                                <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-all ${editForm.stepsReached ? '' : 'bg-surface-50 border-surface-200'}`} style={editForm.stepsReached ? { background: 'rgba(111,138,107,0.10)', borderColor: 'rgba(111,138,107,0.30)' } : undefined}>
+                                                <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-colors ${editForm.stepsReached ? 'bg-success/10 border-success/20' : 'bg-surface-50 border-surface-200'}`}>
                                                     <input type="checkbox" checked={editForm.stepsReached} onChange={(e) => updateEditField('stepsReached', e.target.checked)} className="sr-only" />
-                                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200 ${editForm.stepsReached ? 'text-white' : 'bg-surface-200 text-surface-200'}`} style={editForm.stepsReached ? { background: '#6f8a6b' } : undefined}>
+                                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${editForm.stepsReached ? 'bg-success text-white' : 'bg-surface-200 text-surface-200'}`}>
                                                         <Check size={14} strokeWidth={2.5} />
                                                     </div>
                                                     <div>
@@ -671,9 +671,9 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, onUpdate, ca
                                                         <p className="text-sm text-ink-muted">{stepGoal?.toLocaleString() || '10 000'} skritt</p>
                                                     </div>
                                                 </label>
-                                                <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-all ${editForm.takenSupplements ? '' : 'bg-surface-50 border-surface-200'}`} style={editForm.takenSupplements ? { background: 'rgba(111,138,107,0.10)', borderColor: 'rgba(111,138,107,0.30)' } : undefined}>
+                                                <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-colors ${editForm.takenSupplements ? 'bg-success/10 border-success/20' : 'bg-surface-50 border-surface-200'}`}>
                                                     <input type="checkbox" checked={editForm.takenSupplements} onChange={(e) => updateEditField('takenSupplements', e.target.checked)} className="sr-only" />
-                                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200 ${editForm.takenSupplements ? 'text-white' : 'bg-surface-200 text-surface-200'}`} style={editForm.takenSupplements ? { background: '#6f8a6b' } : undefined}>
+                                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${editForm.takenSupplements ? 'bg-success text-white' : 'bg-surface-200 text-surface-200'}`}>
                                                         <Check size={14} strokeWidth={2.5} />
                                                     </div>
                                                     <div>
@@ -692,7 +692,7 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, onUpdate, ca
                                                 />
                                             </div>
                                             {editError && (
-                                                <div className="flex items-center gap-3 bg-red-50 border border-red-100 text-red-700 px-4 py-3 rounded-xl text-sm">
+                                                <div className="flex items-center gap-3 bg-error/10 border border-error/20 text-error px-4 py-3 rounded-xl text-sm">
                                                     <AlertCircle size={18} />
                                                     {editError}
                                                 </div>
@@ -742,46 +742,7 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, onUpdate, ca
                                         </div>
                                     </div>
                                     
-                                    {(() => {
-                                        const pct10 = (v) => Math.max(0, Math.min(100, (parseInt(v) || 0) * 10));
-                                        const pctSessions = (v) => Math.max(0, Math.min(100, Math.round(((parseInt(v) || 0) / 7) * 100)));
-                                        const metrics = [
-                                            { label: 'Nøyakt.', value: entry.accuracy ?? 0, width: pct10(entry.accuracy), color: '#6f8a6b' },
-                                            { label: 'Energi', value: entry.energy ?? 0, width: pct10(entry.energy), color: '#c08a52' },
-                                            { label: 'Søvn', value: entry.sleep ?? 0, width: pct10(entry.sleep), color: '#b8857f' },
-                                            { label: 'Styrke', value: entry.strengthSessions || 0, width: pctSessions(entry.strengthSessions), color: '#9a958c' },
-                                            { label: 'Cardio', value: entry.cardioSessions || 0, width: pctSessions(entry.cardioSessions), color: '#9a958c' },
-                                        ];
-                                        const pillBase = { display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '12px', fontWeight: 500, padding: '5px 11px', borderRadius: '99px' };
-                                        const pillOn = { ...pillBase, background: '#edf3ea', color: '#4f6b52' };
-                                        const pillOff = { ...pillBase, background: '#f1ede4', color: '#9a958c' };
-                                        return (
-                                            <>
-                                                <div className="grid grid-cols-5 gap-2 text-center mb-4">
-                                                    {metrics.map((m) => (
-                                                        <div key={m.label}>
-                                                            <p className="tabular-nums" style={{ fontSize: '18px', fontWeight: 600, color: '#171717' }}>{m.value}</p>
-                                                            <div style={{ height: '4px', borderRadius: '99px', background: '#ece7df', margin: '6px 2px 0', overflow: 'hidden' }}>
-                                                                <div style={{ height: '100%', width: `${m.width}%`, borderRadius: '99px', background: m.color }} />
-                                                            </div>
-                                                            <p style={{ fontSize: '10px', color: '#525252', marginTop: '6px' }}>{m.label}</p>
-                                                        </div>
-                                                    ))}
-                                                </div>
-
-                                                <div className="flex gap-2 mb-4">
-                                                    <span style={entry.stepsReached ? pillOn : pillOff}>
-                                                        <Footprints size={12} />
-                                                        {entry.stepsReached ? 'Skrittmål nådd' : 'Under skrittmål'}
-                                                    </span>
-                                                    <span style={entry.takenSupplements ? pillOn : pillOff}>
-                                                        {entry.takenSupplements ? <Check size={12} /> : <X size={12} />}
-                                                        Tilskudd
-                                                    </span>
-                                                </div>
-                                            </>
-                                        );
-                                    })()}
+                                    <ReportMetrics report={entry} className="mb-4" />
 
                                     {entry.comment && (
                                         <p className="text-sm text-ink-muted bg-surface-50 p-3 rounded-lg italic mb-4">"{entry.comment}"</p>

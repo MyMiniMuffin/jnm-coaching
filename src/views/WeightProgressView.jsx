@@ -124,7 +124,7 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
             <div className="grid grid-cols-2 gap-4">
                 <Card className="p-5">
                     <p className="section-label mb-1">Endring</p>
-                    <div className={`text-2xl font-semibold flex items-center gap-2 ${isDown ? '' : isSame ? 'text-ink-muted' : 'text-ink'}`} style={isDown ? { color: '#4f6b52' } : undefined}>
+                    <div className={`text-2xl font-semibold flex items-center gap-2 ${isDown ? 'text-success' : isSame ? 'text-ink-muted' : 'text-ink'}`}>
                         {totalChange > 0 ? '+' : ''}{totalChange.replace('.', ',')} kg
                         {isDown ? <TrendingDown size={20} /> : isSame ? <Minus size={20} /> : <TrendingUp size={20} />}
                     </div>
@@ -148,7 +148,7 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
                     <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-32" role="img" aria-label="Vektutvikling over tid med markører for nye coaching-runder">
                         <defs>
                             <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
-                                <stop offset="0%" stopColor="#D4A090" />
+                                <stop offset="0%" stopColor="#B5603A" stopOpacity="0.45" />
                                 <stop offset="100%" stopColor="#B5603A" />
                             </linearGradient>
                         </defs>
@@ -181,7 +181,7 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
                                     x2={marker.x}
                                     y1={chartTop}
                                     y2={chartBottom}
-                                    stroke="#B98D63"
+                                    stroke="#B5603A"
                                     strokeWidth="1.5"
                                     strokeDasharray="4 4"
                                 />
@@ -189,7 +189,7 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
                                     cx={marker.x}
                                     cy={chartTop}
                                     r="3"
-                                    fill="#B98D63"
+                                    fill="#B5603A"
                                 />
                             </g>
                         ))}
@@ -200,7 +200,7 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
                                 cx={p.x}
                                 cy={p.y}
                                 r="4"
-                                fill="#FAFAF9"
+                                fill="#F7F7F4"
                                 stroke="#171717"
                                 strokeWidth="2"
                                 onMouseEnter={() => setActiveTooltip({
@@ -241,11 +241,11 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
                         <div key={entry.id} className="space-y-2">
                             {dividers.map(divider => (
                                 <div key={divider.id} className="flex items-center gap-3 px-1 pt-2">
-                                    <div className="h-px flex-1 bg-[#d8c0a1]" />
-                                    <div className="text-xs font-medium tracking-[0.01em] text-[#9b6f42]">
+                                    <div className="h-px flex-1 bg-accent/30" />
+                                    <div className="text-xs font-medium text-accent">
                                         {divider.label} startet {divider.shortDate}
                                     </div>
-                                    <div className="h-px flex-1 bg-[#d8c0a1]" />
+                                    <div className="h-px flex-1 bg-accent/30" />
                                 </div>
                             ))}
                             <Card className="p-4 flex justify-between items-center">
