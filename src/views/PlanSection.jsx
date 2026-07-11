@@ -30,7 +30,7 @@ const SmallIconButton = ({ label, disabled = false, tone = 'neutral', children, 
         aria-label={label}
         title={label}
         disabled={disabled}
-        className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors disabled:opacity-25 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-accent ${tone === 'danger' ? 'text-ink-faint hover:bg-red-50 hover:text-red-600' : 'text-ink-muted hover:bg-surface-100 hover:text-ink'}`}
+        className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors disabled:opacity-25 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-accent ${tone === 'danger' ? 'text-ink-faint hover:bg-red-50 hover:text-red-600' : 'text-ink-muted hover:bg-surface-100 hover:text-ink'}`}
         {...props}
     >
         {children}
@@ -82,6 +82,9 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
     const itemPlaceholder = type === 'diet'
         ? 'For eksempel: Havregrøt med bær'
         : 'For eksempel: Knebøy';
+    const editorHint = type === 'diet'
+        ? 'Del planen inn i måltider eller andre fokusområder.'
+        : 'Del planen inn i treningsdager eller andre fokusområder.';
     const canSave = saveState === 'dirty' && !isSaving;
 
     const markChanged = useCallback((update) => {
@@ -219,7 +222,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
 
                 {isEditing && !isReadOnly && (
                     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-surface-100 bg-white px-5 py-3.5">
-                        <p className="text-sm text-ink-muted">Én seksjon per måltid, treningsdag eller fokusområde.</p>
+                        <p className="text-sm text-ink-muted">{editorHint}</p>
                         <Button variant="secondary" size="sm" onClick={insertTemplate}>
                             <FileText size={16} /> Bruk forslag
                         </Button>
@@ -240,9 +243,9 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                             ) : null}
                         />
                     ) : isEditing && !isReadOnly ? (
-                        <div className="space-y-4">
+                        <div className="space-y-8">
                             {displayPlan.sections.map((section, sectionIndex) => (
-                                <div key={section.key} data-section={sectionIndex} className="border-t border-surface-200 pt-5 first:border-t-0 first:pt-0">
+                                <div key={section.key} data-section={sectionIndex}>
                                     <div className="mb-4">
                                         <div className="mb-2 flex items-center justify-between gap-3">
                                             <span className="section-label tabular-nums">Seksjon {String(sectionIndex + 1).padStart(2, '0')}</span>
@@ -265,7 +268,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
 
                                     <div>
                                         {type === 'workout' && section.items.length > 0 && (
-                                            <div className="grid grid-cols-[minmax(0,1fr)_3.75rem_5rem] gap-2 border-y border-surface-200 bg-surface-50 px-3 py-2">
+                                            <div className="grid grid-cols-[minmax(0,1fr)_3.75rem_5rem] gap-2 bg-surface-50 px-3 py-2 sm:grid-cols-[minmax(0,1fr)_4.5rem_6.5rem]">
                                                 <span className="section-label">Øvelse</span>
                                                 <span className="section-label text-center">Sett</span>
                                                 <span className="section-label text-center">Reps</span>
@@ -273,8 +276,8 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                                         )}
                                         {section.items.map((item, itemIndex) => (
                                             type === 'workout' ? (
-                                                <div key={item.key} className="border-b border-surface-200 px-3 py-3 last:border-b-0">
-                                                    <div className="grid grid-cols-[minmax(0,1fr)_3.75rem_5rem] items-start gap-2">
+                                                <div key={item.key} className="px-3 py-2.5">
+                                                    <div className="grid grid-cols-[minmax(0,1fr)_3.75rem_5rem] items-start gap-2 sm:grid-cols-[minmax(0,1fr)_4.5rem_6.5rem]">
                                                         <AutoGrowTextarea
                                                             aria-label={`Øvelse ${itemIndex + 1}`}
                                                             data-item={itemIndex}
@@ -307,7 +310,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                                                         />
                                                     </div>
                                                     <div className="mt-1.5 flex items-center justify-between">
-                                                        <span className="text-[11px] tabular-nums text-ink-faint">{String(itemIndex + 1).padStart(2, '0')}</span>
+                                                        <span className="text-[11px] tabular-nums text-ink-faint">Øvelse {String(itemIndex + 1).padStart(2, '0')}</span>
                                                         <div className="flex items-center">
                                                             <SmallIconButton label="Flytt øvelsen opp" disabled={itemIndex === 0} onClick={() => moveItem(sectionIndex, itemIndex, -1)}><ArrowUp size={15} /></SmallIconButton>
                                                             <SmallIconButton label="Flytt øvelsen ned" disabled={itemIndex === section.items.length - 1} onClick={() => moveItem(sectionIndex, itemIndex, 1)}><ArrowDown size={15} /></SmallIconButton>
@@ -316,9 +319,10 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                                                     </div>
                                                 </div>
                                             ) : (
-                                                <div key={item.key} className="flex items-start gap-2 border-b border-surface-200 py-2.5 last:border-b-0">
+                                                <div key={item.key} className="flex items-start gap-2 py-1.5">
                                                     <span className="mt-2 w-5 shrink-0 text-[11px] tabular-nums text-ink-faint">{String(itemIndex + 1).padStart(2, '0')}</span>
                                                     <AutoGrowTextarea
+                                                        aria-label={`Punkt ${itemIndex + 1}`}
                                                         data-item={itemIndex}
                                                         value={item.text}
                                                         onChange={event => updateItem(sectionIndex, itemIndex, 'text', event.target.value)}
@@ -351,32 +355,32 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                             </Button>
                         </div>
                     ) : (
-                        <div className="divide-y divide-surface-200">
+                        <div className="space-y-7">
                             {displayPlan.sections.map(section => (
-                                <section key={section.key} className="py-5 first:pt-0 last:pb-0">
+                                <section key={section.key}>
                                     {section.title && <h3 className="font-display text-[1.4rem] leading-tight text-ink">{section.title}</h3>}
                                     {section.items.length > 0 && (
                                         type === 'workout' && section.items.some(item => item.sets || item.reps) ? (
-                                            <div className={`${section.title ? 'mt-3' : ''} overflow-hidden border-y border-surface-200`}>
-                                                <div className="grid grid-cols-[minmax(0,1fr)_3.75rem_5rem] gap-2 bg-surface-50 px-3 py-2">
+                                            <div className={`${section.title ? 'mt-3' : ''} overflow-hidden`}>
+                                                <div className="grid grid-cols-[minmax(0,1fr)_3.75rem_5rem] gap-2 bg-surface-50 px-3 py-2 sm:grid-cols-[minmax(0,1fr)_4.5rem_6.5rem]">
                                                     <span className="section-label">Øvelse</span>
                                                     <span className="section-label text-center">Sett</span>
                                                     <span className="section-label text-center">Reps</span>
                                                 </div>
-                                                <ul className="divide-y divide-surface-200">
+                                                <ul className="divide-y divide-surface-100">
                                                     {section.items.map(item => (
-                                                        <li key={item.key} className="grid grid-cols-[minmax(0,1fr)_3.75rem_5rem] items-center gap-2 px-3 py-3 text-[0.95rem] leading-6 text-ink/85">
+                                                        <li key={item.key} className="grid grid-cols-[minmax(0,1fr)_3.75rem_5rem] items-center gap-2 px-3 py-3 text-[0.95rem] leading-6 text-ink/85 sm:grid-cols-[minmax(0,1fr)_4.5rem_6.5rem]">
                                                             <span className="min-w-0 whitespace-pre-wrap font-medium">{item.text}</span>
                                                             <span className="text-center font-semibold tabular-nums text-ink">{item.sets || '—'}</span>
-                                                            <span className="truncate text-center font-semibold tabular-nums text-ink">{item.reps || '—'}</span>
+                                                            <span className="break-words text-center font-semibold tabular-nums leading-5 text-ink">{item.reps || '—'}</span>
                                                         </li>
                                                     ))}
                                                 </ul>
                                             </div>
                                         ) : (
-                                            <ul className={`${section.title ? 'mt-3' : ''} divide-y divide-surface-200 border-y border-surface-200`}>
+                                            <ul className={`${section.title ? 'mt-3' : ''} space-y-1`}>
                                                 {section.items.map(item => (
-                                                    <li key={item.key} className="flex items-start gap-3 px-1 py-3 text-[0.95rem] leading-6 text-ink/85">
+                                                    <li key={item.key} className="flex items-start gap-3 px-1 py-2 text-[0.95rem] leading-6 text-ink/85">
                                                         <span className="mt-[0.6rem] h-1.5 w-1.5 shrink-0 rounded-full bg-ink/45" />
                                                         <span className="whitespace-pre-wrap">{item.text}</span>
                                                     </li>
