@@ -4,7 +4,6 @@ import {
   X, Plus, Check, Loader2, Calendar, Pause, Play, Activity, ArrowRight
 } from 'lucide-react';
 import { Card, Badge, Button, IconButton, InputLabel } from '../components/ui';
-import ReportMetrics from '../components/ReportMetrics';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
 import { useEscapeKey } from '../hooks';
@@ -520,21 +519,6 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
     
     const lastCheckin = checkins.length > 0 ? checkins[0] : null;
 
-    // Mild relativ tidsangivelse for siste rapport ("i dag", "i går", ...)
-    const lastCheckinAgo = useMemo(() => {
-        if (!lastCheckin) return '';
-        const raw = lastCheckin.date || lastCheckin.timestamp;
-        if (!raw) return '';
-        const d = new Date(typeof raw === 'string' && raw.length === 10 ? raw + 'T00:00:00' : raw);
-        if (isNaN(d)) return '';
-        const startOfDay = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate());
-        const diffDays = Math.round((startOfDay(new Date()) - startOfDay(d)) / 86400000);
-        if (diffDays <= 0) return 'i dag';
-        if (diffDays === 1) return 'i går';
-        if (diffDays < 7) return `${diffDays} dager siden`;
-        return formatDateNO(d);
-    }, [lastCheckin]);
-
     // Memoize week calculation
     const { currentWeek, progress } = useMemo(() => {
         if (!userData.startDate) return { currentWeek: 0, progress: 0 };
@@ -774,19 +758,6 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                     <p className="text-2xl font-semibold mt-1">{(userData.stepGoal || 10000).toLocaleString()}</p>
                 </Card>
             </div>
-
-            {/* Last Report */}
-            {lastCheckin && (
-                <div>
-                    <div className="mb-3 flex items-center px-1">
-                        <p className="section-label">Siste rapport</p>
-                        {lastCheckinAgo && <span className="ml-auto text-[11px] text-ink-faint">{lastCheckinAgo}</span>}
-                    </div>
-                    <Card className="p-4">
-                        <ReportMetrics report={lastCheckin} />
-                    </Card>
-                </div>
-            )}
 
             {/* Totaloversikt - kun hvis det finnes data */}
             {stats && (
