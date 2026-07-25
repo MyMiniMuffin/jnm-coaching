@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">JNM Coaching</title>
+  <desc id="desc">JNM Coaching-logo med en lys stjerne på mørk, avrundet bakgrunn.</desc>
+  <rect width="512" height="512" rx="160" fill="#171717"/>
+  <path
+    d="M256 96c0 88.4 71.6 160 160 160-88.4 0-160 71.6-160 160 0-88.4-71.6-160-160-160 88.4 0 160-71.6 160-160z"
+    fill="#FAFAF9"
+  />
+</svg>
