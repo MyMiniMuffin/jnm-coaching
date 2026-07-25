@@ -13,6 +13,8 @@ import { createConfetti } from '../lib/confetti';
 import { formatDateNO, formatWeight, getThumbnail } from '../lib/formatters';
 import { OPTIONS_1_TO_10, OPTIONS_0_TO_7, INITIAL_FORM_DATA } from '../lib/config';
 
+const REPORT_BATCH_SIZE = 20;
+
 const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, onUpdate, canEdit = false, isReadOnly, canDelete = !isReadOnly, stepGoal, hideForm = false, draftKey = 'default', uploadUserId }) => {
     const [step, setStep] = useState('form');
     const [lightbox, setLightbox] = useState({ isOpen: false, images: [], index: 0 });
@@ -178,6 +180,18 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, onUpdate, ca
     }, [formData, onNewCheckin, storageKey]);
 
     const sortedCheckins = checkins;
+
+    // Rendre kun et vindu av historikken — 150 rapporter med metrikker og bilder
+    // koster unødig mye ved hver render av dette viewet.
+    const [visibleReportCount, setVisibleReportCount] = useState(REPORT_BATCH_SIZE);
+    const visibleCheckins = useMemo(
+        () => sortedCheckins.slice(0, visibleReportCount),
+        [sortedCheckins, visibleReportCount]
+    );
+    const hasMoreReports = visibleReportCount < sortedCheckins.length;
+    const handleShowMoreReports = useCallback(() => {
+        setVisibleReportCount(count => count + REPORT_BATCH_SIZE);
+    }, []);
 
     const lastWeight = useMemo(() => {
         const last = sortedCheckins.find(c => c.weight && parseFloat(c.weight) > 0);
@@ -485,7 +499,7 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, onUpdate, ca
                     />
                 ) : (
                     <div className="space-y-3">
-                        {sortedCheckins.map((entry) => {
+                        {visibleCheckins.map((entry) => {
                             // Sikre at images alltid er en array
                             let imageArray = [];
                             if (entry.images) {
@@ -675,6 +689,11 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, onUpdate, ca
                                 </Card>
                             );
                         })}
+                        {hasMoreReports && (
+                            <Button variant="secondary" size="md" className="w-full" onClick={handleShowMoreReports}>
+                                Vis flere rapporter ({Math.min(REPORT_BATCH_SIZE, sortedCheckins.length - visibleReportCount)})
+                            </Button>
+                        )}
                     </div>
                 )}
             </div>

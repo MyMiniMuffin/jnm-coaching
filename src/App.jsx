@@ -55,6 +55,13 @@ const App = () => {
     const restoreScrollYRef = useRef(null);
     const skipNextAthleteFetchRef = useRef(false);
     const swipeEdgeTimeoutRef = useRef(null);
+    // Speiler currentData slik at handleSelectClient kan lese siste data uten å bli
+    // gjenskapt ved hver dataendring (som ellers bryter React.memo på CoachDashboard).
+    const currentDataRef = useRef(currentData);
+
+    useEffect(() => {
+        currentDataRef.current = currentData;
+    }, [currentData]);
 
     const deliverCoachCheckinAlert = useCallback((clientsWithNewCheckins) => {
         if (!clientsWithNewCheckins.length) return;
@@ -242,23 +249,13 @@ const App = () => {
                 }
 
                 if (sessionUser.role === 'coach') {
-                    // Vis evt. cached brukerliste umiddelbart, men ikke vent på nettverket
+                    // Vis evt. cached brukerliste umiddelbart. Selve nettverkskallet gjøres
+                    // av coach-polling-effekten, slik at vi unngår to identiske kall ved oppstart.
                     const cachedUsers = cache.get('users-list');
                     if (cachedUsers?.length) {
                         setAllUsers(cachedUsers);
                     }
-                    setIsUsersLoading(true);
                     setIsLoading(false);
-
-                    // Hent alltid fersk brukerliste i bakgrunnen
-                    api.getUsers(false).then(result => {
-                        if (result.authError) {
-                            setShowReauthPrompt(true);
-                        } else if (result.data) {
-                            applyUsersList(result.data);
-                        }
-                    }).catch(e => console.error('[Init] Feil ved henting av brukerliste:', e))
-                      .finally(() => setIsUsersLoading(false));
                     return; // isLoading allerede satt til false
                 }
             }
@@ -266,7 +263,7 @@ const App = () => {
             setIsLoading(false);
         };
         init();
-    }, [applyUsersList]);
+    }, []);
 
     useEffect(() => {
         setNotificationPermission(getNotificationPermission());
@@ -349,6 +346,8 @@ const App = () => {
                 if (!isCancelled) {
                     console.error('[Coach Poll] Kunne ikke oppdatere brukerliste:', error);
                 }
+            } finally {
+                if (!isCancelled) setIsUsersLoading(false);
             }
         };
 
@@ -356,6 +355,7 @@ const App = () => {
             refreshUsers(true);
         }, 60000);
 
+        setIsUsersLoading(true);
         refreshUsers(false);
 
         const handleVisibilityRefresh = () => {
@@ -650,7 +650,7 @@ const App = () => {
     const handleSelectClient = useCallback(async (client, options = {}) => {
         const { preserveView = false } = options;
         const requestId = ++selectClientRef.current;
-        const previousData = currentData;
+        const previousData = currentDataRef.current;
         setViewingClient(client);
         setIsClientLoading(true);
         if (!preserveView) {
@@ -699,7 +699,7 @@ const App = () => {
                 ));
             });
         }
-    }, [currentData]);
+    }, []);
 
     useEffect(() => {
         if (!currentUser || hasRestoredUiStateRef.current) return;
@@ -766,27 +766,41 @@ const App = () => {
     useEffect(() => {
         if (!currentUser || !hasRestoredUiStateRef.current || typeof window === 'undefined') return;
 
-        let frameId = null;
+        // localStorage.setItem er synkron og blokkerer main thread. Skriv derfor maks
+        // én gang per SCROLL_PERSIST_MS mens brukeren scroller, og flush når siden skjules.
+        const SCROLL_PERSIST_MS = 400;
+        let timeoutId = null;
+
         const persistCurrentPosition = () => {
+            if (timeoutId) {
+                window.clearTimeout(timeoutId);
+                timeoutId = null;
+            }
             if (!latestUiStateRef.current) return;
             saveUiState(latestUiStateRef.current);
         };
 
         const handleScroll = () => {
-            if (frameId) return;
-            frameId = window.requestAnimationFrame(() => {
-                frameId = null;
-                persistCurrentPosition();
-            });
+            if (timeoutId) return;
+            timeoutId = window.setTimeout(() => {
+                timeoutId = null;
+                if (latestUiStateRef.current) saveUiState(latestUiStateRef.current);
+            }, SCROLL_PERSIST_MS);
+        };
+
+        const handleVisibilityFlush = () => {
+            if (document.visibilityState === 'hidden') persistCurrentPosition();
         };
 
         window.addEventListener('scroll', handleScroll, { passive: true });
         window.addEventListener('pagehide', persistCurrentPosition);
+        document.addEventListener('visibilitychange', handleVisibilityFlush);
 
         return () => {
-            if (frameId) window.cancelAnimationFrame(frameId);
+            if (timeoutId) window.clearTimeout(timeoutId);
             window.removeEventListener('scroll', handleScroll);
             window.removeEventListener('pagehide', persistCurrentPosition);
+            document.removeEventListener('visibilitychange', handleVisibilityFlush);
         };
     }, [currentUser]);
 

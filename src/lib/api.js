@@ -135,11 +135,16 @@ const request = async (url, {
     method = 'GET',
     body,
     auth = true,
-    errorMessage = 'Forespørselen feilet'
+    errorMessage = 'Forespørselen feilet',
+    // 'no-store' hopper over nettleserens HTTP-cache. Brukes når kalleren eksplisitt
+    // ber om ferske data, slik at Cache-Control-headerne på GET-endepunktene ikke
+    // kan servere opptil ett minutt gammelt svar.
+    cacheMode
 } = {}) => {
     const response = await fetch(url, {
         method,
         headers: auth ? getAuthHeaders() : { 'Content-Type': 'application/json' },
+        ...(cacheMode ? { cache: cacheMode } : {}),
         ...(body === undefined ? {} : { body: JSON.stringify(body) })
     });
 
@@ -174,7 +179,8 @@ export const api = {
         }
         try {
             const result = await request('/.netlify/functions/users', {
-                errorMessage: 'Kunne ikke hente brukere'
+                errorMessage: 'Kunne ikke hente brukere',
+                cacheMode: useCache ? undefined : 'no-store'
             });
             if (result.authError) return { ...result, data: [] };
             cache.set('users-list', result.data);
@@ -218,7 +224,10 @@ export const api = {
 
         try {
             const result = await request(`/.netlify/functions/data?id=${encodeURIComponent(userId)}`, {
-                errorMessage: 'Feil ved henting av data'
+                errorMessage: 'Feil ved henting av data',
+                // useCache=false betyr "hent ferske data" — da skal heller ikke
+                // nettleserens HTTP-cache kunne svare.
+                cacheMode: useCache ? undefined : 'no-store'
             });
             if (result.authError) return result;
             cache.set(cacheKey, result.data);

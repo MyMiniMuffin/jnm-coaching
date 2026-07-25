@@ -170,8 +170,10 @@ const formatCheckinRecord = (checkin) => {
 };
 
 const getTargetUserState = async (userId) => {
+  // Hent alt POST-handlerne trenger om målbrukeren i én spørring (name og
+  // current_period_id brukes av new_checkin) for å spare database-rundturer.
   const result = await sql`
-    SELECT role, is_archived
+    SELECT role, is_archived, name, current_period_id
     FROM users
     WHERE id = ${userId}
     LIMIT 1
@@ -460,11 +462,10 @@ exports.handler = async (event) => {
         const cardio = parseInt(data.cardioSessions, 10) || 0;
         const strength = parseInt(data.strengthSessions, 10) || 0;
         const imagesJson = JSON.stringify(data.images || []);
-        
-        // Hent brukerens aktive periode-ID
-        const userRes = await sql`SELECT current_period_id FROM users WHERE id = ${userId}`;
-        const periodId = userRes[0]?.current_period_id || null;
-        
+
+        // Aktiv periode er allerede hentet sammen med tilgangssjekken over
+        const periodId = targetUser.current_period_id || null;
+
         const insertedCheckin = await sql`
           INSERT INTO checkins (
             user_id, date, weight, sleep, energy, accuracy, 
@@ -501,16 +502,9 @@ exports.handler = async (event) => {
           WHERE user_id = ${userId} AND is_read = false
         `;
 
-        const athleteNameResult = await sql`
-          SELECT name
-          FROM users
-          WHERE id = ${userId}
-          LIMIT 1
-        `;
-
         await sendCoachPushNotifications({
           athleteId: userId,
-          athleteName: athleteNameResult[0]?.name || 'En utøver',
+          athleteName: targetUser.name || 'En utøver',
           unreadCount: unreadCountResult[0]?.count || 1
         });
 
