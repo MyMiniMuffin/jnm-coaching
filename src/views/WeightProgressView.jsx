@@ -116,10 +116,12 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
 
     return (
         <div className="space-y-6 animate-slide-up pb-32">
-            <button type="button" onClick={onBack} className="flex items-center gap-2 text-ink-muted hover:text-ink transition-colors">
-                <ChevronLeft size={20} />
-                <span className="text-sm font-medium">Tilbake</span>
-            </button>
+            <div className="flex items-center gap-2">
+                <button type="button" onClick={onBack} aria-label="Tilbake til hjem" className="flex items-center justify-center -ml-2 h-10 w-10 rounded-lg text-ink-muted hover:bg-surface-100 hover:text-ink transition-colors">
+                    <ChevronLeft size={22} />
+                </button>
+                <h2 className="text-[1.7rem] font-display text-ink">Vektutvikling</h2>
+            </div>
 
             <div className="grid grid-cols-2 gap-4">
                 <Card className="p-5">

@@ -1,25 +1,104 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { Plus, X, Trash2, Pause, Play, User, ChevronRight, Loader2, KeyRound, BellRing, Search, ArrowUpDown } from 'lucide-react';
+import { Plus, X, Trash2, User, ChevronRight, Loader2, KeyRound, BellRing, Search, ArrowUpDown, MoreHorizontal, ArchiveRestore, Archive } from 'lucide-react';
 import { Card, Button, EmptyState, IconButton, TextField, ToggleGroup, SelectField } from '../components/ui';
 import { useEscapeKey } from '../hooks';
 import { useConfirm } from '../components/ConfirmDialog';
 
-const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPermission = 'unsupported', onEnableNotifications, onSelectClient, onAddClient, onDeleteClient, onArchiveClient, onResetPassword }) => {
+const ClientActionsMenu = ({ client, isPending, open, onOpenChange, onArchive, onReset, onDelete }) => {
+    const menuRef = useRef(null);
+
+    useEffect(() => {
+        if (!open) return;
+        const close = (event) => {
+            if (event.type === 'keydown' && event.key !== 'Escape') return;
+            if (event.type === 'pointerdown' && menuRef.current?.contains(event.target)) return;
+            onOpenChange(false);
+        };
+        document.addEventListener('pointerdown', close);
+        document.addEventListener('keydown', close);
+        return () => {
+            document.removeEventListener('pointerdown', close);
+            document.removeEventListener('keydown', close);
+        };
+    }, [open, onOpenChange]);
+
+    const run = (event, action) => {
+        event.stopPropagation();
+        onOpenChange(false);
+        action();
+    };
+
+    return (
+        <div className="relative" ref={menuRef}>
+            <IconButton
+                type="button"
+                aria-label={`Flere handlinger for ${client.name}`}
+                aria-haspopup="menu"
+                aria-expanded={open}
+                disabled={isPending}
+                onClick={(event) => {
+                    event.stopPropagation();
+                    onOpenChange(!open);
+                }}
+            >
+                <MoreHorizontal size={18} />
+            </IconButton>
+            {open && (
+                <div
+                    role="menu"
+                    aria-label={`Handlinger for ${client.name}`}
+                    className="absolute right-0 top-full z-20 mt-1 w-52 rounded-xl border border-surface-200 bg-white p-1 shadow-lg"
+                    onClick={(event) => event.stopPropagation()}
+                >
+                    <button
+                        type="button"
+                        role="menuitem"
+                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-ink hover:bg-surface-100"
+                        onClick={(event) => run(event, onArchive)}
+                    >
+                        {client.is_archived ? <ArchiveRestore size={16} /> : <Archive size={16} />}
+                        {client.is_archived ? 'Gjenopprett' : 'Arkiver'}
+                    </button>
+                    <button
+                        type="button"
+                        role="menuitem"
+                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-ink hover:bg-surface-100"
+                        onClick={(event) => run(event, onReset)}
+                    >
+                        <KeyRound size={16} />
+                        Tilbakestill passord
+                    </button>
+                    <button
+                        type="button"
+                        role="menuitem"
+                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-error hover:bg-error/10"
+                        onClick={(event) => run(event, onDelete)}
+                    >
+                        <Trash2 size={16} />
+                        Slett utøver
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+};
+
+const CoachDashboard = React.memo(({ allUsers, isLoading, notificationPermission = 'unsupported', onEnableNotifications, onSelectClient, onAddClient, onDeleteClient, onArchiveClient, onResetPassword }) => {
     const [showModal, setShowModal] = useState(false);
     const [showArchived, setShowArchived] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const [resetTarget, setResetTarget] = useState(null);
     const [isResetting, setIsResetting] = useState(false);
     const [pendingClientAction, setPendingClientAction] = useState(null);
+    const [openMenuId, setOpenMenuId] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [sortBy, setSortBy] = useState('unread');
     const confirm = useConfirm();
 
     // Memoize filtrerte lister
-    const { activeClients, archivedClients, totalAthletes } = useMemo(() => ({
+    const { activeClients, archivedClients } = useMemo(() => ({
         activeClients: allUsers.filter(u => u.role === 'athlete' && !u.is_archived),
-        archivedClients: allUsers.filter(u => u.role === 'athlete' && u.is_archived),
-        totalAthletes: allUsers.filter(u => u.role === 'athlete').length
+        archivedClients: allUsers.filter(u => u.role === 'athlete' && u.is_archived)
     }), [allUsers]);
     const totalUnreadCheckins = useMemo(
         () => activeClients.reduce((sum, client) => sum + (Number(client.unreadCheckins) || 0), 0),
@@ -87,8 +166,7 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
         }
     }, [onAddClient]);
 
-    const handleDelete = useCallback(async (e, clientId) => {
-        e.stopPropagation();
+    const handleDelete = useCallback(async (clientId) => {
         if (await confirm('Er du sikker på at du vil slette denne utøveren permanent?', {
             title: 'Slett utøver',
             confirmText: 'Slett',
@@ -103,18 +181,27 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
         }
     }, [confirm, onDeleteClient]);
 
-    const handleArchiveToggle = useCallback(async (e, client) => {
-        e.stopPropagation();
-        setPendingClientAction({ clientId: client.id, type: client.is_archived ? 'restore' : 'archive' });
+    const handleArchiveToggle = useCallback(async (client) => {
+        const archiving = !client.is_archived;
+        const confirmed = await confirm(
+            archiving
+                ? 'Utøveren flyttes til arkivet og får begrenset tilgang.'
+                : 'Utøveren blir aktiv igjen og får tilbake full tilgang.',
+            {
+                title: archiving ? 'Arkiver utøver?' : 'Gjenopprett utøver?',
+                confirmText: archiving ? 'Arkiver' : 'Gjenopprett'
+            }
+        );
+        if (!confirmed) return;
+        setPendingClientAction({ clientId: client.id, type: archiving ? 'archive' : 'restore' });
         try {
-            await onArchiveClient(client.id, !client.is_archived);
+            await onArchiveClient(client.id, archiving);
         } finally {
             setPendingClientAction(null);
         }
-    }, [onArchiveClient]);
+    }, [confirm, onArchiveClient]);
 
-    const openResetModal = useCallback((e, client) => {
-        e.stopPropagation();
+    const openResetModal = useCallback((client) => {
         setResetTarget(client);
     }, []);
 
@@ -150,9 +237,9 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
                             </IconButton>
                         </div>
                         <form onSubmit={handleFormSubmit} className="space-y-4">
-                            <TextField ref={newAthleteNameRef} required name="name" type="text" placeholder="Fullt navn" />
-                            <TextField required name="username" type="text" placeholder="Brukernavn" autoComplete="off" pattern="[a-zA-Z0-9_]+" title="Kun bokstaver, tall og understrek" />
-                            <TextField required name="password" type="password" minLength="6" placeholder="Passord (min. 6 tegn)" autoComplete="new-password" />
+                            <TextField ref={newAthleteNameRef} id="new-athlete-name" label="Fullt navn" required name="name" type="text" placeholder="Ola Nordmann" />
+                            <TextField id="new-athlete-username" label="Brukernavn" required name="username" type="text" placeholder="ola_nordmann" autoComplete="off" pattern="[a-zA-Z0-9_]+" title="Kun bokstaver, tall og understrek" />
+                            <TextField id="new-athlete-password" label="Passord" required name="password" type="password" minLength="6" placeholder="Minst 6 tegn" autoComplete="new-password" />
                             <Button type="submit" size="lg" className="w-full" disabled={isCreating}>
                                 {isCreating ? <><Loader2 size={18} className="animate-spin" /> Oppretter...</> : 'Opprett utøver'}
                             </Button>
@@ -173,7 +260,7 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
                         </div>
                         <p id="reset-password-description" className="text-sm text-ink-muted mb-4">Nytt passord for <span className="font-medium text-ink">{resetTarget.name}</span></p>
                         <form onSubmit={handleResetSubmit} className="space-y-4">
-                            <TextField ref={resetPasswordInputRef} required name="password" type="password" minLength="6" placeholder="Nytt passord (min. 6 tegn)" autoComplete="new-password" />
+                            <TextField ref={resetPasswordInputRef} id="reset-athlete-password" label="Nytt passord" required name="password" type="password" minLength="6" placeholder="Minst 6 tegn" autoComplete="new-password" />
                             <Button type="submit" size="lg" className="w-full" disabled={isResetting}>
                                 {isResetting ? <><Loader2 size={18} className="animate-spin" /> Tilbakestiller...</> : <><KeyRound size={18} /> Tilbakestill passord</>}
                             </Button>
@@ -184,12 +271,12 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
 
             {/* Hero Stats Card */}
             <div className="px-5 py-4 hero-tint text-white rounded-xl relative overflow-hidden ring-1 ring-white/10">
-                <div className="relative z-10 flex items-center justify-between gap-4">
+                <div className="relative z-10 space-y-4">
                     <div className="min-w-0">
-                        <p className="text-white/60 text-xs">Velkommen tilbake</p>
-                        <h2 className="text-2xl font-display leading-tight truncate">{user.name}</h2>
+                        <p className="text-white/60 text-xs">Oversikt</p>
+                        <h2 className="text-2xl font-display leading-tight">Utøvere</h2>
                         <div className="flex items-center gap-1.5 mt-1.5 text-xs text-white/60">
-                            <BellRing size={12} />
+                            <BellRing size={12} className="shrink-0" />
                             <span>
                                 {notificationPermission === 'granted'
                                     ? (totalUnreadCheckins > 0 ? `${totalUnreadCheckins} uleste rapporter` : 'Pushvarsler aktivert')
@@ -206,17 +293,17 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
                             )}
                         </div>
                     </div>
-                    <div className="flex gap-3 shrink-0">
-                        <div className="text-center rounded-xl bg-white/7 px-2.5 py-2 ring-1 ring-white/10">
-                            <p className="text-2xl font-semibold leading-none">{activeClients.length}</p>
+                    <div className="grid grid-cols-3 gap-2">
+                        <div className="text-center rounded-xl bg-white/7 px-2.5 py-2.5 ring-1 ring-white/10">
+                            <p className="text-2xl font-semibold leading-none tabular-nums">{activeClients.length}</p>
                             <p className="text-white/55 text-xs mt-1">Aktive</p>
                         </div>
-                        <div className="text-center rounded-xl bg-white/7 px-2.5 py-2 ring-1 ring-white/10">
-                            <p className="text-2xl font-semibold leading-none">{archivedClients.length}</p>
+                        <div className="text-center rounded-xl bg-white/7 px-2.5 py-2.5 ring-1 ring-white/10">
+                            <p className="text-2xl font-semibold leading-none tabular-nums">{archivedClients.length}</p>
                             <p className="text-white/55 text-xs mt-1">Arkivert</p>
                         </div>
-                        <div className="text-center rounded-xl bg-white/7 px-2.5 py-2 ring-1 ring-white/10">
-                            <p className="text-2xl font-semibold leading-none">{totalUnreadCheckins}</p>
+                        <div className="text-center rounded-xl bg-white/7 px-2.5 py-2.5 ring-1 ring-white/10">
+                            <p className="text-2xl font-semibold leading-none tabular-nums">{totalUnreadCheckins}</p>
                             <p className="text-white/55 text-xs mt-1">Uleste</p>
                         </div>
                     </div>
@@ -230,8 +317,8 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
                         value={showArchived ? 'archived' : 'active'}
                         onChange={(value) => value === 'archived' ? showArchivedClients() : showActive()}
                         options={[
-                            { value: 'active', label: `Aktive (${activeClients.length})` },
-                            { value: 'archived', label: `Arkivert (${archivedClients.length})` }
+                            { value: 'active', label: 'Aktive' },
+                            { value: 'archived', label: 'Arkivert' }
                         ]}
                     />
                     {isLoading && displayedClients.length > 0 && (
@@ -301,14 +388,21 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
                             key={client.id}
                             className={`p-4 flex items-center justify-between group ${showArchived ? 'opacity-60' : client.unreadCheckins > 0 ? 'border-success/30 bg-success/5' : ''} ${isPending ? 'pointer-events-none opacity-70' : ''}`}
                             interactive={!isPending}
-                            onClick={() => !isPending && onSelectClient(client)}
+                            onClick={() => {
+                                if (isPending) return;
+                                if (openMenuId) {
+                                    setOpenMenuId(null);
+                                    return;
+                                }
+                                onSelectClient(client);
+                            }}
                         >
-                            <div className="flex items-center gap-4">
-                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-lg font-semibold ${showArchived ? 'bg-surface-200 text-ink-muted' : client.unreadCheckins > 0 ? 'bg-success/10 text-success' : 'bg-surface-100 text-ink'}`}>
+                            <div className="flex items-center gap-4 min-w-0">
+                                <div className={`w-12 h-12 shrink-0 rounded-xl flex items-center justify-center text-lg font-semibold ${showArchived ? 'bg-surface-200 text-ink-muted' : client.unreadCheckins > 0 ? 'bg-success/10 text-success' : 'bg-surface-100 text-ink'}`}>
                                     {client.name.charAt(0)}
                                 </div>
-                                <div>
-                                    <p className="font-medium">{client.name}</p>
+                                <div className="min-w-0">
+                                    <p className="font-medium truncate">{client.name}</p>
                                     <p className={`text-sm ${client.unreadCheckins > 0 ? 'text-success font-medium' : 'text-ink-muted'}`}>
                                         {client.unreadCheckins > 0
                                             ? `${client.unreadCheckins} ny${client.unreadCheckins > 1 ? 'e' : ''} rapport${client.unreadCheckins > 1 ? 'er' : ''}`
@@ -318,41 +412,16 @@ const CoachDashboard = React.memo(({ user, allUsers, isLoading, notificationPerm
                                     </p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-1">
-                                <div className="flex items-center gap-0.5 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
-                                    {/* Arkiver/Gjenopprett knapp */}
-                                    <button
-                                        type="button"
-                                        onClick={(e) => handleArchiveToggle(e, client)}
-                                        className="p-2 text-ink-faint hover:text-ink transition-colors"
-                                        aria-label={client.is_archived ? 'Gjenopprett' : 'Arkiver'}
-                                        title={client.is_archived ? 'Gjenopprett' : 'Arkiver'}
-                                        disabled={isPending}
-                                    >
-                                        {client.is_archived ? <Play size={16} /> : <Pause size={16} />}
-                                    </button>
-                                    {/* Tilbakestill passord */}
-                                    <button
-                                        type="button"
-                                        onClick={(e) => openResetModal(e, client)}
-                                        className="p-2 text-ink-faint hover:text-ink transition-colors"
-                                        aria-label="Tilbakestill passord"
-                                        title="Tilbakestill passord"
-                                        disabled={isPending}
-                                    >
-                                        <KeyRound size={16} />
-                                    </button>
-                                    {/* Slett knapp */}
-                                    <button
-                                        type="button"
-                                        onClick={(e) => handleDelete(e, client.id)}
-                                        className="p-2 text-ink-faint hover:text-error transition-colors"
-                                        aria-label="Slett utøver"
-                                        disabled={isPending}
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
-                                </div>
+                            <div className="flex items-center shrink-0">
+                                <ClientActionsMenu
+                                    client={client}
+                                    isPending={isPending}
+                                    open={openMenuId === client.id}
+                                    onOpenChange={(nextOpen) => setOpenMenuId(nextOpen ? client.id : null)}
+                                    onArchive={() => handleArchiveToggle(client)}
+                                    onReset={() => openResetModal(client)}
+                                    onDelete={() => handleDelete(client.id)}
+                                />
                                 {isPending ? <Loader2 size={18} className="text-ink-faint animate-spin" /> : <ChevronRight size={18} className="text-ink-faint" />}
                             </div>
                         </Card>

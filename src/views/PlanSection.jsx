@@ -6,7 +6,6 @@ import {
     Loader2,
     Check,
     FileText,
-    RotateCcw,
     Plus,
     Trash2,
     ArrowUp,
@@ -14,9 +13,11 @@ import {
     ListChecks,
     Download,
     Upload,
-    CornerDownRight
+    CornerDownRight,
+    MoreHorizontal
 } from 'lucide-react';
 import { Card, Button, EmptyState } from '../components/ui';
+import { useConfirm } from '../components/ConfirmDialog';
 import {
     createSection,
     getPlanTemplate,
@@ -47,6 +48,67 @@ const SmallIconButton = ({ label, disabled = false, tone = 'neutral', compact = 
     </button>
 );
 
+const RowMenu = ({ label, items }) => {
+    const [open, setOpen] = useState(false);
+    const menuRef = useRef(null);
+
+    useEffect(() => {
+        if (!open) return;
+        const close = (event) => {
+            if (event.type === 'keydown' && event.key !== 'Escape') return;
+            if (event.type === 'pointerdown' && menuRef.current?.contains(event.target)) return;
+            setOpen(false);
+        };
+        document.addEventListener('pointerdown', close);
+        document.addEventListener('keydown', close);
+        return () => {
+            document.removeEventListener('pointerdown', close);
+            document.removeEventListener('keydown', close);
+        };
+    }, [open]);
+
+    return (
+        <div className="relative" ref={menuRef} data-swipe-ignore="true">
+            <SmallIconButton
+                compact
+                label={label}
+                aria-haspopup="menu"
+                aria-expanded={open}
+                onClick={() => setOpen(value => !value)}
+            >
+                <MoreHorizontal size={16} />
+            </SmallIconButton>
+            {open && (
+                <div
+                    role="menu"
+                    aria-label={label}
+                    className="absolute right-0 bottom-full z-20 mb-1 min-w-[11rem] rounded-xl border border-surface-200 bg-white p-1 shadow-lg"
+                >
+                    {items.map(item => (
+                        <button
+                            key={item.label}
+                            type="button"
+                            role="menuitem"
+                            disabled={item.disabled}
+                            onClick={() => {
+                                if (item.disabled) return;
+                                setOpen(false);
+                                item.onClick();
+                            }}
+                            className={`flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm disabled:cursor-not-allowed disabled:opacity-40 ${
+                                item.tone === 'danger' ? 'text-error hover:bg-error/10' : 'text-ink hover:bg-surface-100'
+                            }`}
+                        >
+                            {item.icon}
+                            {item.label}
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
+
 const AutoGrowTextarea = ({ value, onChange, ...props }) => {
     const ref = useRef(null);
 
@@ -69,6 +131,7 @@ const AutoGrowTextarea = ({ value, onChange, ...props }) => {
 };
 
 const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
+    const confirmDialog = useConfirm();
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [draft, setDraft] = useState(() => parsePlan(content, type));
@@ -136,6 +199,18 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
         setImportError('');
         setIsEditing(false);
     }, [content, type]);
+
+    const handleRequestCancel = useCallback(async () => {
+        if (saveState === 'dirty') {
+            const confirmed = await confirmDialog('Endringene dine blir ikke lagret.', {
+                title: 'Forkast endringer?',
+                confirmText: 'Forkast',
+                destructive: true
+            });
+            if (!confirmed) return;
+        }
+        handleCancel();
+    }, [confirmDialog, handleCancel, saveState]);
 
     const updateSection = useCallback((sectionIndex, update) => {
         markChanged(current => ({
@@ -213,16 +288,6 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
         }));
     }, [updateSection]);
 
-    const moveSubItem = useCallback((sectionIndex, itemIndex, subItemIndex, direction) => {
-        updateSection(sectionIndex, section => ({
-            ...section,
-            items: section.items.map((item, index) => index === itemIndex ? {
-                ...item,
-                subItems: moveInArray(item.subItems || [], subItemIndex, subItemIndex + direction)
-            } : item)
-        }));
-    }, [updateSection]);
-
     const addSection = useCallback(() => {
         markChanged(current => ({ ...current, sections: [...current.sections, createSection('', [''], type)] }));
         requestAnimationFrame(() => document.querySelector('[data-new-section="true"]')?.focus());
@@ -234,6 +299,16 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
             sections: current.sections.filter((_, index) => index !== sectionIndex)
         }));
     }, [markChanged]);
+
+    const handleRemoveSection = useCallback(async (sectionIndex) => {
+        const confirmed = await confirmDialog('Seksjonen og alt innholdet i den blir fjernet.', {
+            title: 'Slett seksjon?',
+            confirmText: 'Slett',
+            destructive: true
+        });
+        if (!confirmed) return;
+        removeSection(sectionIndex);
+    }, [confirmDialog, removeSection]);
 
     const moveSection = useCallback((sectionIndex, direction) => {
         markChanged(current => ({
@@ -293,7 +368,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
     const displayPlan = isEditing ? draft : parsedPlan;
 
     return (
-        <div className="space-y-5 pb-32 animate-slide-up">
+        <div className={`space-y-5 animate-slide-up ${isEditing && !isReadOnly ? 'pb-52' : 'pb-32'}`}>
             <Card className="overflow-hidden">
                 <div className="flex justify-between items-center gap-3 p-5 border-b border-surface-100 bg-white">
                     <div className="flex items-center gap-3 min-w-0">
@@ -315,22 +390,10 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                                 <Download size={16} /> <span className="hidden sm:inline">Eksporter</span>
                             </Button>
                         )}
-                        {!isReadOnly && (
-                            isEditing ? (
-                                <div className="flex items-center gap-1.5 shrink-0">
-                                    <Button aria-label="Avbryt redigering" variant="ghost" size="sm" onClick={handleCancel} disabled={isSaving} className="px-2 sm:px-3">
-                                        <RotateCcw size={16} /> <span className="hidden sm:inline">Avbryt</span>
-                                    </Button>
-                                    <Button aria-label="Lagre planen" variant="primary" size="sm" onClick={handleSave} disabled={!canSave}>
-                                        {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
-                                        <span className="hidden sm:inline">{isSaving ? 'Lagrer...' : 'Lagre'}</span>
-                                    </Button>
-                                </div>
-                            ) : (
-                                <Button variant="secondary" size="sm" onClick={handleStartEditing}>
-                                    <Pencil size={16} /> Rediger
-                                </Button>
-                            )
+                        {!isReadOnly && !isEditing && (
+                            <Button variant="secondary" size="sm" onClick={handleStartEditing}>
+                                <Pencil size={16} /> Rediger
+                            </Button>
                         )}
                     </div>
                 </div>
@@ -410,11 +473,14 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                                     <div className="mb-4">
                                         <div className="mb-2 flex items-center justify-between gap-3">
                                             <span className="section-label tabular-nums">Seksjon {String(sectionIndex + 1).padStart(2, '0')}</span>
-                                            <div className="flex items-center">
-                                                <SmallIconButton label="Flytt seksjonen opp" disabled={sectionIndex === 0} onClick={() => moveSection(sectionIndex, -1)}><ArrowUp size={16} /></SmallIconButton>
-                                                <SmallIconButton label="Flytt seksjonen ned" disabled={sectionIndex === displayPlan.sections.length - 1} onClick={() => moveSection(sectionIndex, 1)}><ArrowDown size={16} /></SmallIconButton>
-                                                <SmallIconButton label="Slett seksjonen" tone="danger" onClick={() => removeSection(sectionIndex)}><Trash2 size={16} /></SmallIconButton>
-                                            </div>
+                                            <RowMenu
+                                                label={`Handlinger for seksjon ${sectionIndex + 1}`}
+                                                items={[
+                                                    { label: 'Flytt opp', icon: <ArrowUp size={15} />, disabled: sectionIndex === 0, onClick: () => moveSection(sectionIndex, -1) },
+                                                    { label: 'Flytt ned', icon: <ArrowDown size={15} />, disabled: sectionIndex === displayPlan.sections.length - 1, onClick: () => moveSection(sectionIndex, 1) },
+                                                    { label: 'Slett seksjon', icon: <Trash2 size={15} />, tone: 'danger', onClick: () => handleRemoveSection(sectionIndex) }
+                                                ]}
+                                            />
                                         </div>
                                         <label className="sr-only" htmlFor={`plan-section-${section.key}`}>Seksjonsnavn</label>
                                         <input
@@ -472,11 +538,14 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                                                     </div>
                                                     <div className="mt-1.5 flex items-center justify-between">
                                                         <span className="text-[11px] tabular-nums text-ink-faint">Øvelse {String(itemIndex + 1).padStart(2, '0')}</span>
-                                                        <div className="flex items-center">
-                                                            <SmallIconButton label="Flytt øvelsen opp" disabled={itemIndex === 0} onClick={() => moveItem(sectionIndex, itemIndex, -1)}><ArrowUp size={15} /></SmallIconButton>
-                                                            <SmallIconButton label="Flytt øvelsen ned" disabled={itemIndex === section.items.length - 1} onClick={() => moveItem(sectionIndex, itemIndex, 1)}><ArrowDown size={15} /></SmallIconButton>
-                                                            <SmallIconButton label="Slett øvelsen" tone="danger" onClick={() => removeItem(sectionIndex, itemIndex)}><Trash2 size={15} /></SmallIconButton>
-                                                        </div>
+                                                        <RowMenu
+                                                            label={`Handlinger for øvelse ${itemIndex + 1}`}
+                                                            items={[
+                                                                { label: 'Flytt opp', icon: <ArrowUp size={15} />, disabled: itemIndex === 0, onClick: () => moveItem(sectionIndex, itemIndex, -1) },
+                                                                { label: 'Flytt ned', icon: <ArrowDown size={15} />, disabled: itemIndex === section.items.length - 1, onClick: () => moveItem(sectionIndex, itemIndex, 1) },
+                                                                { label: 'Slett øvelse', icon: <Trash2 size={15} />, tone: 'danger', onClick: () => removeItem(sectionIndex, itemIndex) }
+                                                            ]}
+                                                        />
                                                     </div>
                                                 </div>
                                             ) : (
@@ -497,11 +566,14 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                                                             className="min-h-8 min-w-0 flex-1 resize-none overflow-hidden bg-transparent px-1 py-1 text-sm leading-5 outline-none placeholder:text-ink-faint"
                                                             placeholder={itemPlaceholder}
                                                         />
-                                                        <div className="flex shrink-0 items-center">
-                                                            <SmallIconButton compact label="Flytt punktet opp" disabled={itemIndex === 0} onClick={() => moveItem(sectionIndex, itemIndex, -1)}><ArrowUp size={14} /></SmallIconButton>
-                                                            <SmallIconButton compact label="Flytt punktet ned" disabled={itemIndex === section.items.length - 1} onClick={() => moveItem(sectionIndex, itemIndex, 1)}><ArrowDown size={14} /></SmallIconButton>
-                                                            <SmallIconButton compact label="Slett punktet" tone="danger" onClick={() => removeItem(sectionIndex, itemIndex)}><Trash2 size={14} /></SmallIconButton>
-                                                        </div>
+                                                        <RowMenu
+                                                            label={`Handlinger for punkt ${itemIndex + 1}`}
+                                                            items={[
+                                                                { label: 'Flytt opp', icon: <ArrowUp size={15} />, disabled: itemIndex === 0, onClick: () => moveItem(sectionIndex, itemIndex, -1) },
+                                                                { label: 'Flytt ned', icon: <ArrowDown size={15} />, disabled: itemIndex === section.items.length - 1, onClick: () => moveItem(sectionIndex, itemIndex, 1) },
+                                                                { label: 'Slett punkt', icon: <Trash2 size={15} />, tone: 'danger', onClick: () => removeItem(sectionIndex, itemIndex) }
+                                                            ]}
+                                                        />
                                                     </div>
 
                                                     {(item.subItems || []).map((subItem, subItemIndex) => (
@@ -521,11 +593,14 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                                                                 className="min-h-8 min-w-0 flex-1 resize-none overflow-hidden bg-transparent px-1 py-1 text-[0.82rem] leading-5 text-ink-muted outline-none placeholder:text-ink-faint"
                                                                 placeholder="For eksempel: med bær"
                                                             />
-                                                            <div className="flex shrink-0 items-center">
-                                                                <SmallIconButton compact label="Flytt valget opp" disabled={subItemIndex === 0} onClick={() => moveSubItem(sectionIndex, itemIndex, subItemIndex, -1)}><ArrowUp size={13} /></SmallIconButton>
-                                                                <SmallIconButton compact label="Flytt valget ned" disabled={subItemIndex === (item.subItems || []).length - 1} onClick={() => moveSubItem(sectionIndex, itemIndex, subItemIndex, 1)}><ArrowDown size={13} /></SmallIconButton>
-                                                                <SmallIconButton compact label="Slett valget" tone="danger" onClick={() => removeSubItem(sectionIndex, itemIndex, subItemIndex)}><Trash2 size={13} /></SmallIconButton>
-                                                            </div>
+                                                            <SmallIconButton
+                                                                compact
+                                                                label="Slett valget"
+                                                                tone="danger"
+                                                                onClick={() => removeSubItem(sectionIndex, itemIndex, subItemIndex)}
+                                                            >
+                                                                <Trash2 size={13} />
+                                                            </SmallIconButton>
                                                         </div>
                                                     ))}
 
@@ -601,6 +676,26 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                     )}
                 </div>
             </Card>
+
+            {isEditing && !isReadOnly && (
+                <div
+                    className="fixed inset-x-0 z-40 border-t border-surface-200/80 bg-surface-50/94 backdrop-blur-xl"
+                    style={{ bottom: 'calc(4.35rem + env(safe-area-inset-bottom, 0px))' }}
+                >
+                    <div className="mx-auto flex max-w-md items-center gap-2 px-4 py-2.5">
+                        <p className="min-w-0 flex-1 truncate text-sm text-ink-muted">
+                            {saveState === 'saving' ? 'Lagrer endringer…' : saveState === 'dirty' ? 'Ulagrede endringer' : saveState === 'saved' ? 'Lagret' : 'Redigerer'}
+                        </p>
+                        <Button variant="ghost" size="sm" onClick={handleRequestCancel} disabled={isSaving}>
+                            Avbryt
+                        </Button>
+                        <Button variant="primary" size="sm" onClick={handleSave} disabled={!canSave}>
+                            {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                            {isSaving ? 'Lagrer' : 'Lagre'}
+                        </Button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 });

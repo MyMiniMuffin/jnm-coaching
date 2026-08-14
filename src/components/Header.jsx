@@ -1,7 +1,7 @@
 import React from 'react';
 import { Briefcase, User, LogOut, ChevronLeft } from 'lucide-react';
 
-const Header = React.memo(({ title, user, viewingClient, onLogout, onClearClient }) => (
+const Header = React.memo(({ user, viewingClient, onLogout, onClearClient }) => (
     <header className="sticky top-0 z-40 border-b border-surface-200/80 bg-surface-50/94 backdrop-blur-xl">
         <div className="safe-area-pt" />
         {viewingClient ? (
@@ -23,13 +23,12 @@ const Header = React.memo(({ title, user, viewingClient, onLogout, onClearClient
                 <div className="w-[80px]" />
             </div>
         ) : (
-            /* Normal header */
-            <div className="flex justify-between items-center max-w-md mx-auto px-5 py-4">
-                <div>
-                    <h1 className="text-[1.72rem] font-display text-ink">{title}</h1>
-                    <span className="text-sm text-ink-muted flex items-center gap-1 mt-0.5">
+            <div className="flex justify-between items-center max-w-md mx-auto px-5 py-3">
+                <div className="min-w-0">
+                    <p className="font-semibold text-ink truncate">{user.name}</p>
+                    <span className="text-xs text-ink-muted flex items-center gap-1 mt-0.5">
                         {user.role === 'coach' ? <Briefcase size={12} /> : <User size={12} />}
-                        {user.name}
+                        {user.role === 'coach' ? 'Coach' : 'Utøver'}
                     </span>
                 </div>
                 <button type="button" onClick={onLogout} aria-label="Logg ut" className="text-ink-faint hover:text-ink p-2.5 rounded-lg hover:bg-surface-100 transition-colors">
