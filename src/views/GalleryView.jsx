@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Camera, X, Loader2, Plus, Eye, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
-import { Card, Button, EmptyState, IconButton, TextField, ToggleGroup } from '../components/ui';
+import { Card, Button, EmptyState, IconButton, TextField } from '../components/ui';
 import ImageModal from '../components/ImageModal';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
@@ -139,7 +139,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
     const toast = useToast();
     const confirmDialog = useConfirm();
     const [lightbox, setLightbox] = useState({ isOpen: false, images: [], index: 0 });
-    const [viewMode, setViewMode] = useState('grid'); // 'grid', 'timeline', eller 'compare'
+    const [viewMode, setViewMode] = useState('grid');
     const [compareImages, setCompareImages] = useState({ before: null, after: null });
     const [selectingFor, setSelectingFor] = useState(null); // 'before' eller 'after'
     const [fullscreenCompare, setFullscreenCompare] = useState(false);
@@ -232,22 +232,6 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
             .map((img, index) => ({ ...img, globalIndex: index }));
     }, [checkins, galleryImages]);
 
-    // Grupper bilder etter måned for timeline-visning
-    const imagesByMonth = useMemo(() => {
-        const grouped = {};
-        allImages.forEach(img => {
-            const date = new Date(img.sortDate);
-            const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-            const monthLabel = date.toLocaleDateString('no-NO', { month: 'long', year: 'numeric' });
-
-            if (!grouped[monthKey]) {
-                grouped[monthKey] = { label: monthLabel, images: [] };
-            }
-            grouped[monthKey].images.push(img);
-        });
-        return Object.entries(grouped).sort((a, b) => b[0].localeCompare(a[0]));
-    }, [allImages]);
-
     useEffect(() => {
         setVisibleImageCount(IMAGE_BATCH_SIZE);
     }, [allImages.length, viewMode]);
@@ -263,20 +247,6 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
         () => allImages.slice(0, visibleImageCount),
         [allImages, visibleImageCount]
     );
-
-    const visibleImagesByMonth = useMemo(() => {
-        const visibleIndexes = new Set(visibleImages.map(img => img.globalIndex));
-        return imagesByMonth
-            .map(([monthKey, group]) => [
-                monthKey,
-                {
-                    ...group,
-                    totalCount: group.images.length,
-                    images: group.images.filter(img => visibleIndexes.has(img.globalIndex))
-                }
-            ])
-            .filter(([, group]) => group.images.length > 0);
-    }, [imagesByMonth, visibleImages]);
 
     const hasMoreImages = visibleImageCount < allImages.length;
     const handleShowMoreImages = useCallback(() => {
@@ -579,36 +549,36 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
 
             {/* Header med visningsvalg */}
             <div ref={compareTopRef} className="space-y-3 scroll-mt-4">
-                <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="min-w-0 mr-auto">
                         <h2 className="text-[1.7rem] leading-none font-display">
                             {viewMode === 'compare' ? 'Sammenlign' : 'Fremgangsgalleri'}
                         </h2>
-                        <p className="text-sm text-ink-muted">
+                        <p className="text-sm text-ink-muted mt-1">
                             {viewMode === 'compare' ? 'Velg bilder å sammenligne' : `${allImages.length} bilder`}
                         </p>
                     </div>
-                    {viewMode === 'compare' ? (
-                        <Button variant="secondary" size="sm" className="shrink-0" onClick={clearCompare}>
-                            <X size={16} /> Lukk
-                        </Button>
-                    ) : isCoach && onAddGalleryImage ? (
-                        <Button variant="primary" size="sm" className="shrink-0" onClick={() => setShowUploadModal(true)}>
-                            <Plus size={16} /> Last opp
-                        </Button>
-                    ) : null}
+                    <div className="flex shrink-0 items-center gap-2">
+                        {viewMode === 'compare' ? (
+                            <Button variant="secondary" size="sm" onClick={clearCompare}>
+                                <X size={16} /> Lukk
+                            </Button>
+                        ) : (
+                            <>
+                                {allImages.length >= 2 && (
+                                    <Button variant="secondary" size="sm" onClick={startCompare}>
+                                        <Eye size={16} /> Sammenlign
+                                    </Button>
+                                )}
+                                {isCoach && onAddGalleryImage && (
+                                    <Button variant="primary" size="sm" onClick={() => setShowUploadModal(true)}>
+                                        <Plus size={16} /> Last opp
+                                    </Button>
+                                )}
+                            </>
+                        )}
+                    </div>
                 </div>
-                {viewMode !== 'compare' && (
-                    <ToggleGroup
-                        value={viewMode}
-                        onChange={(value) => value === 'compare' ? startCompare() : setViewMode(value)}
-                        options={[
-                            { value: 'grid', label: 'Rutenett' },
-                            { value: 'timeline', label: 'Tidslinje' },
-                            ...(allImages.length >= 2 ? [{ value: 'compare', label: 'Sammenlign' }] : [])
-                        ]}
-                    />
-                )}
             </div>
 
             {/* Sammenlign-modus */}
@@ -843,81 +813,6 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
                         </Button>
                     )}
                 </>
-            )}
-
-            {viewMode === 'timeline' && (
-                /* Timeline-visning - gruppert etter måned */
-                <div className="space-y-6">
-                    {visibleImagesByMonth.map(([monthKey, { label, images, totalCount }]) => (
-                        <div key={monthKey}>
-                            <div className="flex items-center gap-3 mb-3">
-                                <h3 className="text-sm font-medium text-ink-muted capitalize">{label}</h3>
-                                <div className="flex-1 h-px bg-surface-200" />
-                                <span className="text-xs text-ink-muted">{totalCount} bilder</span>
-                            </div>
-                            <div className="grid grid-cols-3 gap-1.5">
-                                {images.map((img, idx) => {
-                                    return (
-                                        <div 
-                                            key={getImageKey(img, img.globalIndex)}
-                                            className="relative aspect-square group"
-                                        >
-                                            <button
-                                                type="button"
-                                                className="absolute inset-0 w-full overflow-hidden rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
-                                                data-swipe-ignore="true"
-                                                onPointerDown={(e) => handleTilePointerDown(e, img, img.globalIndex)}
-                                                onPointerUp={handleTilePointerUp}
-                                                onKeyDown={(e) => handleTileKeyDown(e, img, img.globalIndex)}
-                                                aria-label={`Vis ${img.label || 'fremgangsbilde'} fra ${formatDateNO(img.date)}`}
-                                            >
-                                                <img
-                                                    src={getThumbnail(img.url)}
-                                                    loading="lazy"
-                                                    decoding="async"
-                                                    className="w-full h-full object-cover"
-                                                    alt=""
-                                                />
-                                                {img.isGalleryImage && img.label && (
-                                                    <span className={`absolute top-1.5 left-1.5 ${isCoach && onDeleteGalleryImage ? 'right-12' : 'right-1.5'} truncate bg-ink/80 text-white text-[10px] font-medium px-2 py-0.5 rounded-full backdrop-blur-sm`}>
-                                                        {img.label}
-                                                    </span>
-                                                )}
-                                                <span className="absolute inset-0 bg-gradient-to-t from-ink/70 via-transparent to-transparent rounded-lg">
-                                                    <span className="absolute bottom-2 left-2 right-2">
-                                                        <span className="block text-white text-xs font-medium">{formatDateNO(img.date)}</span>
-                                                        {img.weight && (
-                                                            <span className="block text-white/75 text-[10px]">{formatWeight(img.weight)} kg</span>
-                                                        )}
-                                                    </span>
-                                                </span>
-                                            </button>
-                                            {/* Slett-knapp for coach på gallery-bilder - alltid synlig */}
-                                            {isCoach && img.isGalleryImage && onDeleteGalleryImage && (
-                                                <IconButton
-                                                    onClick={(e) => { e.stopPropagation(); handleDeleteGalleryImage(img.galleryImageId); }}
-                                                    aria-label={String(img.galleryImageId).startsWith('temp_') ? 'Bildet lagres fortsatt' : `Slett ${img.label || 'bilde'} fra ${formatDateNO(img.date)}`}
-                                                    tone="danger"
-                                                    disabled={String(img.galleryImageId).startsWith('temp_') || deletingImageId === img.galleryImageId}
-                                                    className="absolute top-1 right-1 z-10 min-h-[40px] min-w-[40px] rounded-lg bg-white/90 text-error shadow-sm backdrop-blur-sm active:scale-[0.98] disabled:cursor-wait disabled:opacity-70"
-                                                >
-                                                    {String(img.galleryImageId).startsWith('temp_') || deletingImageId === img.galleryImageId
-                                                        ? <Loader2 size={18} className="animate-spin" />
-                                                        : <X size={18} />}
-                                                </IconButton>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    ))}
-                    {hasMoreImages && (
-                        <Button variant="secondary" size="md" className="w-full" onClick={handleShowMoreImages}>
-                            Vis flere bilder ({Math.min(IMAGE_BATCH_SIZE, allImages.length - visibleImageCount)})
-                        </Button>
-                    )}
-                </div>
             )}
 
         </div>

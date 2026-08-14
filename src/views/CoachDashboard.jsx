@@ -273,9 +273,9 @@ const CoachDashboard = React.memo(({ allUsers, isLoading, notificationPermission
             <div className="px-5 py-4 hero-tint text-white rounded-xl relative overflow-hidden ring-1 ring-white/10">
                 <div className="relative z-10 space-y-4">
                     <div className="min-w-0">
-                        <p className="text-white/60 text-xs">Oversikt</p>
+                        <p className="text-white/70 text-xs">Oversikt</p>
                         <h2 className="text-2xl font-display leading-tight">Utøvere</h2>
-                        <div className="flex items-center gap-1.5 mt-1.5 text-xs text-white/60">
+                        <div className="flex items-center gap-1.5 mt-1.5 text-xs text-white/75">
                             <BellRing size={12} className="shrink-0" />
                             <span>
                                 {notificationPermission === 'granted'
@@ -296,15 +296,15 @@ const CoachDashboard = React.memo(({ allUsers, isLoading, notificationPermission
                     <div className="grid grid-cols-3 gap-2">
                         <div className="text-center rounded-xl bg-white/7 px-2.5 py-2.5 ring-1 ring-white/10">
                             <p className="text-2xl font-semibold leading-none tabular-nums">{activeClients.length}</p>
-                            <p className="text-white/55 text-xs mt-1">Aktive</p>
+                            <p className="text-white/75 text-xs mt-1">Aktive</p>
                         </div>
                         <div className="text-center rounded-xl bg-white/7 px-2.5 py-2.5 ring-1 ring-white/10">
                             <p className="text-2xl font-semibold leading-none tabular-nums">{archivedClients.length}</p>
-                            <p className="text-white/55 text-xs mt-1">Arkivert</p>
+                            <p className="text-white/75 text-xs mt-1">Arkivert</p>
                         </div>
                         <div className="text-center rounded-xl bg-white/7 px-2.5 py-2.5 ring-1 ring-white/10">
                             <p className="text-2xl font-semibold leading-none tabular-nums">{totalUnreadCheckins}</p>
-                            <p className="text-white/55 text-xs mt-1">Uleste</p>
+                            <p className="text-white/75 text-xs mt-1">Uleste</p>
                         </div>
                     </div>
                 </div>

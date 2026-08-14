@@ -9,7 +9,6 @@ import ReportMetrics from '../components/ReportMetrics';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
 import { api } from '../lib/api';
-import { createConfetti } from '../lib/confetti';
 import { formatDateNO, formatWeight, getThumbnail } from '../lib/formatters';
 import { OPTIONS_1_TO_10, OPTIONS_0_TO_7, INITIAL_FORM_DATA } from '../lib/config';
 
@@ -162,7 +161,6 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, onUpdate, ca
             try { localStorage.removeItem(storageKey); } catch (e) {}
             setRestoredDraft(false);
             setStep('success');
-            createConfetti(); // 🎉 Konfetti!
             if (successResetTimeoutRef.current) {
                 clearTimeout(successResetTimeoutRef.current);
             }

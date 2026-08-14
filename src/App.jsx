@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react';
-import { Loader2, Pause, Eye, LogOut, ChevronLeft, WifiOff } from 'lucide-react';
+import { Loader2, Pause, Eye, LogOut, ChevronLeft } from 'lucide-react';
 
 // Lib
 import { saveSession, getSession, getToken, clearSession, hasValidSession } from './lib/session';
@@ -1002,11 +1002,11 @@ const App = () => {
     }, []);
 
     const swipeHandlers = useSwipe(handleSwipeLeft, handleSwipeRight, {
-        threshold: 60,
-        velocityThreshold: 0.46,
-        verticalTolerance: 38,
+        threshold: 88,
+        velocityThreshold: 0.52,
+        verticalTolerance: 34,
         onEdgeSwipe: handleEdgeSwipe,
-        enabled: !isClientLoading && !showWeightHistory && currentTabIndex >= 0
+        enabled: !isClientLoading && !showWeightHistory && (activeTab === 'dashboard' || activeTab === 'checkin')
     });
 
     const handleRefresh = useCallback(async () => {
@@ -1060,8 +1060,8 @@ const App = () => {
     if (isArchived) {
         return (
             <div className="max-w-md mx-auto min-h-screen app-shell">
-                {showReauthPrompt && <ReauthPrompt onReauth={handleReauth} onLogout={handleLogout} />}
-                <Header title="Konto pauset" user={currentUser} onLogout={handleLogout} />
+                {showReauthPrompt && <ReauthPrompt onReauth={handleReauth} />}
+                <Header user={currentUser} onLogout={handleLogout} isOffline={!isOnline} />
                 <main className="p-4">
                     <div className="flex flex-col items-center justify-center min-h-[70vh] text-center px-6 animate-fade-in">
                         <div className="w-20 h-20 bg-surface-100 rounded-xl flex items-center justify-center text-ink-muted mb-6">
@@ -1123,8 +1123,8 @@ const App = () => {
     if (isCoach && !viewingClient) {
         return (
             <div className="max-w-md mx-auto min-h-screen app-shell">
-                {showReauthPrompt && <ReauthPrompt onReauth={handleReauth} onLogout={handleLogout} />}
-                <Header title="Oversikt" user={currentUser} onLogout={handleLogout} />
+                {showReauthPrompt && <ReauthPrompt onReauth={handleReauth} />}
+                <Header user={currentUser} onLogout={handleLogout} isOffline={!isOnline} />
                 <main className="p-4">
                     <ViewErrorBoundary><Suspense fallback={<ViewSkeleton />}>
                         <CoachDashboard
@@ -1145,26 +1145,19 @@ const App = () => {
         );
     }
 
-    const tabTitles = { dashboard: 'Hjem', gallery: 'Galleri', diet: 'Matplan', workout: 'Trening', checkin: 'Rapport' };
-
     return (
         <div
             className="max-w-md mx-auto min-h-screen app-shell"
             {...appTouchHandlers}
         >
-            {showReauthPrompt && <ReauthPrompt onReauth={handleReauth} onLogout={handleLogout} />}
+            {showReauthPrompt && <ReauthPrompt onReauth={handleReauth} />}
             {pullIndicator}
-            {!isOnline && (
-                <div className="sticky top-0 z-40 bg-warning text-white text-center text-sm py-2 px-4 flex items-center justify-center gap-2">
-                    <WifiOff size={14} /> Ingen nettilkobling — viser lagrede data
-                </div>
-            )}
             <Header
-                title={tabTitles[activeTab]}
                 user={currentUser}
                 viewingClient={isCoach ? viewingClient : null}
                 onLogout={handleLogout}
                 onClearClient={handleClearClient}
+                isOffline={!isOnline}
             />
             <main className="p-4">
                 {isClientLoading ? (

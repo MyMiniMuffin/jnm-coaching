@@ -10,10 +10,10 @@ const NavButton = React.memo(({ item, isActive, onClick }) => {
             onClick={() => onClick(item.id)}
             aria-label={item.label}
             aria-current={isActive ? 'page' : undefined}
-            className={`relative z-10 flex flex-col items-center justify-center gap-1 min-h-[48px] min-w-[44px] rounded-xl transition-all duration-200 active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${isActive ? 'text-ink -translate-y-0.5' : 'text-ink-faint'}`}
+            className={`relative z-10 flex flex-col items-center justify-center gap-1 min-h-[48px] min-w-[44px] rounded-xl transition-all duration-200 active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${isActive ? 'text-ink -translate-y-0.5' : 'text-ink-muted'}`}
         >
             <Icon size={22} strokeWidth={isActive ? 2 : 1.5} />
-            <span className={`text-[10px] ${isActive ? 'font-semibold text-ink' : 'font-medium text-ink-faint'}`}>{item.label}</span>
+            <span className={`text-[10px] ${isActive ? 'font-semibold text-ink' : 'font-medium text-ink-muted'}`}>{item.label}</span>
         </button>
     );
 });
