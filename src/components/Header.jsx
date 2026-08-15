@@ -28,7 +28,7 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
                     type="button"
                     onClick={onLogout}
                     aria-label="Logg ut"
-                    className="text-ink-faint hover:text-ink p-2.5 rounded-lg hover:bg-surface-100 transition-colors shrink-0"
+                    className="text-ink-muted hover:text-ink p-2.5 rounded-lg hover:bg-surface-100 transition-colors shrink-0"
                 >
                     <LogOut size={20} />
                 </button>
@@ -36,7 +36,7 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
         ) : (
             <div className="header-inner flex justify-between items-center px-5 py-3 lg:px-0 lg:py-4">
                 <p className="font-semibold text-ink truncate min-w-0">{user.name}</p>
-                <button type="button" onClick={onLogout} aria-label="Logg ut" className="text-ink-faint hover:text-ink p-2.5 rounded-lg hover:bg-surface-100 transition-colors shrink-0">
+                <button type="button" onClick={onLogout} aria-label="Logg ut" className="text-ink-muted hover:text-ink p-2.5 rounded-lg hover:bg-surface-100 transition-colors shrink-0">
                     <LogOut size={20} />
                 </button>
             </div>

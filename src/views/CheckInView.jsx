@@ -83,7 +83,7 @@ const getEntryImages = (entry) => {
 const WeightDelta = ({ current, previous, className = '' }) => {
     const delta = formatWeightDelta(current, previous);
     if (!delta) return null;
-    const toneClass = delta.tone === 'down' ? 'text-success' : delta.tone === 'up' ? 'text-ink' : 'text-ink-muted';
+    const toneClass = delta.tone === 'neutral' ? 'text-ink-muted' : 'text-ink';
     return <span className={`tabular-nums ${toneClass} ${className}`}>{delta.text}</span>;
 };
 
@@ -142,16 +142,12 @@ const CheckinFields = ({
             value={values.energy}
             onChange={(value) => onField('energy', value)}
             options={OPTIONS_1_TO_10}
-            colorize
-            scaleHints
         />
         <SegmentedControl
             label="Søvnkvalitet (1–10)"
             value={values.sleep}
             onChange={(value) => onField('sleep', value)}
             options={OPTIONS_1_TO_10}
-            colorize
-            scaleHints
         />
         <SegmentedControl
             label="Nøyaktighet (1–10)"
@@ -159,7 +155,6 @@ const CheckinFields = ({
             value={values.accuracy}
             onChange={(value) => onField('accuracy', value)}
             options={OPTIONS_1_TO_10}
-            colorize
             scaleHints
         />
 
@@ -798,7 +793,7 @@ const CheckInView = React.memo(({
                                         >
                                             <div className="min-w-0 flex-1">
                                                 <p className="font-medium truncate">{formatDateNO(entry.date)}</p>
-                                                <p className="text-xs text-ink-muted">
+                                                <p className="text-xs text-ink-muted tabular-nums">
                                                     {formatWeight(entry.weight)} kg
                                                     {previousWeight != null && (
                                                         <>
@@ -806,6 +801,8 @@ const CheckInView = React.memo(({
                                                             <WeightDelta current={entry.weight} previous={previousWeight} />
                                                         </>
                                                     )}
+                                                    {' · '}energi {entry.energy ?? '–'}
+                                                    {' · '}søvn {entry.sleep ?? '–'}
                                                 </p>
                                             </div>
                                             <ChevronDown size={18} className={`shrink-0 text-ink-faint transition-transform ${isExpanded ? 'rotate-180' : ''}`} />

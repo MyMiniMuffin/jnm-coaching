@@ -117,7 +117,7 @@ const FullscreenCompareModal = React.memo(({ before, after, daysDiff, weightDiff
             <footer className="absolute inset-x-0 bottom-0 z-[120] safe-area-pb">
                 <div className="flex items-center justify-center gap-2 sm:gap-4 p-3 sm:p-4">
                     {weightDiff && (
-                        <div className={`flex items-center gap-2 py-2 px-3 sm:px-4 rounded-full backdrop-blur-md ring-1 ring-white/10 ${parseFloat(weightDiff) < 0 ? 'bg-success/20 text-white' : 'bg-white/10 text-white'}`}>
+                        <div className="flex items-center gap-2 py-2 px-3 sm:px-4 rounded-full backdrop-blur-md ring-1 ring-white/10 bg-white/10 text-white">
                             {parseFloat(weightDiff) < 0 ? <TrendingDown size={18} /> : parseFloat(weightDiff) > 0 ? <TrendingUp size={18} /> : <Minus size={18} />}
                             <span className="font-semibold text-sm sm:text-base">
                                 {parseFloat(weightDiff) > 0 ? '+' : ''}{weightDiff.replace('.', ',')} kg
@@ -678,7 +678,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                                 {weightDiff && (
                                     <div>
                                         <p className="section-label mb-1">Vektendring</p>
-                                        <p className={`text-lg font-semibold flex items-center justify-center gap-1 ${parseFloat(weightDiff) < 0 ? 'text-success' : parseFloat(weightDiff) > 0 ? 'text-ink' : 'text-ink-muted'}`}>
+                                        <p className={`text-lg font-semibold flex items-center justify-center gap-1 ${parseFloat(weightDiff) === 0 ? 'text-ink-muted' : 'text-ink'}`}>
                                             {parseFloat(weightDiff) > 0 ? '+' : ''}{weightDiff.replace('.', ',')} kg
                                             {parseFloat(weightDiff) < 0 ? <TrendingDown size={18} /> : parseFloat(weightDiff) > 0 ? <TrendingUp size={18} /> : null}
                                         </p>

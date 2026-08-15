@@ -762,7 +762,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                     </div>
                     <p className="section-label">Ukentlig skrittmål</p>
                     <p className="text-2xl font-semibold mt-1">{(userData.stepGoal || 10000).toLocaleString('nb-NO')}</p>
-                    {isCoach && <p className="text-xs text-ink-muted mt-1.5">Endre i innstillinger</p>}
+                    <p className="text-xs text-ink-muted mt-1.5">{isCoach ? 'Endre i innstillinger' : 'Per uke'}</p>
                 </Card>
             </div>
 
@@ -786,7 +786,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                             </div>
                             <div>
                                 <div className="text-2xl font-semibold text-ink tabular-nums">{stats.avgAccuracy}</div>
-                                <div className="stat-label mt-1">Nøyakt.</div>
+                                <div className="stat-label mt-1">Plan</div>
                             </div>
                         </div>
 
@@ -794,7 +794,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                             const wc = parseFloat(stats.weightChange);
                             return (
                                 <div
-                                    className={`flex items-center justify-center gap-2 rounded-lg p-3 text-sm font-semibold ${wc < 0 ? 'bg-success/10 text-success' : wc > 0 ? 'bg-surface-100 text-ink' : 'bg-surface-100 text-ink-muted'}`}
+                                    className={`flex items-center justify-center gap-2 rounded-lg p-3 text-sm font-semibold ${wc === 0 ? 'bg-surface-100 text-ink-muted' : 'bg-surface-100 text-ink'}`}
                                 >
                                     {wc < 0 ? <TrendingDown size={18} /> : wc > 0 ? <TrendingUp size={18} /> : <Minus size={18} />}
                                     <span className="tabular-nums">

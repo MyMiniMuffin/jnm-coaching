@@ -533,7 +533,7 @@ input:focus, textarea:focus, select:focus, button:focus-visible {
 
     .app-content {
         width: 100%;
-        max-width: 52rem;
+        max-width: 56rem;
         margin-left: 0;
         margin-right: auto;
         padding: 1.75rem 2rem 2.75rem;

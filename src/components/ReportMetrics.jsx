@@ -5,7 +5,7 @@ const clampPercent = (value) => Math.max(0, Math.min(100, value));
 
 const ReportMetrics = React.memo(({ report, className = '' }) => {
     const metrics = [
-        { label: 'Nøyakt.', value: report.accuracy ?? 0, width: clampPercent((parseInt(report.accuracy, 10) || 0) * 10), color: 'bg-success' },
+        { label: 'Plan', value: report.accuracy ?? 0, width: clampPercent((parseInt(report.accuracy, 10) || 0) * 10), color: 'bg-ink/45' },
         { label: 'Energi', value: report.energy ?? 0, width: clampPercent((parseInt(report.energy, 10) || 0) * 10), color: 'bg-accent' },
         { label: 'Søvn', value: report.sleep ?? 0, width: clampPercent((parseInt(report.sleep, 10) || 0) * 10), color: 'bg-accent/60' },
         { label: 'Styrke', value: report.strengthSessions || 0, width: clampPercent(Math.round(((parseInt(report.strengthSessions, 10) || 0) / 7) * 100)), color: 'bg-ink/45' },

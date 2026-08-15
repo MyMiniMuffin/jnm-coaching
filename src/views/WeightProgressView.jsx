@@ -126,7 +126,7 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
             <div className="grid grid-cols-2 gap-4">
                 <Card className="p-5">
                     <p className="section-label mb-1">Endring</p>
-                    <div className={`text-2xl font-semibold flex items-center gap-2 ${isDown ? 'text-success' : isSame ? 'text-ink-muted' : 'text-ink'}`}>
+                    <div className={`text-2xl font-semibold flex items-center gap-2 ${isSame ? 'text-ink-muted' : 'text-ink'}`}>
                         {totalChange > 0 ? '+' : ''}{totalChange.replace('.', ',')} kg
                         {isDown ? <TrendingDown size={20} /> : isSame ? <Minus size={20} /> : <TrendingUp size={20} />}
                     </div>
@@ -257,7 +257,7 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
                                 </div>
                                 <div className="flex items-center gap-3">
                                     {prev && change !== 0 && (
-                                        <Badge variant={change < 0 ? 'success' : 'muted'}>
+                                        <Badge variant="muted">
                                             {change < 0 ? <TrendingDown size={12}/> : <TrendingUp size={12}/>}
                                             {change > 0 ? '+' : ''}{change.toFixed(1).replace('.', ',')}
                                         </Badge>
