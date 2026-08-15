@@ -4,13 +4,14 @@ import {
   Activity, AlertCircle, Save, Pencil, ChevronDown, Plus
 } from 'lucide-react';
 import { Card, Badge, Button, EmptyState, IconButton, InputLabel, SegmentedControl, SessionStepper } from '../components/ui';
-import ImageModal from '../components/ImageModal';
 import ReportMetrics from '../components/ReportMetrics';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
 import { api } from '../lib/api';
 import { formatDateNO, formatWeight, formatWeightDelta, getThumbnail } from '../lib/formatters';
 import { OPTIONS_1_TO_10, INITIAL_FORM_DATA } from '../lib/config';
+
+const ImageModal = React.lazy(() => import('../components/ImageModal'));
 
 const REPORT_BATCH_SIZE = 20;
 
@@ -598,7 +599,9 @@ const CheckInView = React.memo(({
     return (
         <div className={`space-y-5 animate-slide-up ${showForm ? 'pb-52 lg:pb-24' : 'pb-32 lg:pb-8'}`}>
             {lightbox.isOpen && (
-                <ImageModal images={lightbox.images} initialIndex={lightbox.index} onClose={closeLightbox} />
+                <React.Suspense fallback={null}>
+                    <ImageModal images={lightbox.images} initialIndex={lightbox.index} onClose={closeLightbox} />
+                </React.Suspense>
             )}
 
             <div className="px-1">

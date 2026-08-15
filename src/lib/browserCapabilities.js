@@ -1,10 +1,9 @@
 const VIEW_PREFETCHERS = [
     () => import('../views/DashboardView'),
     () => import('../views/CheckInView'),
-    () => import('../views/GalleryView'),
     () => import('../views/PlanSection'),
-    () => import('../views/WeightProgressView'),
-    () => import('../views/CoachDashboard')
+    () => import('../views/GalleryView'),
+    () => import('../views/WeightProgressView')
 ];
 
 const shouldPrefetchViews = () => {
@@ -15,13 +14,16 @@ const shouldPrefetchViews = () => {
     return !['slow-2g', '2g'].includes(connection.effectiveType);
 };
 
-export const prefetchViews = () => {
+export const prefetchViews = (role) => {
     if (!shouldPrefetchViews()) return;
-    VIEW_PREFETCHERS.forEach((prefetch, index) => {
+    const prefetchers = role === 'coach'
+        ? [() => import('../views/CoachDashboard'), ...VIEW_PREFETCHERS]
+        : VIEW_PREFETCHERS;
+    prefetchers.forEach((prefetch, index) => {
         setTimeout(() => {
             if (typeof document !== 'undefined' && document.hidden) return;
             prefetch();
-        }, index * 250);
+        }, index * 180);
     });
 };
 

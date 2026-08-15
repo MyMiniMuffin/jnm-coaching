@@ -29,7 +29,7 @@ const persistCacheItem = (key, item, version, generation) => {
 export const cache = {
     store: {},
 
-    get: (key) => {
+    get: (key, { allowStale = false } = {}) => {
         let item = cache.store[key];
         if (!item) {
             try {
@@ -44,13 +44,8 @@ export const cache = {
         }
         if (!item) return null;
 
-        // Sjekk om cache har utløpt
-        const now = Date.now();
-        if (now - item.timestamp > CACHE_TTL) {
-            delete cache.store[key];
-            try { localStorage.removeItem(CACHE_PREFIX + key); } catch (e) {}
-            return null;
-        }
+        const expired = Date.now() - item.timestamp > CACHE_TTL;
+        if (expired && !allowStale) return null;
 
         return item.data;
     },
@@ -240,7 +235,7 @@ export const api = {
             return result;
         } catch (e) {
             console.error('[API] getUserData feil:', e);
-            const cached = cache.get(cacheKey);
+            const cached = cache.get(cacheKey, { allowStale: true });
             if (cached) return { authError: false, data: cached, fromCache: true, networkError: true };
             return { authError: false, networkError: true };
         }

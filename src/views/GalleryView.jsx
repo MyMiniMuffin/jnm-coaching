@@ -3,13 +3,14 @@ import { createPortal } from 'react-dom';
 import { Camera, X, Loader2, Plus, Eye, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { Card, Button, EmptyState, IconButton, TextField } from '../components/ui';
-import ImageModal from '../components/ImageModal';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
 import { useEscapeKey, useFocusTrap } from '../hooks';
 import { api } from '../lib/api';
 import { formatDateNO, formatWeight, getThumbnail, getFullSizeImage } from '../lib/formatters';
 import { IMAGE_ZOOM_PROPS } from '../lib/zoomConfig';
+
+const ImageModal = React.lazy(() => import('../components/ImageModal'));
 
 const IMAGE_BATCH_SIZE = 60;
 const TRANSFORM_WRAPPER_STYLE = { width: "100%", height: "100%" };
@@ -529,11 +530,13 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
             {uploadModal}
 
             {lightbox.isOpen && (
-                <ImageModal 
-                    images={lightbox.images} 
-                    initialIndex={lightbox.index} 
-                    onClose={closeLightbox} 
-                />
+                <React.Suspense fallback={null}>
+                    <ImageModal
+                        images={lightbox.images}
+                        initialIndex={lightbox.index}
+                        onClose={closeLightbox}
+                    />
+                </React.Suspense>
             )}
 
             {/* Fullskjerm sammenligning */}
@@ -733,7 +736,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                                             alt={`Fremgang ${formatDateNO(img.date)}`}
                                         />
                                         {isSelected && (
-                                            <div className="absolute top-1 right-1 bg-ink text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
+                                            <div className="absolute top-1 right-1 bg-ink text-white text-[10px] font-semibold px-1.5 py-0.5 rounded">
                                                 {isBefore ? 'FØR' : 'ETTER'}
                                             </div>
                                         )}

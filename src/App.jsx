@@ -42,21 +42,42 @@ const mergeUserData = (previous, incoming) => {
     };
 };
 
+const readBootUser = () => {
+    const user = getSession();
+    return user && getToken() ? user : null;
+};
+
+const readCachedUserData = (userId) => {
+    const cached = cache.get(`user-data-${userId}`, { allowStale: true });
+    return isPlainObject(cached) ? mergeUserData(INITIAL_DATA_STATE, cached) : INITIAL_DATA_STATE;
+};
+
 const App = () => {
     const toast = useToast();
     const isOnline = useOnlineStatus();
     const isDesktop = useDesktop();
-    const [currentUser, setCurrentUser] = useState(null);
+    const [currentUser, setCurrentUser] = useState(readBootUser);
     const [activeTab, setActiveTab] = useState('dashboard');
-    const [allUsers, setAllUsers] = useState([]);
-    const [viewingClient, setViewingClient] = useState(null);
+    const [allUsers, setAllUsers] = useState(() => {
+        const user = readBootUser();
+        if (user?.role !== 'coach') return [];
+        const cached = cache.get('users-list', { allowStale: true });
+        return Array.isArray(cached) ? cached : [];
+    });
+    const [viewingClient, setViewingClient] = useState(() => {
+        const user = readBootUser();
+        return user?.role === 'athlete' ? user : null;
+    });
 
     const [isClientLoading, setIsClientLoading] = useState(false);
     const [showWeightHistory, setShowWeightHistory] = useState(false);
     const selectClientRef = useRef(0);
 
-    const [currentData, setCurrentData] = useState(INITIAL_DATA_STATE);
-    const [isLoading, setIsLoading] = useState(true);
+    const [currentData, setCurrentData] = useState(() => {
+        const user = readBootUser();
+        return user?.role === 'athlete' ? readCachedUserData(user.id) : INITIAL_DATA_STATE;
+    });
+    const [isLoading, setIsLoading] = useState(false);
     const [isUsersLoading, setIsUsersLoading] = useState(false);
     const [showReauthPrompt, setShowReauthPrompt] = useState(false);
     const [notificationPermission, setNotificationPermission] = useState(getNotificationPermission);
@@ -68,7 +89,7 @@ const App = () => {
     const latestUiStateRef = useRef(null);
     const hasRestoredUiStateRef = useRef(false);
     const restoreScrollYRef = useRef(null);
-    const skipNextAthleteFetchRef = useRef(false);
+    const skipNextAthleteFetchRef = useRef(readBootUser()?.role === 'athlete');
     const swipeEdgeTimeoutRef = useRef(null);
     // Speiler currentData slik at handleSelectClient kan lese siste data uten å bli
     // gjenskapt ved hver dataendring (som ellers bryter React.memo på CoachDashboard).
@@ -254,8 +275,7 @@ const App = () => {
                 if (sessionUser.role === 'athlete') {
                     skipNextAthleteFetchRef.current = true;
                     setViewingClient(sessionUser);
-                    // Start datahenting parallelt (unngå ekstra renderingssyklus)
-                    api.getUserData(sessionUser.id).then(result => {
+                    api.getUserData(sessionUser.id, false).then(result => {
                         if (result.authError) {
                             setShowReauthPrompt(true);
                         } else if (result.data) {
@@ -314,10 +334,10 @@ const App = () => {
         if (!currentUser) return;
 
         if ('requestIdleCallback' in window) {
-            const idleId = requestIdleCallback(prefetchViews, { timeout: 3000 });
+            const idleId = requestIdleCallback(() => prefetchViews(currentUser.role), { timeout: 3000 });
             return () => cancelIdleCallback(idleId);
         } else {
-            const timeoutId = setTimeout(prefetchViews, 2000);
+            const timeoutId = setTimeout(() => prefetchViews(currentUser.role), 2000);
             return () => clearTimeout(timeoutId);
         }
     }, [currentUser]);
@@ -676,8 +696,14 @@ const App = () => {
         const { preserveView = false } = options;
         const requestId = ++selectClientRef.current;
         const previousData = currentDataRef.current;
+        const cachedData = cache.get(`user-data-${client.id}`, { allowStale: true });
         setViewingClient(client);
-        setIsClientLoading(true);
+        if (isPlainObject(cachedData)) {
+            setCurrentData(mergeUserData(INITIAL_DATA_STATE, cachedData));
+            setIsClientLoading(false);
+        } else {
+            setIsClientLoading(true);
+        }
         if (!preserveView) {
             setShowWeightHistory(false);
             setActiveTab('dashboard');
@@ -693,14 +719,16 @@ const App = () => {
                 return;
             }
             if (result.data) {
-                setCurrentData(mergeUserData(previousData, result.data));
-            } else if (result.networkError) {
+                setCurrentData(mergeUserData(INITIAL_DATA_STATE, result.data));
+            } else if (result.networkError && !isPlainObject(cache.get(`user-data-${client.id}`, { allowStale: true }))) {
                 setCurrentData(previousData);
             }
         } catch (e) {
             if (requestId !== selectClientRef.current) return;
             console.error('Kunne ikke hente klientdata:', e);
-            setCurrentData(previousData);
+            if (!isPlainObject(cache.get(`user-data-${client.id}`, { allowStale: true }))) {
+                setCurrentData(previousData);
+            }
         }
 
         setIsClientLoading(false);
@@ -970,16 +998,10 @@ const App = () => {
     const handleCloseWeightHistory = useCallback(() => setShowWeightHistory(false), []);
 
     const handleTabChange = useCallback((tab) => {
-        const nextIndex = TAB_ORDER.indexOf(tab);
-        const previousIndex = TAB_ORDER.indexOf(activeTab);
-        if (nextIndex !== -1 && previousIndex !== -1 && nextIndex !== previousIndex) {
-            setSwipeDirection(nextIndex > previousIndex ? 'left' : 'right');
-        } else {
-            setSwipeDirection('none');
-        }
+        setSwipeDirection('none');
         setActiveTab(tab);
         setShowWeightHistory(false);
-    }, [activeTab]);
+    }, []);
 
     // Swipe og pull-to-refresh hooks MÅ være før alle returns
     const currentTabIndex = TAB_ORDER.indexOf(activeTab);
@@ -1205,7 +1227,7 @@ const App = () => {
                     <ViewErrorBoundary><Suspense fallback={<ViewSkeleton tab={activeTab} />}>
                         <div
                             key={activeTab}
-                            className={`view-enter view-enter-${swipeDirection} ${swipeEdge ? `view-edge-${swipeEdge}` : ''}`}
+                            className={`${swipeDirection !== 'none' ? `view-enter view-enter-${swipeDirection}` : ''} ${swipeEdge ? `view-edge-${swipeEdge}` : ''}`}
                         >
                             {activeTab === 'dashboard' ? (
                                 showWeightHistory ? (

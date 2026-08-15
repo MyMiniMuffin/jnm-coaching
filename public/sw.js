@@ -1,3 +1,5 @@
+const ASSET_CACHE = 'jnm-assets-v1';
+
 self.addEventListener('install', () => {
   self.skipWaiting();
 });
@@ -51,6 +53,25 @@ self.addEventListener('push', (event) => {
     self.registration.showNotification(title, options),
     applyAppBadge(badgeCount)
   ]));
+});
+
+self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
+
+  const url = new URL(event.request.url);
+  if (url.origin !== self.location.origin || !url.pathname.startsWith('/assets/')) return;
+
+  event.respondWith((async () => {
+    const cache = await caches.open(ASSET_CACHE);
+    const cached = await cache.match(event.request);
+    if (cached) return cached;
+
+    const response = await fetch(event.request);
+    if (response.ok) {
+      cache.put(event.request, response.clone());
+    }
+    return response;
+  })());
 });
 
 self.addEventListener('notificationclick', (event) => {
