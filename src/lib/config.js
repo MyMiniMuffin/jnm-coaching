@@ -26,7 +26,7 @@ export const QUOTES = [
 export const OPTIONS_1_TO_10 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 export const OPTIONS_0_TO_7 = [0, 1, 2, 3, 4, 5, 6, 7];
 export const INITIAL_FORM_DATA = {
-    weight: '', sleep: 5, energy: 5, accuracy: 10,
+    weight: '', sleep: 5, energy: 5, accuracy: 5,
     strengthSessions: 0, cardioSessions: 0,
     stepsReached: false, takenSupplements: false,
     comment: '', images: []

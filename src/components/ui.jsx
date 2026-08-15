@@ -7,9 +7,10 @@ const SEGMENT_COLORS = (n) => {
     return 'bg-error text-white';
 };
 
-export const SegmentedControl = React.memo(({ label, value, onChange, options, colorize = false }) => (
+export const SegmentedControl = React.memo(({ label, hint, value, onChange, options, colorize = false, scaleHints = false }) => (
     <div>
         <label className="block text-sm font-medium text-ink-muted mb-2">{label}</label>
+        {hint && <p className="text-xs text-ink-muted -mt-1 mb-2">{hint}</p>}
         <div className="flex gap-1 rounded-xl bg-surface-100 p-1">
             {options.map(opt => {
                 const isSelected = Number(value) === Number(opt);
@@ -19,7 +20,7 @@ export const SegmentedControl = React.memo(({ label, value, onChange, options, c
                         key={opt}
                         type="button"
                         onClick={() => onChange(opt)}
-                        className={`flex-1 min-h-[42px] py-2 rounded-lg text-sm font-semibold transition-all duration-150 active:scale-95 tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 ${
+                        className={`flex-1 min-h-[44px] py-2 rounded-lg text-sm font-semibold transition-all duration-150 active:scale-95 tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 ${
                             isSelected
                                 ? `${selectedCls} shadow-sm`
                                 : 'text-ink-muted hover:bg-white/70'
@@ -30,8 +31,45 @@ export const SegmentedControl = React.memo(({ label, value, onChange, options, c
                 );
             })}
         </div>
+        {scaleHints && (
+            <div className="mt-1.5 flex justify-between text-[11px] text-ink-muted">
+                <span>Lav</span>
+                <span>Middels</span>
+                <span>Høy</span>
+            </div>
+        )}
     </div>
 ));
+
+export const SessionStepper = React.memo(({ label, value, onChange, min = 0, max = 7 }) => {
+    const numeric = Number(value) || 0;
+    return (
+        <div>
+            <p className="block text-sm font-medium text-ink-muted mb-2">{label}</p>
+            <div className="flex items-center gap-3">
+                <button
+                    type="button"
+                    aria-label={`Reduser ${label.toLowerCase()}`}
+                    disabled={numeric <= min}
+                    onClick={() => onChange(numeric - 1)}
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-surface-200 bg-surface-50 text-lg font-semibold text-ink disabled:cursor-not-allowed disabled:opacity-30"
+                >
+                    −
+                </button>
+                <span className="min-w-[2rem] text-center text-2xl font-semibold tabular-nums">{numeric}</span>
+                <button
+                    type="button"
+                    aria-label={`Øk ${label.toLowerCase()}`}
+                    disabled={numeric >= max}
+                    onClick={() => onChange(numeric + 1)}
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-surface-200 bg-surface-50 text-lg font-semibold text-ink disabled:cursor-not-allowed disabled:opacity-30"
+                >
+                    +
+                </button>
+            </div>
+        </div>
+    );
+});
 
 export const Skeleton = React.memo(({ className }) => (
     <div className={`bg-surface-200 animate-pulse rounded-xl ${className}`} />

@@ -1,6 +1,18 @@
 // --- Helpers ---
 export const formatWeight = (val) => (!val ? '-' : parseFloat(val).toFixed(1).replace('.', ','));
 
+export const formatWeightDelta = (current, previous) => {
+    const next = parseFloat(current);
+    const last = parseFloat(previous);
+    if (isNaN(next) || isNaN(last)) return null;
+    const delta = next - last;
+    if (Math.abs(delta) < 0.05) return { text: 'uendret', tone: 'neutral' };
+    return {
+        text: `${delta > 0 ? '+' : ''}${delta.toFixed(1).replace('.', ',')} kg`,
+        tone: delta < 0 ? 'down' : 'up'
+    };
+};
+
 export const formatDateNO = (dateString) => {
     if (!dateString) return '';
     // Håndter Date-objekter

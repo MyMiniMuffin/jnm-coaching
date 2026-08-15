@@ -1,21 +1,267 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   Check, Camera, X, Trash2, Loader2, Scale,
-  Activity, Footprints, AlertCircle, Save, Pencil
+  Activity, AlertCircle, Save, Pencil, ChevronDown, Plus
 } from 'lucide-react';
-import { Card, Badge, Button, EmptyState, IconButton, InputLabel, SegmentedControl } from '../components/ui';
+import { Card, Badge, Button, EmptyState, IconButton, InputLabel, SegmentedControl, SessionStepper } from '../components/ui';
 import ImageModal from '../components/ImageModal';
 import ReportMetrics from '../components/ReportMetrics';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
 import { api } from '../lib/api';
-import { formatDateNO, formatWeight, getThumbnail } from '../lib/formatters';
-import { OPTIONS_1_TO_10, OPTIONS_0_TO_7, INITIAL_FORM_DATA } from '../lib/config';
+import { formatDateNO, formatWeight, formatWeightDelta, getThumbnail } from '../lib/formatters';
+import { OPTIONS_1_TO_10, INITIAL_FORM_DATA } from '../lib/config';
 
 const REPORT_BATCH_SIZE = 20;
 
-const CheckInView = React.memo(({ checkins = [], onNewCheckin, onDelete, onUpdate, canEdit = false, isReadOnly, canDelete = !isReadOnly, stepGoal, hideForm = false, draftKey = 'default', uploadUserId }) => {
-    const [step, setStep] = useState('form');
+const getMonday = (value = new Date()) => {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    date.setHours(0, 0, 0, 0);
+    const day = date.getDay();
+    date.setDate(date.getDate() + (day === 0 ? -6 : 1 - day));
+    return date;
+};
+
+const parseEntryDate = (entry) => {
+    if (!entry) return null;
+    if (entry.timestamp) {
+        const fromTimestamp = new Date(entry.timestamp);
+        if (!Number.isNaN(fromTimestamp.getTime())) return fromTimestamp;
+    }
+    if (entry.date) {
+        const raw = String(entry.date);
+        const fromDate = new Date(raw.length === 10 ? `${raw}T12:00:00` : raw);
+        if (!Number.isNaN(fromDate.getTime())) return fromDate;
+    }
+    return null;
+};
+
+const isSameWeek = (a, b = new Date()) => {
+    const left = getMonday(a);
+    const right = getMonday(b);
+    return Boolean(left && right && left.getTime() === right.getTime());
+};
+
+const formatWeekRange = (fromDate = new Date()) => {
+    const start = getMonday(fromDate);
+    if (!start) return '';
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    const startLabel = start.toLocaleDateString('no-NO', { day: 'numeric', month: 'short' });
+    const endLabel = end.toLocaleDateString('no-NO', { day: 'numeric', month: 'short' });
+    return `${startLabel} – ${endLabel}`;
+};
+
+const getPlanWeek = (startDate, totalWeeks = 12) => {
+    if (!startDate) return null;
+    const start = new Date(startDate);
+    if (Number.isNaN(start.getTime())) return null;
+    const days = Math.floor((Date.now() - start.getTime()) / (1000 * 60 * 60 * 24));
+    if (days < 0) return 1;
+    return Math.min(Math.floor(days / 7) + 1, totalWeeks || 12);
+};
+
+const getEntryImages = (entry) => {
+    let imageArray = [];
+    if (entry?.images) {
+        if (typeof entry.images === 'string') {
+            try {
+                imageArray = JSON.parse(entry.images);
+            } catch (e) {
+                imageArray = [];
+            }
+        } else if (Array.isArray(entry.images)) {
+            imageArray = entry.images;
+        }
+    } else if (entry?.image) {
+        imageArray = [entry.image];
+    }
+    return imageArray.filter(img => img && typeof img === 'string' && img.trim() !== '');
+};
+
+const WeightDelta = ({ current, previous, className = '' }) => {
+    const delta = formatWeightDelta(current, previous);
+    if (!delta) return null;
+    const toneClass = delta.tone === 'down' ? 'text-success' : delta.tone === 'up' ? 'text-ink' : 'text-ink-muted';
+    return <span className={`tabular-nums ${toneClass} ${className}`}>{delta.text}</span>;
+};
+
+const CheckinFields = ({
+    values,
+    onField,
+    lastWeight,
+    stepGoal,
+    weightError,
+    weightInputRef,
+    showImages = true,
+    images = [],
+    onPickImages,
+    onRemoveImage,
+    isUploading = false,
+    onOpenImage
+}) => (
+    <div className="space-y-5">
+        <div>
+            <InputLabel>Vekt (kg)</InputLabel>
+            <div className="relative">
+                <Scale className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" size={18} />
+                <input
+                    ref={weightInputRef}
+                    type="number"
+                    inputMode="decimal"
+                    step="0.1"
+                    min="20"
+                    max="500"
+                    required
+                    aria-invalid={!!weightError}
+                    aria-describedby={weightError ? 'weight-error' : undefined}
+                    value={values.weight}
+                    onChange={(event) => onField('weight', event.target.value)}
+                    className={`w-full pl-12 pr-4 py-3.5 bg-surface-50 border rounded-xl outline-none focus:ring-2 focus:ring-accent focus:border-accent font-medium text-lg placeholder-ink-faint ${weightError ? 'border-error/40' : 'border-surface-200'}`}
+                    placeholder="f.eks. 83.5"
+                />
+            </div>
+            {weightError ? (
+                <p id="weight-error" className="text-error text-xs mt-1.5">{weightError}</p>
+            ) : lastWeight != null && (
+                <p className="text-xs text-ink-muted mt-1.5">
+                    Forrige: {formatWeight(lastWeight)} kg
+                    {values.weight && (
+                        <>
+                            {' · '}
+                            <WeightDelta current={values.weight} previous={lastWeight} />
+                        </>
+                    )}
+                </p>
+            )}
+        </div>
+
+        <SegmentedControl
+            label="Energi (1–10)"
+            value={values.energy}
+            onChange={(value) => onField('energy', value)}
+            options={OPTIONS_1_TO_10}
+            colorize
+            scaleHints
+        />
+        <SegmentedControl
+            label="Søvnkvalitet (1–10)"
+            value={values.sleep}
+            onChange={(value) => onField('sleep', value)}
+            options={OPTIONS_1_TO_10}
+            colorize
+            scaleHints
+        />
+        <SegmentedControl
+            label="Nøyaktighet (1–10)"
+            hint="Hvor godt fulgte du mat- og treningsplanen denne uken?"
+            value={values.accuracy}
+            onChange={(value) => onField('accuracy', value)}
+            options={OPTIONS_1_TO_10}
+            colorize
+            scaleHints
+        />
+
+        <div className="grid grid-cols-2 gap-4">
+            <SessionStepper
+                label="Styrkeøkter"
+                value={values.strengthSessions}
+                onChange={(value) => onField('strengthSessions', value)}
+            />
+            <SessionStepper
+                label="Cardio"
+                value={values.cardioSessions}
+                onChange={(value) => onField('cardioSessions', value)}
+            />
+        </div>
+
+        <div className="space-y-3">
+            <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-colors ${values.stepsReached ? 'bg-success/10 border-success/20' : 'bg-surface-50 border-surface-200'}`}>
+                <input type="checkbox" checked={values.stepsReached} onChange={(event) => onField('stepsReached', event.target.checked)} className="sr-only" />
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${values.stepsReached ? 'bg-success text-white' : 'bg-surface-200 text-surface-200'}`}>
+                    <Check size={14} strokeWidth={2.5} />
+                </div>
+                <div>
+                    <p className="font-medium">Skrittmål oppnådd</p>
+                    <p className="text-sm text-ink-muted">{(stepGoal || 10000).toLocaleString('nb-NO')} skritt</p>
+                </div>
+            </label>
+            <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-colors ${values.takenSupplements ? 'bg-success/10 border-success/20' : 'bg-surface-50 border-surface-200'}`}>
+                <input type="checkbox" checked={values.takenSupplements} onChange={(event) => onField('takenSupplements', event.target.checked)} className="sr-only" />
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${values.takenSupplements ? 'bg-success text-white' : 'bg-surface-200 text-surface-200'}`}>
+                    <Check size={14} strokeWidth={2.5} />
+                </div>
+                <div>
+                    <p className="font-medium">Kosttilskudd tatt</p>
+                    <p className="text-sm text-ink-muted">Tatt jevnlig denne uken</p>
+                </div>
+            </label>
+        </div>
+
+        <div>
+            <InputLabel>Kommentar, valgfritt</InputLabel>
+            <textarea
+                value={values.comment}
+                onChange={(event) => onField('comment', event.target.value)}
+                maxLength={5000}
+                className="w-full px-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl h-28 outline-none resize-none focus:ring-2 focus:ring-accent focus:border-accent"
+                placeholder="Hvordan har uken vært?"
+            />
+        </div>
+
+        {showImages && (
+            <div>
+                <InputLabel>Bilder, valgfritt</InputLabel>
+                {images.length > 0 && (
+                    <div className="grid grid-cols-4 gap-2 mb-3">
+                        {images.map((img, idx) => (
+                            <div key={`${img}-${idx}`} className="relative aspect-square">
+                                <img
+                                    src={getThumbnail(img)}
+                                    className="w-full h-full object-cover rounded-lg cursor-pointer"
+                                    alt={`Forhåndsvisning ${idx + 1}`}
+                                    onClick={() => onOpenImage?.(images, idx)}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => onRemoveImage(idx)}
+                                    aria-label="Fjern bilde"
+                                    className="absolute -top-1.5 -right-1.5 bg-ink text-white p-1.5 rounded-full"
+                                >
+                                    <X size={14} />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                )}
+                <label className={`flex items-center justify-center gap-2 rounded-xl border border-dashed border-surface-200 px-4 py-3 text-sm font-medium text-ink-muted transition-colors hover:border-surface-300 hover:bg-surface-50 ${isUploading ? 'pointer-events-none opacity-50' : 'cursor-pointer'}`}>
+                    {isUploading ? <Loader2 className="animate-spin" size={18} /> : <Camera size={18} />}
+                    {isUploading ? 'Laster opp…' : 'Legg til bilde'}
+                    <input type="file" accept="image/*" multiple className="sr-only" onChange={onPickImages} />
+                </label>
+            </div>
+        )}
+    </div>
+);
+
+const CheckInView = React.memo(({
+    checkins = [],
+    onNewCheckin,
+    onDelete,
+    onUpdate,
+    canEdit = false,
+    isReadOnly,
+    canDelete = !isReadOnly,
+    stepGoal,
+    hideForm = false,
+    draftKey = 'default',
+    uploadUserId,
+    startDate,
+    totalWeeks
+}) => {
+    const toast = useToast();
+    const [composing, setComposing] = useState(false);
     const [lightbox, setLightbox] = useState({ isOpen: false, images: [], index: 0 });
     const [isCompressing, setIsCompressing] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
@@ -28,16 +274,24 @@ const CheckInView = React.memo(({ checkins = [], onNewCheckin, onDelete, onUpdat
     const [editError, setEditError] = useState('');
     const [editWeightError, setEditWeightError] = useState('');
     const [isSavingEdit, setIsSavingEdit] = useState(false);
+    const [expandedIds, setExpandedIds] = useState(() => new Set());
     const weightInputRef = React.useRef(null);
-    const successResetTimeoutRef = React.useRef(null);
     const confirmDialog = useConfirm();
     const storageKey = `jnm_checkin_draft_${draftKey}`;
 
-    useEffect(() => () => {
-        if (successResetTimeoutRef.current) {
-            clearTimeout(successResetTimeoutRef.current);
-        }
-    }, []);
+    const sortedCheckins = Array.isArray(checkins) ? checkins : [];
+    const thisWeekReport = useMemo(
+        () => sortedCheckins.find(entry => isSameWeek(parseEntryDate(entry))) || null,
+        [sortedCheckins]
+    );
+    const featuredReport = thisWeekReport || ((isReadOnly || hideForm) ? sortedCheckins[0] || null : null);
+    const olderReports = useMemo(
+        () => featuredReport ? sortedCheckins.filter(entry => entry.id !== featuredReport.id) : sortedCheckins,
+        [sortedCheckins, featuredReport]
+    );
+    const showForm = !isReadOnly && !hideForm && (composing || !thisWeekReport);
+    const planWeek = getPlanWeek(startDate, totalWeeks);
+    const weekRange = formatWeekRange(featuredReport ? parseEntryDate(featuredReport) : new Date());
 
     useEffect(() => {
         if (isReadOnly || hideForm) return;
@@ -47,6 +301,7 @@ const CheckInView = React.memo(({ checkins = [], onNewCheckin, onDelete, onUpdat
                 const parsedDraft = JSON.parse(savedDraft);
                 setFormData(prev => ({ ...prev, ...parsedDraft }));
                 setRestoredDraft(true);
+                if (thisWeekReport) setComposing(true);
             }
         } catch (e) {
             console.error('[CheckIn] Kunne ikke laste utkast:', e);
@@ -54,7 +309,7 @@ const CheckInView = React.memo(({ checkins = [], onNewCheckin, onDelete, onUpdat
     }, [storageKey, isReadOnly, hideForm]);
 
     useEffect(() => {
-        if (isReadOnly || hideForm) return;
+        if (isReadOnly || hideForm || !showForm) return;
 
         const hasDraftContent =
             formData.weight ||
@@ -81,7 +336,7 @@ const CheckInView = React.memo(({ checkins = [], onNewCheckin, onDelete, onUpdat
         }, 350);
 
         return () => clearTimeout(timeoutId);
-    }, [formData, storageKey, isReadOnly, hideForm]);
+    }, [formData, storageKey, isReadOnly, hideForm, showForm]);
 
     const closeLightbox = useCallback(() => {
         setLightbox(prev => ({ ...prev, isOpen: false }));
@@ -93,6 +348,7 @@ const CheckInView = React.memo(({ checkins = [], onNewCheckin, onDelete, onUpdat
 
     const handleImageUpload = useCallback(async (e) => {
         const files = Array.from(e.target.files);
+        e.target.value = '';
         if (files.length === 0) return;
         if (!uploadUserId) {
             setErrorMessage('Mangler bruker for opplasting. Last inn siden på nytt og prøv igjen.');
@@ -139,6 +395,39 @@ const CheckInView = React.memo(({ checkins = [], onNewCheckin, onDelete, onUpdat
         setFormData(prev => ({ ...prev, images: prev.images.filter((_, index) => index !== indexToRemove) }));
     }, []);
 
+    const lastWeight = useMemo(() => {
+        const last = sortedCheckins.find(c => c.weight && parseFloat(c.weight) > 0);
+        return last ? parseFloat(last.weight) : null;
+    }, [sortedCheckins]);
+
+    const previousWeightFor = useCallback((entry) => {
+        const index = sortedCheckins.findIndex(item => item.id === entry.id);
+        const older = sortedCheckins.slice(index + 1).find(item => item.weight && parseFloat(item.weight) > 0);
+        return older ? parseFloat(older.weight) : null;
+    }, [sortedCheckins]);
+
+    const updateField = useCallback((field, value) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+        if (field === 'weight') setWeightFieldError('');
+    }, []);
+
+    const dismissDraftNotice = useCallback(() => setRestoredDraft(false), []);
+
+    const startCompose = useCallback(() => {
+        setFormData(INITIAL_FORM_DATA);
+        setRestoredDraft(false);
+        setErrorMessage('');
+        setWeightFieldError('');
+        setComposing(true);
+    }, []);
+
+    const cancelCompose = useCallback(() => {
+        setComposing(false);
+        setFormData(INITIAL_FORM_DATA);
+        setRestoredDraft(false);
+        try { localStorage.removeItem(storageKey); } catch (e) {}
+    }, [storageKey]);
+
     const handleSubmit = useCallback(async (e) => {
         e.preventDefault();
         const weightNum = parseFloat(formData.weight);
@@ -151,73 +440,39 @@ const CheckInView = React.memo(({ checkins = [], onNewCheckin, onDelete, onUpdat
         setIsSubmitting(true);
         setErrorMessage('');
         try {
-            const newEntry = { 
-                id: Date.now(), 
-                date: new Date().toISOString().split('T')[0], 
-                timestamp: Date.now(), 
-                ...formData 
+            const newEntry = {
+                id: Date.now(),
+                date: new Date().toISOString().split('T')[0],
+                timestamp: Date.now(),
+                ...formData
             };
             await onNewCheckin(newEntry);
             try { localStorage.removeItem(storageKey); } catch (e) {}
             setRestoredDraft(false);
-            setStep('success');
-            if (successResetTimeoutRef.current) {
-                clearTimeout(successResetTimeoutRef.current);
-            }
-            successResetTimeoutRef.current = setTimeout(() => {
-                setStep('form');
-                setFormData(INITIAL_FORM_DATA);
-                successResetTimeoutRef.current = null;
-            }, 2500);
+            setComposing(false);
+            setFormData(INITIAL_FORM_DATA);
+            toast('Rapport sendt');
         } catch (error) {
             console.error('Checkin-innsending feilet:', error);
             setErrorMessage('Kunne ikke sende rapporten. Prøv igjen.');
         } finally {
             setIsSubmitting(false);
         }
-    }, [formData, onNewCheckin, storageKey]);
+    }, [formData, onNewCheckin, storageKey, toast]);
 
-    const sortedCheckins = Array.isArray(checkins) ? checkins : [];
-
-    // Rendre kun et vindu av historikken — 150 rapporter med metrikker og bilder
-    // koster unødig mye ved hver render av dette viewet.
     const [visibleReportCount, setVisibleReportCount] = useState(REPORT_BATCH_SIZE);
     const visibleCheckins = useMemo(
-        () => sortedCheckins.slice(0, visibleReportCount),
-        [sortedCheckins, visibleReportCount]
+        () => olderReports.slice(0, visibleReportCount),
+        [olderReports, visibleReportCount]
     );
-    const hasMoreReports = visibleReportCount < sortedCheckins.length;
+    const hasMoreReports = visibleReportCount < olderReports.length;
     const handleShowMoreReports = useCallback(() => {
         setVisibleReportCount(count => count + REPORT_BATCH_SIZE);
     }, []);
 
-    const lastWeight = useMemo(() => {
-        const last = sortedCheckins.find(c => c.weight && parseFloat(c.weight) > 0);
-        return last ? parseFloat(last.weight) : null;
-    }, [sortedCheckins]);
-
-    // Form field handlers - memoized
-    const updateField = useCallback((field, value) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
-    }, []);
-
-    // Stabile onChange-handlers for å ikke bryte React.memo på SelectField
-    const handleWeightChange = useCallback((e) => {
-        updateField('weight', e.target.value);
-        if (weightFieldError) setWeightFieldError('');
-    }, [updateField, weightFieldError]);
-    const handleEnergyChange = useCallback((val) => updateField('energy', val), [updateField]);
-    const handleSleepChange = useCallback((val) => updateField('sleep', val), [updateField]);
-    const handleAccuracyChange = useCallback((val) => updateField('accuracy', val), [updateField]);
-    const handleStrengthChange = useCallback((val) => updateField('strengthSessions', val), [updateField]);
-    const handleCardioChange = useCallback((val) => updateField('cardioSessions', val), [updateField]);
-    const handleStepsChange = useCallback((e) => updateField('stepsReached', e.target.checked), [updateField]);
-    const handleSupplementsChange = useCallback((e) => updateField('takenSupplements', e.target.checked), [updateField]);
-    const handleCommentChange = useCallback((e) => updateField('comment', e.target.value), [updateField]);
-    const dismissDraftNotice = useCallback(() => setRestoredDraft(false), []);
-
     const startEdit = useCallback((entry) => {
         setEditingId(entry.id);
+        setExpandedIds(prev => new Set(prev).add(entry.id));
         setEditForm({
             weight: entry.weight != null ? String(entry.weight) : '',
             energy: String(entry.energy ?? 5),
@@ -242,6 +497,7 @@ const CheckInView = React.memo(({ checkins = [], onNewCheckin, onDelete, onUpdat
 
     const updateEditField = useCallback((field, value) => {
         setEditForm(prev => prev ? { ...prev, [field]: value } : prev);
+        if (field === 'weight') setEditWeightError('');
     }, []);
 
     const submitEdit = useCallback(async (e) => {
@@ -277,26 +533,141 @@ const CheckInView = React.memo(({ checkins = [], onNewCheckin, onDelete, onUpdat
         }
     }, [editForm, editingId, onUpdate]);
 
-    if (step === 'success') {
+    const toggleExpanded = useCallback((id) => {
+        setExpandedIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    }, []);
+
+    const renderReportBody = (entry) => {
+        const displayImages = getEntryImages(entry);
         return (
-            <div className="flex flex-col items-center justify-center h-[60vh] animate-scale-in text-center px-6">
-                <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-xl bg-success/10 text-success">
-                    <Check size={32} strokeWidth={2.5} />
-                </div>
-                <h2 className="text-[2rem] font-display mb-2">Rapport sendt</h2>
-                <p className="text-ink-muted">Oppdateringen din er lagret</p>
-            </div>
+            <>
+                <ReportMetrics report={entry} className="mb-4" />
+                {entry.comment && (
+                    <p className="text-sm text-ink-muted bg-surface-50 p-3 rounded-lg mb-4">{entry.comment}</p>
+                )}
+                {displayImages.length > 0 && (
+                    <div className="flex gap-2 overflow-x-auto hide-scrollbar">
+                        {displayImages.map((img, idx) => (
+                            <img
+                                key={`${entry.id}-${idx}`}
+                                src={getThumbnail(img)}
+                                loading="lazy"
+                                className="w-16 h-16 object-cover rounded-lg cursor-pointer flex-none"
+                                alt={`Rapportbilde ${idx + 1}`}
+                                onClick={() => openLightbox(displayImages, idx)}
+                            />
+                        ))}
+                    </div>
+                )}
+            </>
         );
-    }
+    };
+
+    const renderEditForm = (entry) => (
+        <form onSubmit={submitEdit} className="space-y-5">
+            <div className="flex items-center justify-between">
+                <p className="font-medium">{formatDateNO(entry.date)}</p>
+                <span className="text-xs text-ink-muted">Redigerer</span>
+            </div>
+            <CheckinFields
+                values={editForm}
+                onField={updateEditField}
+                lastWeight={previousWeightFor(entry)}
+                stepGoal={stepGoal}
+                weightError={editWeightError}
+                showImages={false}
+            />
+            {editError && (
+                <div className="flex items-center gap-3 bg-error/10 border border-error/20 text-error px-4 py-3 rounded-xl text-sm">
+                    <AlertCircle size={18} />
+                    {editError}
+                </div>
+            )}
+            <div className="flex gap-2">
+                <Button type="button" variant="ghost" onClick={cancelEdit} disabled={isSavingEdit} className="flex-1">
+                    Avbryt
+                </Button>
+                <Button type="submit" disabled={isSavingEdit} className="flex-1">
+                    {isSavingEdit ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
+                    {isSavingEdit ? 'Lagrer...' : 'Lagre'}
+                </Button>
+            </div>
+        </form>
+    );
 
     return (
-        <div className="space-y-5 pb-32 lg:pb-8 animate-slide-up">
+        <div className={`space-y-5 animate-slide-up ${showForm ? 'pb-52 lg:pb-24' : 'pb-32 lg:pb-8'}`}>
             {lightbox.isOpen && (
                 <ImageModal images={lightbox.images} initialIndex={lightbox.index} onClose={closeLightbox} />
             )}
 
-            {!isReadOnly && !hideForm && (
-                <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="px-1">
+                <p className="section-label">{isReadOnly ? 'Siste rapport' : 'Denne uken'}</p>
+                <p className="text-sm text-ink-muted mt-1">
+                    {planWeek ? `Uke ${planWeek} · ${weekRange}` : weekRange}
+                </p>
+            </div>
+
+            {featuredReport && !showForm && (
+                <Card className="p-5">
+                    {editingId === featuredReport.id && editForm ? (
+                        renderEditForm(featuredReport)
+                    ) : (
+                        <>
+                            <div className="flex justify-between items-start mb-4">
+                                <div>
+                                    <p className="font-medium">{formatDateNO(featuredReport.date)}</p>
+                                    <p className="text-xs text-ink-muted">
+                                        {thisWeekReport ? 'Sendt denne uken' : 'Siste innsending'}
+                                        {previousWeightFor(featuredReport) != null && (
+                                            <>
+                                                {' · '}
+                                                <WeightDelta current={featuredReport.weight} previous={previousWeightFor(featuredReport)} />
+                                            </>
+                                        )}
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    {canEdit && onUpdate && (
+                                        <IconButton type="button" onClick={() => startEdit(featuredReport)} aria-label="Rediger rapport" tone="accent">
+                                            <Pencil size={16} />
+                                        </IconButton>
+                                    )}
+                                    {canDelete && onDelete && (
+                                        <IconButton
+                                            type="button"
+                                            onClick={async () => {
+                                                if (await confirmDialog('Slett denne rapporten?', { title: 'Slett rapport', confirmText: 'Slett', destructive: true })) {
+                                                    onDelete(featuredReport.id);
+                                                }
+                                            }}
+                                            aria-label="Slett rapport"
+                                            tone="danger"
+                                        >
+                                            <Trash2 size={16} />
+                                        </IconButton>
+                                    )}
+                                    <Badge className="tabular-nums">{formatWeight(featuredReport.weight)} kg</Badge>
+                                </div>
+                            </div>
+                            {renderReportBody(featuredReport)}
+                            {!isReadOnly && !hideForm && thisWeekReport && (
+                                <Button variant="secondary" size="sm" className="mt-5" onClick={startCompose}>
+                                    <Plus size={16} /> Send ny rapport
+                                </Button>
+                            )}
+                        </>
+                    )}
+                </Card>
+            )}
+
+            {showForm && (
+                <form id="weekly-checkin-form" onSubmit={handleSubmit} className="space-y-5">
                     {restoredDraft && (
                         <Card className="border-success/20 bg-success/10 p-4">
                             <div className="flex items-start justify-between gap-3">
@@ -318,148 +689,28 @@ const CheckInView = React.memo(({ checkins = [], onNewCheckin, onDelete, onUpdat
                     <Card className="p-5 space-y-5">
                         <div className="flex items-start justify-between gap-3">
                             <div>
-                                <h3 className="section-title">Ny ukesrapport</h3>
-                                <p className="text-sm text-ink-muted mt-1">Fyll ut denne ukens status først. Historikken ligger separat lenger ned.</p>
+                                <h3 className="section-title">{thisWeekReport ? 'Ny rapport' : 'Ukesrapport'}</h3>
+                                <p className="text-sm text-ink-muted mt-1">
+                                    {thisWeekReport ? 'Denne sendes i tillegg til rapporten som allerede er inne.' : 'Fyll ut status for uken. Du kan redigere etterpå.'}
+                                </p>
                             </div>
                             <span className="shrink-0 text-[11px] font-medium text-ink-faint bg-surface-100 px-2 py-1 rounded-full">
                                 Auto-lagret
                             </span>
                         </div>
-                        
-                        <div>
-                            <InputLabel>Vekt (kg)</InputLabel>
-                            <div className="relative">
-                                <Scale className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" size={18} />
-                                <input
-                                    ref={weightInputRef}
-                                    type="number"
-                                    inputMode="decimal"
-                                    step="0.1"
-                                    min="20"
-                                    max="500"
-                                    required
-                                    aria-invalid={!!weightFieldError}
-                                    aria-describedby={weightFieldError ? 'weight-error' : undefined}
-                                    value={formData.weight}
-                                    onChange={handleWeightChange}
-                                    className={`w-full pl-12 pr-4 py-3.5 bg-surface-50 border rounded-xl outline-none focus:ring-2 focus:ring-accent focus:border-accent font-medium text-lg placeholder-ink-faint ${weightFieldError ? 'border-error/40' : 'border-surface-200'}`}
-                                    placeholder="f.eks. 83.5"
-                                />
-                            </div>
-                            {weightFieldError ? (
-                                <p id="weight-error" className="text-error text-xs mt-1.5">{weightFieldError}</p>
-                            ) : lastWeight && (
-                                <p className="text-xs text-ink-muted mt-1.5">Forrige: {formatWeight(lastWeight)} kg</p>
-                            )}
-                        </div>
-
-                        <SegmentedControl
-                            label="Energi (1–10)"
-                            value={formData.energy}
-                            onChange={handleEnergyChange}
-                            options={OPTIONS_1_TO_10}
-                            colorize
+                        <CheckinFields
+                            values={formData}
+                            onField={updateField}
+                            lastWeight={lastWeight}
+                            stepGoal={stepGoal}
+                            weightError={weightFieldError}
+                            weightInputRef={weightInputRef}
+                            images={formData.images}
+                            onPickImages={handleImageUpload}
+                            onRemoveImage={removeImage}
+                            isUploading={isCompressing}
+                            onOpenImage={openLightbox}
                         />
-                        <SegmentedControl
-                            label="Søvnkvalitet (1–10)"
-                            value={formData.sleep}
-                            onChange={handleSleepChange}
-                            options={OPTIONS_1_TO_10}
-                            colorize
-                        />
-                        <SegmentedControl
-                            label="Nøyaktighet (1–10)"
-                            value={formData.accuracy}
-                            onChange={handleAccuracyChange}
-                            options={OPTIONS_1_TO_10}
-                            colorize
-                        />
-                        <div className="grid grid-cols-2 gap-4">
-                            <SegmentedControl
-                                label="Styrkeøkter"
-                                value={formData.strengthSessions}
-                                onChange={handleStrengthChange}
-                                options={OPTIONS_0_TO_7}
-                            />
-                            <SegmentedControl
-                                label="Cardio"
-                                value={formData.cardioSessions}
-                                onChange={handleCardioChange}
-                                options={OPTIONS_0_TO_7}
-                            />
-                        </div>
-
-                        <div className="space-y-3">
-                            <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-colors ${formData.stepsReached ? 'bg-success/10 border-success/20' : 'bg-surface-50 border-surface-200'}`}>
-                                <input type="checkbox" checked={formData.stepsReached} onChange={handleStepsChange} className="sr-only" />
-                                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${formData.stepsReached ? 'bg-success text-white' : 'bg-surface-200 text-surface-200'}`}>
-                                    <Check size={14} strokeWidth={2.5} />
-                                </div>
-                                <div>
-                                    <p className="font-medium">Skrittmål oppnådd</p>
-                                    <p className="text-sm text-ink-muted">{stepGoal?.toLocaleString() || '10 000'} skritt</p>
-                                </div>
-                            </label>
-                            <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-colors ${formData.takenSupplements ? 'bg-success/10 border-success/20' : 'bg-surface-50 border-surface-200'}`}>
-                                <input type="checkbox" checked={formData.takenSupplements} onChange={handleSupplementsChange} className="sr-only" />
-                                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${formData.takenSupplements ? 'bg-success text-white' : 'bg-surface-200 text-surface-200'}`}>
-                                    <Check size={14} strokeWidth={2.5} />
-                                </div>
-                                <div>
-                                    <p className="font-medium">Kosttilskudd tatt</p>
-                                    <p className="text-sm text-ink-muted">Tatt jevnlig denne uken</p>
-                                </div>
-                            </label>
-                        </div>
-
-                        <div>
-                            <InputLabel>Kommentar</InputLabel>
-                            <textarea
-                                value={formData.comment}
-                                onChange={handleCommentChange}
-                                maxLength={5000}
-                                className="w-full px-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl h-28 outline-none resize-none focus:ring-2 focus:ring-accent focus:border-accent"
-                                placeholder="Hvordan har uken vært?"
-                            />
-                        </div>
-                    </Card>
-
-                    {/* Image Upload */}
-                    <Card className="p-5">
-                        {formData.images.length > 0 && (
-                            <div className="grid grid-cols-4 gap-2 mb-4">
-                                {formData.images.map((img, idx) => (
-                                    <div key={idx} className="relative aspect-square">
-                                        <img 
-                                            src={getThumbnail(img)} 
-                                            className="w-full h-full object-cover rounded-lg cursor-pointer" 
-                                            alt="Preview" 
-                                            onClick={() => setLightbox({ isOpen: true, images: formData.images, index: idx })} 
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => removeImage(idx)}
-                                            aria-label="Fjern bilde"
-                                            className="absolute -top-1.5 -right-1.5 bg-ink text-white p-1.5 rounded-full"
-                                        >
-                                            <X size={14} />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-
-                        <label className={`flex flex-col items-center justify-center p-8 border-2 border-dashed border-surface-200 rounded-xl cursor-pointer hover:border-surface-300 hover:bg-surface-50 transition-all ${isCompressing ? 'opacity-50 pointer-events-none' : ''}`}>
-                            {isCompressing ? (
-                                <Loader2 className="animate-spin text-ink-muted" size={24} />
-                            ) : (
-                                <>
-                                    <Camera size={24} className="text-ink-muted mb-2" />
-                                    <span className="font-medium text-ink-muted">Last opp bilder</span>
-                                </>
-                            )}
-                            <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
-                        </label>
                     </Card>
 
                     {errorMessage && (
@@ -469,219 +720,119 @@ const CheckInView = React.memo(({ checkins = [], onNewCheckin, onDelete, onUpdat
                         </div>
                     )}
 
-                    <Button type="submit" size="lg" className="w-full" disabled={isSubmitting || isCompressing}>
-                        {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />} 
-                        {isSubmitting ? 'Sender...' : 'Send rapport'}
-                    </Button>
+                    {thisWeekReport && (
+                        <Button type="button" variant="ghost" className="w-full lg:hidden" onClick={cancelCompose}>
+                            Avbryt
+                        </Button>
+                    )}
                 </form>
             )}
 
-            {/* History */}
-            <div className={!isReadOnly && !hideForm ? "pt-8 border-t border-surface-200" : ""}>
-                <div className="mb-4 px-1">
-                    <div>
-                        <p className="section-label">Tidligere rapporter</p>
-                        <p className="text-sm text-ink-muted mt-1">
-                            {sortedCheckins.length === 0
-                                ? 'Ingen tidligere innsendinger ennå'
-                                : `${sortedCheckins.length} rapport${sortedCheckins.length > 1 ? 'er' : ''} lagret`}
-                        </p>
+            {showForm && (
+                <div
+                    className="plan-save-bar fixed inset-x-0 z-40 border-t border-surface-200/80 bg-surface-50/94 backdrop-blur-xl"
+                    style={{ bottom: 'calc(4.35rem + env(safe-area-inset-bottom, 0px))' }}
+                >
+                    <div className="header-inner mx-auto flex items-center gap-2 px-4 py-2.5 lg:px-8">
+                        {thisWeekReport ? (
+                            <Button type="button" variant="ghost" onClick={cancelCompose} disabled={isSubmitting} className="hidden lg:inline-flex">
+                                Avbryt
+                            </Button>
+                        ) : (
+                            <p className="min-w-0 flex-1 truncate text-sm text-ink-muted">Klar når vekten er fylt ut</p>
+                        )}
+                        <Button
+                            type="submit"
+                            form="weekly-checkin-form"
+                            className="flex-1 lg:flex-none"
+                            disabled={isSubmitting || isCompressing}
+                        >
+                            {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
+                            {isSubmitting ? 'Sender…' : 'Send rapport'}
+                        </Button>
                     </div>
                 </div>
+            )}
 
-                {sortedCheckins.length === 0 ? (
-                    <EmptyState
-                        icon={Activity}
-                        title="Ingen rapporter enda"
-                        description="Fyll ut skjemaet over for å sende din første ukesrapport"
-                    />
+            <div className={showForm || thisWeekReport ? 'pt-4 border-t border-surface-200' : ''}>
+                <div className="mb-4 px-1">
+                    <p className="section-label">Tidligere rapporter</p>
+                    <p className="text-sm text-ink-muted mt-1">
+                        {olderReports.length === 0
+                            ? (thisWeekReport ? 'Ingen eldre innsendinger' : 'Ingen tidligere innsendinger ennå')
+                            : `${olderReports.length} rapport${olderReports.length > 1 ? 'er' : ''}`}
+                    </p>
+                </div>
+
+                {olderReports.length === 0 ? (
+                    !thisWeekReport && (
+                        <EmptyState
+                            icon={Activity}
+                            title="Ingen rapporter enda"
+                            description={isReadOnly ? 'Når utøveren sender en rapport, vises den her.' : 'Send ukesrapporten over for å starte historikken.'}
+                        />
+                    )
                 ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                         {visibleCheckins.map((entry) => {
-                            // Sikre at images alltid er en array
-                            let imageArray = [];
-                            if (entry.images) {
-                                if (typeof entry.images === 'string') {
-                                    try {
-                                        imageArray = JSON.parse(entry.images);
-                                    } catch (e) {
-                                        imageArray = [];
-                                    }
-                                } else if (Array.isArray(entry.images)) {
-                                    imageArray = entry.images;
-                                }
-                            } else if (entry.image) {
-                                imageArray = [entry.image];
-                            }
-
-                            // Filtrer ut ugyldige verdier
-                            const displayImages = imageArray.filter(img => img && typeof img === 'string' && img.trim() !== '');
-
                             const isEditing = editingId === entry.id;
+                            const isExpanded = expandedIds.has(entry.id) || isEditing;
+                            const previousWeight = previousWeightFor(entry);
+
                             if (isEditing && editForm) {
                                 return (
                                     <Card key={entry.id} className="p-5">
-                                        <form onSubmit={submitEdit} className="space-y-5">
-                                            <div className="flex items-center justify-between">
-                                                <p className="font-medium">{formatDateNO(entry.date)}</p>
-                                                <span className="text-xs text-ink-muted">Redigerer</span>
-                                            </div>
-                                            <div>
-                                                <InputLabel>Vekt (kg)</InputLabel>
-                                                <div className="relative">
-                                                    <Scale className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" size={18} />
-                                                    <input
-                                                        type="number"
-                                                        inputMode="decimal"
-                                                        step="0.1"
-                                                        min="20"
-                                                        max="500"
-                                                        required
-                                                        aria-invalid={!!editWeightError}
-                                                        value={editForm.weight}
-                                                        onChange={(e) => { updateEditField('weight', e.target.value); if (editWeightError) setEditWeightError(''); }}
-                                                        className={`w-full pl-12 pr-4 py-3.5 bg-surface-50 border rounded-xl outline-none focus:ring-2 focus:ring-accent focus:border-accent font-medium text-lg ${editWeightError ? 'border-error/40' : 'border-surface-200'}`}
-                                                    />
-                                                </div>
-                                                {editWeightError && (
-                                                    <p className="text-error text-xs mt-1.5">{editWeightError}</p>
-                                                )}
-                                            </div>
-                                            <SegmentedControl
-                                                label="Energi (1–10)"
-                                                value={editForm.energy}
-                                                onChange={(v) => updateEditField('energy', v)}
-                                                options={OPTIONS_1_TO_10}
-                                                colorize
-                                            />
-                                            <SegmentedControl
-                                                label="Søvnkvalitet (1–10)"
-                                                value={editForm.sleep}
-                                                onChange={(v) => updateEditField('sleep', v)}
-                                                options={OPTIONS_1_TO_10}
-                                                colorize
-                                            />
-                                            <SegmentedControl
-                                                label="Nøyaktighet (1–10)"
-                                                value={editForm.accuracy}
-                                                onChange={(v) => updateEditField('accuracy', v)}
-                                                options={OPTIONS_1_TO_10}
-                                                colorize
-                                            />
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <SegmentedControl
-                                                    label="Styrkeøkter"
-                                                    value={editForm.strengthSessions}
-                                                    onChange={(v) => updateEditField('strengthSessions', v)}
-                                                    options={OPTIONS_0_TO_7}
-                                                />
-                                                <SegmentedControl
-                                                    label="Cardio"
-                                                    value={editForm.cardioSessions}
-                                                    onChange={(v) => updateEditField('cardioSessions', v)}
-                                                    options={OPTIONS_0_TO_7}
-                                                />
-                                            </div>
-                                            <div className="space-y-3">
-                                                <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-colors ${editForm.stepsReached ? 'bg-success/10 border-success/20' : 'bg-surface-50 border-surface-200'}`}>
-                                                    <input type="checkbox" checked={editForm.stepsReached} onChange={(e) => updateEditField('stepsReached', e.target.checked)} className="sr-only" />
-                                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${editForm.stepsReached ? 'bg-success text-white' : 'bg-surface-200 text-surface-200'}`}>
-                                                        <Check size={14} strokeWidth={2.5} />
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-medium">Skrittmål oppnådd</p>
-                                                        <p className="text-sm text-ink-muted">{stepGoal?.toLocaleString() || '10 000'} skritt</p>
-                                                    </div>
-                                                </label>
-                                                <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-colors ${editForm.takenSupplements ? 'bg-success/10 border-success/20' : 'bg-surface-50 border-surface-200'}`}>
-                                                    <input type="checkbox" checked={editForm.takenSupplements} onChange={(e) => updateEditField('takenSupplements', e.target.checked)} className="sr-only" />
-                                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${editForm.takenSupplements ? 'bg-success text-white' : 'bg-surface-200 text-surface-200'}`}>
-                                                        <Check size={14} strokeWidth={2.5} />
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-medium">Kosttilskudd tatt</p>
-                                                        <p className="text-sm text-ink-muted">Tatt jevnlig denne uken</p>
-                                                    </div>
-                                                </label>
-                                            </div>
-                                            <div>
-                                                <InputLabel>Kommentar</InputLabel>
-                                                <textarea
-                                                    value={editForm.comment}
-                                                    onChange={(e) => updateEditField('comment', e.target.value)}
-                                                    maxLength={5000}
-                                                    className="w-full px-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl h-28 outline-none resize-none focus:ring-2 focus:ring-accent focus:border-accent"
-                                                />
-                                            </div>
-                                            {editError && (
-                                                <div className="flex items-center gap-3 bg-error/10 border border-error/20 text-error px-4 py-3 rounded-xl text-sm">
-                                                    <AlertCircle size={18} />
-                                                    {editError}
-                                                </div>
-                                            )}
-                                            <div className="flex gap-2">
-                                                <Button type="button" variant="ghost" onClick={cancelEdit} disabled={isSavingEdit} className="flex-1">
-                                                    Avbryt
-                                                </Button>
-                                                <Button type="submit" disabled={isSavingEdit} className="flex-1">
-                                                    {isSavingEdit ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
-                                                    {isSavingEdit ? 'Lagrer...' : 'Lagre'}
-                                                </Button>
-                                            </div>
-                                        </form>
+                                        {renderEditForm(entry)}
                                     </Card>
                                 );
                             }
-                            return (
-                                <Card key={entry.id} className="p-5 group">
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div>
-                                            <p className="font-medium">{formatDateNO(entry.date)}</p>
-                                            <p className="text-xs text-ink-muted">{new Date(entry.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            {canEdit && onUpdate && (
-                                                <IconButton
-                                                    type="button"
-                                                    onClick={() => startEdit(entry)}
-                                                    aria-label="Rediger rapport"
-                                                    tone="accent"
-                                                >
-                                                    <Pencil size={16} />
-                                                </IconButton>
-                                            )}
-                                            {canDelete && onDelete && (
-                                                <IconButton
-                                                    type="button"
-                                                    onClick={async () => { if(await confirmDialog('Slett denne rapporten?', { title: 'Slett rapport', confirmText: 'Slett', destructive: true })) onDelete(entry.id); }}
-                                                    aria-label="Slett rapport"
-                                                    tone="danger"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </IconButton>
-                                            )}
-                                            <Badge className="tabular-nums">{formatWeight(entry.weight)} kg</Badge>
-                                        </div>
-                                    </div>
-                                    
-                                    <ReportMetrics report={entry} className="mb-4" />
 
-                                    {entry.comment && (
-                                        <p className="text-sm text-ink-muted bg-surface-50 p-3 rounded-lg italic mb-4">"{entry.comment}"</p>
-                                    )}
-                                    
-                                    {displayImages.length > 0 && (
-                                        <div className="flex gap-2 overflow-x-auto hide-scrollbar">
-                                            {displayImages.map((img, idx) => (
-                                                <img
-                                                    key={idx}
-                                                    src={getThumbnail(img)}
-                                                    loading="lazy"
-                                                    className="w-16 h-16 object-cover rounded-lg cursor-pointer flex-none"
-                                                    alt="Checkin"
-                                                    onClick={() => openLightbox(displayImages, idx)}
-                                                />
-                                            ))}
+                            return (
+                                <Card key={entry.id} className="overflow-hidden">
+                                    <div className="flex items-center gap-2 px-4 py-3">
+                                        <button
+                                            type="button"
+                                            className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                                            onClick={() => toggleExpanded(entry.id)}
+                                            aria-expanded={isExpanded}
+                                        >
+                                            <div className="min-w-0 flex-1">
+                                                <p className="font-medium truncate">{formatDateNO(entry.date)}</p>
+                                                <p className="text-xs text-ink-muted">
+                                                    {formatWeight(entry.weight)} kg
+                                                    {previousWeight != null && (
+                                                        <>
+                                                            {' · '}
+                                                            <WeightDelta current={entry.weight} previous={previousWeight} />
+                                                        </>
+                                                    )}
+                                                </p>
+                                            </div>
+                                            <ChevronDown size={18} className={`shrink-0 text-ink-faint transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                                        </button>
+                                        {canEdit && onUpdate && (
+                                            <IconButton type="button" onClick={() => startEdit(entry)} aria-label="Rediger rapport" tone="accent">
+                                                <Pencil size={16} />
+                                            </IconButton>
+                                        )}
+                                        {canDelete && onDelete && (
+                                            <IconButton
+                                                type="button"
+                                                onClick={async () => {
+                                                    if (await confirmDialog('Slett denne rapporten?', { title: 'Slett rapport', confirmText: 'Slett', destructive: true })) {
+                                                        onDelete(entry.id);
+                                                    }
+                                                }}
+                                                aria-label="Slett rapport"
+                                                tone="danger"
+                                            >
+                                                <Trash2 size={16} />
+                                            </IconButton>
+                                        )}
+                                    </div>
+                                    {isExpanded && (
+                                        <div className="border-t border-surface-100 px-4 py-4">
+                                            {renderReportBody(entry)}
                                         </div>
                                     )}
                                 </Card>
@@ -689,7 +840,7 @@ const CheckInView = React.memo(({ checkins = [], onNewCheckin, onDelete, onUpdat
                         })}
                         {hasMoreReports && (
                             <Button variant="secondary" size="md" className="w-full" onClick={handleShowMoreReports}>
-                                Vis flere rapporter ({Math.min(REPORT_BATCH_SIZE, sortedCheckins.length - visibleReportCount)})
+                                Vis flere rapporter ({Math.min(REPORT_BATCH_SIZE, olderReports.length - visibleReportCount)})
                             </Button>
                         )}
                     </div>
