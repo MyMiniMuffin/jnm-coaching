@@ -46,7 +46,7 @@ export const ViewSkeleton = ({ tab }) => {
             <div className="flex gap-2">
                 {[1, 2, 3].map(item => <div key={item} className="h-8 w-20 bg-surface-200 rounded-full" />)}
             </div>
-            <div className="grid grid-cols-3 gap-1.5">
+            <div className="grid grid-cols-3 gap-1.5 lg:grid-cols-5">
                 {[1, 2, 3, 4, 5, 6].map(item => <div key={item} className="aspect-square bg-surface-200 rounded-xl" />)}
             </div>
         </div>

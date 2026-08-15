@@ -10,7 +10,7 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
             </div>
         )}
         {viewingClient ? (
-            <div className="flex items-center max-w-md mx-auto px-3 py-3 gap-2">
+            <div className="header-inner flex items-center px-3 py-3 gap-2 lg:px-0 lg:py-4">
                 <button
                     type="button"
                     onClick={onClearClient}
@@ -20,7 +20,7 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
                     <ChevronLeft size={20} strokeWidth={2.5} />
                     <span className="text-sm font-medium">Klienter</span>
                 </button>
-                <div className="flex-1 text-center min-w-0">
+                <div className="flex-1 text-center min-w-0 lg:text-left">
                     <p className="font-semibold text-ink truncate leading-tight">{viewingClient.name}</p>
                     <p className="text-[11px] text-ink-muted">@{viewingClient.username}</p>
                 </div>
@@ -34,7 +34,7 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
                 </button>
             </div>
         ) : (
-            <div className="flex justify-between items-center max-w-md mx-auto px-5 py-3">
+            <div className="header-inner flex justify-between items-center px-5 py-3 lg:px-0 lg:py-4">
                 <p className="font-semibold text-ink truncate min-w-0">{user.name}</p>
                 <button type="button" onClick={onLogout} aria-label="Logg ut" className="text-ink-faint hover:text-ink p-2.5 rounded-lg hover:bg-surface-100 transition-colors shrink-0">
                     <LogOut size={20} />

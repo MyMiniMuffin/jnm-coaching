@@ -14,7 +14,7 @@ import { OPTIONS_1_TO_10, OPTIONS_0_TO_7, INITIAL_FORM_DATA } from '../lib/confi
 
 const REPORT_BATCH_SIZE = 20;
 
-const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, onUpdate, canEdit = false, isReadOnly, canDelete = !isReadOnly, stepGoal, hideForm = false, draftKey = 'default', uploadUserId }) => {
+const CheckInView = React.memo(({ checkins = [], onNewCheckin, onDelete, onUpdate, canEdit = false, isReadOnly, canDelete = !isReadOnly, stepGoal, hideForm = false, draftKey = 'default', uploadUserId }) => {
     const [step, setStep] = useState('form');
     const [lightbox, setLightbox] = useState({ isOpen: false, images: [], index: 0 });
     const [isCompressing, setIsCompressing] = useState(false);
@@ -177,7 +177,7 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, onUpdate, ca
         }
     }, [formData, onNewCheckin, storageKey]);
 
-    const sortedCheckins = checkins;
+    const sortedCheckins = Array.isArray(checkins) ? checkins : [];
 
     // Rendre kun et vindu av historikken — 150 rapporter med metrikker og bilder
     // koster unødig mye ved hver render av dette viewet.
@@ -290,7 +290,7 @@ const CheckInView = React.memo(({ checkins, onNewCheckin, onDelete, onUpdate, ca
     }
 
     return (
-        <div className="space-y-5 pb-32 animate-slide-up">
+        <div className="space-y-5 pb-32 lg:pb-8 animate-slide-up">
             {lightbox.isOpen && (
                 <ImageModal images={lightbox.images} initialIndex={lightbox.index} onClose={closeLightbox} />
             )}

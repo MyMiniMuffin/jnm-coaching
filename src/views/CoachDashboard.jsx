@@ -83,7 +83,7 @@ const ClientActionsMenu = ({ client, isPending, open, onOpenChange, onArchive, o
     );
 };
 
-const CoachDashboard = React.memo(({ allUsers, isLoading, notificationPermission = 'unsupported', onEnableNotifications, onSelectClient, onAddClient, onDeleteClient, onArchiveClient, onResetPassword }) => {
+const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermission = 'unsupported', onEnableNotifications, onSelectClient, onAddClient, onDeleteClient, onArchiveClient, onResetPassword }) => {
     const [showModal, setShowModal] = useState(false);
     const [showArchived, setShowArchived] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
@@ -97,8 +97,8 @@ const CoachDashboard = React.memo(({ allUsers, isLoading, notificationPermission
 
     // Memoize filtrerte lister
     const { activeClients, archivedClients } = useMemo(() => ({
-        activeClients: allUsers.filter(u => u.role === 'athlete' && !u.is_archived),
-        archivedClients: allUsers.filter(u => u.role === 'athlete' && u.is_archived)
+        activeClients: (Array.isArray(allUsers) ? allUsers : []).filter(u => u.role === 'athlete' && !u.is_archived),
+        archivedClients: (Array.isArray(allUsers) ? allUsers : []).filter(u => u.role === 'athlete' && u.is_archived)
     }), [allUsers]);
     const totalUnreadCheckins = useMemo(
         () => activeClients.reduce((sum, client) => sum + (Number(client.unreadCheckins) || 0), 0),
@@ -226,7 +226,7 @@ const CoachDashboard = React.memo(({ allUsers, isLoading, notificationPermission
     }, [resetTarget, onResetPassword]);
 
     return (
-        <div className="space-y-5 pb-32 animate-slide-up">
+        <div className="space-y-5 pb-8 animate-slide-up">
             {showModal && (
                 <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in" onClick={closeModal}>
                     <Card className="w-full max-w-sm p-6 animate-scale-in" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="new-athlete-title">
@@ -270,7 +270,7 @@ const CoachDashboard = React.memo(({ allUsers, isLoading, notificationPermission
             )}
 
             {/* Hero Stats Card */}
-            <div className="px-5 py-4 hero-tint text-white rounded-xl relative overflow-hidden ring-1 ring-white/10">
+            <div className="px-5 py-4 lg:px-7 lg:py-6 hero-tint text-white rounded-xl relative overflow-hidden ring-1 ring-white/10">
                 <div className="relative z-10 space-y-4">
                     <div className="min-w-0">
                         <p className="text-white/70 text-xs">Oversikt</p>
@@ -331,7 +331,7 @@ const CoachDashboard = React.memo(({ allUsers, isLoading, notificationPermission
             </div>
 
             {(activeClients.length > 0 || archivedClients.length > 0) && (
-                <div className="grid grid-cols-1 sm:grid-cols-[1fr_12rem] gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-[1fr_12rem] lg:grid-cols-[1fr_14rem] gap-3">
                     <TextField
                         icon={Search}
                         value={searchTerm}
@@ -358,9 +358,9 @@ const CoachDashboard = React.memo(({ allUsers, isLoading, notificationPermission
             )}
 
             {/* Client List */}
-            <div className="space-y-2">
+            <div className="space-y-2 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
                 {displayedClients.length === 0 && isLoading ? (
-                    <div className="space-y-2 animate-pulse" aria-label="Laster utøvere" role="status">
+                    <div className="space-y-2 animate-pulse lg:col-span-2 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0" aria-label="Laster utøvere" role="status">
                         {[1, 2, 3, 4].map(i => (
                             <div key={i} className="p-4 flex items-center justify-between bg-white rounded-xl border border-surface-200">
                                 <div className="flex items-center gap-4">
@@ -375,11 +375,13 @@ const CoachDashboard = React.memo(({ allUsers, isLoading, notificationPermission
                         ))}
                     </div>
                 ) : displayedClients.length === 0 ? (
+                    <div className="lg:col-span-2">
                     <EmptyState
                         icon={User}
                         title={searchTerm ? 'Ingen treff' : (showArchived ? 'Ingen arkiverte utøvere' : 'Ingen utøvere enda')}
                         description={searchTerm ? 'Prøv et annet navn eller brukernavn' : (!showArchived ? 'Trykk «Ny» for å legge til din første utøver' : undefined)}
                     />
+                    </div>
                 ) : (
                     displayedClients.map(client => {
                         const isPending = pendingClientAction?.clientId === client.id;

@@ -9,7 +9,7 @@ import { clearUiState, isUiStateFresh, readUiState, saveUiState } from './lib/ui
 import { getNotificationPermission, prefetchViews, supportsPushNotifications, urlBase64ToUint8Array } from './lib/browserCapabilities';
 
 // Hooks
-import { useSwipe, usePullToRefresh, useOnlineStatus } from './hooks';
+import { useSwipe, usePullToRefresh, useOnlineStatus, useDesktop } from './hooks';
 
 // Components (eagerly loaded — small and used everywhere)
 import { Skeleton, Button } from './components/ui';
@@ -28,9 +28,23 @@ const GalleryView = React.lazy(() => import('./views/GalleryView'));
 const PlanSection = React.lazy(() => import('./views/PlanSection'));
 const CheckInView = React.lazy(() => import('./views/CheckInView'));
 
+const isPlainObject = (value) => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+
+const mergeUserData = (previous, incoming) => {
+    if (!isPlainObject(incoming)) return previous;
+    return {
+        ...previous,
+        ...incoming,
+        checkins: Array.isArray(incoming.checkins) ? incoming.checkins : previous.checkins,
+        periods: Array.isArray(incoming.periods) ? incoming.periods : previous.periods,
+        galleryImages: Array.isArray(incoming.galleryImages) ? incoming.galleryImages : previous.galleryImages
+    };
+};
+
 const App = () => {
     const toast = useToast();
     const isOnline = useOnlineStatus();
+    const isDesktop = useDesktop();
     const [currentUser, setCurrentUser] = useState(null);
     const [activeTab, setActiveTab] = useState('dashboard');
     const [allUsers, setAllUsers] = useState([]);
@@ -102,6 +116,7 @@ const App = () => {
     }, [toast]);
 
     const applyUsersList = useCallback((nextUsers, { notify = false } = {}) => {
+        if (!Array.isArray(nextUsers)) return;
         setAllUsers(nextUsers);
 
         setCurrentUser(prevUser => {
@@ -243,7 +258,7 @@ const App = () => {
                         if (result.authError) {
                             setShowReauthPrompt(true);
                         } else if (result.data) {
-                            setCurrentData(result.data);
+                            setCurrentData(prev => mergeUserData(prev, result.data));
                         }
                     }).catch(e => console.error('[Init] Feil ved henting av athlete-data:', e));
                 }
@@ -252,7 +267,7 @@ const App = () => {
                     // Vis evt. cached brukerliste umiddelbart. Selve nettverkskallet gjøres
                     // av coach-polling-effekten, slik at vi unngår to identiske kall ved oppstart.
                     const cachedUsers = cache.get('users-list');
-                    if (cachedUsers?.length) {
+                    if (Array.isArray(cachedUsers) && cachedUsers.length) {
                         setAllUsers(cachedUsers);
                     }
                     setIsLoading(false);
@@ -396,7 +411,7 @@ const App = () => {
                         console.warn('[App] Auth-feil ved henting av klientdata');
                         setShowReauthPrompt(true);
                     } else if (result.data) {
-                        setCurrentData(result.data);
+                        setCurrentData(prev => mergeUserData(prev, result.data));
                     }
                 })
                 .catch(() => {
@@ -668,7 +683,7 @@ const App = () => {
                 return;
             }
             if (result.data) {
-                setCurrentData(result.data);
+                setCurrentData(mergeUserData(previousData, result.data));
             } else if (result.networkError) {
                 setCurrentData(previousData);
             }
@@ -1006,7 +1021,7 @@ const App = () => {
         velocityThreshold: 0.52,
         verticalTolerance: 34,
         onEdgeSwipe: handleEdgeSwipe,
-        enabled: !isClientLoading && !showWeightHistory && (activeTab === 'dashboard' || activeTab === 'checkin')
+        enabled: !isDesktop && !isClientLoading && !showWeightHistory && (activeTab === 'dashboard' || activeTab === 'checkin')
     });
 
     const handleRefresh = useCallback(async () => {
@@ -1015,13 +1030,13 @@ const App = () => {
             if (result.authError) {
                 setShowReauthPrompt(true);
             } else if (result.data) {
-                setCurrentData(result.data);
+                setCurrentData(prev => mergeUserData(prev, result.data));
             }
         }
     }, [viewingClient]);
 
     const { handlers: pullHandlers, pullIndicator } = usePullToRefresh(handleRefresh, {
-        enabled: !isClientLoading && !!viewingClient
+        enabled: !isDesktop && !isClientLoading && !!viewingClient
     });
 
     const appTouchHandlers = {
@@ -1059,10 +1074,11 @@ const App = () => {
     // Arkivert bruker - begrenset tilgang
     if (isArchived) {
         return (
-            <div className="max-w-md mx-auto min-h-screen app-shell">
+            <div className="app-frame">
+                <div className="app-stage">
                 {showReauthPrompt && <ReauthPrompt onReauth={handleReauth} />}
                 <Header user={currentUser} onLogout={handleLogout} isOffline={!isOnline} />
-                <main className="p-4">
+                <main className="app-content">
                     <div className="flex flex-col items-center justify-center min-h-[70vh] text-center px-6 animate-fade-in">
                         <div className="w-20 h-20 bg-surface-100 rounded-xl flex items-center justify-center text-ink-muted mb-6">
                             <Pause size={40} />
@@ -1116,16 +1132,18 @@ const App = () => {
                         </div>
                     )}
                 </main>
+                </div>
             </div>
         );
     }
 
     if (isCoach && !viewingClient) {
         return (
-            <div className="max-w-md mx-auto min-h-screen app-shell">
+            <div className="app-frame">
+                <div className="app-stage app-stage-wide">
                 {showReauthPrompt && <ReauthPrompt onReauth={handleReauth} />}
                 <Header user={currentUser} onLogout={handleLogout} isOffline={!isOnline} />
-                <main className="p-4">
+                <main className="app-content app-content-wide">
                     <ViewErrorBoundary><Suspense fallback={<ViewSkeleton />}>
                         <CoachDashboard
                             user={currentUser}
@@ -1141,15 +1159,20 @@ const App = () => {
                         />
                     </Suspense></ViewErrorBoundary>
                 </main>
+                </div>
             </div>
         );
     }
 
+    const contentWide = activeTab === 'gallery';
+
     return (
         <div
-            className="max-w-md mx-auto min-h-screen app-shell"
+            className="app-frame app-frame-nav"
             {...appTouchHandlers}
         >
+            <Navigation activeTab={activeTab} setActiveTab={handleTabChange} />
+            <div className={`app-stage ${contentWide ? 'app-stage-wide' : ''}`}>
             {showReauthPrompt && <ReauthPrompt onReauth={handleReauth} />}
             {pullIndicator}
             <Header
@@ -1159,7 +1182,7 @@ const App = () => {
                 onClearClient={handleClearClient}
                 isOffline={!isOnline}
             />
-            <main className="p-4">
+            <main className={`app-content ${contentWide ? 'app-content-wide' : ''}`}>
                 {isClientLoading ? (
                     <div className="space-y-4 pt-4">
                         <Skeleton className="h-40 w-full" />
@@ -1200,7 +1223,7 @@ const App = () => {
                     </Suspense></ViewErrorBoundary>
                 )}
             </main>
-            <Navigation activeTab={activeTab} setActiveTab={handleTabChange} />
+            </div>
         </div>
     );
 };

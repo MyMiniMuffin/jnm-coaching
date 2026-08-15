@@ -86,7 +86,7 @@ Serif er en aksent, ikke standardskriften for overskrifter. I kompakte eller dat
 
 ## 4. Avstand og layout
 
-Appen er mobil først og bruker normalt en sentrert innholdskolonne med `max-w-md`.
+Appen er mobil først. Under 1024 px brukes en sentrert innholdskolonne med `max-w-md`. Fra `lg` brukes sidemeny og en bredere innholdskolonne.
 
 ### Standardavstander
 
@@ -196,8 +196,9 @@ Matplan og treningsplan skal være separate både i data, redigering og presenta
 - Ingen horisontal scrolling i hovedinnholdet.
 - Fast bunnnavigasjon må ta hensyn til safe area.
 - Sticky toppfelt og bunnnavigasjon skal ikke dekke innhold eller fokusert felt.
-- Desktop kan gi mer marg og en avgrenset appkolonne, men skal ikke endre informasjonsarkitekturen.
-- Hovedinnhold skal ha nok bunnpadding til å gå klar av navigasjonen, normalt `pb-32`.
+- Fra `lg` (1024 px) bytter skallet automatisk til desktop: sidemeny i stedet for bunnnavigasjon, bredere innholdskolonne og ingen fanesveip.
+- Informasjonsarkitekturen er den samme. Desktop endrer skall og tetthet, ikke faner eller data.
+- På desktop har hovedinnholdet `pb-8`. På mobil brukes `pb-32` for å gå klar av bunnnavigasjonen.
 
 ## 9. Bevegelse og tilbakemelding
 

@@ -442,15 +442,115 @@ input:focus, textarea:focus, select:focus, button:focus-visible {
         0 12px 28px rgba(23, 23, 23, 0.07);
 }
 
-.app-shell {
+.app-shell,
+.app-frame {
     background: #F7F7F4;
 }
 
-@media (min-width: 640px) {
-    .app-shell {
+.app-frame {
+    min-height: 100dvh;
+}
+
+.app-content {
+    padding: 1rem;
+}
+
+.header-inner {
+    max-width: 28rem;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+    .app-shell,
+    .app-frame {
+        max-width: 28rem;
+        margin-left: auto;
+        margin-right: auto;
         border-left: 1px solid rgba(23, 23, 23, 0.08);
         border-right: 1px solid rgba(23, 23, 23, 0.08);
         box-shadow: 0 28px 90px rgba(23, 23, 23, 0.10);
+    }
+}
+
+@media (max-width: 639px) {
+    .app-frame {
+        max-width: 28rem;
+        margin-left: auto;
+        margin-right: auto;
+    }
+}
+
+@media (min-width: 1024px) {
+    .app-frame {
+        background: #F1F0EC;
+    }
+
+    .app-frame-nav {
+        display: flex;
+        align-items: stretch;
+        background: #F1F0EC;
+    }
+
+    .app-sidebar {
+        width: 15.5rem;
+        flex-shrink: 0;
+        position: sticky;
+        top: 0;
+        height: 100dvh;
+        flex-direction: column;
+        background: #F7F7F4;
+        border-right: 1px solid rgba(23, 23, 23, 0.08);
+    }
+
+    .app-stage {
+        flex: 1;
+        min-width: 0;
+        background: #F7F7F4;
+        min-height: 100dvh;
+    }
+
+    .app-frame:not(.app-frame-nav) .app-stage {
+        max-width: 68rem;
+        margin: 0 auto;
+        background: transparent;
+    }
+
+    .app-frame:not(.app-frame-nav) header {
+        background: rgba(241, 240, 236, 0.94);
+        border-bottom-color: rgba(23, 23, 23, 0.08);
+    }
+
+    .header-inner {
+        max-width: none;
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
+
+    .app-frame:not(.app-frame-nav) .header-inner {
+        max-width: 68rem;
+    }
+
+    .app-content {
+        width: 100%;
+        max-width: 52rem;
+        margin-left: 0;
+        margin-right: auto;
+        padding: 1.75rem 2rem 2.75rem;
+    }
+
+    .app-content-wide,
+    .app-frame:not(.app-frame-nav) .app-content {
+        max-width: 72rem;
+    }
+
+    .app-frame-nav .plan-save-bar {
+        left: 15.5rem;
+        bottom: 0 !important;
+    }
+
+    .toast-stack {
+        bottom: 2rem;
     }
 }
 

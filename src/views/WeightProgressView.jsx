@@ -115,7 +115,7 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
     const latestPeriodMarker = periodMarkers[periodMarkers.length - 1] || null;
 
     return (
-        <div className="space-y-6 animate-slide-up pb-32">
+        <div className="space-y-6 animate-slide-up pb-32 lg:pb-8">
             <div className="flex items-center gap-2">
                 <button type="button" onClick={onBack} aria-label="Tilbake til hjem" className="flex items-center justify-center -ml-2 h-10 w-10 rounded-lg text-ink-muted hover:bg-surface-100 hover:text-ink transition-colors">
                     <ChevronLeft size={22} />

@@ -623,7 +623,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
     }, [onUpdateData]);
 
     return (
-        <div className="space-y-5 pb-32 animate-slide-up">
+        <div className="space-y-5 pb-32 lg:pb-8 animate-slide-up">
             {/* Period Management Modal */}
             {showPeriodModal && (
                 <PeriodManagementModal
@@ -647,7 +647,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
             )}
 
             {/* Hero Card */}
-            <div className="px-5 py-4 hero-tint text-white rounded-xl relative overflow-hidden ring-1 ring-white/10">
+            <div className="px-5 py-4 lg:px-7 lg:py-6 hero-tint text-white rounded-xl relative overflow-hidden ring-1 ring-white/10">
                 <div className="relative z-10">
                     <div className="flex justify-between items-start mb-3">
                         <div>

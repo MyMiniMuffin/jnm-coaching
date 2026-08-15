@@ -24,7 +24,7 @@ export const ToastProvider = ({ children }) => {
         <ToastContext.Provider value={show}>
             {children}
             {toasts.length > 0 && (
-                <div className="fixed bottom-20 left-1/2 z-[300] flex w-[min(calc(100vw-2rem),24rem)] -translate-x-1/2 flex-col gap-2" role="status" aria-live="polite" aria-atomic="true">
+                <div className="toast-stack fixed bottom-20 left-1/2 z-[300] flex w-[min(calc(100vw-2rem),24rem)] -translate-x-1/2 flex-col gap-2" role="status" aria-live="polite" aria-atomic="true">
                     {toasts.map(t => (
                         <div
                             key={t.id}

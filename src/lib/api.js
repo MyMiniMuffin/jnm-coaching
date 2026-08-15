@@ -175,7 +175,7 @@ export const api = {
     getUsers: async (useCache = false) => {
         if (useCache) {
             const cached = cache.get('users-list');
-            if (cached) return { authError: false, data: cached, fromCache: true };
+            if (Array.isArray(cached)) return { authError: false, data: cached, fromCache: true };
         }
         try {
             const result = await request('/.netlify/functions/users', {
@@ -183,13 +183,16 @@ export const api = {
                 cacheMode: useCache ? undefined : 'no-store'
             });
             if (result.authError) return { ...result, data: [] };
+            if (!Array.isArray(result.data)) {
+                return { authError: false, data: [], networkError: true };
+            }
             cache.set('users-list', result.data);
             return result;
         } catch (e) {
             console.error('[API] getUsers feil:', e);
             // Fallback til cache ved nettverksfeil
             const cached = cache.get('users-list');
-            if (cached) return { authError: false, data: cached, fromCache: true };
+            if (Array.isArray(cached)) return { authError: false, data: cached, fromCache: true };
             return { authError: false, data: [], networkError: true };
         }
     },
@@ -230,6 +233,9 @@ export const api = {
                 cacheMode: useCache ? undefined : 'no-store'
             });
             if (result.authError) return result;
+            if (!result.data || typeof result.data !== 'object' || Array.isArray(result.data)) {
+                return { authError: false, networkError: true };
+            }
             cache.set(cacheKey, result.data);
             return result;
         } catch (e) {

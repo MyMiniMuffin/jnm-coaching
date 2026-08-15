@@ -46,7 +46,7 @@ const LoginScreen = React.memo(({ onLogin }) => {
     };
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-6 relative animate-fade-in">
+        <div className="min-h-screen flex flex-col items-center justify-center p-6 relative animate-fade-in lg:bg-transparent">
             <div className="text-center mb-8">
                 <div className="w-20 h-20 mx-auto mb-7 rounded-xl bg-white p-2 shadow-sm ring-1 ring-surface-200">
                     <img src={APP_ICON} alt="Logo" className="w-full h-full" />
@@ -55,7 +55,7 @@ const LoginScreen = React.memo(({ onLogin }) => {
                 <p className="text-ink-muted">Logg inn for å fortsette</p>
             </div>
 
-            <div className="w-full max-w-sm rounded-xl border border-surface-200 bg-white p-5 shadow-sm">
+            <div className="w-full max-w-sm rounded-xl border border-surface-200 bg-white p-5 shadow-sm lg:p-7">
                 <form onSubmit={handleLogin} className="space-y-4">
                     <TextField
                         label="Brukernavn"

@@ -135,7 +135,7 @@ const FullscreenCompareModal = React.memo(({ before, after, daysDiff, weightDiff
 });
 
 // GalleryView - samler alle bilder fra checkins for lett sammenligning
-const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false, uploadUserId, onAddGalleryImage, onDeleteGalleryImage }) => {
+const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = false, uploadUserId, onAddGalleryImage, onDeleteGalleryImage }) => {
     const toast = useToast();
     const confirmDialog = useConfirm();
     const [lightbox, setLightbox] = useState({ isOpen: false, images: [], index: 0 });
@@ -508,7 +508,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
 
     if (allImages.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center h-[60vh] animate-fade-in">
+            <div className="flex flex-col items-center justify-center h-[60vh] lg:h-auto lg:py-24 animate-fade-in">
                 {uploadModal}
                 <EmptyState
                     icon={Camera}
@@ -525,7 +525,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
     }
 
     return (
-        <div className="space-y-5 pb-32 animate-slide-up">
+        <div className="space-y-5 pb-32 lg:pb-8 animate-slide-up">
             {uploadModal}
 
             {lightbox.isOpen && (
@@ -753,7 +753,7 @@ const GalleryView = React.memo(({ checkins, galleryImages = [], isCoach = false,
             {viewMode === 'grid' && (
                 /* Grid-visning - kompakt oversikt */
                 <>
-                    <div className="grid grid-cols-3 gap-1.5">
+                    <div className="grid grid-cols-3 gap-1.5 lg:grid-cols-5 lg:gap-2">
                         {visibleImages.map((img, idx) => (
                             <div 
                                 key={getImageKey(img, idx)}

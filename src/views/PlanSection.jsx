@@ -368,7 +368,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
     const displayPlan = isEditing ? draft : parsedPlan;
 
     return (
-        <div className={`space-y-5 animate-slide-up ${isEditing && !isReadOnly ? 'pb-52' : 'pb-32'}`}>
+        <div className={`space-y-5 animate-slide-up ${isEditing && !isReadOnly ? 'pb-52 lg:pb-24' : 'pb-32 lg:pb-8'}`}>
             <Card className="overflow-hidden">
                 <div className="flex justify-between items-center gap-3 p-5 border-b border-surface-100 bg-white">
                     <div className="flex items-center gap-3 min-w-0">
@@ -679,10 +679,10 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
 
             {isEditing && !isReadOnly && (
                 <div
-                    className="fixed inset-x-0 z-40 border-t border-surface-200/80 bg-surface-50/94 backdrop-blur-xl"
+                    className="plan-save-bar fixed inset-x-0 z-40 border-t border-surface-200/80 bg-surface-50/94 backdrop-blur-xl"
                     style={{ bottom: 'calc(4.35rem + env(safe-area-inset-bottom, 0px))' }}
                 >
-                    <div className="mx-auto flex max-w-md items-center gap-2 px-4 py-2.5">
+                    <div className="header-inner mx-auto flex items-center gap-2 px-4 py-2.5 lg:px-8">
                         <p className="min-w-0 flex-1 truncate text-sm text-ink-muted">
                             {saveState === 'saving' ? 'Lagrer endringer…' : saveState === 'dirty' ? 'Ulagrede endringer' : saveState === 'saved' ? 'Lagret' : 'Redigerer'}
                         </p>
