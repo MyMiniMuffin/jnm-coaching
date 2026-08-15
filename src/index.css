@@ -412,8 +412,10 @@ input:focus, textarea:focus, select:focus, button:focus-visible {
 }
 
 .hero-tint {
-    background: linear-gradient(135deg, #302d28 0%, #171717 78%);
-    box-shadow: 0 12px 30px rgba(23, 23, 23, 0.14);
+    background:
+        linear-gradient(160deg, rgba(181, 96, 58, 0.20) 0%, rgba(181, 96, 58, 0) 44%),
+        linear-gradient(135deg, #3A3028 0%, #1A1614 78%);
+    box-shadow: 0 12px 30px rgba(26, 22, 20, 0.16);
 }
 
 .hero-tint::after {

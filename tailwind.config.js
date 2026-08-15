@@ -20,13 +20,13 @@ module.exports = {
         ink: {
           DEFAULT: '#171717',
           muted: '#525252',
-          faint: '#A3A3A3',
+          faint: '#8A847A',
         },
         accent: {
           DEFAULT: '#B5603A',
           hover: '#9B4E2A',
         },
-        success: '#16A34A',
+        success: '#546B3E',
         warning: '#CA8A04',
         error: '#DC2626',
       },

@@ -388,7 +388,7 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
                         return (
                         <Card
                             key={client.id}
-                            className={`p-4 flex items-center justify-between group ${showArchived ? 'opacity-60' : client.unreadCheckins > 0 ? 'border-success/30 bg-success/5' : ''} ${isPending ? 'pointer-events-none opacity-70' : ''}`}
+                            className={`p-4 flex items-center justify-between group ${showArchived ? 'opacity-60' : client.unreadCheckins > 0 ? 'border-accent/30 bg-accent/5' : ''} ${isPending ? 'pointer-events-none opacity-70' : ''}`}
                             interactive={!isPending}
                             onClick={() => {
                                 if (isPending) return;
@@ -400,12 +400,12 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
                             }}
                         >
                             <div className="flex items-center gap-4 min-w-0">
-                                <div className={`w-12 h-12 shrink-0 rounded-xl flex items-center justify-center text-lg font-semibold ${showArchived ? 'bg-surface-200 text-ink-muted' : client.unreadCheckins > 0 ? 'bg-success/10 text-success' : 'bg-surface-100 text-ink'}`}>
+                                <div className={`w-12 h-12 shrink-0 rounded-xl flex items-center justify-center text-lg font-semibold ${showArchived ? 'bg-surface-200 text-ink-muted' : client.unreadCheckins > 0 ? 'bg-accent/10 text-accent' : 'bg-surface-100 text-ink'}`}>
                                     {client.name.charAt(0)}
                                 </div>
                                 <div className="min-w-0">
                                     <p className="font-medium truncate">{client.name}</p>
-                                    <p className={`text-sm ${client.unreadCheckins > 0 ? 'text-success font-medium' : 'text-ink-muted'}`}>
+                                    <p className={`text-sm ${client.unreadCheckins > 0 ? 'text-accent font-medium' : 'text-ink-muted'}`}>
                                         {client.unreadCheckins > 0
                                             ? `${client.unreadCheckins} ny${client.unreadCheckins > 1 ? 'e' : ''} rapport${client.unreadCheckins > 1 ? 'er' : ''}`
                                             : client.lastCheckinDate

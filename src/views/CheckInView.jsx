@@ -173,9 +173,9 @@ const CheckinFields = ({
         </div>
 
         <div className="space-y-3">
-            <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-colors ${values.stepsReached ? 'bg-success/10 border-success/20' : 'bg-surface-50 border-surface-200'}`}>
+            <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-colors ${values.stepsReached ? 'bg-accent/10 border-accent/20' : 'bg-surface-50 border-surface-200'}`}>
                 <input type="checkbox" checked={values.stepsReached} onChange={(event) => onField('stepsReached', event.target.checked)} className="sr-only" />
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${values.stepsReached ? 'bg-success text-white' : 'bg-surface-200 text-surface-200'}`}>
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${values.stepsReached ? 'bg-accent text-white' : 'bg-surface-200 text-surface-200'}`}>
                     <Check size={14} strokeWidth={2.5} />
                 </div>
                 <div>
@@ -183,9 +183,9 @@ const CheckinFields = ({
                     <p className="text-sm text-ink-muted">{(stepGoal || 10000).toLocaleString('nb-NO')} skritt</p>
                 </div>
             </label>
-            <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-colors ${values.takenSupplements ? 'bg-success/10 border-success/20' : 'bg-surface-50 border-surface-200'}`}>
+            <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-colors ${values.takenSupplements ? 'bg-accent/10 border-accent/20' : 'bg-surface-50 border-surface-200'}`}>
                 <input type="checkbox" checked={values.takenSupplements} onChange={(event) => onField('takenSupplements', event.target.checked)} className="sr-only" />
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${values.takenSupplements ? 'bg-success text-white' : 'bg-surface-200 text-surface-200'}`}>
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${values.takenSupplements ? 'bg-accent text-white' : 'bg-surface-200 text-surface-200'}`}>
                     <Check size={14} strokeWidth={2.5} />
                 </div>
                 <div>

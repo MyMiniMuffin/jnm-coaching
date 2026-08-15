@@ -13,7 +13,7 @@ const ReportMetrics = React.memo(({ report, className = '' }) => {
     ];
 
     const statusClass = (isActive) => isActive
-        ? 'border-success/20 bg-success/10 text-success'
+        ? 'border-accent/20 bg-accent/10 text-accent'
         : 'border-surface-200 bg-surface-100 text-ink-muted';
 
     return (

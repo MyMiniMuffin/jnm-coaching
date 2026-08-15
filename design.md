@@ -39,17 +39,17 @@ Fargepaletten er definert i `tailwind.config.js`.
 | Tydelig kant | `surface-300` | `#CCC7BC` | Hover eller felt som trenger mer kontrast |
 | Primær tekst | `ink` | `#171717` | Overskrifter, innhold og primærknapper |
 | Sekundær tekst | `ink-muted` | `#525252` | Beskrivelser og etiketter |
-| Svak tekst | `ink-faint` | `#A3A3A3` | Metadata og inaktive ikoner |
-| Aksent | `accent` | `#B5603A` | Fokus, lenker og utvalgte handlinger |
+| Svak tekst | `ink-faint` | `#8A847A` | Metadata og inaktive ikoner |
+| Aksent | `accent` | `#B5603A` | Fokus, lenker, ulest og utvalgte handlinger |
 | Aksent hover | `accent-hover` | `#9B4E2A` | Hover på aksentfarge |
-| Suksess | `success` | `#16A34A` | Bekreftet eller positiv status |
+| Suksess | `success` | `#546B3E` | Bekreftet eller positiv status |
 | Advarsel | `warning` | `#CA8A04` | Noe som krever oppmerksomhet |
 | Feil | `error` | `#DC2626` | Feil og destruktive handlinger |
 
 ### Fargeregler
 
 - Primær handling er som hovedregel mørk (`bg-ink text-white`), ikke aksentfarget.
-- Aksentfargen brukes sparsomt til fokus, lenker og små detaljer.
+- Aksentfargen brukes sparsomt til fokus, lenker, uleste elementer, avkrysning og små detaljer.
 - Statusfarger skal alltid kombineres med tekst eller ikon. Farge alene skal ikke bære betydning.
 - Flater skal normalt være hvite eller `surface-50/100`. Tonede flater brukes kun når de forklarer status eller hierarki.
 - Maks én tydelig mørk eller dekorativ hero-flate per skjerm.
