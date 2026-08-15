@@ -1,3 +1,25 @@
+self.addEventListener('install', () => {
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim());
+});
+
+const applyAppBadge = async (count) => {
+  if (typeof self.registration.setAppBadge !== 'function') return;
+
+  const nextCount = Math.max(0, Number(count) || 0);
+  if (nextCount > 0) {
+    await self.registration.setAppBadge(nextCount);
+    return;
+  }
+
+  if (typeof self.registration.clearAppBadge === 'function') {
+    await self.registration.clearAppBadge();
+  }
+};
+
 self.addEventListener('push', (event) => {
   let data = {};
 
@@ -22,7 +44,13 @@ self.addEventListener('push', (event) => {
     }
   };
 
-  event.waitUntil(self.registration.showNotification(title, options));
+  const unreadTotal = Number(data.unreadTotal);
+  const badgeCount = Number.isFinite(unreadTotal) && unreadTotal > 0 ? unreadTotal : 1;
+
+  event.waitUntil(Promise.all([
+    self.registration.showNotification(title, options),
+    applyAppBadge(badgeCount)
+  ]));
 });
 
 self.addEventListener('notificationclick', (event) => {

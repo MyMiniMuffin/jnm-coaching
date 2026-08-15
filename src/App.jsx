@@ -7,6 +7,7 @@ import { api, cache } from './lib/api';
 import { APP_ICON, INITIAL_DATA_STATE, TAB_ORDER } from './lib/config';
 import { clearUiState, isUiStateFresh, readUiState, saveUiState } from './lib/uiState';
 import { getNotificationPermission, prefetchViews, supportsPushNotifications, urlBase64ToUint8Array } from './lib/browserCapabilities';
+import { setAppBadgeCount, unreadCheckinTotal } from './lib/appBadge';
 
 // Hooks
 import { useSwipe, usePullToRefresh, useOnlineStatus, useDesktop } from './hooks';
@@ -339,6 +340,14 @@ const App = () => {
 
     useEffect(() => {
         if (currentUser?.role !== 'coach') {
+            setAppBadgeCount(0);
+            return;
+        }
+        setAppBadgeCount(unreadCheckinTotal(allUsers));
+    }, [currentUser?.role, allUsers]);
+
+    useEffect(() => {
+        if (currentUser?.role !== 'coach') {
             coachUnreadSnapshotRef.current = new Map();
             hasPrimedCoachNotificationsRef.current = false;
             return;
@@ -443,6 +452,7 @@ const App = () => {
         setViewingClient(null);
         setShowReauthPrompt(false);
         setActiveTab('dashboard');
+        setAppBadgeCount(0);
     }, []);
 
     const handleReauth = useCallback(() => {

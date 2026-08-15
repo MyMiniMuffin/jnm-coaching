@@ -29,7 +29,7 @@ const getWebPushClient = () => {
   }
 };
 
-const sendCoachPushNotifications = async ({ athleteId, athleteName, unreadCount }) => {
+const sendCoachPushNotifications = async ({ athleteId, athleteName, unreadCount, unreadTotal }) => {
   const webpush = getWebPushClient();
   if (!webpush) return;
 
@@ -52,7 +52,8 @@ const sendCoachPushNotifications = async ({ athleteId, athleteName, unreadCount 
       tag: `coach-checkin-${athleteId}`,
       clientId: athleteId,
       icon: '/icon-192.png',
-      badge: '/icon-192.png'
+      badge: '/icon-192.png',
+      unreadTotal: unreadTotal || unreadCount || 1
     });
 
     await Promise.allSettled(subscriptions.map(async (subscription) => {
@@ -502,10 +503,20 @@ exports.handler = async (event) => {
           WHERE user_id = ${userId} AND is_read = false
         `;
 
+        const unreadTotalResult = await sql`
+          SELECT COUNT(*)::integer AS count
+          FROM checkins c
+          INNER JOIN users u ON u.id = c.user_id
+          WHERE c.is_read = false
+            AND u.role = 'athlete'
+            AND COALESCE(u.is_archived, false) = false
+        `;
+
         await sendCoachPushNotifications({
           athleteId: userId,
           athleteName: targetUser.name || 'En utøver',
-          unreadCount: unreadCountResult[0]?.count || 1
+          unreadCount: unreadCountResult[0]?.count || 1,
+          unreadTotal: unreadTotalResult[0]?.count || unreadCountResult[0]?.count || 1
         });
 
         return {

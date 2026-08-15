@@ -115,6 +115,8 @@ Nyttige steder å inspisere:
 - Støtte varierer mellom nettlesere og PWA-modus.
 - Polling-varsler i appen fungerer fortsatt som backup.
 - Varslet åpner appen på `/`; det er ikke laget direkte navigasjon til en spesifikk utøver ennå.
+- App-ikonet kan vise antall uleste rapporter via Badging API. Det fungerer typisk på Android-PWA. På iPhone er merket upålitelig eller fraværende.
+- Merket oppdateres ved push og fra coach-listen, og tømmes når rapportene er lest eller coach logger ut.
 
 ## 8. Neste naturlige forbedringer
 
