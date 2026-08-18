@@ -228,6 +228,18 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
         }));
     }, [updateSection]);
 
+    const focusItemField = useCallback((itemKey, field = 'text') => {
+        requestAnimationFrame(() => {
+            const el = document.querySelector(`[data-item-key="${itemKey}"][data-item-field="${field}"]`);
+            if (!el) return;
+            el.focus();
+            if (typeof el.setSelectionRange === 'function' && typeof el.value === 'string') {
+                const end = el.value.length;
+                el.setSelectionRange(end, end);
+            }
+        });
+    }, []);
+
     const addItem = useCallback((sectionIndex, afterIndex = null) => {
         const newItem = createSection('', [''], type).items[0];
         updateSection(sectionIndex, section => {
@@ -236,13 +248,8 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
             items.splice(insertAt, 0, newItem);
             return { ...section, items };
         });
-        requestAnimationFrame(() => {
-            const section = document.querySelector(`[data-section="${sectionIndex}"]`);
-            const fields = section?.querySelectorAll('textarea');
-            const targetIndex = afterIndex === null ? (fields?.length || 1) - 1 : afterIndex + 1;
-            fields?.[targetIndex]?.focus();
-        });
-    }, [type, updateSection]);
+        focusItemField(newItem.key);
+    }, [focusItemField, type, updateSection]);
 
     const removeItem = useCallback((sectionIndex, itemIndex) => {
         updateSection(sectionIndex, section => ({
@@ -250,6 +257,40 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
             items: section.items.filter((_, index) => index !== itemIndex)
         }));
     }, [updateSection]);
+
+    const handleItemKeyDown = useCallback((event, section, sectionIndex, item, itemIndex, field = 'text') => {
+        if (event.nativeEvent.isComposing) return;
+
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            if (type === 'workout' && field === 'text') {
+                focusItemField(item.key, 'sets');
+                return;
+            }
+            if (type === 'workout' && field === 'sets') {
+                focusItemField(item.key, 'reps');
+                return;
+            }
+            const empty = !String(item.text || '').trim() && !String(item.sets || '').trim() && !String(item.reps || '').trim();
+            if (empty) return;
+            addItem(sectionIndex, itemIndex);
+            return;
+        }
+
+        if (event.key !== 'Backspace') return;
+        const atStart = event.currentTarget.selectionStart === 0 && event.currentTarget.selectionEnd === 0;
+        if (!atStart || field !== 'text') return;
+        const empty = !String(item.text || '').trim()
+            && !String(item.sets || '').trim()
+            && !String(item.reps || '').trim()
+            && !(item.subItems || []).some(subItem => String(subItem.text || '').trim());
+        if (!empty || section.items.length <= 1) return;
+
+        event.preventDefault();
+        const neighbor = section.items[itemIndex - 1] || section.items[itemIndex + 1];
+        removeItem(sectionIndex, itemIndex);
+        if (neighbor) focusItemField(neighbor.key);
+    }, [addItem, focusItemField, removeItem, type]);
 
     const moveItem = useCallback((sectionIndex, itemIndex, direction) => {
         updateSection(sectionIndex, section => ({
@@ -319,7 +360,24 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
         }));
     }, [markChanged]);
 
-    const insertTemplate = useCallback(() => markChanged(getPlanTemplate(type)), [markChanged, type]);
+    const planHasContent = useCallback((plan) => (
+        (plan?.sections || []).some(section => (
+            String(section.title || '').trim()
+            || (section.items || []).some(item => String(item.text || '').trim() || String(item.sets || '').trim() || String(item.reps || '').trim())
+        ))
+    ), []);
+
+    const insertTemplate = useCallback(async () => {
+        if (planHasContent(draft)) {
+            const confirmed = await confirmDialog('Forslaget erstatter planen som ligger i editoren nå.', {
+                title: 'Erstatt planen?',
+                confirmText: 'Bruk forslag',
+                destructive: true
+            });
+            if (!confirmed) return;
+        }
+        markChanged(getPlanTemplate(type));
+    }, [confirmDialog, draft, markChanged, planHasContent, type]);
 
     const handleExportText = useCallback(() => {
         const text = serializePlanAsPlainText(isEditing ? draft : parsedPlan);
@@ -329,12 +387,12 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = 'matplan.txt';
+        link.download = type === 'workout' ? 'treningsplan.txt' : 'matplan.txt';
         document.body.appendChild(link);
         link.click();
         link.remove();
         URL.revokeObjectURL(url);
-    }, [draft, isEditing, parsedPlan]);
+    }, [draft, isEditing, parsedPlan, type]);
 
     const handleOpenTextImport = useCallback(() => {
         setImportText('');
@@ -358,14 +416,25 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
     }, []);
 
     const handleApplyTextImport = useCallback(() => {
-        const importedPlan = parsePlainTextPlan(importText, 'diet');
+        const importedPlan = parsePlainTextPlan(importText, type);
         if (!importedPlan.sections.length || importedPlan.sections.every(section => section.items.length === 0)) {
-            setImportError('Lim inn en matplan med minst én matvare.');
+            setImportError(type === 'workout' ? 'Lim inn en treningsplan med minst én øvelse.' : 'Lim inn en matplan med minst én matvare.');
             return;
         }
         markChanged(importedPlan);
         handleCloseTextImport();
-    }, [handleCloseTextImport, importText, markChanged]);
+    }, [handleCloseTextImport, importText, markChanged, type]);
+
+    useEffect(() => {
+        if (!isEditing || isReadOnly) return;
+        const onKeyDown = (event) => {
+            if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 's') return;
+            event.preventDefault();
+            if (saveState === 'dirty' && !isSaving) handleSave();
+        };
+        document.addEventListener('keydown', onKeyDown);
+        return () => document.removeEventListener('keydown', onKeyDown);
+    }, [handleSave, isEditing, isReadOnly, isSaving, saveState]);
 
     const displayPlan = isEditing ? draft : parsedPlan;
 
@@ -387,8 +456,8 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                         </div>
                     </div>
                     <div className="flex shrink-0 items-center gap-1.5">
-                        {type === 'diet' && !isEditing && parsedPlan.sections.length > 0 && (
-                            <Button aria-label="Eksporter matplan som tekstfil" title="Eksporter matplan som tekstfil" variant="ghost" size="sm" onClick={handleExportText} className="px-2 sm:px-3">
+                        {!isEditing && parsedPlan.sections.length > 0 && (
+                            <Button aria-label={`Eksporter ${title.toLowerCase()} som tekstfil`} title={`Eksporter ${title.toLowerCase()} som tekstfil`} variant="ghost" size="sm" onClick={handleExportText} className="px-2 sm:px-3">
                                 <Download size={16} /> <span className="hidden sm:inline">Eksporter</span>
                             </Button>
                         )}
@@ -404,17 +473,13 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-surface-100 bg-white px-5 py-3.5">
                         <p className="text-sm text-ink-muted">{editorHint}</p>
                         <div className="flex flex-wrap gap-2">
-                            {type === 'diet' && (
-                                <>
-                                    <input ref={importFileRef} type="file" accept="text/plain,.txt" className="hidden" onChange={handleImportFile} />
-                                    <Button variant="ghost" size="sm" onClick={handleExportText} disabled={draft.sections.length === 0}>
-                                        <Download size={16} /> Eksporter
-                                    </Button>
-                                    <Button variant="secondary" size="sm" onClick={handleOpenTextImport}>
-                                        <Upload size={16} /> Importer tekst
-                                    </Button>
-                                </>
-                            )}
+                            <input ref={importFileRef} type="file" accept="text/plain,.txt" className="hidden" onChange={handleImportFile} />
+                            <Button variant="ghost" size="sm" onClick={handleExportText} disabled={draft.sections.length === 0}>
+                                <Download size={16} /> Eksporter
+                            </Button>
+                            <Button variant="secondary" size="sm" onClick={handleOpenTextImport}>
+                                <Upload size={16} /> Importer tekst
+                            </Button>
                             <Button variant="secondary" size="sm" onClick={insertTemplate}>
                                 <FileText size={16} /> Bruk forslag
                             </Button>
@@ -422,12 +487,16 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                     </div>
                 )}
 
-                {type === 'diet' && isEditing && !isReadOnly && showTextImport && (
+                {isEditing && !isReadOnly && showTextImport && (
                     <div className="border-b border-surface-100 bg-surface-50 p-4 sm:p-5">
                         <div className="mb-3 flex items-start justify-between gap-4">
                             <div>
-                                <h3 className="text-base font-semibold text-ink">Importer matplan fra tekst</h3>
-                                <p className="mt-1 text-sm text-ink-muted">Bruk hakeparenteser rundt måltider, én matvare per linje og innrykk for valg.</p>
+                                <h3 className="text-base font-semibold text-ink">Importer {title.toLowerCase()} fra tekst</h3>
+                                <p className="mt-1 text-sm text-ink-muted">
+                                    {type === 'workout'
+                                        ? 'Bruk hakeparenteser rundt dager, og skriv øvelser som «Knebøy: 4 × 6».'
+                                        : 'Bruk hakeparenteser rundt måltider, én matvare per linje og innrykk for valg.'}
+                                </p>
                             </div>
                             <Button variant="ghost" size="sm" onClick={() => importFileRef.current?.click()} className="shrink-0 whitespace-nowrap">
                                 Velg .txt-fil
@@ -441,8 +510,10 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                             }}
                             rows={10}
                             className={`w-full resize-y rounded-xl border bg-white px-4 py-3 text-sm leading-6 outline-none focus:border-accent focus:ring-2 focus:ring-accent ${importError ? 'border-error/40' : 'border-surface-200'}`}
-                            placeholder={'[Frokost]\nHavregrøt\n  - med bær\n  - med banan\nKaffe eller vann\n\n[Lunsj]\nKylling, ris og grønnsaker'}
-                            aria-label="Matplan i ren tekst"
+                            placeholder={type === 'workout'
+                                ? '[Dag 1 – Underkropp]\nKnebøy: 4 × 6\nRumensk markløft: 3 × 8\n\n[Dag 2 – Overkropp]\nBenkpress: 4 × 6'
+                                : '[Frokost]\nHavregrøt\n  - med bær\n  - med banan\nKaffe eller vann\n\n[Lunsj]\nKylling, ris og grønnsaker'}
+                            aria-label={`${title} i ren tekst`}
                         />
                         {importError && <p className="mt-1.5 text-xs text-error">{importError}</p>}
                         <p className="mt-2 text-xs text-ink-muted">Importen erstatter innholdet i editoren. Endringen lagres først når du trykker «Lagre».</p>
@@ -497,80 +568,79 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
 
                                     <div>
                                         {type === 'workout' && section.items.length > 0 && (
-                                            <div className="grid grid-cols-[minmax(0,1fr)_3.75rem_5rem] gap-2 bg-surface-50 px-3 py-2 sm:grid-cols-[minmax(0,1fr)_4.5rem_6.5rem]">
+                                            <div className="grid grid-cols-[minmax(0,1fr)_3.75rem_5rem_2.25rem] gap-2 bg-surface-50 px-3 py-2 sm:grid-cols-[minmax(0,1fr)_4.5rem_6.5rem_2.25rem]">
                                                 <span className="section-label">Øvelse</span>
                                                 <span className="section-label text-center">Sett</span>
                                                 <span className="section-label text-center">Reps</span>
+                                                <span className="sr-only">Handlinger</span>
                                             </div>
                                         )}
                                         {section.items.map((item, itemIndex) => (
                                             type === 'workout' ? (
-                                                <div key={item.key} className="px-3 py-2">
-                                                    <div className="grid grid-cols-[minmax(0,1fr)_3.75rem_5rem] items-start gap-2 sm:grid-cols-[minmax(0,1fr)_4.5rem_6.5rem]">
+                                                <div key={item.key} className="px-3 py-1.5">
+                                                    <div className="grid grid-cols-[minmax(0,1fr)_3.75rem_5rem_2.25rem] items-start gap-2 sm:grid-cols-[minmax(0,1fr)_4.5rem_6.5rem_2.25rem]">
                                                         <AutoGrowTextarea
                                                             aria-label={`Øvelse ${itemIndex + 1}`}
-                                                            data-item={itemIndex}
+                                                            data-item-key={item.key}
+                                                            data-item-field="text"
                                                             value={item.text}
                                                             onChange={event => updateItem(sectionIndex, itemIndex, 'text', event.target.value)}
-                                                            onKeyDown={event => {
-                                                                if (event.key === 'Enter' && !event.shiftKey) {
-                                                                    event.preventDefault();
-                                                                    addItem(sectionIndex, itemIndex);
-                                                                }
-                                                            }}
+                                                            onKeyDown={event => handleItemKeyDown(event, section, sectionIndex, item, itemIndex, 'text')}
                                                             className="min-h-[2.5rem] w-full resize-none overflow-hidden rounded-lg border border-surface-200 bg-white px-3 py-2 text-sm leading-6 outline-none placeholder:text-ink-faint focus:border-accent focus:ring-2 focus:ring-accent"
                                                             placeholder={itemPlaceholder}
                                                         />
                                                         <input
                                                             aria-label={`Sett for øvelse ${itemIndex + 1}`}
+                                                            data-item-key={item.key}
+                                                            data-item-field="sets"
                                                             value={item.sets || ''}
                                                             onChange={event => updateItem(sectionIndex, itemIndex, 'sets', event.target.value)}
+                                                            onKeyDown={event => handleItemKeyDown(event, section, sectionIndex, item, itemIndex, 'sets')}
                                                             inputMode="numeric"
                                                             className="h-[2.5rem] w-full rounded-lg border border-surface-200 bg-white px-2 text-center text-sm font-semibold tabular-nums outline-none focus:border-accent focus:ring-2 focus:ring-accent"
                                                             placeholder="3"
                                                         />
                                                         <input
                                                             aria-label={`Reps for øvelse ${itemIndex + 1}`}
+                                                            data-item-key={item.key}
+                                                            data-item-field="reps"
                                                             value={item.reps || ''}
                                                             onChange={event => updateItem(sectionIndex, itemIndex, 'reps', event.target.value)}
+                                                            onKeyDown={event => handleItemKeyDown(event, section, sectionIndex, item, itemIndex, 'reps')}
                                                             inputMode="text"
                                                             className="h-[2.5rem] w-full rounded-lg border border-surface-200 bg-white px-2 text-center text-sm font-semibold tabular-nums outline-none focus:border-accent focus:ring-2 focus:ring-accent"
                                                             placeholder="8–10"
                                                         />
-                                                    </div>
-                                                    <div className="mt-1.5 flex items-center justify-between">
-                                                        <span className="text-[11px] tabular-nums text-ink-faint">Øvelse {String(itemIndex + 1).padStart(2, '0')}</span>
-                                                        <RowMenu
-                                                            label={`Handlinger for øvelse ${itemIndex + 1}`}
-                                                            items={[
-                                                                { label: 'Flytt opp', icon: <ArrowUp size={15} />, disabled: itemIndex === 0, onClick: () => moveItem(sectionIndex, itemIndex, -1) },
-                                                                { label: 'Flytt ned', icon: <ArrowDown size={15} />, disabled: itemIndex === section.items.length - 1, onClick: () => moveItem(sectionIndex, itemIndex, 1) },
-                                                                { label: 'Slett øvelse', icon: <Trash2 size={15} />, tone: 'danger', onClick: () => removeItem(sectionIndex, itemIndex) }
-                                                            ]}
-                                                        />
+                                                        <div className="flex h-[2.5rem] items-center justify-end">
+                                                            <RowMenu
+                                                                label={`Handlinger for øvelse ${itemIndex + 1}`}
+                                                                items={[
+                                                                    { label: 'Flytt opp', icon: <ArrowUp size={15} />, disabled: itemIndex === 0, onClick: () => moveItem(sectionIndex, itemIndex, -1) },
+                                                                    { label: 'Flytt ned', icon: <ArrowDown size={15} />, disabled: itemIndex === section.items.length - 1, onClick: () => moveItem(sectionIndex, itemIndex, 1) },
+                                                                    { label: 'Slett øvelse', icon: <Trash2 size={15} />, tone: 'danger', onClick: () => removeItem(sectionIndex, itemIndex) }
+                                                                ]}
+                                                            />
+                                                        </div>
                                                     </div>
                                                 </div>
                                             ) : (
-                                                <div key={item.key} className="py-0.5">
+                                                <div key={item.key} className="group py-0.5">
                                                     <div className="flex items-start gap-1.5">
                                                         <span className="mt-1.5 w-5 shrink-0 text-[11px] tabular-nums text-ink-faint">{String(itemIndex + 1).padStart(2, '0')}</span>
                                                         <AutoGrowTextarea
                                                             aria-label={`Punkt ${itemIndex + 1}`}
-                                                            data-item={itemIndex}
+                                                            data-item-key={item.key}
+                                                            data-item-field="text"
                                                             value={item.text}
                                                             onChange={event => updateItem(sectionIndex, itemIndex, 'text', event.target.value)}
-                                                            onKeyDown={event => {
-                                                                if (event.key === 'Enter' && !event.shiftKey) {
-                                                                    event.preventDefault();
-                                                                    addItem(sectionIndex, itemIndex);
-                                                                }
-                                                            }}
+                                                            onKeyDown={event => handleItemKeyDown(event, section, sectionIndex, item, itemIndex, 'text')}
                                                             className="min-h-8 min-w-0 flex-1 resize-none overflow-hidden bg-transparent px-1 py-1 text-sm leading-5 outline-none placeholder:text-ink-faint"
                                                             placeholder={itemPlaceholder}
                                                         />
                                                         <RowMenu
                                                             label={`Handlinger for punkt ${itemIndex + 1}`}
                                                             items={[
+                                                                { label: 'Legg til valg', icon: <CornerDownRight size={15} />, onClick: () => addSubItem(sectionIndex, itemIndex) },
                                                                 { label: 'Flytt opp', icon: <ArrowUp size={15} />, disabled: itemIndex === 0, onClick: () => moveItem(sectionIndex, itemIndex, -1) },
                                                                 { label: 'Flytt ned', icon: <ArrowDown size={15} />, disabled: itemIndex === section.items.length - 1, onClick: () => moveItem(sectionIndex, itemIndex, 1) },
                                                                 { label: 'Slett punkt', icon: <Trash2 size={15} />, tone: 'danger', onClick: () => removeItem(sectionIndex, itemIndex) }
@@ -587,9 +657,20 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                                                                 value={subItem.text}
                                                                 onChange={event => updateSubItem(sectionIndex, itemIndex, subItemIndex, event.target.value)}
                                                                 onKeyDown={event => {
+                                                                    if (event.nativeEvent.isComposing) return;
                                                                     if (event.key === 'Enter' && !event.shiftKey) {
                                                                         event.preventDefault();
                                                                         addSubItem(sectionIndex, itemIndex);
+                                                                        return;
+                                                                    }
+                                                                    if (
+                                                                        event.key === 'Backspace'
+                                                                        && !String(subItem.text || '').trim()
+                                                                        && event.currentTarget.selectionStart === 0
+                                                                        && event.currentTarget.selectionEnd === 0
+                                                                    ) {
+                                                                        event.preventDefault();
+                                                                        removeSubItem(sectionIndex, itemIndex, subItemIndex);
                                                                     }
                                                                 }}
                                                                 className="min-h-8 min-w-0 flex-1 resize-none overflow-hidden bg-transparent px-1 py-1 text-[0.82rem] leading-5 text-ink-muted outline-none placeholder:text-ink-faint"
@@ -609,7 +690,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                                                     <button
                                                         type="button"
                                                         onClick={() => addSubItem(sectionIndex, itemIndex)}
-                                                        className="ml-7 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-ink-muted transition-colors hover:bg-surface-100 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                                                        className={`ml-7 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-ink-muted transition-opacity hover:bg-surface-100 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${(item.subItems || []).length > 0 ? '' : 'opacity-0 group-focus-within:opacity-100 focus:opacity-100'}`}
                                                     >
                                                         <CornerDownRight size={13} /> Legg til valg
                                                     </button>

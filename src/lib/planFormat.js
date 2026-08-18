@@ -166,12 +166,18 @@ export const serializePlanAsPlainText = (plan) => (plan?.sections || [])
         const title = String(section?.title || '').trim();
         const items = (section?.items || [])
             .flatMap(item => {
-                const text = String(typeof item === 'string' ? item : item?.text || '').trim();
-                const subItems = (typeof item === 'string' ? [] : item?.subItems || [])
+                const source = typeof item === 'string' ? { text: item } : item || {};
+                const text = String(source.text || '').trim();
+                const sets = String(source.sets || '').trim();
+                const reps = String(source.reps || '').trim();
+                const line = text && (sets || reps)
+                    ? `${text}: ${sets || '–'} × ${reps || '–'}`
+                    : text;
+                const subItems = (source.subItems || [])
                     .map(subItem => String(typeof subItem === 'string' ? subItem : subItem?.text || '').trim())
                     .filter(Boolean)
                     .map(subItem => `  - ${subItem}`);
-                return [text, ...subItems].filter(Boolean);
+                return [line, ...subItems].filter(Boolean);
             });
         return [title ? `[${title}]` : '', ...items].filter(Boolean).join('\n');
     })
