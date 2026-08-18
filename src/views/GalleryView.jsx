@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Camera, X, Loader2, Plus, Eye, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Camera, X, Loader2, Plus, Eye, TrendingUp, TrendingDown, Minus, Download } from 'lucide-react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { Card, Button, EmptyState, IconButton, TextField } from '../components/ui';
 import { useToast } from '../components/Toast';
@@ -10,6 +10,7 @@ import { api } from '../lib/api';
 import { formatDateNO, formatWeight, getThumbnail, getFullSizeImage } from '../lib/formatters';
 import { IMAGE_ZOOM_PROPS } from '../lib/zoomConfig';
 import { haptic } from '../lib/haptic';
+import { buildImageFilename, downloadImageFile } from '../lib/downloadImage';
 
 const ImageModal = React.lazy(() => import('../components/ImageModal'));
 
@@ -63,7 +64,7 @@ const ComparePanel = React.memo(({ image, label, align = 'left' }) => (
     </div>
 ));
 
-const FullscreenCompareModal = React.memo(({ before, after, daysDiff, weightDiff, onClose }) => {
+const FullscreenCompareModal = React.memo(({ before, after, daysDiff, weightDiff, onClose, onDownload }) => {
     const modalRef = useFocusTrap(true);
     useEscapeKey(onClose, true);
 
@@ -129,6 +130,15 @@ const FullscreenCompareModal = React.memo(({ before, after, daysDiff, weightDiff
                     <div className="bg-white/10 text-white/65 py-2 px-3 sm:px-4 rounded-full text-xs sm:text-sm backdrop-blur-md ring-1 ring-white/10">
                         Zoom og panorer
                     </div>
+                    {onDownload && (
+                        <button
+                            type="button"
+                            onClick={onDownload}
+                            className="inline-flex items-center gap-2 py-2 px-3 sm:px-4 rounded-full backdrop-blur-md ring-1 ring-white/10 bg-white/10 text-white text-xs sm:text-sm font-medium hover:bg-white/18"
+                        >
+                            <Download size={16} /> Last ned begge
+                        </button>
+                    )}
                 </div>
             </footer>
         </div>,
@@ -261,8 +271,40 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
 
     const openLightbox = useCallback((index) => {
         if (selectingFor) return; // Ikke åpne lightbox når vi velger bilder
-        setLightbox({ isOpen: true, images: allImages.map(img => img.url), index });
+        setLightbox({ isOpen: true, images: allImages, index });
     }, [allImages, selectingFor]);
+
+    const handleDownloadImage = useCallback(async (img, suffix) => {
+        if (!img?.url) return;
+        try {
+            await downloadImageFile(img.url, buildImageFilename({
+                date: img.date || img.timestamp,
+                label: img.label,
+                suffix
+            }));
+            toast('Bildet er lastet ned');
+        } catch {
+            toast('Kunne ikke laste ned bildet', 'error');
+        }
+    }, [toast]);
+
+    const handleDownloadCompare = useCallback(async () => {
+        if (!compareImages.before?.url || !compareImages.after?.url) return;
+        try {
+            await downloadImageFile(compareImages.before.url, buildImageFilename({
+                date: compareImages.before.date || compareImages.before.timestamp,
+                label: compareImages.before.label || 'for'
+            }));
+            await new Promise(resolve => setTimeout(resolve, 250));
+            await downloadImageFile(compareImages.after.url, buildImageFilename({
+                date: compareImages.after.date || compareImages.after.timestamp,
+                label: compareImages.after.label || 'etter'
+            }));
+            toast('Før- og etterbildene er lastet ned');
+        } catch {
+            toast('Kunne ikke laste ned bildene', 'error');
+        }
+    }, [compareImages.after, compareImages.before, toast]);
 
     const handleImageClick = useCallback((img, idx) => {
         if (selectingFor) {
@@ -549,6 +591,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                     daysDiff={daysDiff}
                     weightDiff={weightDiff}
                     onClose={closeFullscreenCompare}
+                    onDownload={handleDownloadCompare}
                 />
             )}
 
@@ -695,14 +738,24 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
 
                     {/* Fullskjerm-knapp */}
                     {compareImages.before && compareImages.after && (
-                        <Button 
-                            variant="primary" 
-                            size="md" 
-                            className="w-full"
-                            onClick={() => setFullscreenCompare(true)}
-                        >
-                            <Eye size={18} /> Se i fullskjerm
-                        </Button>
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                            <Button
+                                variant="primary"
+                                size="md"
+                                className="w-full"
+                                onClick={() => setFullscreenCompare(true)}
+                            >
+                                <Eye size={18} /> Se i fullskjerm
+                            </Button>
+                            <Button
+                                variant="secondary"
+                                size="md"
+                                className="w-full"
+                                onClick={handleDownloadCompare}
+                            >
+                                <Download size={18} /> Last ned begge
+                            </Button>
+                        </div>
                     )}
 
                     {/* Instruksjon eller bildevelger */}
@@ -782,7 +835,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                                         alt=""
                                     />
                                     {img.isGalleryImage && img.label && (
-                                        <span className={`absolute top-1.5 left-1.5 ${isCoach && onDeleteGalleryImage ? 'right-12' : 'right-1.5'} truncate bg-ink/80 text-white text-[10px] font-medium px-2 py-0.5 rounded-full backdrop-blur-sm`}>
+                                        <span className={`absolute top-1.5 left-1.5 truncate bg-ink/80 text-white text-[10px] font-medium px-2 py-0.5 rounded-full backdrop-blur-sm ${isCoach && onDeleteGalleryImage ? 'right-24' : 'right-12'}`}>
                                             {img.label}
                                         </span>
                                     )}
@@ -796,6 +849,14 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                                     </span>
                                 </button>
                                 {/* Slett-knapp for coach på gallery-bilder - alltid synlig */}
+                                <IconButton
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); handleDownloadImage(img); }}
+                                    aria-label={`Last ned bilde fra ${formatDateNO(img.date)}`}
+                                    className={`absolute top-1 z-10 min-h-[40px] min-w-[40px] rounded-lg bg-white/90 text-ink shadow-sm backdrop-blur-sm active:scale-[0.98] ${isCoach && img.isGalleryImage && onDeleteGalleryImage ? 'right-11' : 'right-1'}`}
+                                >
+                                    <Download size={18} />
+                                </IconButton>
                                 {isCoach && img.isGalleryImage && onDeleteGalleryImage && (
                                     <IconButton
                                         onClick={(e) => { e.stopPropagation(); handleDeleteGalleryImage(img.galleryImageId); }}

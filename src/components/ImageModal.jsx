@@ -1,19 +1,32 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Loader2, Download } from 'lucide-react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { getFullSizeImage } from '../lib/formatters';
+import { buildImageFilename, downloadImageFile } from '../lib/downloadImage';
 import { IMAGE_ZOOM_PROPS } from '../lib/zoomConfig';
 import { useFocusTrap } from '../hooks';
+import { useToast } from './Toast';
+
+const resolveImageUrl = (image) => (typeof image === 'string' ? image : image?.url);
+
+const resolveImageFilename = (image, index) => {
+    if (image && typeof image === 'object') {
+        return buildImageFilename({ date: image.date || image.timestamp, label: image.label, suffix: index + 1 });
+    }
+    return buildImageFilename({ suffix: index + 1 });
+};
 
 // Stil-konstanter — opprettes én gang, ikke på hver render
 const WRAPPER_STYLE = { width: "100%", height: "100%" };
 const CONTENT_STYLE = { width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" };
 
 const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
+    const toast = useToast();
     const safeInitialIndex = Math.max(0, Math.min(initialIndex || 0, (images?.length || 1) - 1));
     const [index, setIndex] = useState(safeInitialIndex);
     const [loading, setLoading] = useState(true);
+    const [downloading, setDownloading] = useState(false);
     const [direction, setDirection] = useState(0);
     const modalRef = useFocusTrap(true);
 
@@ -42,7 +55,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
         [index - 1, index + 1].forEach((targetIndex) => {
             if (targetIndex < 0 || targetIndex >= images.length) return;
             const img = new Image();
-            img.src = getFullSizeImage(images[targetIndex]);
+            img.src = getFullSizeImage(resolveImageUrl(images[targetIndex]));
         });
     }, [images, index]);
 
@@ -110,7 +123,22 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
     }, [goToIndex, images?.length]);
 
     const currentImage = images?.[index];
-    const currentImageSrc = getFullSizeImage(currentImage);
+    const currentImageUrl = resolveImageUrl(currentImage);
+    const currentImageSrc = getFullSizeImage(currentImageUrl);
+
+    const handleDownload = useCallback(async (event) => {
+        event?.stopPropagation();
+        if (!currentImageUrl || downloading) return;
+        setDownloading(true);
+        try {
+            await downloadImageFile(currentImageUrl, resolveImageFilename(currentImage, index));
+            toast('Bildet er lastet ned');
+        } catch {
+            toast('Kunne ikke laste ned bildet', 'error');
+        } finally {
+            setDownloading(false);
+        }
+    }, [currentImage, currentImageUrl, downloading, index, toast]);
     const imageLabel = `Bilde ${index + 1} av ${images?.length || 0}`;
     const hasNext = index < (images?.length || 0) - 1;
     const hasPrev = index > 0;
@@ -142,15 +170,28 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
             <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/55 to-transparent pointer-events-none" />
             <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
 
-            <button
-                type="button"
-                onClick={onClose}
-                aria-label="Lukk bildevisning"
-                className="absolute right-4 text-white/75 hover:text-white min-h-[44px] min-w-[44px] p-2 rounded-full bg-white/10 hover:bg-white/18 backdrop-blur-md ring-1 ring-white/10 transition-all z-[120]"
+            <div
+                className="absolute right-4 z-[120] flex items-center gap-2"
                 style={{ top: 'calc(env(safe-area-inset-top, 20px) + 12px)' }}
             >
-                <X size={24} />
-            </button>
+                <button
+                    type="button"
+                    onClick={handleDownload}
+                    disabled={downloading}
+                    aria-label="Last ned bilde"
+                    className="text-white/75 hover:text-white min-h-[44px] min-w-[44px] p-2 rounded-full bg-white/10 hover:bg-white/18 backdrop-blur-md ring-1 ring-white/10 transition-all disabled:opacity-60"
+                >
+                    {downloading ? <Loader2 size={22} className="animate-spin" /> : <Download size={22} />}
+                </button>
+                <button
+                    type="button"
+                    onClick={onClose}
+                    aria-label="Lukk bildevisning"
+                    className="text-white/75 hover:text-white min-h-[44px] min-w-[44px] p-2 rounded-full bg-white/10 hover:bg-white/18 backdrop-blur-md ring-1 ring-white/10 transition-all"
+                >
+                    <X size={24} />
+                </button>
+            </div>
 
             {images.length > 1 && (
                 <div
@@ -189,8 +230,8 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
                             src={currentImageSrc}
                             onLoad={() => setLoading(false)}
                             onError={(event) => {
-                                if (event.currentTarget.src !== currentImage) {
-                                    event.currentTarget.src = currentImage;
+                                if (event.currentTarget.src !== currentImageUrl) {
+                                    event.currentTarget.src = currentImageUrl;
                                     return;
                                 }
                                 setLoading(false);
