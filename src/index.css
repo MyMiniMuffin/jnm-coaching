@@ -406,7 +406,7 @@ input:focus, textarea:focus, select:focus, button:focus-visible {
 
 /* Nav pill indicator */
 .nav-pill {
-    transition: transform 0.32s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.2s ease;
+    transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.2s ease;
     background: rgba(255, 255, 255, 0.92);
     box-shadow: 0 4px 14px rgba(23, 23, 23, 0.08);
 }

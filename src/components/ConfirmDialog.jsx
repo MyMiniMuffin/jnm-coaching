@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { Card, Button } from './ui';
 import { AlertTriangle } from 'lucide-react';
 import { useFocusTrap } from '../hooks';
+import { haptic } from '../lib/haptic';
 
 const ConfirmContext = React.createContext();
 
@@ -15,6 +16,7 @@ export const ConfirmProvider = ({ children }) => {
     }, []);
 
     const handleConfirm = useCallback(() => {
+        if (state?.destructive) haptic('confirm');
         state?.resolve(true);
         setState(null);
     }, [state]);

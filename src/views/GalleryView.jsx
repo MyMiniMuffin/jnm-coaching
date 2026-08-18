@@ -9,6 +9,7 @@ import { useEscapeKey, useFocusTrap } from '../hooks';
 import { api } from '../lib/api';
 import { formatDateNO, formatWeight, getThumbnail, getFullSizeImage } from '../lib/formatters';
 import { IMAGE_ZOOM_PROPS } from '../lib/zoomConfig';
+import { haptic } from '../lib/haptic';
 
 const ImageModal = React.lazy(() => import('../components/ImageModal'));
 
@@ -349,6 +350,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
             return;
         }
 
+        haptic('save');
         setIsUploading(true);
         try {
             let completedUploads = 0;

@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
 import { NAV_ITEMS, APP_ICON } from '../lib/config';
+import { haptic } from '../lib/haptic';
 
 const NavButton = React.memo(({ item, isActive, onClick, variant }) => {
     const Icon = item.icon;
@@ -27,7 +28,7 @@ const NavButton = React.memo(({ item, isActive, onClick, variant }) => {
             onClick={() => onClick(item.id)}
             aria-label={item.label}
             aria-current={isActive ? 'page' : undefined}
-            className={`relative z-10 flex flex-col items-center justify-center gap-1 min-h-[48px] min-w-[44px] rounded-xl transition-all duration-200 active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${isActive ? 'text-ink -translate-y-0.5' : 'text-ink-muted'}`}
+            className={`relative z-10 flex flex-col items-center justify-center gap-1 min-h-[48px] min-w-[44px] rounded-xl transition-transform duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${isActive ? 'text-ink -translate-y-0.5' : 'text-ink-muted'}`}
         >
             <Icon size={22} strokeWidth={isActive ? 2 : 1.5} />
             <span className={`text-[10px] ${isActive ? 'font-semibold text-ink' : 'font-medium text-ink-muted'}`}>{item.label}</span>
@@ -37,9 +38,10 @@ const NavButton = React.memo(({ item, isActive, onClick, variant }) => {
 
 const Navigation = React.memo(({ activeTab, setActiveTab }) => {
     const handleTabClick = useCallback((id) => {
+        if (id !== activeTab) haptic('tap');
         setActiveTab(id);
         window.scrollTo({ top: 0, behavior: 'auto' });
-    }, [setActiveTab]);
+    }, [activeTab, setActiveTab]);
 
     const activeIndex = NAV_ITEMS.findIndex(item => item.id === activeTab);
     const pillStyle = {

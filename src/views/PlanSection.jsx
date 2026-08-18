@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Card, Button, EmptyState } from '../components/ui';
 import { useConfirm } from '../components/ConfirmDialog';
+import { haptic } from '../lib/haptic';
 import {
     createSection,
     getPlanTemplate,
@@ -180,6 +181,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
 
     const handleSave = useCallback(async () => {
         if (!canSave) return;
+        haptic('save');
         setIsSaving(true);
         setSaveState('saving');
         try {

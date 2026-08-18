@@ -3,6 +3,7 @@ import { Plus, X, Trash2, User, ChevronRight, Loader2, KeyRound, BellRing, Searc
 import { Card, Button, EmptyState, IconButton, TextField, ToggleGroup, SelectField } from '../components/ui';
 import { useEscapeKey } from '../hooks';
 import { useConfirm } from '../components/ConfirmDialog';
+import { haptic } from '../lib/haptic';
 
 const ClientActionsMenu = ({ client, isPending, open, onOpenChange, onArchive, onReset, onDelete }) => {
     const menuRef = useRef(null);
@@ -155,6 +156,7 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
 
     const handleFormSubmit = useCallback(async (e) => {
         e.preventDefault();
+        haptic('save');
         setIsCreating(true);
         try {
             const fd = new FormData(e.target);
@@ -213,6 +215,7 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
 
     const handleResetSubmit = useCallback(async (e) => {
         e.preventDefault();
+        haptic('save');
         setIsResetting(true);
         setPendingClientAction({ clientId: resetTarget.id, type: 'reset' });
         try {

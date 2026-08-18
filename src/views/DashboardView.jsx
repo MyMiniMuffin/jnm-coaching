@@ -9,6 +9,7 @@ import { useConfirm } from '../components/ConfirmDialog';
 import { useEscapeKey } from '../hooks';
 import { formatDateNO, formatWeight } from '../lib/formatters';
 import { QUOTES } from '../lib/config';
+import { haptic } from '../lib/haptic';
 
 const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCreatePeriod, onEndPeriod, onUpdatePeriod }) => {
     useEscapeKey(onClose);
@@ -32,6 +33,7 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
             setWeightError('Startvekt er påkrevd');
             return;
         }
+        haptic('save');
         await onCreatePeriod(formData.name || `Runde ${periods.length + 1}`, formData.startingWeight, formData.goalWeight || null);
         onClose();
     }, [formData, periods.length, onCreatePeriod, onClose]);
@@ -78,6 +80,7 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
             setEditError('Sluttdato kan ikke være før startdato');
             return;
         }
+        haptic('save');
         await onUpdatePeriod(periodId, {
             name: trimmedName,
             startDate: editingPeriod.startDate,
@@ -379,6 +382,7 @@ const PlanSettingsModal = React.memo(({ userData, onClose, onUpdateData, onOpenP
             const parsed = parseInt(stepGoal, 10);
             if (!isNaN(parsed) && parsed >= 1000) updates.stepGoal = parsed;
         }
+        haptic('save');
         onClose();
         if (Object.keys(updates).length > 0) {
             await onUpdateData(updates);

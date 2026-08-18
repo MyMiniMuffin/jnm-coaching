@@ -10,6 +10,7 @@ import { useConfirm } from '../components/ConfirmDialog';
 import { api } from '../lib/api';
 import { formatDateNO, formatWeight, formatWeightDelta, getThumbnail } from '../lib/formatters';
 import { OPTIONS_1_TO_10, INITIAL_FORM_DATA } from '../lib/config';
+import { haptic } from '../lib/haptic';
 
 const ImageModal = React.lazy(() => import('../components/ImageModal'));
 
@@ -174,7 +175,7 @@ const CheckinFields = ({
 
         <div className="space-y-3">
             <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-colors ${values.stepsReached ? 'bg-accent/10 border-accent/20' : 'bg-surface-50 border-surface-200'}`}>
-                <input type="checkbox" checked={values.stepsReached} onChange={(event) => onField('stepsReached', event.target.checked)} className="sr-only" />
+                <input type="checkbox" checked={values.stepsReached} onChange={(event) => { haptic('toggle'); onField('stepsReached', event.target.checked); }} className="sr-only" />
                 <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${values.stepsReached ? 'bg-accent text-white' : 'bg-surface-200 text-surface-200'}`}>
                     <Check size={14} strokeWidth={2.5} />
                 </div>
@@ -184,7 +185,7 @@ const CheckinFields = ({
                 </div>
             </label>
             <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-colors ${values.takenSupplements ? 'bg-accent/10 border-accent/20' : 'bg-surface-50 border-surface-200'}`}>
-                <input type="checkbox" checked={values.takenSupplements} onChange={(event) => onField('takenSupplements', event.target.checked)} className="sr-only" />
+                <input type="checkbox" checked={values.takenSupplements} onChange={(event) => { haptic('toggle'); onField('takenSupplements', event.target.checked); }} className="sr-only" />
                 <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${values.takenSupplements ? 'bg-accent text-white' : 'bg-surface-200 text-surface-200'}`}>
                     <Check size={14} strokeWidth={2.5} />
                 </div>
@@ -433,6 +434,7 @@ const CheckInView = React.memo(({
             return;
         }
         setWeightFieldError('');
+        haptic('save');
         setIsSubmitting(true);
         setErrorMessage('');
         try {
@@ -505,6 +507,7 @@ const CheckInView = React.memo(({
             return;
         }
         setEditWeightError('');
+        haptic('save');
         setIsSavingEdit(true);
         setEditError('');
         try {
