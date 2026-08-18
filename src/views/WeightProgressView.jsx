@@ -19,6 +19,7 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
         <div className="flex flex-col items-center justify-center h-[60vh] animate-fade-in">
             <EmptyState
                 title="Ingen vektdata enda"
+                description="Når en rapport med vekt sendes inn, vises utviklingen her."
                 action={<Button variant="secondary" onClick={onBack}>Tilbake</Button>}
             />
         </div>

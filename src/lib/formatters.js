@@ -13,30 +13,34 @@ export const formatWeightDelta = (current, previous) => {
     };
 };
 
-export const formatDateNO = (dateString) => {
-    if (!dateString) return '';
-    // Håndter Date-objekter
-    if (dateString instanceof Date) {
-        const day = String(dateString.getDate()).padStart(2, '0');
-        const month = String(dateString.getMonth() + 1).padStart(2, '0');
-        const year = dateString.getFullYear();
-        return `${day}.${month}.${year}`;
+const toLocalDate = (value) => {
+    if (!value && value !== 0) return null;
+    if (value instanceof Date) {
+        return Number.isNaN(value.getTime()) ? null : value;
     }
-    // Håndter timestamps (tall)
-    if (typeof dateString === 'number') {
-        const date = new Date(dateString);
-        const day = String(date.getDate()).padStart(2, '0');
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const year = date.getFullYear();
-        return `${day}.${month}.${year}`;
+    if (typeof value === 'number') {
+        const fromTimestamp = new Date(value);
+        return Number.isNaN(fromTimestamp.getTime()) ? null : fromTimestamp;
     }
-    // Håndter strenger
-    const datePart = String(dateString).split('T')[0];
+    const datePart = String(value).split('T')[0];
     if (datePart.includes('-')) {
-        const [year, month, day] = datePart.split('-');
-        return `${day}.${month}.${year}`;
+        const [year, month, day] = datePart.split('-').map(Number);
+        if (!year || !month || !day) return null;
+        return new Date(year, month - 1, day);
     }
-    return datePart;
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+export const formatDateNO = (dateString) => {
+    const date = toLocalDate(dateString);
+    if (!date) return '';
+    const sameYear = date.getFullYear() === new Date().getFullYear();
+    return date.toLocaleDateString('no-NO', {
+        day: 'numeric',
+        month: 'short',
+        ...(sameYear ? {} : { year: 'numeric' })
+    });
 };
 
 export const getThumbnail = (url) => {

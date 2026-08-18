@@ -1,5 +1,6 @@
 import React from 'react';
 import { ChevronDown } from 'lucide-react';
+import { haptic } from '../lib/haptic';
 
 const SEGMENT_COLORS = (n) => {
     if (n >= 8) return 'bg-success text-white';
@@ -7,42 +8,57 @@ const SEGMENT_COLORS = (n) => {
     return 'bg-error text-white';
 };
 
-export const SegmentedControl = React.memo(({ label, hint, value, onChange, options, colorize = false, scaleHints = false }) => (
-    <div>
-        <label className="block text-sm font-medium text-ink-muted mb-2">{label}</label>
-        {hint && <p className="text-xs text-ink-muted -mt-1 mb-2">{hint}</p>}
-        <div className="flex gap-1 rounded-xl bg-surface-100 p-1">
-            {options.map(opt => {
-                const isSelected = Number(value) === Number(opt);
-                const selectedCls = colorize ? SEGMENT_COLORS(Number(opt)) : 'bg-ink text-white';
-                return (
-                    <button
-                        key={opt}
-                        type="button"
-                        onClick={() => onChange(opt)}
-                        className={`flex-1 min-h-[44px] py-2 rounded-lg text-sm font-semibold transition-all duration-150 active:scale-95 tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 ${
-                            isSelected
-                                ? `${selectedCls} shadow-sm`
-                                : 'text-ink-muted hover:bg-white/70'
-                        }`}
-                    >
-                        {opt}
-                    </button>
-                );
-            })}
-        </div>
-        {scaleHints && (
-            <div className="mt-1.5 flex justify-between text-[11px] text-ink-muted">
-                <span>Lav</span>
-                <span>Middels</span>
-                <span>Høy</span>
+export const SegmentedControl = React.memo(({ label, hint, value, onChange, options, colorize = false, scaleHints = false }) => {
+    const wrap = options.length > 7;
+    return (
+        <div>
+            <label className="block text-sm font-medium text-ink-muted mb-2">{label}</label>
+            {hint && <p className="text-xs text-ink-muted -mt-1 mb-2">{hint}</p>}
+            <div className={wrap
+                ? 'grid grid-cols-5 gap-1 rounded-xl bg-surface-100 p-1'
+                : 'flex gap-1 rounded-xl bg-surface-100 p-1'
+            }>
+                {options.map(opt => {
+                    const isSelected = Number(value) === Number(opt);
+                    const selectedCls = colorize ? SEGMENT_COLORS(Number(opt)) : 'bg-ink text-white';
+                    return (
+                        <button
+                            key={opt}
+                            type="button"
+                            onClick={() => {
+                                if (isSelected) return;
+                                haptic('toggle');
+                                onChange(opt);
+                            }}
+                            className={`${wrap ? '' : 'flex-1'} min-h-[44px] py-2 rounded-lg text-sm font-semibold transition-all duration-150 active:scale-[0.98] tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 ${
+                                isSelected
+                                    ? `${selectedCls} shadow-sm`
+                                    : 'text-ink-muted hover:bg-white/70'
+                            }`}
+                        >
+                            {opt}
+                        </button>
+                    );
+                })}
             </div>
-        )}
-    </div>
-));
+            {scaleHints && (
+                <div className="mt-1.5 flex justify-between text-[11px] text-ink-muted">
+                    <span>Lav</span>
+                    <span>Middels</span>
+                    <span>Høy</span>
+                </div>
+            )}
+        </div>
+    );
+});
 
 export const SessionStepper = React.memo(({ label, value, onChange, min = 0, max = 7 }) => {
     const numeric = Number(value) || 0;
+    const step = (next) => {
+        if (next === numeric) return;
+        haptic('toggle');
+        onChange(next);
+    };
     return (
         <div>
             <p className="block text-sm font-medium text-ink-muted mb-2">{label}</p>
@@ -51,7 +67,7 @@ export const SessionStepper = React.memo(({ label, value, onChange, min = 0, max
                     type="button"
                     aria-label={`Reduser ${label.toLowerCase()}`}
                     disabled={numeric <= min}
-                    onClick={() => onChange(numeric - 1)}
+                    onClick={() => step(numeric - 1)}
                     className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-surface-200 bg-surface-50 text-lg font-semibold text-ink disabled:cursor-not-allowed disabled:opacity-30"
                 >
                     −
@@ -61,7 +77,7 @@ export const SessionStepper = React.memo(({ label, value, onChange, min = 0, max
                     type="button"
                     aria-label={`Øk ${label.toLowerCase()}`}
                     disabled={numeric >= max}
-                    onClick={() => onChange(numeric + 1)}
+                    onClick={() => step(numeric + 1)}
                     className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-surface-200 bg-surface-50 text-lg font-semibold text-ink disabled:cursor-not-allowed disabled:opacity-30"
                 >
                     +
@@ -158,7 +174,7 @@ export const TextField = React.memo(React.forwardRef(({
             <input
                 id={id}
                 ref={ref}
-                className={`w-full ${Icon ? 'pl-12' : 'px-4'} pr-4 py-3.5 bg-surface-50 border rounded-xl outline-none transition-all focus:ring-2 focus:ring-accent focus:border-accent font-medium placeholder-ink-faint disabled:opacity-50 ${error ? 'border-error/40' : 'border-surface-200'} ${inputClassName}`}
+                className={`w-full ${Icon ? 'pl-12' : 'px-4'} pr-4 py-3.5 bg-surface-50 border rounded-xl outline-none transition-all focus:ring-2 focus:ring-accent focus:border-accent text-base font-medium placeholder-ink-faint disabled:opacity-50 ${error ? 'border-error/40' : 'border-surface-200'} ${inputClassName}`}
                 aria-invalid={error ? true : undefined}
                 {...props}
             />
@@ -192,7 +208,11 @@ export const ToggleGroup = React.memo(({ options, value, onChange, className = '
                 <button
                     key={option.value}
                     type="button"
-                    onClick={() => onChange(option.value)}
+                    onClick={() => {
+                        if (isSelected) return;
+                        haptic('tap');
+                        onChange(option.value);
+                    }}
                     aria-pressed={isSelected}
                     className={`flex-1 min-h-[40px] px-3 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 ${isSelected ? 'bg-ink text-white shadow-sm' : 'text-ink-muted hover:bg-white/70 hover:text-ink'}`}
                 >

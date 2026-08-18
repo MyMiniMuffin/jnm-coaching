@@ -140,19 +140,19 @@ const CheckinFields = ({
         </div>
 
         <SegmentedControl
-            label="Energi (1–10)"
+            label="Energi"
             value={values.energy}
             onChange={(value) => onField('energy', value)}
             options={OPTIONS_1_TO_10}
         />
         <SegmentedControl
-            label="Søvnkvalitet (1–10)"
+            label="Søvn"
             value={values.sleep}
             onChange={(value) => onField('sleep', value)}
             options={OPTIONS_1_TO_10}
         />
         <SegmentedControl
-            label="Nøyaktighet (1–10)"
+            label="Fulgt planen"
             hint="Hvor godt fulgte du mat- og treningsplanen denne uken?"
             value={values.accuracy}
             onChange={(value) => onField('accuracy', value)}
@@ -176,7 +176,7 @@ const CheckinFields = ({
         <div className="space-y-3">
             <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-colors ${values.stepsReached ? 'bg-accent/10 border-accent/20' : 'bg-surface-50 border-surface-200'}`}>
                 <input type="checkbox" checked={values.stepsReached} onChange={(event) => { haptic('toggle'); onField('stepsReached', event.target.checked); }} className="sr-only" />
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${values.stepsReached ? 'bg-accent text-white' : 'bg-surface-200 text-surface-200'}`}>
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${values.stepsReached ? 'bg-accent text-white border-2 border-accent' : 'border-2 border-surface-300 bg-white text-transparent'}`}>
                     <Check size={14} strokeWidth={2.5} />
                 </div>
                 <div>
@@ -186,7 +186,7 @@ const CheckinFields = ({
             </label>
             <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-colors ${values.takenSupplements ? 'bg-accent/10 border-accent/20' : 'bg-surface-50 border-surface-200'}`}>
                 <input type="checkbox" checked={values.takenSupplements} onChange={(event) => { haptic('toggle'); onField('takenSupplements', event.target.checked); }} className="sr-only" />
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${values.takenSupplements ? 'bg-accent text-white' : 'bg-surface-200 text-surface-200'}`}>
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${values.takenSupplements ? 'bg-accent text-white border-2 border-accent' : 'border-2 border-surface-300 bg-white text-transparent'}`}>
                     <Check size={14} strokeWidth={2.5} />
                 </div>
                 <div>
@@ -289,6 +289,18 @@ const CheckInView = React.memo(({
     const showForm = !isReadOnly && !hideForm && (composing || !thisWeekReport);
     const planWeek = getPlanWeek(startDate, totalWeeks);
     const weekRange = formatWeekRange(featuredReport ? parseEntryDate(featuredReport) : new Date());
+    const hasDraftContent = Boolean(
+        formData.weight ||
+        formData.comment ||
+        formData.images.length > 0 ||
+        formData.energy !== INITIAL_FORM_DATA.energy ||
+        formData.sleep !== INITIAL_FORM_DATA.sleep ||
+        formData.accuracy !== INITIAL_FORM_DATA.accuracy ||
+        formData.strengthSessions !== INITIAL_FORM_DATA.strengthSessions ||
+        formData.cardioSessions !== INITIAL_FORM_DATA.cardioSessions ||
+        formData.stepsReached !== INITIAL_FORM_DATA.stepsReached ||
+        formData.takenSupplements !== INITIAL_FORM_DATA.takenSupplements
+    );
 
     useEffect(() => {
         if (isReadOnly || hideForm) return;
@@ -308,18 +320,6 @@ const CheckInView = React.memo(({
     useEffect(() => {
         if (isReadOnly || hideForm || !showForm) return;
 
-        const hasDraftContent =
-            formData.weight ||
-            formData.comment ||
-            formData.images.length > 0 ||
-            formData.energy !== INITIAL_FORM_DATA.energy ||
-            formData.sleep !== INITIAL_FORM_DATA.sleep ||
-            formData.accuracy !== INITIAL_FORM_DATA.accuracy ||
-            formData.strengthSessions !== INITIAL_FORM_DATA.strengthSessions ||
-            formData.cardioSessions !== INITIAL_FORM_DATA.cardioSessions ||
-            formData.stepsReached !== INITIAL_FORM_DATA.stepsReached ||
-            formData.takenSupplements !== INITIAL_FORM_DATA.takenSupplements;
-
         const timeoutId = setTimeout(() => {
             try {
                 if (hasDraftContent) {
@@ -333,7 +333,7 @@ const CheckInView = React.memo(({
         }, 350);
 
         return () => clearTimeout(timeoutId);
-    }, [formData, storageKey, isReadOnly, hideForm, showForm]);
+    }, [formData, hasDraftContent, storageKey, isReadOnly, hideForm, showForm]);
 
     const closeLightbox = useCallback(() => {
         setLightbox(prev => ({ ...prev, isOpen: false }));
@@ -695,9 +695,11 @@ const CheckInView = React.memo(({
                                     {thisWeekReport ? 'Denne sendes i tillegg til rapporten som allerede er inne.' : 'Fyll ut status for uken. Du kan redigere etterpå.'}
                                 </p>
                             </div>
-                            <span className="shrink-0 text-[11px] font-medium text-ink-faint bg-surface-100 px-2 py-1 rounded-full">
-                                Auto-lagret
-                            </span>
+                            {hasDraftContent && (
+                                <span className="shrink-0 text-[11px] font-medium text-ink-muted bg-surface-100 px-2 py-1 rounded-full">
+                                    Utkast lagret
+                                </span>
+                            )}
                         </div>
                         <CheckinFields
                             values={formData}

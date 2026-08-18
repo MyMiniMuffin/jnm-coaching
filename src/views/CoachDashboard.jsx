@@ -4,6 +4,7 @@ import { Card, Button, EmptyState, IconButton, TextField, ToggleGroup, SelectFie
 import { useEscapeKey } from '../hooks';
 import { useConfirm } from '../components/ConfirmDialog';
 import { haptic } from '../lib/haptic';
+import { formatDateNO } from '../lib/formatters';
 
 const ClientActionsMenu = ({ client, isPending, open, onOpenChange, onArchive, onReset, onDelete }) => {
     const menuRef = useRef(null);
@@ -412,7 +413,7 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
                                         {client.unreadCheckins > 0
                                             ? `${client.unreadCheckins} ny${client.unreadCheckins > 1 ? 'e' : ''} rapport${client.unreadCheckins > 1 ? 'er' : ''}`
                                             : client.lastCheckinDate
-                                                ? `Siste rapport: ${(() => { const d = new Date(client.lastCheckinDate.length === 10 ? client.lastCheckinDate + 'T00:00:00' : client.lastCheckinDate); return isNaN(d) ? client.lastCheckinDate : d.toLocaleDateString('no-NO', { day: 'numeric', month: 'short' }); })()}`
+                                                ? `Siste rapport: ${formatDateNO(client.lastCheckinDate)}`
                                                 : 'Ingen rapporter ennå'}
                                     </p>
                                 </div>

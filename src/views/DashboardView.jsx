@@ -8,7 +8,6 @@ import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
 import { useEscapeKey } from '../hooks';
 import { formatDateNO, formatWeight } from '../lib/formatters';
-import { QUOTES } from '../lib/config';
 import { haptic } from '../lib/haptic';
 
 const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCreatePeriod, onEndPeriod, onUpdatePeriod }) => {
@@ -512,7 +511,16 @@ const PlanSettingsModal = React.memo(({ userData, onClose, onUpdateData, onOpenP
     );
 });
 
-const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeightHistory }) => {
+const getMondayTime = (value) => {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    date.setHours(0, 0, 0, 0);
+    const day = date.getDay();
+    date.setDate(date.getDate() + (day === 0 ? -6 : 1 - day));
+    return date.getTime();
+};
+
+const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeightHistory, onOpenCheckin }) => {
     const toast = useToast();
     const checkins = userData.checkins || [];
     const periods = userData.periods || [];
@@ -522,6 +530,15 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
     const [periodLoading, setPeriodLoading] = useState(false);
     
     const lastCheckin = checkins.length > 0 ? checkins[0] : null;
+    const thisWeekReport = useMemo(() => {
+        const thisMonday = getMondayTime(new Date());
+        if (!thisMonday) return null;
+        return checkins.find((entry) => {
+            const raw = entry.timestamp || (entry.date ? (String(entry.date).length === 10 ? `${entry.date}T12:00:00` : entry.date) : null);
+            const monday = getMondayTime(raw);
+            return monday === thisMonday;
+        }) || null;
+    }, [checkins]);
 
     // Memoize week calculation
     const { currentWeek, progress } = useMemo(() => {
@@ -582,9 +599,6 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
 
         return { totalStrength, totalCardio, stepsHit, avgAccuracy, weightChange, totalCheckins: checkins.length, periodCheckins: periodCheckinsCount };
     }, [checkins, activePeriod]);
-
-    // Memoize dagens quote
-    const todayQuote = useMemo(() => QUOTES[new Date().getDay() % QUOTES.length], []);
 
     const handleOpenPlanSettings = useCallback(() => setShowPlanSettings(true), []);
     const handleClosePlanSettings = useCallback(() => setShowPlanSettings(false), []);
@@ -659,7 +673,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                                 {activePeriod ? activePeriod.name : (userData.isPaused ? 'Plan på pause' : userData.startDate ? 'Din fremgang' : 'Velkommen')}
                             </p>
                             <h2 className="text-2xl font-display leading-tight mt-0.5">
-                                {userData.isPaused ? 'Pauset' : userData.startDate ? `Uke ${currentWeek}` : 'Kom i gang'}
+                                {userData.isPaused ? 'Pauset' : userData.startDate ? `Uke ${currentWeek} av ${userData.totalWeeks || 12}` : 'Kom i gang'}
                             </h2>
                             {userData.startDate && !userData.isPaused && (() => {
                                 const endDate = new Date(new Date(userData.startDate).getTime() + (userData.totalWeeks || 12) * 7 * 24 * 60 * 60 * 1000);
@@ -681,7 +695,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                                 type="button"
                                 onClick={handleOpenPlanSettings}
                                 aria-label="Åpne plan-innstillinger"
-                                className="p-2 rounded-lg bg-white/5 hover:bg-white/12 text-white/70 transition-colors"
+                                className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg bg-white/5 hover:bg-white/12 text-white/70 transition-colors"
                             >
                                 <Pencil size={18} />
                             </button>
@@ -700,7 +714,6 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                                     style={{ width: `${progress}%` }}
                                 />
                             </div>
-                            <p className="text-white/75 text-xs text-right">{userData.totalWeeks || 12} uker totalt</p>
                         </div>
                     )}
 
@@ -775,7 +788,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                 <div>
                     <p className="section-label mx-1 mb-3">Din reise så langt</p>
                     <Card className="p-5">
-                        <div className="grid grid-cols-4 gap-3 text-center mb-5">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center mb-5">
                             <div>
                                 <div className="text-2xl font-semibold text-ink">{stats.totalStrength}</div>
                                 <div className="stat-label mt-1">Styrke</div>
@@ -811,12 +824,38 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                 </div>
             )}
 
-            {/* Dagens motivasjon */}
-            <Card className="bg-surface-100 p-5">
-                <div className="text-center">
-                    <p className="font-display text-xl italic leading-relaxed text-ink">"{todayQuote.text}"</p>
-                    <p className="text-xs text-ink-muted mt-3">- {todayQuote.author}</p>
-                </div>
+            <Card className="p-5">
+                <p className="section-label">Denne uken</p>
+                {thisWeekReport ? (
+                    <div className="mt-2 flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                            <p className="font-semibold">Rapport sendt</p>
+                            <p className="text-sm text-ink-muted mt-1">
+                                {formatDateNO(thisWeekReport.date)}
+                                {thisWeekReport.weight ? ` · ${formatWeight(thisWeekReport.weight)} kg` : ''}
+                            </p>
+                        </div>
+                        {onOpenCheckin && (
+                            <Button variant="secondary" size="sm" onClick={onOpenCheckin}>
+                                Se rapport
+                            </Button>
+                        )}
+                    </div>
+                ) : (
+                    <div className="mt-2">
+                        <p className="font-semibold">{isCoach ? 'Ingen rapport enda' : 'Ukesrapport mangler'}</p>
+                        <p className="text-sm text-ink-muted mt-1">
+                            {isCoach
+                                ? 'Når utøveren sender ukesrapporten, vises den her.'
+                                : 'Fyll ut status for uken når du er klar.'}
+                        </p>
+                        {onOpenCheckin && !isCoach && (
+                            <Button size="sm" className="mt-4" onClick={onOpenCheckin}>
+                                Fyll ut rapport
+                            </Button>
+                        )}
+                    </div>
+                )}
             </Card>
         </div>
     );

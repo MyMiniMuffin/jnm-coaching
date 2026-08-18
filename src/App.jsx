@@ -8,6 +8,7 @@ import { APP_ICON, INITIAL_DATA_STATE, TAB_ORDER } from './lib/config';
 import { clearUiState, isUiStateFresh, readUiState, saveUiState } from './lib/uiState';
 import { getNotificationPermission, prefetchViews, supportsPushNotifications, urlBase64ToUint8Array } from './lib/browserCapabilities';
 import { setAppBadgeCount, unreadCheckinTotal } from './lib/appBadge';
+import { haptic } from './lib/haptic';
 
 // Hooks
 import { useSwipe, usePullToRefresh, useOnlineStatus, useDesktop } from './hooks';
@@ -1002,12 +1003,17 @@ const App = () => {
         setActiveTab(tab);
         setShowWeightHistory(false);
     }, []);
+    const handleOpenCheckin = useCallback(() => {
+        haptic('tap');
+        handleTabChange('checkin');
+    }, [handleTabChange]);
 
     // Swipe og pull-to-refresh hooks MÅ være før alle returns
     const currentTabIndex = TAB_ORDER.indexOf(activeTab);
 
     const handleSwipeLeft = useCallback(() => {
         if (currentTabIndex < TAB_ORDER.length - 1 && !showWeightHistory) {
+            haptic('tap');
             setSwipeDirection('left');
             setSwipeEdge(null);
             setActiveTab(TAB_ORDER[currentTabIndex + 1]);
@@ -1019,6 +1025,7 @@ const App = () => {
 
     const handleSwipeRight = useCallback(() => {
         if (currentTabIndex > 0 && !showWeightHistory) {
+            haptic('tap');
             setSwipeDirection('right');
             setSwipeEdge(null);
             setActiveTab(TAB_ORDER[currentTabIndex - 1]);
@@ -1237,7 +1244,7 @@ const App = () => {
                                         onBack={handleCloseWeightHistory}
                                     />
                                 ) : (
-                                    <DashboardView userData={currentData} isCoach={isCoach} onUpdateData={handleUpdateData} onOpenWeightHistory={handleOpenWeightHistory} />
+                                    <DashboardView userData={currentData} isCoach={isCoach} onUpdateData={handleUpdateData} onOpenWeightHistory={handleOpenWeightHistory} onOpenCheckin={handleOpenCheckin} />
                                 )
                             ) :
                             activeTab === 'gallery' ? <GalleryView

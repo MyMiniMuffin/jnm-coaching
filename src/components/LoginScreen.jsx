@@ -3,6 +3,7 @@ import { ArrowRight, AlertCircle, Loader2, Eye, EyeOff } from 'lucide-react';
 import { Button, TextField } from './ui';
 import { api } from '../lib/api';
 import { APP_ICON } from '../lib/config';
+import { haptic } from '../lib/haptic';
 
 const LoginScreen = React.memo(({ onLogin }) => {
     const [username, setUsername] = useState('');
@@ -32,6 +33,7 @@ const LoginScreen = React.memo(({ onLogin }) => {
 
     const handleLogin = async (e) => {
         e.preventDefault();
+        haptic('save');
         setError('');
         setIsLoading(true);
         try {
@@ -79,13 +81,13 @@ const LoginScreen = React.memo(({ onLogin }) => {
                                 onBlur={() => setIsCapsLockOn(false)}
                                 disabled={isLoading}
                                 className="w-full px-4 py-3.5 pr-12 bg-surface-50 border border-surface-200 rounded-xl focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-all disabled:opacity-50 font-medium placeholder-ink-faint"
-                                placeholder="••••••••"
+                                placeholder="Skriv inn passord"
                                 autoComplete="current-password"
                             />
                             <button
                                 type="button"
                                 onClick={() => setShowPassword(prev => !prev)}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-ink-faint hover:text-ink transition-colors"
+                                className="absolute right-1.5 top-1/2 -translate-y-1/2 inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-ink-faint hover:bg-surface-100 hover:text-ink transition-colors"
                                 aria-label={showPassword ? 'Skjul passord' : 'Vis passord'}
                             >
                                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
