@@ -152,7 +152,7 @@ const CheckinFields = ({
             options={OPTIONS_1_TO_10}
         />
         <SegmentedControl
-            label="Fulgt planen"
+            label="Nøyaktighet"
             hint="Hvor godt fulgte du mat- og treningsplanen denne uken?"
             value={values.accuracy}
             onChange={(value) => onField('accuracy', value)}
