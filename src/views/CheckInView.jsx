@@ -157,7 +157,6 @@ const CheckinFields = ({
             value={values.accuracy}
             onChange={(value) => onField('accuracy', value)}
             options={OPTIONS_1_TO_10}
-            scaleHints
         />
 
         <div className="grid grid-cols-2 gap-4">

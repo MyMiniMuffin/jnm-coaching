@@ -8,7 +8,7 @@ const SEGMENT_COLORS = (n) => {
     return 'bg-error text-white';
 };
 
-export const SegmentedControl = React.memo(({ label, hint, value, onChange, options, colorize = false, scaleHints = false }) => {
+export const SegmentedControl = React.memo(({ label, hint, value, onChange, options, colorize = false }) => {
     const wrap = options.length > 7;
     return (
         <div>
@@ -41,13 +41,6 @@ export const SegmentedControl = React.memo(({ label, hint, value, onChange, opti
                     );
                 })}
             </div>
-            {scaleHints && (
-                <div className="mt-1.5 flex justify-between text-[11px] text-ink-muted">
-                    <span>Lav</span>
-                    <span>Middels</span>
-                    <span>Høy</span>
-                </div>
-            )}
         </div>
     );
 });
