@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { fileURLToPath } from 'node:url';
 
 export default defineConfig({
   plugins: [react()],
@@ -14,6 +15,10 @@ export default defineConfig({
       }
     },
     rollupOptions: {
+      input: {
+        app: fileURLToPath(new URL('./index.html', import.meta.url)),
+        coaching: fileURLToPath(new URL('./coaching/index.html', import.meta.url)),
+      },
       output: {
         manualChunks(id) {
           // React kjerne - endres sjelden, caches lenge

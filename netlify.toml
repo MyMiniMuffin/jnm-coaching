@@ -6,6 +6,11 @@
 [build.environment]
   NODE_VERSION = "22"
 
+[[redirects]]
+  from = "/coaching"
+  to = "/coaching/"
+  status = 301
+
 [[headers]]
   for = "/*"
   [headers.values]
@@ -30,6 +35,16 @@
 
 [[headers]]
   for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/coaching/"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/coaching/index.html"
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 
