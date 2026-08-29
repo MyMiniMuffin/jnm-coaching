@@ -85,11 +85,16 @@ const OnboardingForm = () => {
     const validateCurrentStep = () => {
         const fields = sectionRef.current?.querySelectorAll('input, select, textarea') ?? [];
         for (const field of fields) {
-            if (!field.checkValidity()) {
-                setError('Fyll ut alle obligatoriske felter før du går videre. Feltene er merket med *');
+            const isBlankRequiredField = field.required && typeof field.value === 'string' && !field.value.trim();
+            if (isBlankRequiredField || !field.checkValidity()) {
+                const fieldLabel = field.labels?.[0]?.textContent
+                    ?.replace('(obligatorisk)', '')
+                    .replace('*', '')
+                    .trim();
+                setError(field.type === 'email' && field.validity.typeMismatch
+                    ? 'Kontroller e-postadressen. Skriv den for eksempel som navn@epost.no.'
+                    : `Kontroller feltet «${fieldLabel || 'obligatorisk felt'}» før du går videre.`);
                 field.focus({ preventScroll: true });
-                field.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                field.reportValidity();
                 return false;
             }
         }
@@ -247,9 +252,9 @@ const OnboardingForm = () => {
                             <Field label="Fullt navn"><TextInput id="name" name="name" type="text" autoComplete="name" required value={values.name} onChange={updateValue} /></Field>
                             <Field label="E-post"><TextInput id="email" name="email" type="email" autoComplete="email" required value={values.email} onChange={updateValue} /></Field>
                             <Field label="Telefon" optional><TextInput id="phone" name="phone" type="tel" autoComplete="tel" value={values.phone} onChange={updateValue} /></Field>
-                            <Field label="Alder"><TextInput id="age" name="age" type="number" inputMode="numeric" min="1" max="100" required value={values.age} onChange={updateValue} /></Field>
-                            <Field label="Høyde" hint="Oppgi i centimeter"><TextInput id="height" name="height" type="number" inputMode="decimal" min="1" max="250" required value={values.height} onChange={updateValue} /></Field>
-                            <Field label="Vekt" hint="Oppgi i kilogram"><TextInput id="weight" name="weight" type="number" inputMode="decimal" min="1" max="400" step="0.1" required value={values.weight} onChange={updateValue} /></Field>
+                            <Field label="Alder"><TextInput id="age" name="age" type="text" inputMode="numeric" placeholder="For eksempel 35" required value={values.age} onChange={updateValue} /></Field>
+                            <Field label="Høyde" hint="Oppgi i centimeter"><TextInput id="height" name="height" type="text" inputMode="decimal" placeholder="For eksempel 180" required value={values.height} onChange={updateValue} /></Field>
+                            <Field label="Vekt" hint="Komma og enhet er også greit, for eksempel 82,5 kg"><TextInput id="weight" name="weight" type="text" inputMode="decimal" placeholder="For eksempel 82,5" required value={values.weight} onChange={updateValue} /></Field>
                         </div>
                     </>
                 )}
