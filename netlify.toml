@@ -11,6 +11,11 @@
   to = "/coaching/"
   status = 301
 
+[[redirects]]
+  from = "/oppstart"
+  to = "/oppstart/"
+  status = 301
+
 [[headers]]
   for = "/*"
   [headers.values]
@@ -45,6 +50,16 @@
 
 [[headers]]
   for = "/coaching/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/oppstart/"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/oppstart/index.html"
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Oppstartsskjema | JNM Coaching</title>
+    <meta name="description" content="Oppstartsskjema for nye kunder hos JNM Coaching.">
+    <meta name="theme-color" content="#F7F7F4">
+    <meta name="robots" content="noindex, nofollow">
+
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=5">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=5">
+    <link rel="apple-touch-icon" href="/icon-192.png">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Outfit:wght@400;500;600&display=swap">
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="root"></div>
+
+    <!-- Netlify leser skjemaet fra statisk HTML under bygging. -->
+    <form name="kundeoppstart" data-netlify="true" data-netlify-honeypot="bot-field" hidden>
+        <input type="hidden" name="subject" data-remove-prefix value="Ny kundeoppstart – JNM Coaching">
+        <input type="text" name="name">
+        <input type="email" name="email">
+        <input type="tel" name="phone">
+        <input type="number" name="age">
+        <input type="text" name="height">
+        <input type="text" name="weight">
+        <textarea name="training-location"></textarea>
+        <textarea name="training-goals"></textarea>
+        <select name="training-days"><option value=""></option></select>
+        <textarea name="current-activity"></textarea>
+        <textarea name="current-diet"></textarea>
+        <textarea name="other-information"></textarea>
+        <input type="url" name="front-photo-url">
+        <input type="url" name="side-photo-url">
+        <input type="url" name="back-photo-url">
+        <input type="checkbox" name="consent">
+        <input type="text" name="bot-field">
+    </form>
+
+    <script type="module" src="/src/onboarding/main.jsx"></script>
+</body>
+</html>
