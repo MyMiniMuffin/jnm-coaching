@@ -241,8 +241,8 @@ const OnboardingForm = () => {
                             <Field label="E-post"><TextInput id="email" name="email" type="email" autoComplete="email" required value={values.email} onChange={updateValue} /></Field>
                             <Field label="Telefon" optional><TextInput id="phone" name="phone" type="tel" autoComplete="tel" value={values.phone} onChange={updateValue} /></Field>
                             <Field label="Alder"><TextInput id="age" name="age" type="text" inputMode="numeric" required value={values.age} onChange={updateValue} /></Field>
-                            <Field label="Høyde (cm)"><TextInput id="height" name="height" type="text" inputMode="decimal" required value={values.height} onChange={updateValue} /></Field>
-                            <Field label="Vekt (kg)"><TextInput id="weight" name="weight" type="text" inputMode="decimal" required value={values.weight} onChange={updateValue} /></Field>
+                            <Field label="Høyde"><TextInput id="height" name="height" type="text" inputMode="decimal" required value={values.height} onChange={updateValue} /></Field>
+                            <Field label="Vekt"><TextInput id="weight" name="weight" type="text" inputMode="decimal" required value={values.weight} onChange={updateValue} /></Field>
                         </div>
                     </>
                 )}
@@ -329,24 +329,26 @@ const OnboardingForm = () => {
 
             {error && <p className="mt-6 rounded-xl bg-red-50 px-4 py-3 text-sm text-error" role="alert">{error}</p>}
 
-            <div className="onboarding-actions flex items-center justify-between gap-3">
-                {currentStep > 0 ? (
-                    <button type="button" onClick={previousStep} className="onboarding-secondary-button">
-                        <ArrowLeft size={17} aria-hidden="true" /> Tilbake
-                    </button>
-                ) : <span />}
+            <div className="onboarding-actions">
+                <div className="onboarding-actions-inner flex items-center justify-between gap-3">
+                    {currentStep > 0 ? (
+                        <button type="button" onClick={previousStep} className="onboarding-secondary-button">
+                            <ArrowLeft size={17} aria-hidden="true" /> Tilbake
+                        </button>
+                    ) : <span />}
 
-                {currentStep < steps.length - 1 ? (
-                    <button type="button" onClick={nextStep} className="coaching-button w-full sm:w-auto">
-                        Neste <ArrowRight size={17} aria-hidden="true" />
-                    </button>
-                ) : (
-                    <button type="submit" disabled={status === 'submitting'} className="coaching-button">
-                        {status === 'submitting' ? (
-                            <><Loader2 className="animate-spin" size={18} aria-hidden="true" /> {uploadStatus || 'Sender'}</>
-                        ) : <><LockKeyhole size={17} aria-hidden="true" /> Send svarene</>}
-                    </button>
-                )}
+                    {currentStep < steps.length - 1 ? (
+                        <button type="button" onClick={nextStep} className="coaching-button w-full sm:w-auto">
+                            Neste <ArrowRight size={17} aria-hidden="true" />
+                        </button>
+                    ) : (
+                        <button type="submit" disabled={status === 'submitting'} className="coaching-button">
+                            {status === 'submitting' ? (
+                                <><Loader2 className="animate-spin" size={18} aria-hidden="true" /> {uploadStatus || 'Sender'}</>
+                            ) : <><LockKeyhole size={17} aria-hidden="true" /> Send svarene</>}
+                        </button>
+                    )}
+                </div>
             </div>
         </form>
     );
