@@ -28,7 +28,15 @@ const initialValues = {
 const Field = ({ label, hint, children, optional = false }) => (
     <div className="onboarding-field-wrap">
         <div className="mb-2 flex items-baseline justify-between gap-3">
-            <label htmlFor={children.props.id} className="onboarding-label">{label}</label>
+            <label htmlFor={children.props.id} className="onboarding-label">
+                {label}
+                {children.props.required && (
+                    <>
+                        <span className="ml-1 text-accent" aria-hidden="true">*</span>
+                        <span className="sr-only"> (obligatorisk)</span>
+                    </>
+                )}
+            </label>
             {optional && <span className="text-xs text-black/40">Valgfritt</span>}
         </div>
         {children}
@@ -71,16 +79,21 @@ const OnboardingForm = () => {
     const updateValue = (event) => {
         const { name, type, checked, value } = event.target;
         setValues((current) => ({ ...current, [name]: type === 'checkbox' ? checked : value }));
+        if (error) setError('');
     };
 
     const validateCurrentStep = () => {
         const fields = sectionRef.current?.querySelectorAll('input, select, textarea') ?? [];
         for (const field of fields) {
             if (!field.checkValidity()) {
+                setError('Fyll ut alle obligatoriske felter før du går videre. Feltene er merket med *');
+                field.focus({ preventScroll: true });
+                field.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 field.reportValidity();
                 return false;
             }
         }
+        setError('');
         return true;
     };
 
