@@ -28,12 +28,6 @@
     box-shadow: 0 24px 70px rgba(23, 23, 23, 0.07);
 }
 
-.onboarding-progress {
-    margin-bottom: 1.5rem;
-    border-bottom: 1px solid rgba(23, 23, 23, 0.09);
-    padding: 0.1rem 0 1.1rem;
-}
-
 .onboarding-step-heading {
     margin-bottom: 1.35rem;
 }

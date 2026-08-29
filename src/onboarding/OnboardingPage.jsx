@@ -2,11 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, ImagePlus, Loader2, LockKeyhole } from 'lucide-react';
 import { uploadOnboardingImage, validateOnboardingImage } from './imageUpload';
 
-const steps = [
-    { title: 'Om deg', description: 'Kontakt og utgangspunkt' },
-    { title: 'Trening', description: 'Mål, sted og aktivitet' },
-    { title: 'Kosthold og hensyn', description: 'Vaner, helse og bilder' },
-];
+const stepCount = 3;
 
 const initialValues = {
     name: '',
@@ -95,7 +91,7 @@ const OnboardingForm = () => {
     const nextStep = () => {
         setError('');
         if (!validateCurrentStep()) return;
-        setCurrentStep((step) => Math.min(step + 1, steps.length - 1));
+        setCurrentStep((step) => Math.min(step + 1, stepCount - 1));
     };
 
     const previousStep = () => {
@@ -214,22 +210,6 @@ const OnboardingForm = () => {
                 <label>Ikke fyll ut dette feltet: <input name="bot-field" value={values['bot-field']} onChange={updateValue} /></label>
             </p>
 
-            <div className="onboarding-progress" aria-label={`Steg ${currentStep + 1} av ${steps.length}`}>
-                <div className="flex items-center justify-between gap-4 text-sm">
-                    <span className="font-semibold">Steg {currentStep + 1} av {steps.length}</span>
-                    <span className="text-black/45">{steps[currentStep].title}</span>
-                </div>
-                <div
-                    className="mt-3 h-1.5 overflow-hidden rounded-full bg-black/8"
-                    role="progressbar"
-                    aria-valuemin="1"
-                    aria-valuemax={steps.length}
-                    aria-valuenow={currentStep + 1}
-                >
-                    <div className="h-full rounded-full bg-accent transition-[width] duration-300" style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }} />
-                </div>
-            </div>
-
             <section ref={sectionRef} tabIndex="-1" className="onboarding-step outline-none" aria-labelledby={`step-${currentStep}-title`}>
                 {currentStep === 0 && (
                     <>
@@ -337,7 +317,7 @@ const OnboardingForm = () => {
                         </button>
                     ) : <span />}
 
-                    {currentStep < steps.length - 1 ? (
+                    {currentStep < stepCount - 1 ? (
                         <button type="button" onClick={nextStep} className="coaching-button w-full sm:w-auto">
                             Neste <ArrowRight size={17} aria-hidden="true" />
                         </button>
