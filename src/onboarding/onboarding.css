@@ -22,17 +22,18 @@
     border-radius: 1.5rem;
     background: rgba(255, 255, 255, 0.96);
     padding: 1.25rem;
+    padding-bottom: 6rem;
     box-shadow: 0 24px 70px rgba(23, 23, 23, 0.07);
 }
 
 .onboarding-progress {
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
     border-bottom: 1px solid rgba(23, 23, 23, 0.09);
-    padding: 0.25rem 0 1.5rem;
+    padding: 0.1rem 0 1.1rem;
 }
 
 .onboarding-step-heading {
-    margin-bottom: 2rem;
+    margin-bottom: 1.35rem;
 }
 
 .onboarding-step-heading h2 {
@@ -113,6 +114,19 @@
 .onboarding-secondary-button:focus-visible {
     outline: 2px solid var(--coaching-accent);
     outline-offset: 4px;
+}
+
+.onboarding-actions {
+    position: fixed;
+    z-index: 30;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    border-top: 1px solid rgba(23, 23, 23, 0.09);
+    background: rgba(255, 255, 255, 0.96);
+    padding: 0.85rem 1.25rem calc(0.85rem + env(safe-area-inset-bottom));
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
 }
 
 .onboarding-consent {
@@ -247,6 +261,18 @@
 @media (min-width: 640px) {
     .onboarding-card {
         padding: 2rem;
+    }
+
+    .onboarding-actions {
+        position: sticky;
+        right: auto;
+        left: auto;
+        margin-top: 1.5rem;
+        margin-right: -2rem;
+        margin-bottom: -2rem;
+        margin-left: -2rem;
+        padding-right: 2rem;
+        padding-left: 2rem;
     }
 }
 

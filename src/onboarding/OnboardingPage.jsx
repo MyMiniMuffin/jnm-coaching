@@ -27,20 +27,10 @@ const initialValues = {
 
 const Field = ({ label, hint, children, optional = false }) => (
     <div className="onboarding-field-wrap">
-        <div className="mb-2 flex items-baseline justify-between gap-3">
-            <label htmlFor={children.props.id} className="onboarding-label">
-                {label}
-                {children.props.required && (
-                    <>
-                        <span className="ml-1 text-accent" aria-hidden="true">*</span>
-                        <span className="sr-only"> (obligatorisk)</span>
-                    </>
-                )}
-            </label>
-            {optional && <span className="text-xs text-black/40">Valgfritt</span>}
-        </div>
+        <label htmlFor={children.props.id} className="onboarding-label mb-2">
+            {label}{optional && <span className="font-normal text-black/45"> (valgfritt)</span>}
+        </label>
         {children}
-        {hint && <p className="mt-2 text-sm leading-6 text-black/50">{hint}</p>}
     </div>
 );
 
@@ -226,8 +216,8 @@ const OnboardingForm = () => {
 
             <div className="onboarding-progress" aria-label={`Steg ${currentStep + 1} av ${steps.length}`}>
                 <div className="flex items-center justify-between gap-4 text-sm">
-                    <span className="font-semibold">{steps[currentStep].title}</span>
-                    <span className="text-black/45">{currentStep + 1} / {steps.length}</span>
+                    <span className="font-semibold">Steg {currentStep + 1} av {steps.length}</span>
+                    <span className="text-black/45">{steps[currentStep].title}</span>
                 </div>
                 <div
                     className="mt-3 h-1.5 overflow-hidden rounded-full bg-black/8"
@@ -238,31 +228,21 @@ const OnboardingForm = () => {
                 >
                     <div className="h-full rounded-full bg-accent transition-[width] duration-300" style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }} />
                 </div>
-                <ol className="mt-4 hidden grid-cols-3 gap-4 sm:grid" aria-hidden="true">
-                    {steps.map((step, index) => (
-                        <li key={step.title} className={index <= currentStep ? 'text-black' : 'text-black/35'}>
-                            <span className="block text-xs font-semibold">{step.title}</span>
-                            <span className="mt-0.5 block text-xs">{step.description}</span>
-                        </li>
-                    ))}
-                </ol>
             </div>
 
             <section ref={sectionRef} tabIndex="-1" className="onboarding-step outline-none" aria-labelledby={`step-${currentStep}-title`}>
                 {currentStep === 0 && (
                     <>
                         <div className="onboarding-step-heading">
-                            <p className="onboarding-eyebrow">Først litt om deg</p>
-                            <h2 id="step-0-title">Kontakt og utgangspunkt</h2>
-                            <p>Dette gir meg grunnlaget jeg trenger for å tilpasse planen og holde kontakten med deg.</p>
+                            <h2 id="step-0-title">Om deg</h2>
                         </div>
                         <div className="grid gap-6 sm:grid-cols-2">
                             <Field label="Fullt navn"><TextInput id="name" name="name" type="text" autoComplete="name" required value={values.name} onChange={updateValue} /></Field>
                             <Field label="E-post"><TextInput id="email" name="email" type="email" autoComplete="email" required value={values.email} onChange={updateValue} /></Field>
                             <Field label="Telefon" optional><TextInput id="phone" name="phone" type="tel" autoComplete="tel" value={values.phone} onChange={updateValue} /></Field>
-                            <Field label="Alder"><TextInput id="age" name="age" type="text" inputMode="numeric" placeholder="For eksempel 35" required value={values.age} onChange={updateValue} /></Field>
-                            <Field label="Høyde" hint="Oppgi i centimeter"><TextInput id="height" name="height" type="text" inputMode="decimal" placeholder="For eksempel 180" required value={values.height} onChange={updateValue} /></Field>
-                            <Field label="Vekt" hint="Komma og enhet er også greit, for eksempel 82,5 kg"><TextInput id="weight" name="weight" type="text" inputMode="decimal" placeholder="For eksempel 82,5" required value={values.weight} onChange={updateValue} /></Field>
+                            <Field label="Alder"><TextInput id="age" name="age" type="text" inputMode="numeric" required value={values.age} onChange={updateValue} /></Field>
+                            <Field label="Høyde (cm)"><TextInput id="height" name="height" type="text" inputMode="decimal" required value={values.height} onChange={updateValue} /></Field>
+                            <Field label="Vekt (kg)"><TextInput id="weight" name="weight" type="text" inputMode="decimal" required value={values.weight} onChange={updateValue} /></Field>
                         </div>
                     </>
                 )}
@@ -270,9 +250,7 @@ const OnboardingForm = () => {
                 {currentStep === 1 && (
                     <>
                         <div className="onboarding-step-heading">
-                            <p className="onboarding-eyebrow">Hva vi jobber mot</p>
-                            <h2 id="step-1-title">Trening, mål og rammer</h2>
-                            <p>Fortell så konkret du kan om hvor du skal trene, hva du liker og hva som er realistisk i hverdagen.</p>
+                            <h2 id="step-1-title">Trening og mål</h2>
                         </div>
                         <div className="grid gap-6 sm:grid-cols-2">
                             <Field label="Hvor skal du trene?" hint="Treningssenter, hjemmegym eller annet. Oppgi gjerne navnet på senteret.">
@@ -306,9 +284,7 @@ const OnboardingForm = () => {
                 {currentStep === 2 && (
                     <>
                         <div className="onboarding-step-heading">
-                            <p className="onboarding-eyebrow">Siste steg</p>
-                            <h2 id="step-2-title">Kosthold og andre hensyn</h2>
-                            <p>Opplysningene brukes kun til å tilpasse coachingen og behandles fortrolig.</p>
+                            <h2 id="step-2-title">Kosthold og bilder</h2>
                         </div>
                         <div className="grid gap-6 sm:grid-cols-2">
                             <div className="sm:col-span-2">
@@ -328,16 +304,13 @@ const OnboardingForm = () => {
                                             <h3 className="onboarding-label">Fremgangsbilder</h3>
                                             <span className="text-xs text-black/40">Valgfritt</span>
                                         </div>
-                                        <p className="mt-2 text-sm leading-6 text-black/50">
-                                            Helkroppsbilder forfra, fra siden og bakfra gjør planen mer presis. Treningsshorts, treningstøy eller lignende er fint – du trenger ikke å posere.
-                                        </p>
+                                        <p className="mt-2 text-sm leading-6 text-black/50">Last opp bilder forfra, fra siden og bakfra hvis du ønsker.</p>
                                     </div>
                                     <div className="mt-4 grid gap-3 sm:grid-cols-3">
                                         <PhotoField id="front-photo" label="Forfra" file={photos.front} onChange={handlePhotoChange('front')} />
                                         <PhotoField id="side-photo" label="Fra siden" file={photos.side} onChange={handlePhotoChange('side')} />
                                         <PhotoField id="back-photo" label="Bakfra" file={photos.back} onChange={handlePhotoChange('back')} />
                                     </div>
-                                    <p className="mt-3 text-xs leading-5 text-black/45">Maks 20 MB per originalbilde. Bildene komprimeres automatisk og metadata fjernes før opplasting.</p>
                                 </div>
                             </div>
                             <div className="sm:col-span-2">
@@ -356,7 +329,7 @@ const OnboardingForm = () => {
 
             {error && <p className="mt-6 rounded-xl bg-red-50 px-4 py-3 text-sm text-error" role="alert">{error}</p>}
 
-            <div className="mt-10 flex items-center justify-between gap-4 border-t border-black/10 pt-6">
+            <div className="onboarding-actions flex items-center justify-between gap-3">
                 {currentStep > 0 ? (
                     <button type="button" onClick={previousStep} className="onboarding-secondary-button">
                         <ArrowLeft size={17} aria-hidden="true" /> Tilbake
@@ -364,7 +337,7 @@ const OnboardingForm = () => {
                 ) : <span />}
 
                 {currentStep < steps.length - 1 ? (
-                    <button type="button" onClick={nextStep} className="coaching-button">
+                    <button type="button" onClick={nextStep} className="coaching-button w-full sm:w-auto">
                         Neste <ArrowRight size={17} aria-hidden="true" />
                     </button>
                 ) : (
@@ -391,8 +364,8 @@ const OnboardingPage = () => (
             </div>
         </header>
 
-        <main className="mx-auto grid max-w-6xl gap-12 px-5 py-12 sm:px-8 sm:py-16 lg:grid-cols-[0.68fr_1.32fr] lg:gap-20 lg:py-20">
-            <aside className="lg:sticky lg:top-24 lg:self-start">
+        <main className="mx-auto grid max-w-6xl gap-12 px-5 py-8 sm:px-8 sm:py-12 lg:grid-cols-[0.68fr_1.32fr] lg:gap-20 lg:py-20">
+            <aside className="hidden lg:sticky lg:top-24 lg:block lg:self-start">
                 <p className="onboarding-eyebrow">Velkommen inn</p>
                 <h1 className="mt-4 max-w-lg text-4xl font-semibold leading-[1.02] tracking-[-0.05em] sm:text-5xl lg:text-6xl">
                     La oss bygge et godt utgangspunkt<span className="coaching-accent">.</span>
