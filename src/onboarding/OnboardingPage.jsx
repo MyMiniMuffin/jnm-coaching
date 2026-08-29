@@ -113,6 +113,13 @@ const OnboardingForm = () => {
         setCurrentStep((step) => Math.max(step - 1, 0));
     };
 
+    const preventAutomaticStepChange = (event) => {
+        const isSingleLineField = event.target instanceof HTMLInputElement;
+        if (event.key === 'Enter' && !event.isComposing && isSingleLineField) {
+            event.preventDefault();
+        }
+    };
+
     const handlePhotoChange = (position) => (event) => {
         const file = event.target.files?.[0] || null;
         const validationError = validateOnboardingImage(file);
@@ -209,6 +216,7 @@ const OnboardingForm = () => {
             data-netlify="true"
             data-netlify-honeypot="bot-field"
             onSubmit={handleSubmit}
+            onKeyDown={preventAutomaticStepChange}
         >
             <input type="hidden" name="form-name" value="kundeoppstart" />
             <input type="hidden" name="subject" data-remove-prefix value="Ny kundeoppstart – JNM Coaching" />
