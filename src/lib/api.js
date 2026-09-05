@@ -305,10 +305,10 @@ export const api = {
             body: { endpoint },
             errorMessage: 'Kunne ikke slette push-abonnement'
         }),
-    login: async (username, password) => {
+    login: async (username, password, newPassword) => {
         const result = await request('/.netlify/functions/auth', {
             method: 'POST',
-            body: { username, password },
+            body: { username, password, newPassword },
             auth: false,
             errorMessage: 'Login feilet'
         });

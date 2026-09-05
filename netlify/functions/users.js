@@ -113,8 +113,8 @@ exports.handler = async (event) => {
         console.log('Users POST: Setter inn ny bruker i database...');
         try {
           await sql`
-            INSERT INTO users (name, username, password, role)
-            VALUES (${name.trim()}, ${normalizedUsername}, ${hashedPassword}, 'athlete')
+            INSERT INTO users (name, username, password, role, must_change_password)
+            VALUES (${name.trim()}, ${normalizedUsername}, ${hashedPassword}, 'athlete', true)
           `;
         } catch (insertError) {
           // Håndter duplikat brukernavn (unique constraint violation)
@@ -171,7 +171,7 @@ exports.handler = async (event) => {
           return { statusCode: 400, body: JSON.stringify({ error: 'Passord må være minst 6 tegn' }) };
         }
         const hashedPassword = await bcrypt.hash(new_password, SALT_ROUNDS);
-        await sql`UPDATE users SET password = ${hashedPassword} WHERE id = ${userId}`;
+        await sql`UPDATE users SET password = ${hashedPassword}, must_change_password = true WHERE id = ${userId}`;
       }
 
       const allUsers = await getFormattedUsersList();

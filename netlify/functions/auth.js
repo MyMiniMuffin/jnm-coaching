@@ -56,7 +56,7 @@ exports.handler = async (event) => {
     }
     const parsedBody = parseJsonBody(event);
     if (!parsedBody.ok) return parsedBody.response;
-    const { username, password } = parsedBody.data;
+    const { username, password, newPassword } = parsedBody.data;
 
     // Validering av input
     if (!username || !password || typeof username !== 'string' || typeof password !== 'string') {
@@ -68,7 +68,7 @@ exports.handler = async (event) => {
 
     // Hent bruker (inkludert passord for sammenligning)
     const result = await sql`
-      SELECT id, username, name, role, is_archived, password
+      SELECT id, username, name, role, is_archived, password, must_change_password
       FROM users 
       WHERE username = ${username.trim().toLowerCase()}
       LIMIT 1
@@ -104,6 +104,32 @@ exports.handler = async (event) => {
         statusCode: 401,
         body: JSON.stringify({ error: 'Feil brukernavn eller passord' })
       };
+    }
+
+    if (user.must_change_password) {
+      if (newPassword === undefined) {
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mustChangePassword: true })
+        };
+      }
+      if (typeof newPassword !== 'string' || newPassword.length < 8 || Buffer.byteLength(newPassword, 'utf8') > 72) {
+        return { statusCode: 400, body: JSON.stringify({ error: 'Velg et passord på minst 8 tegn og maksimalt 72 byte.' }) };
+      }
+      if (await bcrypt.compare(newPassword, storedPassword)) {
+        return { statusCode: 400, body: JSON.stringify({ error: 'Velg et annet passord enn det midlertidige passordet.' }) };
+      }
+      const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
+      // Bare én forespørsel kan bruke dette midlertidige passordet.
+      const updated = await sql`
+        UPDATE users SET password = ${hashedPassword}, must_change_password = false
+        WHERE id = ${user.id} AND password = ${storedPassword} AND must_change_password = true
+        RETURNING id
+      `;
+      if (!updated.length) {
+        return { statusCode: 401, body: JSON.stringify({ error: 'Passordet er allerede endret. Logg inn på nytt.' }) };
+      }
     }
 
     // En vellykket innlogging skal ikke telle mot senere forsøk fra samme klient.

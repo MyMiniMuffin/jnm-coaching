@@ -6,6 +6,9 @@ import { APP_ICON } from '../lib/config';
 import { haptic } from '../lib/haptic';
 
 const LoginScreen = React.memo(({ onLogin }) => {
+    const [mustChangePassword, setMustChangePassword] = useState(false);
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -33,15 +36,21 @@ const LoginScreen = React.memo(({ onLogin }) => {
 
     const handleLogin = async (e) => {
         e.preventDefault();
+        if (mustChangePassword && newPassword !== confirmPassword) {
+            setError('Passordene er ikke like.');
+            return;
+        }
         haptic('save');
         setError('');
         setIsLoading(true);
         try {
-            const user = await api.login(username, password);
-            if (user) onLogin(user);
+            const user = await api.login(username, password, mustChangePassword ? newPassword : undefined);
+            if (user?.mustChangePassword) {
+                setMustChangePassword(true);
+            } else if (user) onLogin(user);
             else setError('Feil brukernavn eller passord. Sjekk at Caps Lock ikke er på, og prøv igjen.');
         } catch (err) {
-            setError('Kunne ikke logge inn akkurat nå. Sjekk tilkoblingen og prøv igjen.');
+            setError(err.message || 'Kunne ikke logge inn akkurat nå. Sjekk tilkoblingen og prøv igjen.');
         } finally {
             setIsLoading(false);
         }
@@ -54,11 +63,12 @@ const LoginScreen = React.memo(({ onLogin }) => {
                     <img src={APP_ICON} alt="Logo" className="w-full h-full" />
                 </div>
                 <h1 className="text-3xl font-display text-ink mb-2">JNM Coaching</h1>
-                <p className="text-ink-muted">Logg inn for å fortsette</p>
+                <p className="text-ink-muted">{mustChangePassword ? 'Velg ditt eget passord' : 'Logg inn for å fortsette'}</p>
             </div>
 
             <div className="w-full max-w-sm rounded-xl border border-surface-200 bg-white p-5 shadow-sm lg:p-7">
                 <form onSubmit={handleLogin} className="space-y-4">
+                    {!mustChangePassword && <>
                     <TextField
                         label="Brukernavn"
                         type="text"
@@ -100,6 +110,12 @@ const LoginScreen = React.memo(({ onLogin }) => {
                         )}
                     </div>
 
+                    </>}
+                    {mustChangePassword && <>
+                        <p className="text-sm text-ink-muted">Du har logget inn med et midlertidig passord. Velg et eget passord før du fortsetter.</p>
+                        <TextField label="Nytt passord" type="password" autoComplete="new-password" autoFocus required minLength={8} value={newPassword} onChange={e => setNewPassword(e.target.value)} disabled={isLoading} placeholder="Minst 8 tegn" />
+                        <TextField label="Bekreft nytt passord" type="password" autoComplete="new-password" required minLength={8} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} disabled={isLoading} />
+                    </>}
                     {error && (
                         <div className="flex items-center gap-2 text-error bg-error/10 border border-error/20 px-4 py-3 rounded-xl text-sm">
                             <AlertCircle size={16} />
@@ -111,9 +127,10 @@ const LoginScreen = React.memo(({ onLogin }) => {
                         {isLoading ? (
                             <Loader2 className="animate-spin" size={20} />
                         ) : (
-                            <>Logg inn <ArrowRight size={18} /></>
+                            <>{mustChangePassword ? 'Lagre passord og fortsett' : 'Logg inn'} <ArrowRight size={18} /></>
                         )}
                     </Button>
+                    {mustChangePassword && <button type="button" disabled={isLoading} className="w-full text-sm text-ink-muted" onClick={() => { setMustChangePassword(false); setPassword(''); setNewPassword(''); setConfirmPassword(''); setError(''); }}>Tilbake til innlogging</button>}
                 </form>
             </div>
 

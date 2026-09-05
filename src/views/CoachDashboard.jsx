@@ -243,7 +243,8 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
                         <form onSubmit={handleFormSubmit} className="space-y-4">
                             <TextField ref={newAthleteNameRef} id="new-athlete-name" label="Fullt navn" required name="name" type="text" placeholder="Ola Nordmann" />
                             <TextField id="new-athlete-username" label="Brukernavn" required name="username" type="text" placeholder="ola_nordmann" autoComplete="off" pattern="[a-zA-Z0-9_]+" title="Kun bokstaver, tall og understrek" />
-                            <TextField id="new-athlete-password" label="Passord" required name="password" type="password" minLength="6" placeholder="Minst 6 tegn" autoComplete="new-password" />
+                            <p className="text-sm text-ink-muted">Utøveren må velge eget passord ved første innlogging.</p>
+                            <TextField id="new-athlete-password" label="Midlertidig passord" required name="password" type="password" minLength="6" placeholder="Minst 6 tegn" autoComplete="new-password" />
                             <Button type="submit" size="lg" className="w-full" disabled={isCreating}>
                                 {isCreating ? <><Loader2 size={18} className="animate-spin" /> Oppretter...</> : 'Opprett utøver'}
                             </Button>
@@ -262,9 +263,10 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
                                 <X size={20} />
                             </IconButton>
                         </div>
-                        <p id="reset-password-description" className="text-sm text-ink-muted mb-4">Nytt passord for <span className="font-medium text-ink">{resetTarget.name}</span></p>
+                        <p id="reset-password-description" className="text-sm text-ink-muted mb-4">Midlertidig passord for <span className="font-medium text-ink">{resetTarget.name}</span></p>
                         <form onSubmit={handleResetSubmit} className="space-y-4">
-                            <TextField ref={resetPasswordInputRef} id="reset-athlete-password" label="Nytt passord" required name="password" type="password" minLength="6" placeholder="Minst 6 tegn" autoComplete="new-password" />
+                            <p className="text-sm text-ink-muted">Utøveren må velge eget passord ved neste innlogging.</p>
+                            <TextField ref={resetPasswordInputRef} id="reset-athlete-password" label="Midlertidig passord" required name="password" type="password" minLength="6" placeholder="Minst 6 tegn" autoComplete="new-password" />
                             <Button type="submit" size="lg" className="w-full" disabled={isResetting}>
                                 {isResetting ? <><Loader2 size={18} className="animate-spin" /> Tilbakestiller...</> : <><KeyRound size={18} /> Tilbakestill passord</>}
                             </Button>
