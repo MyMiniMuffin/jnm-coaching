@@ -1,11 +1,11 @@
 # Third-party notices
 
-## Uiverse button by sekaiking
+## Uiverse button by SalladShooter
 
 The coaching call-to-action buttons are adapted from
-<https://uiverse.io/sekaiking/tidy-starfish-71>.
+<https://uiverse.io/SalladShooter/neat-bear-90>.
 
-Copyright - 2026 sekaiking
+Copyright - 2026 SalladShooter (SalladShooter)
 
 MIT License
 

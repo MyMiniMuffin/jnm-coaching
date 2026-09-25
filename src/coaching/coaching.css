@@ -55,40 +55,47 @@
     color: var(--coaching-accent-light);
 }
 
-/* Adapted from sekaiking's MIT-licensed Uiverse button; see THIRD_PARTY_NOTICES.md. */
+/* Adapted from SalladShooter's MIT-licensed Uiverse button; see THIRD_PARTY_NOTICES.md. */
 .coaching-button {
     display: inline-flex;
     min-height: 3rem;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
-    border: 1px solid var(--coaching-black);
-    border-radius: 9999px;
-    background: #fff;
-    padding: 0.75rem 1.4rem;
-    color: var(--coaching-black);
+    gap: 0.55rem;
+    border: 0;
+    border-radius: 0.5em;
+    background: #212121;
+    padding: 0.75rem 1.2rem;
+    color: #fff;
     font-size: 0.9375rem;
     font-weight: 600;
-    box-shadow: 0 0 0 var(--coaching-black);
-    transition: transform 180ms ease, box-shadow 180ms ease;
+    line-height: 1.3;
+    box-shadow: 0 0 1em 1em rgba(0, 0, 0, 0.1);
+    transition: transform 300ms ease-in-out, box-shadow 300ms ease-in-out, background 300ms ease-in-out;
+}
+
+.coaching-button-icon {
+    width: 1em;
+    height: 1em;
+    flex: none;
+    fill: currentColor;
 }
 
 @media (hover: hover) and (pointer: fine) {
     .coaching-button:hover:not(:disabled) {
-        transform: translate(-2px, -3px);
-        box-shadow: 3px 4px 0 var(--coaching-black);
+        transform: scale(1.1);
+        box-shadow: 0 0 1em 0.45em rgba(0, 0, 0, 0.1);
+        background: radial-gradient(circle at bottom, rgba(50, 100, 180, 0.5) 10%, #212121 70%);
     }
 }
 
 .coaching-button:active {
     transform: scale(0.98);
-    box-shadow: 0 0 0 var(--coaching-black);
 }
 
 .coaching-button:focus-visible {
-    outline: 2px solid #fff;
+    outline: 2px solid var(--coaching-accent);
     outline-offset: 3px;
-    box-shadow: 0 0 0 5px var(--coaching-accent);
 }
 
 .coaching-button:disabled {
