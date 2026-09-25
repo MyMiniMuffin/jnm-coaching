@@ -2,7 +2,7 @@
 
 ## Uiverse button by sekaiking
 
-The hover treatment of the main coaching call-to-action is adapted from
+The coaching call-to-action buttons are adapted from
 <https://uiverse.io/sekaiking/tidy-starfish-71>.
 
 Copyright - 2026 sekaiking

@@ -20,20 +20,6 @@
     backdrop-filter: blur(24px) saturate(1.25);
 }
 
-.coaching-nav-link {
-    display: inline-flex;
-    min-height: 2.25rem;
-    align-items: center;
-    justify-content: center;
-    border-radius: 9999px;
-    background: var(--coaching-black);
-    padding: 0.5rem 1rem;
-    color: #fff;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    transition: opacity 180ms ease, transform 180ms ease;
-}
-
 .coaching-hero {
     background:
         radial-gradient(circle at 88% 8%, rgba(181, 96, 58, 0.13), transparent 34rem),
@@ -69,53 +55,36 @@
     color: var(--coaching-accent-light);
 }
 
+/* Adapted from sekaiking's MIT-licensed Uiverse button; see THIRD_PARTY_NOTICES.md. */
 .coaching-button {
     display: inline-flex;
-    min-height: 3.25rem;
+    min-height: 3rem;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
+    border: 1px solid var(--coaching-black);
     border-radius: 9999px;
-    background: var(--coaching-black);
-    padding: 0.8rem 1.5rem;
-    color: #fff;
+    background: #fff;
+    padding: 0.75rem 1.4rem;
+    color: var(--coaching-black);
     font-size: 0.9375rem;
     font-weight: 600;
-    transition: opacity 180ms ease, transform 180ms ease;
-}
-
-/* Adapted from sekaiking's MIT-licensed Uiverse button; see THIRD_PARTY_NOTICES.md. */
-.coaching-button--lift {
-    border: 1px solid var(--coaching-black);
-    background: #fff;
-    color: var(--coaching-black);
     box-shadow: 0 0 0 var(--coaching-black);
-    transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+    transition: transform 180ms ease, box-shadow 180ms ease;
 }
 
-.coaching-button.coaching-button--lift:hover {
-    background: #fff;
-    opacity: 1;
-    transform: translate(-2px, -3px);
-    box-shadow: 3px 4px 0 var(--coaching-black);
+@media (hover: hover) and (pointer: fine) {
+    .coaching-button:hover:not(:disabled) {
+        transform: translate(-2px, -3px);
+        box-shadow: 3px 4px 0 var(--coaching-black);
+    }
 }
 
-.coaching-button.coaching-button--lift:active {
-    transform: translate(0, 0);
-    box-shadow: 0 0 0 var(--coaching-black);
-}
-
-.coaching-nav-link:hover,
-.coaching-button:hover {
-    opacity: 0.76;
-}
-
-.coaching-nav-link:active,
 .coaching-button:active {
     transform: scale(0.98);
+    box-shadow: 0 0 0 var(--coaching-black);
 }
 
-.coaching-nav-link:focus-visible,
 .coaching-button:focus-visible {
     outline: 2px solid #fff;
     outline-offset: 3px;
