@@ -98,8 +98,8 @@ export const Badge = React.memo(({ children, variant = 'default', className = ''
 ));
 
 const BUTTON_VARIANTS = {
-    primary: 'bg-ink text-white shadow-sm hover:bg-ink/85 active:scale-[0.98]',
-    secondary: 'bg-surface-100 text-ink hover:bg-surface-200 active:scale-[0.98]',
+    primary: 'bg-ink text-white shadow-sm hover:bg-ink/85',
+    secondary: 'bg-surface-100 text-ink hover:bg-surface-200',
     ghost: 'text-ink-muted hover:text-ink hover:bg-surface-100',
     danger: 'bg-error/10 text-error hover:bg-error/15',
 };
@@ -112,7 +112,7 @@ const BUTTON_SIZES = {
 export const Button = React.memo(({ children, variant = 'primary', size = 'md', className = '', ...props }) => (
     <button
         type="button"
-        className={`font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${BUTTON_VARIANTS[variant]} ${BUTTON_SIZES[size]} ${className}`}
+        className={`min-h-11 min-w-11 font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${BUTTON_VARIANTS[variant]} ${BUTTON_SIZES[size]} ${className}`}
         {...props}
     >
         {children}

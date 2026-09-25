@@ -850,7 +850,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                                 : 'Fyll ut status for uken når du er klar.'}
                         </p>
                         {onOpenCheckin && !isCoach && (
-                            <Button size="sm" className="app-report-cta mt-4" onClick={onOpenCheckin}>
+                            <Button size="sm" className="mt-4" onClick={onOpenCheckin}>
                                 Fyll ut rapport
                             </Button>
                         )}
