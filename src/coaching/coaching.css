@@ -84,6 +84,27 @@
     transition: opacity 180ms ease, transform 180ms ease;
 }
 
+/* Adapted from sekaiking's MIT-licensed Uiverse button; see THIRD_PARTY_NOTICES.md. */
+.coaching-button--lift {
+    border: 1px solid var(--coaching-black);
+    background: #fff;
+    color: var(--coaching-black);
+    box-shadow: 0 0 0 var(--coaching-black);
+    transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+
+.coaching-button.coaching-button--lift:hover {
+    background: #fff;
+    opacity: 1;
+    transform: translate(-2px, -3px);
+    box-shadow: 3px 4px 0 var(--coaching-black);
+}
+
+.coaching-button.coaching-button--lift:active {
+    transform: translate(0, 0);
+    box-shadow: 0 0 0 var(--coaching-black);
+}
+
 .coaching-nav-link:hover,
 .coaching-button:hover {
     opacity: 0.76;

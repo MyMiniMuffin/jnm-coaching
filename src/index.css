@@ -22,6 +22,33 @@ a {
     touch-action: manipulation;
 }
 
+/* A touch-friendly adaptation of cssbuttons-io's Uiverse button. */
+.app-report-cta {
+    min-height: 44px;
+    border: 0;
+    border-radius: 9999px;
+    background: #171717;
+    color: #fff;
+    box-shadow: 0 5px 10px rgba(23, 23, 23, 0.16);
+    transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+
+.app-report-cta:hover {
+    background: #252525;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .app-report-cta:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 14px rgba(23, 23, 23, 0.18);
+    }
+}
+
+.app-report-cta:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 4px rgba(23, 23, 23, 0.16);
+}
+
 header,
 nav,
 button {

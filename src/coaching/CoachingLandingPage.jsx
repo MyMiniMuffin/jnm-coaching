@@ -139,7 +139,7 @@ const CoachingLandingPage = () => (
                         <p className="mt-8 max-w-2xl text-xl leading-8 text-black/60 sm:mt-10 sm:text-2xl sm:leading-9">
                             Personlig coaching for trening, kosthold og fremgang som varer.
                         </p>
-                        <a href="#soknad" className="coaching-button mt-9 sm:mt-11">Søk om coaching</a>
+                        <a href="#soknad" className="coaching-button coaching-button--lift mt-9 sm:mt-11">Søk om coaching</a>
                     </div>
                 </div>
             </section>
