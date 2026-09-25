@@ -835,7 +835,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                                         alt=""
                                     />
                                     {img.isGalleryImage && img.label && (
-                                        <span className={`absolute top-1.5 left-1.5 truncate bg-ink/80 text-white text-[10px] font-medium px-2 py-0.5 rounded-full backdrop-blur-sm ${isCoach && onDeleteGalleryImage ? 'right-24' : 'right-12'}`}>
+                                        <span className={`absolute top-1.5 left-1.5 truncate bg-ink/80 text-white text-[10px] font-medium px-2 py-0.5 rounded-full backdrop-blur-sm ${isCoach && onDeleteGalleryImage ? 'right-[6.5rem]' : 'right-12'}`}>
                                             {img.label}
                                         </span>
                                     )}
@@ -853,7 +853,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                                     type="button"
                                     onClick={(e) => { e.stopPropagation(); handleDownloadImage(img); }}
                                     aria-label={`Last ned bilde fra ${formatDateNO(img.date)}`}
-                                    className={`absolute top-1 z-10 min-h-[40px] min-w-[40px] rounded-lg bg-white/90 text-ink shadow-sm backdrop-blur-sm active:scale-[0.98] ${isCoach && img.isGalleryImage && onDeleteGalleryImage ? 'right-11' : 'right-1'}`}
+                                    className={`absolute top-1 z-10 rounded-lg bg-white/90 text-ink shadow-sm backdrop-blur-sm active:scale-[0.98] ${isCoach && img.isGalleryImage && onDeleteGalleryImage ? 'right-14' : 'right-1'}`}
                                 >
                                     <Download size={18} />
                                 </IconButton>
@@ -863,7 +863,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                                         aria-label={String(img.galleryImageId).startsWith('temp_') ? 'Bildet lagres fortsatt' : `Slett ${img.label || 'bilde'} fra ${formatDateNO(img.date)}`}
                                         tone="danger"
                                         disabled={String(img.galleryImageId).startsWith('temp_') || deletingImageId === img.galleryImageId}
-                                        className="absolute top-1 right-1 z-10 min-h-[40px] min-w-[40px] rounded-lg bg-white/90 text-error shadow-sm backdrop-blur-sm active:scale-[0.98] disabled:cursor-wait disabled:opacity-70"
+                                        className="absolute top-1 right-1 z-10 rounded-lg bg-white/90 text-error shadow-sm backdrop-blur-sm active:scale-[0.98] disabled:cursor-wait disabled:opacity-70"
                                     >
                                         {String(img.galleryImageId).startsWith('temp_') || deletingImageId === img.galleryImageId
                                             ? <Loader2 size={18} className="animate-spin" />

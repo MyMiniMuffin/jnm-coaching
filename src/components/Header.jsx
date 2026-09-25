@@ -15,7 +15,7 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
                     type="button"
                     onClick={onClearClient}
                     aria-label="Tilbake til klientliste"
-                    className="flex items-center gap-0.5 px-2.5 py-2 rounded-lg text-accent hover:bg-surface-100 transition-colors shrink-0"
+                    className="flex min-h-11 items-center gap-0.5 rounded-lg px-2.5 py-2 text-accent transition-colors hover:bg-surface-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent shrink-0"
                 >
                     <ChevronLeft size={20} strokeWidth={2.5} />
                     <span className="text-sm font-medium">Klienter</span>
@@ -28,7 +28,7 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
                     type="button"
                     onClick={onLogout}
                     aria-label="Logg ut"
-                    className="text-ink-muted hover:text-ink p-2.5 rounded-lg hover:bg-surface-100 transition-colors shrink-0"
+                    className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-ink-muted transition-colors hover:bg-surface-100 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent shrink-0"
                 >
                     <LogOut size={20} />
                 </button>
@@ -36,7 +36,7 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
         ) : (
             <div className="header-inner flex justify-between items-center px-5 py-3 lg:px-0 lg:py-4">
                 <p className="font-semibold text-ink truncate min-w-0">{user.name}</p>
-                <button type="button" onClick={onLogout} aria-label="Logg ut" className="text-ink-muted hover:text-ink p-2.5 rounded-lg hover:bg-surface-100 transition-colors shrink-0">
+                <button type="button" onClick={onLogout} aria-label="Logg ut" className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-ink-muted transition-colors hover:bg-surface-100 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent shrink-0">
                     <LogOut size={20} />
                 </button>
             </div>

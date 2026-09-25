@@ -118,7 +118,7 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
     return (
         <div className="space-y-6 animate-slide-up pb-32 lg:pb-8">
             <div className="flex items-center gap-2">
-                <button type="button" onClick={onBack} aria-label="Tilbake til hjem" className="flex items-center justify-center -ml-2 h-10 w-10 rounded-lg text-ink-muted hover:bg-surface-100 hover:text-ink transition-colors">
+                <button type="button" onClick={onBack} aria-label="Tilbake til hjem" className="-ml-2 flex h-11 w-11 items-center justify-center rounded-lg text-ink-muted transition-colors hover:bg-surface-100 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
                     <ChevronLeft size={22} />
                 </button>
                 <h2 className="text-[1.7rem] font-display text-ink">Vektutvikling</h2>

@@ -128,7 +128,7 @@ export const IconButton = React.memo(({ children, className = '', tone = 'neutra
     return (
         <button
             type="button"
-            className={`inline-flex min-h-[40px] min-w-[40px] items-center justify-center rounded-lg p-2 transition-colors hover:bg-surface-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${toneClass} ${className}`}
+            className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg p-2 transition-colors hover:bg-surface-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${toneClass} ${className}`}
             {...props}
         >
             {children}
@@ -136,10 +136,19 @@ export const IconButton = React.memo(({ children, className = '', tone = 'neutra
     );
 });
 
-export const Card = React.memo(React.forwardRef(({ children, className = "", interactive = false, ...props }, ref) => (
+export const Card = React.memo(React.forwardRef(({ children, className = "", interactive = false, onKeyDown, ...props }, ref) => (
     <div
         ref={ref}
-        className={`surface-card rounded-xl border border-surface-200 ${interactive ? 'surface-card-interactive hover:border-surface-300 cursor-pointer' : ''} ${className}`}
+        role={interactive ? 'button' : undefined}
+        tabIndex={interactive ? 0 : undefined}
+        onKeyDown={interactive ? (event) => {
+            if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
+                event.preventDefault();
+                event.currentTarget.click();
+            }
+            onKeyDown?.(event);
+        } : onKeyDown}
+        className={`surface-card rounded-xl border border-surface-200 ${interactive ? 'surface-card-interactive hover:border-surface-300 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent' : ''} ${className}`}
         {...props}
     >
         {children}
@@ -207,7 +216,7 @@ export const ToggleGroup = React.memo(({ options, value, onChange, className = '
                         onChange(option.value);
                     }}
                     aria-pressed={isSelected}
-                    className={`flex-1 min-h-[40px] px-3 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 ${isSelected ? 'bg-ink text-white shadow-sm' : 'text-ink-muted hover:bg-white/70 hover:text-ink'}`}
+                    className={`flex-1 min-h-11 px-3 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 ${isSelected ? 'bg-ink text-white shadow-sm' : 'text-ink-muted hover:bg-white/70 hover:text-ink'}`}
                 >
                     {option.label}
                 </button>

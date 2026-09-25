@@ -42,7 +42,7 @@ const SmallIconButton = ({ label, disabled = false, tone = 'neutral', compact = 
         aria-label={label}
         title={label}
         disabled={disabled}
-        className={`inline-flex shrink-0 items-center justify-center rounded-lg transition-colors disabled:opacity-25 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-accent ${compact ? 'h-9 w-9' : 'h-10 w-10'} ${tone === 'danger' ? 'text-ink-faint hover:bg-error/10 hover:text-error' : 'text-ink-muted hover:bg-surface-100 hover:text-ink'}`}
+        className={`inline-flex shrink-0 items-center justify-center rounded-lg transition-colors disabled:opacity-25 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${compact ? 'h-10 w-10' : 'h-11 w-11'} ${tone === 'danger' ? 'text-ink-faint hover:bg-error/10 hover:text-error' : 'text-ink-muted hover:bg-surface-100 hover:text-ink'}`}
         {...props}
     >
         {children}
@@ -96,7 +96,7 @@ const RowMenu = ({ label, items }) => {
                                 setOpen(false);
                                 item.onClick();
                             }}
-                            className={`flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm disabled:cursor-not-allowed disabled:opacity-40 ${
+                            className={`flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                                 item.tone === 'danger' ? 'text-error hover:bg-error/10' : 'text-ink hover:bg-surface-100'
                             }`}
                         >
@@ -568,7 +568,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
 
                                     <div>
                                         {type === 'workout' && section.items.length > 0 && (
-                                            <div className="grid grid-cols-[minmax(0,1fr)_3.75rem_5rem_2.25rem] gap-2 bg-surface-50 px-3 py-2 sm:grid-cols-[minmax(0,1fr)_4.5rem_6.5rem_2.25rem]">
+                                            <div className="grid grid-cols-[minmax(0,1fr)_3.75rem_5rem_2.5rem] gap-2 bg-surface-50 px-3 py-2 sm:grid-cols-[minmax(0,1fr)_4.5rem_6.5rem_2.5rem]">
                                                 <span className="section-label">Øvelse</span>
                                                 <span className="section-label text-center">Sett</span>
                                                 <span className="section-label text-center">Reps</span>
@@ -578,7 +578,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                                         {section.items.map((item, itemIndex) => (
                                             type === 'workout' ? (
                                                 <div key={item.key} className="px-3 py-1.5">
-                                                    <div className="grid grid-cols-[minmax(0,1fr)_3.75rem_5rem_2.25rem] items-start gap-2 sm:grid-cols-[minmax(0,1fr)_4.5rem_6.5rem_2.25rem]">
+                                                    <div className="grid grid-cols-[minmax(0,1fr)_3.75rem_5rem_2.5rem] items-start gap-2 sm:grid-cols-[minmax(0,1fr)_4.5rem_6.5rem_2.5rem]">
                                                         <AutoGrowTextarea
                                                             aria-label={`Øvelse ${itemIndex + 1}`}
                                                             data-item-key={item.key}
@@ -611,7 +611,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                                                             className="h-[2.5rem] w-full rounded-lg border border-surface-200 bg-white px-2 text-center text-sm font-semibold tabular-nums outline-none focus:border-accent focus:ring-2 focus:ring-accent"
                                                             placeholder="8–10"
                                                         />
-                                                        <div className="flex h-[2.5rem] items-center justify-end">
+                                                        <div className="flex h-10 items-center justify-end">
                                                             <RowMenu
                                                                 label={`Handlinger for øvelse ${itemIndex + 1}`}
                                                                 items={[
@@ -690,7 +690,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
                                                     <button
                                                         type="button"
                                                         onClick={() => addSubItem(sectionIndex, itemIndex)}
-                                                        className={`ml-7 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-ink-muted transition-opacity hover:bg-surface-100 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${(item.subItems || []).length > 0 ? '' : 'opacity-0 group-focus-within:opacity-100 focus:opacity-100'}`}
+                                                        className={`ml-7 inline-flex min-h-10 items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-ink-muted transition-opacity hover:bg-surface-100 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${(item.subItems || []).length > 0 ? '' : 'lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100'}`}
                                                     >
                                                         <CornerDownRight size={13} /> Legg til valg
                                                     </button>

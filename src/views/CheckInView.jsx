@@ -213,19 +213,21 @@ const CheckinFields = ({
                     <div className="grid grid-cols-4 gap-2 mb-3">
                         {images.map((img, idx) => (
                             <div key={`${img}-${idx}`} className="relative aspect-square">
-                                <img
-                                    src={getThumbnail(img)}
-                                    className="w-full h-full object-cover rounded-lg cursor-pointer"
-                                    alt={`Forhåndsvisning ${idx + 1}`}
+                                <button
+                                    type="button"
                                     onClick={() => onOpenImage?.(images, idx)}
-                                />
+                                    aria-label={`Vis bilde ${idx + 1} i full størrelse`}
+                                    className="block h-full w-full rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                                >
+                                    <img src={getThumbnail(img)} className="h-full w-full rounded-lg object-cover" alt="" />
+                                </button>
                                 <button
                                     type="button"
                                     onClick={() => onRemoveImage(idx)}
-                                    aria-label="Fjern bilde"
-                                    className="absolute -top-1.5 -right-1.5 bg-ink text-white p-1.5 rounded-full"
+                                    aria-label={`Fjern bilde ${idx + 1}`}
+                                    className="absolute -right-2 -top-2 flex h-10 w-10 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
                                 >
-                                    <X size={14} />
+                                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-ink text-white"><X size={14} /></span>
                                 </button>
                             </div>
                         ))}

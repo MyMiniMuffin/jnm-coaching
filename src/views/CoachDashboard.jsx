@@ -55,7 +55,7 @@ const ClientActionsMenu = ({ client, isPending, open, onOpenChange, onArchive, o
                     <button
                         type="button"
                         role="menuitem"
-                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-ink hover:bg-surface-100"
+                        className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-ink hover:bg-surface-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                         onClick={(event) => run(event, onArchive)}
                     >
                         {client.is_archived ? <ArchiveRestore size={16} /> : <Archive size={16} />}
@@ -64,7 +64,7 @@ const ClientActionsMenu = ({ client, isPending, open, onOpenChange, onArchive, o
                     <button
                         type="button"
                         role="menuitem"
-                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-ink hover:bg-surface-100"
+                        className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-ink hover:bg-surface-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                         onClick={(event) => run(event, onReset)}
                     >
                         <KeyRound size={16} />
@@ -73,7 +73,7 @@ const ClientActionsMenu = ({ client, isPending, open, onOpenChange, onArchive, o
                     <button
                         type="button"
                         role="menuitem"
-                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-error hover:bg-error/10"
+                        className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-error hover:bg-error/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                         onClick={(event) => run(event, onDelete)}
                     >
                         <Trash2 size={16} />
@@ -394,32 +394,35 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
                         return (
                         <Card
                             key={client.id}
-                            className={`p-4 flex items-center justify-between group ${showArchived ? 'opacity-60' : client.unreadCheckins > 0 ? 'border-accent/30 bg-accent/5' : ''} ${isPending ? 'pointer-events-none opacity-70' : ''}`}
-                            interactive={!isPending}
-                            onClick={() => {
-                                if (isPending) return;
-                                if (openMenuId) {
-                                    setOpenMenuId(null);
-                                    return;
-                                }
-                                onSelectClient(client);
-                            }}
+                            className={`p-4 flex items-center justify-between group ${showArchived ? 'opacity-60' : client.unreadCheckins > 0 ? 'border-accent/30 bg-accent/5' : ''} ${isPending ? 'opacity-70' : 'hover:border-surface-300'}`}
                         >
-                            <div className="flex items-center gap-4 min-w-0">
-                                <div className={`w-12 h-12 shrink-0 rounded-xl flex items-center justify-center text-lg font-semibold ${showArchived ? 'bg-surface-200 text-ink-muted' : client.unreadCheckins > 0 ? 'bg-accent/10 text-accent' : 'bg-surface-100 text-ink'}`}>
+                            <button
+                                type="button"
+                                disabled={isPending}
+                                onClick={() => {
+                                    if (openMenuId) {
+                                        setOpenMenuId(null);
+                                        return;
+                                    }
+                                    onSelectClient(client);
+                                }}
+                                className="flex min-h-12 min-w-0 flex-1 items-center gap-4 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:cursor-wait"
+                            >
+                                <span className={`w-12 h-12 shrink-0 rounded-xl flex items-center justify-center text-lg font-semibold ${showArchived ? 'bg-surface-200 text-ink-muted' : client.unreadCheckins > 0 ? 'bg-accent/10 text-accent' : 'bg-surface-100 text-ink'}`}>
                                     {client.name.charAt(0)}
-                                </div>
-                                <div className="min-w-0">
-                                    <p className="font-medium truncate">{client.name}</p>
-                                    <p className={`text-sm ${client.unreadCheckins > 0 ? 'text-accent font-medium' : 'text-ink-muted'}`}>
+                                </span>
+                                <span className="min-w-0">
+                                    <span className="block font-medium truncate">{client.name}</span>
+                                    <span className={`block text-sm ${client.unreadCheckins > 0 ? 'text-accent font-medium' : 'text-ink-muted'}`}>
                                         {client.unreadCheckins > 0
                                             ? `${client.unreadCheckins} ny${client.unreadCheckins > 1 ? 'e' : ''} rapport${client.unreadCheckins > 1 ? 'er' : ''}`
                                             : client.lastCheckinDate
                                                 ? `Siste rapport: ${formatDateNO(client.lastCheckinDate)}`
                                                 : 'Ingen rapporter ennå'}
-                                    </p>
-                                </div>
-                            </div>
+                                    </span>
+                                </span>
+                                {!isPending && <ChevronRight size={18} className="ml-auto shrink-0 text-ink-faint" />}
+                            </button>
                             <div className="flex items-center shrink-0">
                                 <ClientActionsMenu
                                     client={client}
@@ -430,7 +433,7 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
                                     onReset={() => openResetModal(client)}
                                     onDelete={() => handleDelete(client.id)}
                                 />
-                                {isPending ? <Loader2 size={18} className="text-ink-faint animate-spin" /> : <ChevronRight size={18} className="text-ink-faint" />}
+                                {isPending && <Loader2 size={18} className="text-ink-faint animate-spin" />}
                             </div>
                         </Card>
                         );
