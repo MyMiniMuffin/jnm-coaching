@@ -378,6 +378,7 @@ exports.handler = async (event) => {
 
           // Lengdebegrensning på tekstfelt
           const MAX_PLAN_LENGTH = 50000;
+          const MAX_WORKOUT_PLANS_LENGTH = 200000;
           if (data.dietPlan !== undefined) {
             if (typeof data.dietPlan === 'string' && data.dietPlan.length > MAX_PLAN_LENGTH) {
               return { statusCode: 400, body: JSON.stringify({ error: 'Matplan er for lang (maks 50 000 tegn)' }) };
@@ -385,8 +386,8 @@ exports.handler = async (event) => {
             updates.diet_plan = data.dietPlan;
           }
           if (data.workoutPlan !== undefined) {
-            if (typeof data.workoutPlan === 'string' && data.workoutPlan.length > MAX_PLAN_LENGTH) {
-              return { statusCode: 400, body: JSON.stringify({ error: 'Treningsplan er for lang (maks 50 000 tegn)' }) };
+            if (typeof data.workoutPlan === 'string' && data.workoutPlan.length > MAX_WORKOUT_PLANS_LENGTH) {
+              return { statusCode: 400, body: JSON.stringify({ error: 'Treningsplaner er for lange (maks 200 000 tegn)' }) };
             }
             updates.workout_plan = data.workoutPlan;
           }
