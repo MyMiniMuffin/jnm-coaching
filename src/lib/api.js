@@ -278,6 +278,12 @@ export const api = {
         { periodId, ...updates },
         'Kunne ikke oppdatere periode'
     ),
+    deletePeriod: (userId, periodId) => mutateUserData(
+        userId,
+        'delete_period',
+        { periodId },
+        'Kunne ikke slette runde'
+    ),
     addGalleryImage: (userId, imageUrl, label, date, weight) => mutateUserData(
         userId,
         'add_gallery_image',

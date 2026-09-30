@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import {
   Scale, Footprints, Pencil, ChevronRight, TrendingUp, TrendingDown, Minus,
-  X, Plus, Check, Loader2, Calendar, Pause, Play, Activity, ArrowRight
+  X, Plus, Check, Loader2, Calendar, Pause, Play, Activity, ArrowRight, Trash2
 } from 'lucide-react';
 import { Card, Badge, Button, IconButton, InputLabel } from '../components/ui';
 import { useToast } from '../components/Toast';
@@ -10,7 +10,7 @@ import { useEscapeKey } from '../hooks';
 import { formatDateNO, formatWeight } from '../lib/formatters';
 import { haptic } from '../lib/haptic';
 
-const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCreatePeriod, onEndPeriod, onUpdatePeriod }) => {
+const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCreatePeriod, onEndPeriod, onUpdatePeriod, onDeletePeriod }) => {
     useEscapeKey(onClose);
     const confirmDialog = useConfirm();
     const [view, setView] = useState('list'); // 'list' eller 'create'
@@ -43,6 +43,18 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
             onClose();
         }
     }, [onEndPeriod, onClose, confirmDialog]);
+
+    const handleDelete = useCallback(async (period) => {
+        const linkedReports = (userData.checkins || []).filter(checkin => checkin.periodId === period.id).length;
+        const reportMessage = linkedReports > 0
+            ? ` ${linkedReports} ${linkedReports === 1 ? 'rapport beholdes' : 'rapporter beholdes'}, men koblingen til runden fjernes.`
+            : '';
+        const confirmed = await confirmDialog(
+            `Slette «${period.name}» permanent?${reportMessage}${period.isActive ? ' Den aktive runden avsluttes uten å opprette en ny.' : ''}`,
+            { title: 'Slett coaching-runde', confirmText: 'Slett runde', destructive: true }
+        );
+        if (confirmed) await onDeletePeriod(period.id);
+    }, [confirmDialog, onDeletePeriod, userData.checkins]);
 
     const handleStartRename = useCallback((period) => {
         setEditingPeriodId(period.id);
@@ -148,15 +160,24 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                         </div>
                                         <div className="flex items-center gap-2">
                                             {editingPeriodId !== activePeriod.id && (
-                                                <IconButton
-                                                    type="button"
-                                                    onClick={() => handleStartRename(activePeriod)}
-                                                    aria-label={`Rediger navn på ${activePeriod.name}`}
-                                                    disabled={isLoading}
-                                                    tone="accent"
-                                                >
-                                                    <Pencil size={16} />
-                                                </IconButton>
+                                                <>
+                                                    <IconButton
+                                                        onClick={() => handleStartRename(activePeriod)}
+                                                        aria-label={`Rediger navn på ${activePeriod.name}`}
+                                                        disabled={isLoading}
+                                                        tone="accent"
+                                                    >
+                                                        <Pencil size={16} />
+                                                    </IconButton>
+                                                    <IconButton
+                                                        onClick={() => handleDelete(activePeriod)}
+                                                        aria-label={`Slett ${activePeriod.name}`}
+                                                        disabled={isLoading}
+                                                        tone="danger"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </IconButton>
+                                                </>
                                             )}
                                             <Badge variant="success">Aktiv</Badge>
                                         </div>
@@ -255,15 +276,24 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                                     )}
                                                 </div>
                                                 {editingPeriodId !== period.id && (
-                                                    <IconButton
-                                                        type="button"
-                                                        onClick={() => handleStartRename(period)}
-                                                        aria-label={`Rediger navn på ${period.name}`}
-                                                        disabled={isLoading}
-                                                        tone="accent"
-                                                    >
-                                                        <Pencil size={16} />
-                                                    </IconButton>
+                                                    <div className="flex items-center">
+                                                        <IconButton
+                                                            onClick={() => handleStartRename(period)}
+                                                            aria-label={`Rediger navn på ${period.name}`}
+                                                            disabled={isLoading}
+                                                            tone="accent"
+                                                        >
+                                                            <Pencil size={16} />
+                                                        </IconButton>
+                                                        <IconButton
+                                                            onClick={() => handleDelete(period)}
+                                                            aria-label={`Slett ${period.name}`}
+                                                            disabled={isLoading}
+                                                            tone="danger"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </IconButton>
+                                                    </div>
                                                 )}
                                             </div>
                                             <div className="flex gap-2 text-xs">
@@ -640,6 +670,16 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
         }
     }, [onUpdateData]);
 
+    const handleDeletePeriod = useCallback(async (periodId) => {
+        setPeriodLoading(true);
+        try {
+            const result = await onUpdateData({ action: 'delete_period', periodId });
+            if (result === true) toast('Runde slettet');
+        } finally {
+            setPeriodLoading(false);
+        }
+    }, [onUpdateData, toast]);
+
     return (
         <div className="space-y-5 pb-32 lg:pb-8 animate-slide-up">
             {/* Period Management Modal */}
@@ -651,6 +691,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                     onCreatePeriod={handleCreatePeriod}
                     onEndPeriod={handleEndPeriod}
                     onUpdatePeriod={handleUpdatePeriodCb}
+                    onDeletePeriod={handleDeletePeriod}
                 />
             )}
 
