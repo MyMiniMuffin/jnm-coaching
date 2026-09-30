@@ -189,6 +189,7 @@ const COACH_ONLY_TYPES = new Set([
   'create_period',
   'end_period',
   'update_period',
+  'delete_period',
   'add_gallery_image',
   'delete_gallery_image'
 ]);
@@ -827,6 +828,30 @@ exports.handler = async (event) => {
         if (queries.length > 0) {
           await Promise.all(queries);
         }
+      }
+
+      else if (type === 'delete_period') {
+        const periodId = Number(data.periodId);
+        if (!Number.isInteger(periodId) || periodId <= 0) {
+          return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig runde-ID' }) };
+        }
+
+        const ownedPeriod = await sql`
+          SELECT id FROM coaching_periods WHERE id = ${periodId} AND user_id = ${userId}
+        `;
+        if (ownedPeriod.length === 0) {
+          return { statusCode: 404, body: JSON.stringify({ error: 'Runden ble ikke funnet' }) };
+        }
+
+        // Behold rapportene, men fjern koblingen til runden. Alle tre endringer
+        // må lykkes samlet, slik at aktiv runde og rapporter aldri blir hengende.
+        await sql.transaction([
+          sql`UPDATE users SET current_period_id = NULL, starting_weight = NULL
+              WHERE id = ${userId} AND current_period_id = ${periodId}`,
+          sql`UPDATE checkins SET period_id = NULL
+              WHERE user_id = ${userId} AND period_id = ${periodId}`,
+          sql`DELETE FROM coaching_periods WHERE id = ${periodId} AND user_id = ${userId}`
+        ]);
       }
       
       else if (type === 'add_gallery_image') {

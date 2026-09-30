@@ -513,7 +513,7 @@ const App = () => {
         if (!viewingClient) return { error: 'Velg en klient før du lagrer.' };
 
         const updates = typeof keyOrObj === 'string' ? { [keyOrObj]: value } : keyOrObj;
-        const isPeriodAction = updates?.action === 'create_period' || updates?.action === 'end_period' || updates?.action === 'update_period';
+        const isPeriodAction = ['create_period', 'end_period', 'update_period', 'delete_period'].includes(updates?.action);
 
         if (isPeriodAction) {
             if (periodActionSavingRef.current) return;
@@ -588,6 +588,22 @@ const App = () => {
                     });
                 }
                 return;
+            } else if (updates.action === 'delete_period') {
+                const result = await api.deletePeriod(viewingClient.id, updates.periodId);
+                if (result.authError) {
+                    setShowReauthPrompt(true);
+                    return { error: 'Økten er utløpt. Logg inn på nytt.' };
+                }
+                setCurrentData(prev => ({
+                    ...prev,
+                    periods: (prev.periods || []).filter(period => period.id !== updates.periodId),
+                    currentPeriodId: prev.currentPeriodId === updates.periodId ? null : prev.currentPeriodId,
+                    startingWeight: prev.currentPeriodId === updates.periodId ? null : prev.startingWeight,
+                    checkins: (prev.checkins || []).map(checkin =>
+                        checkin.periodId === updates.periodId ? { ...checkin, periodId: null } : checkin
+                    )
+                }));
+                return true;
             } else if (updates.action === 'pause') {
                 setCurrentData(prev => {
                     previousData = prev;
