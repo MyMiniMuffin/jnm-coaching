@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X, ChevronLeft, ChevronRight, Loader2, Download } from 'lucide-react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
-import { getFullSizeImage } from '../lib/formatters';
+import { formatDateNO, formatWeight, getFullSizeImage } from '../lib/formatters';
 import { buildImageFilename, downloadImageFile } from '../lib/downloadImage';
 import { IMAGE_ZOOM_PROPS } from '../lib/zoomConfig';
 import { useFocusTrap } from '../hooks';
@@ -26,6 +26,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
     const safeInitialIndex = Math.max(0, Math.min(initialIndex || 0, (images?.length || 1) - 1));
     const [index, setIndex] = useState(safeInitialIndex);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     const [downloading, setDownloading] = useState(false);
     const [direction, setDirection] = useState(0);
     const modalRef = useFocusTrap(true);
@@ -65,6 +66,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
         scaleRef.current = 1;
         setDirection(nextDirection);
         setLoading(true);
+        setLoadError(false);
         setIndex(boundedIndex);
     }, [images?.length]);
 
@@ -139,7 +141,9 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
             setDownloading(false);
         }
     }, [currentImage, currentImageUrl, downloading, index, toast]);
-    const imageLabel = `Bilde ${index + 1} av ${images?.length || 0}`;
+    const imageTitle = currentImage?.label || (currentImage?.isGalleryImage ? 'Fremgangsbilde' : 'Rapportbilde');
+    const imageDate = formatDateNO(currentImage?.date || currentImage?.timestamp);
+    const imageWeight = currentImage?.weight ? `${formatWeight(currentImage.weight)} kg` : '';
     const hasNext = index < (images?.length || 0) - 1;
     const hasPrev = index > 0;
 
@@ -197,6 +201,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
                 <div
                     className="absolute left-4 text-white/75 font-medium bg-white/10 px-3 py-2 rounded-full text-sm z-[120] backdrop-blur-md ring-1 ring-white/10"
                     style={{ top: 'calc(env(safe-area-inset-top, 20px) + 14px)' }}
+                    aria-label={`Bilde ${index + 1} av ${images.length}`}
                 >
                     {index + 1} / {images.length}
                 </div>
@@ -216,7 +221,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
                         wrapperStyle={WRAPPER_STYLE}
                         contentStyle={CONTENT_STYLE}
                     >
-                        {loading && (
+                        {loading && !loadError && (
                             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3" aria-hidden="true">
                                 <div className="w-[min(70vw,420px)] aspect-[3/4] rounded-xl bg-white/7 border border-white/10 animate-pulse flex items-center justify-center shadow-[0_24px_70px_rgba(0,0,0,0.35)]">
                                     <Loader2 className="text-white/70 animate-spin" size={32} />
@@ -228,18 +233,26 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
                             ref={imageRef}
                             key={currentImageSrc}
                             src={currentImageSrc}
-                            onLoad={() => setLoading(false)}
+                            onLoad={() => { setLoading(false); setLoadError(false); }}
                             onError={(event) => {
-                                if (event.currentTarget.src !== currentImageUrl) {
+                                if (currentImageUrl && event.currentTarget.src !== currentImageUrl) {
                                     event.currentTarget.src = currentImageUrl;
                                     return;
                                 }
                                 setLoading(false);
+                                setLoadError(true);
                             }}
-                            className={`block h-full w-full object-contain select-none rounded-sm shadow-[0_24px_90px_rgba(0,0,0,0.32)] transition-all duration-300 ease-out ${loading ? `opacity-0 ${direction > 0 ? 'translate-x-4' : direction < 0 ? '-translate-x-4' : 'scale-[0.99]'}` : 'opacity-100 translate-x-0 scale-100'}`}
-                            alt={imageLabel}
+                            className={`block h-full w-full object-contain select-none rounded-sm shadow-[0_24px_90px_rgba(0,0,0,0.32)] transition-all duration-300 ease-out ${loading || loadError ? `opacity-0 ${direction > 0 ? 'translate-x-4' : direction < 0 ? '-translate-x-4' : 'scale-[0.99]'}` : 'opacity-100 translate-x-0 scale-100'}`}
+                            alt={`${imageTitle}${imageDate ? ` fra ${imageDate}` : ''}`}
                             draggable={false}
                         />
+                        {loadError && (
+                            <div className="absolute inset-0 flex items-center justify-center px-12 text-center" role="alert">
+                                <p className="rounded-xl bg-white/10 px-5 py-4 text-sm text-white/85 backdrop-blur-md">
+                                    Bildet kunne ikke lastes inn. Prøv et annet bilde eller åpne galleriet på nytt.
+                                </p>
+                            </div>
+                        )}
                     </TransformComponent>
                 </TransformWrapper>
 
@@ -263,8 +276,18 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
                         <ChevronRight size={26} />
                     </button>
                 )}
-                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/55 bg-white/10 px-3 py-1.5 rounded-full text-xs z-[110] backdrop-blur-md ring-1 ring-white/10">
-                    Sveip eller knip for å navigere
+                <div className="absolute inset-x-3 bottom-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] z-[110] flex justify-center pointer-events-none" aria-live="polite">
+                    <div className="max-w-full rounded-xl bg-black/50 px-4 py-2 text-center text-white backdrop-blur-md ring-1 ring-white/10">
+                        <p className="truncate text-sm font-medium">{imageTitle}</p>
+                        {(imageDate || imageWeight) && (
+                            <p className="text-xs text-white/75">
+                                {[imageDate, imageWeight].filter(Boolean).join(' · ')}
+                            </p>
+                        )}
+                        <p className="mt-0.5 text-[11px] text-white/55">
+                            {images.length > 1 ? 'Sveip for å bytte · Knip eller dobbelttrykk for å zoome' : 'Knip eller dobbelttrykk for å zoome'}
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
