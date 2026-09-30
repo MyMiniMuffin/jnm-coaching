@@ -131,7 +131,7 @@ const AutoGrowTextarea = ({ value, onChange, ...props }) => {
     );
 };
 
-const PlanSection = React.memo(({ type, content, onSave, isReadOnly, onEditingChange }) => {
+const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived = false, onEditingChange }) => {
     const confirmDialog = useConfirm();
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -445,6 +445,11 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, onEditingCh
 
     return (
         <div className={`space-y-5 animate-slide-up ${isEditing && !isReadOnly ? 'pb-52 lg:pb-24' : 'pb-32 lg:pb-8'}`}>
+            {isArchived && (
+                <p role="status" className="rounded-xl border border-surface-200 bg-surface-100 px-4 py-3 text-sm text-ink-muted">
+                    Klienten er arkivert. Gjenopprett klienten under «Klienter» før du endrer planen.
+                </p>
+            )}
             <Card className="overflow-hidden">
                 <div className="flex justify-between items-center gap-3 p-5 border-b border-surface-100 bg-white">
                     <div className="flex items-center gap-3 min-w-0">
