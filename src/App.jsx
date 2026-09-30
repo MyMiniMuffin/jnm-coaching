@@ -510,7 +510,7 @@ const App = () => {
     const periodActionSavingRef = React.useRef(false);
 
     const handleUpdateData = useCallback(async (keyOrObj, value) => {
-        if (!viewingClient) return false;
+        if (!viewingClient) return { error: 'Velg en klient før du lagrer.' };
 
         const updates = typeof keyOrObj === 'string' ? { [keyOrObj]: value } : keyOrObj;
         const isPeriodAction = updates?.action === 'create_period' || updates?.action === 'end_period' || updates?.action === 'update_period';
@@ -519,7 +519,7 @@ const App = () => {
             if (periodActionSavingRef.current) return;
             periodActionSavingRef.current = true;
         } else {
-            if (savingRef.current) return false;
+            if (savingRef.current) return { error: 'En annen endring lagres. Prøv igjen om litt.' };
             savingRef.current = true;
         }
 
@@ -621,14 +621,15 @@ const App = () => {
             if (result.authError) {
                 setShowReauthPrompt(true);
                 setCurrentData(previousData);
-                return false;
+                return { error: 'Økten er utløpt. Logg inn på nytt.' };
             }
             toast('Lagret');
             return true;
         } catch (e) {
             if (previousData) setCurrentData(previousData);
-            toast('Kunne ikke lagre – endringene ble tilbakestilt. Prøv igjen.', 'error');
-            return false;
+            const message = e?.message || 'Kunne ikke lagre – endringene ble tilbakestilt. Prøv igjen.';
+            toast(message, 'error');
+            return { error: message };
         } finally {
             if (isPeriodAction) {
                 periodActionSavingRef.current = false;
@@ -640,7 +641,8 @@ const App = () => {
 
     const handleSaveDietPlan = useCallback((val) => handleUpdateData('dietPlan', val), [handleUpdateData]);
     const handleSaveWorkoutPlan = useCallback(async (val) => {
-        if (!await handleUpdateData('workoutPlan', val)) throw new Error('Kunne ikke lagre treningsplanen');
+        const result = await handleUpdateData('workoutPlan', val);
+        if (result !== true) throw new Error(result?.error || 'Kunne ikke lagre treningsplanen');
     }, [handleUpdateData]);
 
     const handleUpdateCheckin = useCallback(async (checkinId, updates) => {
@@ -1260,8 +1262,8 @@ const App = () => {
                                 onAddGalleryImage={handleAddGalleryImage}
                                 onDeleteGalleryImage={handleDeleteGalleryImage}
                             /> :
-                            activeTab === 'diet' ? <PlanSection type="diet" content={currentData.dietPlan} onSave={handleSaveDietPlan} isReadOnly={!isCoach} /> :
-                            activeTab === 'workout' ? <WorkoutPlansSection content={currentData.workoutPlan} onSave={handleSaveWorkoutPlan} isReadOnly={!isCoach} /> :
+                            activeTab === 'diet' ? <PlanSection type="diet" content={currentData.dietPlan} onSave={handleSaveDietPlan} isReadOnly={!isCoach || Boolean(viewingClient?.is_archived)} isArchived={Boolean(isCoach && viewingClient?.is_archived)} /> :
+                            activeTab === 'workout' ? <WorkoutPlansSection content={currentData.workoutPlan} onSave={handleSaveWorkoutPlan} isReadOnly={!isCoach || Boolean(viewingClient?.is_archived)} isArchived={Boolean(isCoach && viewingClient?.is_archived)} /> :
                             <CheckInView checkins={currentData.checkins} onNewCheckin={handleNewCheckin} onDelete={handleDeleteCheckin} onUpdate={handleUpdateCheckin} canEdit={Boolean(viewingClient)} isReadOnly={isCoach} canDelete={Boolean(viewingClient)} stepGoal={currentData.stepGoal} draftKey={viewingClient?.id || currentUser?.id || 'default'} uploadUserId={viewingClient?.id} startDate={currentData.startDate} totalWeeks={currentData.totalWeeks} />}
                         </div>
                     </Suspense></ViewErrorBoundary>

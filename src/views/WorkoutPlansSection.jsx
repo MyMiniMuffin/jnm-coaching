@@ -5,7 +5,7 @@ import { useConfirm } from '../components/ConfirmDialog';
 import { parseWorkoutPlans, serializeWorkoutPlans } from '../lib/workoutPlans';
 import PlanSection from './PlanSection';
 
-const WorkoutPlansSection = ({ content, onSave, isReadOnly }) => {
+const WorkoutPlansSection = ({ content, onSave, isReadOnly, isArchived = false }) => {
     const confirmDialog = useConfirm();
     const plans = useMemo(() => parseWorkoutPlans(content), [content]);
     const [selectedId, setSelectedId] = useState(plans[0].id);
@@ -13,7 +13,7 @@ const WorkoutPlansSection = ({ content, onSave, isReadOnly }) => {
     const [name, setName] = useState('');
     const [isEditingPlan, setIsEditingPlan] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    const [saveError, setSaveError] = useState(false);
+    const [saveError, setSaveError] = useState('');
     const selectedPlan = plans.find(plan => plan.id === selectedId) || plans[0];
     const duplicateName = plans.some(plan =>
         plan.id !== (nameMode === 'rename' ? selectedPlan.id : null)
@@ -26,12 +26,12 @@ const WorkoutPlansSection = ({ content, onSave, isReadOnly }) => {
     }, [plans, selectedId]);
 
     const savePlans = async (nextPlans) => {
-        setSaveError(false);
+        setSaveError('');
         setIsSaving(true);
         try {
             await onSave(serializeWorkoutPlans(nextPlans));
         } catch (error) {
-            setSaveError(true);
+            setSaveError(error?.message || 'Kunne ikke lagre. Prøv igjen.');
             throw error;
         } finally {
             setIsSaving(false);
@@ -78,6 +78,11 @@ const WorkoutPlansSection = ({ content, onSave, isReadOnly }) => {
 
     return (
         <div className="space-y-5">
+            {isArchived && (
+                <p role="status" className="rounded-xl border border-surface-200 bg-surface-100 px-4 py-3 text-sm text-ink-muted">
+                    Klienten er arkivert. Gjenopprett klienten under «Klienter» før du endrer treningsplanene.
+                </p>
+            )}
             <Card className="p-4 sm:p-5">
                 <div className="mb-3 flex items-center justify-between gap-3">
                     <div>
@@ -111,7 +116,7 @@ const WorkoutPlansSection = ({ content, onSave, isReadOnly }) => {
                         </button>
                     ))}
                 </div>
-                {saveError && <p role="alert" className="mt-3 text-xs text-error">Kunne ikke lagre. Prøv igjen.</p>}
+                {saveError && <p role="alert" className="mt-3 text-xs text-error">{saveError}</p>}
 
                 {!isReadOnly && !isEditingPlan && !nameMode && (
                     <div className="mt-3 flex items-center gap-2">
