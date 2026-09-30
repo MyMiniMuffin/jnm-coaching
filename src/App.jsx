@@ -28,6 +28,7 @@ const DashboardView = React.lazy(() => import('./views/DashboardView'));
 const WeightProgressView = React.lazy(() => import('./views/WeightProgressView'));
 const GalleryView = React.lazy(() => import('./views/GalleryView'));
 const PlanSection = React.lazy(() => import('./views/PlanSection'));
+const WorkoutPlansSection = React.lazy(() => import('./views/WorkoutPlansSection'));
 const CheckInView = React.lazy(() => import('./views/CheckInView'));
 
 const isPlainObject = (value) => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -509,7 +510,7 @@ const App = () => {
     const periodActionSavingRef = React.useRef(false);
 
     const handleUpdateData = useCallback(async (keyOrObj, value) => {
-        if (!viewingClient) return;
+        if (!viewingClient) return false;
 
         const updates = typeof keyOrObj === 'string' ? { [keyOrObj]: value } : keyOrObj;
         const isPeriodAction = updates?.action === 'create_period' || updates?.action === 'end_period' || updates?.action === 'update_period';
@@ -518,7 +519,7 @@ const App = () => {
             if (periodActionSavingRef.current) return;
             periodActionSavingRef.current = true;
         } else {
-            if (savingRef.current) return;
+            if (savingRef.current) return false;
             savingRef.current = true;
         }
 
@@ -620,12 +621,14 @@ const App = () => {
             if (result.authError) {
                 setShowReauthPrompt(true);
                 setCurrentData(previousData);
-                return;
+                return false;
             }
             toast('Lagret');
+            return true;
         } catch (e) {
             if (previousData) setCurrentData(previousData);
             toast('Kunne ikke lagre – endringene ble tilbakestilt. Prøv igjen.', 'error');
+            return false;
         } finally {
             if (isPeriodAction) {
                 periodActionSavingRef.current = false;
@@ -636,7 +639,9 @@ const App = () => {
     }, [viewingClient, toast]);
 
     const handleSaveDietPlan = useCallback((val) => handleUpdateData('dietPlan', val), [handleUpdateData]);
-    const handleSaveWorkoutPlan = useCallback((val) => handleUpdateData('workoutPlan', val), [handleUpdateData]);
+    const handleSaveWorkoutPlan = useCallback(async (val) => {
+        if (!await handleUpdateData('workoutPlan', val)) throw new Error('Kunne ikke lagre treningsplanen');
+    }, [handleUpdateData]);
 
     const handleUpdateCheckin = useCallback(async (checkinId, updates) => {
         if (!viewingClient) return;
@@ -1256,7 +1261,7 @@ const App = () => {
                                 onDeleteGalleryImage={handleDeleteGalleryImage}
                             /> :
                             activeTab === 'diet' ? <PlanSection type="diet" content={currentData.dietPlan} onSave={handleSaveDietPlan} isReadOnly={!isCoach} /> :
-                            activeTab === 'workout' ? <PlanSection type="workout" content={currentData.workoutPlan} onSave={handleSaveWorkoutPlan} isReadOnly={!isCoach} /> :
+                            activeTab === 'workout' ? <WorkoutPlansSection content={currentData.workoutPlan} onSave={handleSaveWorkoutPlan} isReadOnly={!isCoach} /> :
                             <CheckInView checkins={currentData.checkins} onNewCheckin={handleNewCheckin} onDelete={handleDeleteCheckin} onUpdate={handleUpdateCheckin} canEdit={Boolean(viewingClient)} isReadOnly={isCoach} canDelete={Boolean(viewingClient)} stepGoal={currentData.stepGoal} draftKey={viewingClient?.id || currentUser?.id || 'default'} uploadUserId={viewingClient?.id} startDate={currentData.startDate} totalWeeks={currentData.totalWeeks} />}
                         </div>
                     </Suspense></ViewErrorBoundary>

@@ -131,7 +131,7 @@ const AutoGrowTextarea = ({ value, onChange, ...props }) => {
     );
 };
 
-const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
+const PlanSection = React.memo(({ type, content, onSave, isReadOnly, onEditingChange }) => {
     const confirmDialog = useConfirm();
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -177,7 +177,8 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
         setImportText('');
         setImportError('');
         setIsEditing(true);
-    }, [content, type]);
+        onEditingChange?.(true);
+    }, [content, onEditingChange, type]);
 
     const handleSave = useCallback(async () => {
         if (!canSave) return;
@@ -188,10 +189,13 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
             await onSave(serializePlan(draft));
             setSaveState('saved');
             setIsEditing(false);
+            onEditingChange?.(false);
+        } catch {
+            setSaveState('dirty');
         } finally {
             setIsSaving(false);
         }
-    }, [canSave, draft, onSave]);
+    }, [canSave, draft, onEditingChange, onSave]);
 
     const handleCancel = useCallback(() => {
         setDraft(parsePlan(content, type));
@@ -200,7 +204,8 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly }) => {
         setImportText('');
         setImportError('');
         setIsEditing(false);
-    }, [content, type]);
+        onEditingChange?.(false);
+    }, [content, onEditingChange, type]);
 
     const handleRequestCancel = useCallback(async () => {
         if (saveState === 'dirty') {

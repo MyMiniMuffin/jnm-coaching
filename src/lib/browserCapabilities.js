@@ -2,6 +2,7 @@ const VIEW_PREFETCHERS = [
     () => import('../views/DashboardView'),
     () => import('../views/CheckInView'),
     () => import('../views/PlanSection'),
+    () => import('../views/WorkoutPlansSection'),
     () => import('../views/GalleryView'),
     () => import('../views/WeightProgressView')
 ];

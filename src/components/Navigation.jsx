@@ -28,7 +28,7 @@ const NavButton = React.memo(({ item, isActive, onClick, variant }) => {
             onClick={() => onClick(item.id)}
             aria-label={item.label}
             aria-current={isActive ? 'page' : undefined}
-            className={`relative z-10 flex flex-col items-center justify-center gap-1 min-h-[48px] min-w-[44px] rounded-xl transition-transform duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${isActive ? 'text-ink -translate-y-0.5' : 'text-ink-muted'}`}
+            className={`relative z-10 flex flex-col items-center justify-center gap-1 min-h-[48px] min-w-[44px] rounded-xl transition-transform duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${isActive ? 'text-ink' : 'text-ink-muted'}`}
         >
             <Icon size={22} strokeWidth={isActive ? 2 : 1.5} />
             <span className={`text-[10px] ${isActive ? 'font-semibold text-ink' : 'font-medium text-ink-muted'}`}>{item.label}</span>
@@ -44,10 +44,7 @@ const Navigation = React.memo(({ activeTab, setActiveTab }) => {
     }, [activeTab, setActiveTab]);
 
     const activeIndex = NAV_ITEMS.findIndex(item => item.id === activeTab);
-    const pillStyle = {
-        transform: `translateX(${activeIndex * 100}%)`,
-        width: `${100 / NAV_ITEMS.length}%`
-    };
+    const pillStyle = { transform: `translateX(${activeIndex * 100}%)` };
 
     return (
         <>
@@ -74,10 +71,9 @@ const Navigation = React.memo(({ activeTab, setActiveTab }) => {
 
             <nav className="fixed bottom-0 left-0 right-0 glass-nav z-50 border-t border-surface-200/80 lg:hidden" aria-label="Hovednavigasjon">
                 <div className="relative grid grid-cols-5 h-[4.35rem] max-w-md mx-auto px-1.5">
-                    <div
-                        className="absolute top-2.5 bottom-2.5 rounded-xl bg-surface-100 nav-pill pointer-events-none"
-                        style={pillStyle}
-                    />
+                    <div className="absolute inset-x-1.5 top-2.5 bottom-2.5 pointer-events-none">
+                        <div className="h-full w-1/5 rounded-xl nav-pill" style={pillStyle} />
+                    </div>
                     {NAV_ITEMS.map((item) => (
                         <NavButton key={item.id} item={item} isActive={activeTab === item.id} onClick={handleTabClick} />
                     ))}
