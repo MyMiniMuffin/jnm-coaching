@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, ChevronLeft, ChevronRight, Loader2, Download } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Loader2, Download, ZoomIn, Scan } from 'lucide-react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { formatDateNO, formatWeight, getFullSizeImage } from '../lib/formatters';
 import { buildImageFilename, downloadImageFile } from '../lib/downloadImage';
@@ -27,6 +27,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
     const [index, setIndex] = useState(safeInitialIndex);
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState(false);
+    const [isZoomed, setIsZoomed] = useState(false);
     const [downloading, setDownloading] = useState(false);
     const [direction, setDirection] = useState(0);
     const modalRef = useFocusTrap(true);
@@ -36,6 +37,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
     const onCloseRef = useRef(onClose);
     const touchStartRef = useRef(null);
     const imageRef = useRef(null);
+    const zoomRef = useRef(null);
     const scaleRef = useRef(1);
     indexRef.current = index;
     onCloseRef.current = onClose;
@@ -64,6 +66,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
         const boundedIndex = Math.max(0, Math.min(nextIndex, (images?.length || 1) - 1));
         if (boundedIndex === indexRef.current) return;
         scaleRef.current = 1;
+        setIsZoomed(false);
         setDirection(nextDirection);
         setLoading(true);
         setLoadError(false);
@@ -210,9 +213,13 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
             <div className="relative z-10 flex-1 min-h-0 w-full px-0 pt-[calc(env(safe-area-inset-top,0px)+4.25rem)] pb-[calc(env(safe-area-inset-bottom,0px)+4.75rem)] sm:px-6">
                 <TransformWrapper
                     key={index}
+                    ref={zoomRef}
                     {...IMAGE_ZOOM_PROPS}
                     onTransformed={(_, state) => {
+                        const wasZoomed = scaleRef.current > 1.02;
                         scaleRef.current = state.scale;
+                        const nowZoomed = state.scale > 1.02;
+                        if (wasZoomed !== nowZoomed) setIsZoomed(nowZoomed);
                     }}
                 >
                     <TransformComponent
@@ -276,17 +283,32 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
                         <ChevronRight size={26} />
                     </button>
                 )}
-                <div className="absolute inset-x-3 bottom-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] z-[110] flex justify-center pointer-events-none" aria-live="polite">
-                    <div className="max-w-full rounded-xl bg-black/50 px-4 py-2 text-center text-white backdrop-blur-md ring-1 ring-white/10">
-                        <p className="truncate text-sm font-medium">{imageTitle}</p>
-                        {(imageDate || imageWeight) && (
-                            <p className="text-xs text-white/75">
-                                {[imageDate, imageWeight].filter(Boolean).join(' · ')}
+                <div className="absolute inset-x-3 bottom-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] z-[110] flex justify-center">
+                    <div className="flex max-w-full items-center gap-2 rounded-xl bg-black/50 p-2 text-white backdrop-blur-md ring-1 ring-white/10">
+                        <div className="min-w-0 px-2 text-center" aria-live="polite">
+                            <p className="truncate text-sm font-medium">{imageTitle}</p>
+                            {(imageDate || imageWeight) && (
+                                <p className="text-xs text-white/75">
+                                    {[imageDate, imageWeight].filter(Boolean).join(' · ')}
+                                </p>
+                            )}
+                            <p className="mt-0.5 text-[11px] text-white/55 sm:hidden">
+                                {images.length > 1 ? 'Sveip · Knip/dobbelttrykk' : 'Knip/dobbelttrykk for zoom'}
                             </p>
-                        )}
-                        <p className="mt-0.5 text-[11px] text-white/55">
-                            {images.length > 1 ? 'Sveip for å bytte · Knip eller dobbelttrykk for å zoome' : 'Knip eller dobbelttrykk for å zoome'}
-                        </p>
+                            <p className="mt-0.5 hidden text-[11px] text-white/55 sm:block">
+                                {images.length > 1 ? 'Piltaster for å bytte · Dobbeltklikk eller rull for zoom' : 'Dobbeltklikk eller rull for zoom'}
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => isZoomed ? zoomRef.current?.resetTransform() : zoomRef.current?.zoomIn(1)}
+                            disabled={loading || loadError}
+                            aria-label={isZoomed ? 'Tilpass bilde til skjermen' : 'Zoom inn på bildet'}
+                            title={isZoomed ? 'Tilpass bilde' : 'Zoom inn'}
+                            className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white transition-colors hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white disabled:opacity-40"
+                        >
+                            {isZoomed ? <Scan size={20} /> : <ZoomIn size={20} />}
+                        </button>
                     </div>
                 </div>
             </div>
