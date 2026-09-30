@@ -15,6 +15,7 @@ const WorkoutPlansSection = ({ content, onSave, isReadOnly, isArchived = false }
     const [isSaving, setIsSaving] = useState(false);
     const [saveError, setSaveError] = useState('');
     const selectedPlan = plans.find(plan => plan.id === selectedId) || plans[0];
+    const showPlanPicker = plans.length > 1;
     const duplicateName = plans.some(plan =>
         plan.id !== (nameMode === 'rename' ? selectedPlan.id : null)
         && plan.name.toLocaleLowerCase('nb') === name.trim().toLocaleLowerCase('nb')
@@ -83,11 +84,11 @@ const WorkoutPlansSection = ({ content, onSave, isReadOnly, isArchived = false }
                     Klienten er arkivert. Gjenopprett klienten under «Klienter» før du endrer treningsplanene.
                 </p>
             )}
-            <Card className="p-4 sm:p-5">
+            {(showPlanPicker || !isReadOnly) && <Card className="p-4 sm:p-5">
                 <div className="mb-3 flex items-center justify-between gap-3">
                     <div>
                         <h2 className="text-base font-semibold text-ink">Treningsplaner</h2>
-                        <p className="mt-0.5 text-xs text-ink-muted">Velg planen du vil se.</p>
+                        {showPlanPicker && <p className="mt-0.5 text-xs text-ink-muted">Velg planen du vil se.</p>}
                     </div>
                     {!isReadOnly && (
                         <Button variant="secondary" size="sm" disabled={isEditingPlan || isSaving} onClick={() => {
@@ -99,7 +100,7 @@ const WorkoutPlansSection = ({ content, onSave, isReadOnly, isArchived = false }
                     )}
                 </div>
 
-                <div className="flex gap-2 overflow-x-auto pb-1" aria-label="Treningsplaner">
+                {showPlanPicker && <div className="flex gap-2 overflow-x-auto pb-1" aria-label="Treningsplaner">
                     {plans.map(plan => (
                         <button
                             key={plan.id}
@@ -115,7 +116,7 @@ const WorkoutPlansSection = ({ content, onSave, isReadOnly, isArchived = false }
                             {plan.name}
                         </button>
                     ))}
-                </div>
+                </div>}
                 {saveError && <p role="alert" className="mt-3 text-xs text-error">{saveError}</p>}
 
                 {!isReadOnly && !isEditingPlan && !nameMode && (
@@ -155,11 +156,12 @@ const WorkoutPlansSection = ({ content, onSave, isReadOnly, isArchived = false }
                         {duplicateName && <p className="w-full text-xs text-error">Dette navnet er allerede i bruk.</p>}
                     </form>
                 )}
-            </Card>
+            </Card>}
 
             <PlanSection
                 key={selectedPlan.id}
                 type="workout"
+                planTitle={selectedPlan.name}
                 content={selectedPlan.content}
                 onSave={handleSavePlan}
                 isReadOnly={isReadOnly}

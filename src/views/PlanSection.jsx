@@ -131,7 +131,7 @@ const AutoGrowTextarea = ({ value, onChange, ...props }) => {
     );
 };
 
-const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived = false, onEditingChange }) => {
+const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived = false, planTitle, onEditingChange }) => {
     const confirmDialog = useConfirm();
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -156,7 +156,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
     }, [saveState]);
 
     const Icon = type === 'diet' ? Utensils : Dumbbell;
-    const title = type === 'diet' ? 'Matplan' : 'Treningsplan';
+    const title = type === 'diet' ? 'Matplan' : (planTitle || 'Treningsplan');
     const itemPlaceholder = type === 'diet'
         ? 'For eksempel: Havregrøt med bær'
         : 'For eksempel: Knebøy';
