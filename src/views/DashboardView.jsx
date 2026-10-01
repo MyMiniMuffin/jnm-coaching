@@ -1,17 +1,17 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import {
   Scale, Footprints, Pencil, ChevronRight, TrendingUp, TrendingDown, Minus,
-  X, Plus, Check, Loader2, Calendar, Pause, Play, Activity, ArrowRight, Trash2
+  X, Plus, Check, Loader2, Pause, Play, Activity, ArrowRight, ArrowLeft, Trash2
 } from 'lucide-react';
 import { Card, Badge, Button, IconButton, InputLabel } from '../components/ui';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
-import { useEscapeKey } from '../hooks';
+import { useFocusTrap } from '../hooks';
 import { formatDateNO, formatWeight } from '../lib/formatters';
 import { haptic } from '../lib/haptic';
 
 const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCreatePeriod, onEndPeriod, onUpdatePeriod, onDeletePeriod }) => {
-    useEscapeKey(onClose);
+    const modalRef = useFocusTrap(true);
     const confirmDialog = useConfirm();
     const [view, setView] = useState('list'); // 'list' eller 'create'
     const [formData, setFormData] = useState({ name: '', startingWeight: '', goalWeight: '' });
@@ -32,17 +32,19 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
             setWeightError('Startvekt er påkrevd');
             return;
         }
-        haptic('save');
-        await onCreatePeriod(formData.name || `Runde ${periods.length + 1}`, formData.startingWeight, formData.goalWeight || null);
-        onClose();
-    }, [formData, periods.length, onCreatePeriod, onClose]);
+        const result = await onCreatePeriod(formData.name || `Runde ${periods.length + 1}`, formData.startingWeight, formData.goalWeight || null);
+        if (result === true) {
+            haptic('save');
+            setFormData({ name: '', startingWeight: '', goalWeight: '' });
+            setView('list');
+        }
+    }, [formData, periods.length, onCreatePeriod]);
 
     const handleEnd = useCallback(async (periodId) => {
         if (await confirmDialog('Avslutt denne runden? Du kan starte en ny runde etterpå.', { title: 'Avslutt runde', confirmText: 'Avslutt' })) {
             await onEndPeriod(periodId);
-            onClose();
         }
-    }, [onEndPeriod, onClose, confirmDialog]);
+    }, [onEndPeriod, confirmDialog]);
 
     const handleDelete = useCallback(async (period) => {
         const linkedReports = (userData.checkins || []).filter(checkin => checkin.periodId === period.id).length;
@@ -91,12 +93,13 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
             setEditError('Sluttdato kan ikke være før startdato');
             return;
         }
-        haptic('save');
-        await onUpdatePeriod(periodId, {
+        const result = await onUpdatePeriod(periodId, {
             name: trimmedName,
             startDate: editingPeriod.startDate,
             endDate: editingPeriod.endDate || null
         });
+        if (result !== true) return;
+        haptic('save');
         setEditingPeriodId(null);
         setEditingPeriod({ name: '', startDate: '', endDate: '' });
         setEditError('');
@@ -104,12 +107,12 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
 
     return (
         <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-            <Card className="w-full max-w-md p-6 max-h-[80vh] overflow-y-auto animate-scale-in" role="dialog" aria-modal="true" aria-labelledby="period-modal-title">
-                <div className="flex justify-between items-center mb-6">
-                    <h2 id="period-modal-title" className="text-xl font-display">Coaching-runder</h2>
-                    <IconButton onClick={onClose} aria-label="Lukk">
-                        <X size={20} />
+            <Card ref={modalRef} className="w-full max-w-md p-6 max-h-[80vh] overflow-y-auto animate-scale-in" role="dialog" aria-modal="true" aria-labelledby="period-modal-title" onKeyDown={(event) => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); onClose(); } }}>
+                <div className="flex items-center gap-2 mb-6">
+                    <IconButton onClick={onClose} aria-label="Tilbake til planinnstillinger" disabled={isLoading}>
+                        <ArrowLeft size={20} />
                     </IconButton>
+                    <h2 id="period-modal-title" className="text-xl font-display">Coaching-runder</h2>
                 </div>
 
                 {view === 'list' ? (
@@ -385,104 +388,147 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
 
 // --- Plan Settings Modal (erstatter prompt()-dialoger) ---
 const PlanSettingsModal = React.memo(({ userData, onClose, onUpdateData, onOpenPeriodModal }) => {
-    useEscapeKey(onClose);
+    const confirmDialog = useConfirm();
+    const modalRef = useFocusTrap(true);
     const [startDate, setStartDate] = useState(
         userData.startDate ? new Date(userData.startDate).toISOString().split('T')[0] : ''
     );
-    const [totalWeeks, setTotalWeeks] = useState(userData.totalWeeks || 12);
-    const [stepGoal, setStepGoal] = useState(userData.stepGoal || 10000);
+    const [totalWeeks, setTotalWeeks] = useState(String(userData.totalWeeks || 12));
+    const [stepGoal, setStepGoal] = useState(String(userData.stepGoal || 10000));
+    const [isSaving, setIsSaving] = useState(false);
+    const [saveError, setSaveError] = useState('');
 
     const origStartDate = userData.startDate ? new Date(userData.startDate).toISOString().split('T')[0] : '';
-    const origTotalWeeks = userData.totalWeeks || 12;
-    const origStepGoal = userData.stepGoal || 10000;
+    const origTotalWeeks = String(userData.totalWeeks || 12);
+    const origStepGoal = String(userData.stepGoal || 10000);
 
     const hasChanges = startDate !== origStartDate || totalWeeks !== origTotalWeeks || stepGoal !== origStepGoal;
+    const weeksValid = Number.isInteger(Number(totalWeeks)) && Number(totalWeeks) >= 1 && Number(totalWeeks) <= 52;
+    const stepGoalValid = Number.isInteger(Number(stepGoal)) && Number(stepGoal) >= 1000 && Number(stepGoal) <= 100000;
+    const dateValid = !startDate || !Number.isNaN(new Date(startDate).getTime());
+
+    const confirmDiscard = useCallback(async () => !hasChanges || confirmDialog(
+        'Endringene i planinnstillingene er ikke lagret. Vil du forkaste dem?',
+        { title: 'Forkast endringer?', confirmText: 'Forkast endringer', destructive: true }
+    ), [hasChanges, confirmDialog]);
+
+    const handleClose = useCallback(async () => {
+        if (isSaving) return;
+        if (await confirmDiscard()) onClose();
+    }, [isSaving, confirmDiscard, onClose]);
 
     const handleSave = useCallback(async () => {
+        if (isSaving || !hasChanges || !weeksValid || !stepGoalValid || !dateValid) return;
         const updates = {};
         if (startDate !== origStartDate) {
             updates.startDate = startDate ? new Date(startDate).toISOString() : null;
         }
         if (totalWeeks !== origTotalWeeks) {
-            const parsed = parseInt(totalWeeks, 10);
-            if (!isNaN(parsed) && parsed >= 1) updates.totalWeeks = parsed;
+            updates.totalWeeks = Number(totalWeeks);
         }
         if (stepGoal !== origStepGoal) {
-            const parsed = parseInt(stepGoal, 10);
-            if (!isNaN(parsed) && parsed >= 1000) updates.stepGoal = parsed;
+            updates.stepGoal = Number(stepGoal);
         }
-        haptic('save');
-        onClose();
-        if (Object.keys(updates).length > 0) {
-            await onUpdateData(updates);
+        setIsSaving(true);
+        setSaveError('');
+        try {
+            const result = await onUpdateData(updates);
+            if (result === true) {
+                haptic('save');
+                onClose();
+            } else {
+                setSaveError(result?.error || 'Kunne ikke lagre endringene. Prøv igjen.');
+            }
+        } finally {
+            setIsSaving(false);
         }
-    }, [startDate, totalWeeks, stepGoal, origStartDate, origTotalWeeks, origStepGoal, onUpdateData, onClose]);
+    }, [isSaving, hasChanges, weeksValid, stepGoalValid, dateValid, startDate, totalWeeks, stepGoal, origStartDate, origTotalWeeks, origStepGoal, onUpdateData, onClose]);
 
     const handlePauseResume = useCallback(async () => {
-        onClose();
-        if (userData.isPaused) {
-            await onUpdateData({ action: 'resume' });
-        } else {
-            await onUpdateData({ action: 'pause' });
+        if (isSaving || !(await confirmDiscard())) return;
+        setIsSaving(true);
+        setSaveError('');
+        try {
+            const result = await onUpdateData({ action: userData.isPaused ? 'resume' : 'pause' });
+            if (result === true) onClose();
+            else setSaveError(result?.error || 'Kunne ikke endre status. Prøv igjen.');
+        } finally {
+            setIsSaving(false);
         }
-    }, [userData.isPaused, onUpdateData, onClose]);
+    }, [isSaving, confirmDiscard, userData.isPaused, onUpdateData, onClose]);
 
-    const handleStartDateChange = useCallback((e) => setStartDate(e.target.value), []);
-    const handleTotalWeeksChange = useCallback((e) => {
-        const val = e.target.value;
-        setTotalWeeks(val === '' ? '' : (parseInt(val, 10) || ''));
-    }, []);
-    const handleStepGoalChange = useCallback((e) => {
-        const val = e.target.value;
-        setStepGoal(val === '' ? '' : (parseInt(val, 10) || ''));
-    }, []);
+    const handleOpenPeriods = useCallback(async () => {
+        if (isSaving || !(await confirmDiscard())) return;
+        onOpenPeriodModal();
+    }, [isSaving, confirmDiscard, onOpenPeriodModal]);
+
+    const handleStartDateChange = useCallback((e) => { setStartDate(e.target.value); setSaveError(''); }, []);
+    const handleTotalWeeksChange = useCallback((e) => { setTotalWeeks(e.target.value); setSaveError(''); }, []);
+    const handleStepGoalChange = useCallback((e) => { setStepGoal(e.target.value); setSaveError(''); }, []);
 
     return (
-        <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-            <Card className="w-full max-w-md p-6 max-h-[80vh] overflow-y-auto overflow-x-hidden animate-scale-in" role="dialog" aria-modal="true" aria-labelledby="plan-settings-title">
-                <div className="flex justify-between items-center mb-6">
-                    <h2 id="plan-settings-title" className="text-xl font-display">Plan-innstillinger</h2>
-                    <IconButton onClick={onClose} aria-label="Lukk">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/60 backdrop-blur-sm sm:items-center sm:p-4 animate-fade-in">
+            <Card ref={modalRef} className="flex w-full max-w-lg max-h-[92dvh] flex-col overflow-hidden rounded-b-none sm:max-h-[90dvh] sm:rounded-b-xl animate-scale-in" role="dialog" aria-modal="true" aria-labelledby="plan-settings-title" onKeyDown={(event) => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); handleClose(); } }}>
+                <div className="flex shrink-0 items-start justify-between gap-3 border-b border-surface-200 px-5 py-4 sm:px-6">
+                    <div>
+                        <h2 id="plan-settings-title" className="text-xl font-display">Planinnstillinger</h2>
+                        <p className="mt-1 text-sm text-ink-muted">Tidsplan, mål og coaching-runder</p>
+                    </div>
+                    <IconButton onClick={handleClose} aria-label="Lukk planinnstillinger" disabled={isSaving}>
                         <X size={20} />
                     </IconButton>
                 </div>
 
-                <div className="space-y-5">
-                    <div>
-                        <InputLabel>Startdato</InputLabel>
-                        <div className="relative">
-                            <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" size={18} />
-                            <input
-                                type="date"
-                                value={startDate}
-                                onChange={handleStartDateChange}
-                                className="w-full min-w-0 pl-12 pr-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium appearance-none"
-                            />
+                <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-5 sm:px-6">
+                    <section aria-labelledby="plan-timeline-title">
+                        <h3 id="plan-timeline-title" className="font-semibold text-ink">Tidsplan</h3>
+                        <p className="mb-3 text-sm text-ink-muted">Startdato og varighet styrer ukevisningen og fremdriften.</p>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <div>
+                                <label htmlFor="plan-start-date" className="mb-2 block text-sm font-medium text-ink-muted">Startdato</label>
+                                <div>
+                                    <input
+                                        id="plan-start-date"
+                                        type="date"
+                                        value={startDate}
+                                        onChange={handleStartDateChange}
+                                        disabled={isSaving}
+                                        aria-invalid={!dateValid}
+                                        className="w-full min-w-0 rounded-xl border border-surface-200 bg-surface-50 px-3 py-3 font-medium outline-none focus:ring-2 focus:ring-accent disabled:opacity-60"
+                                    />
+                                </div>
+                                {userData.isPaused && startDate !== origStartDate && (
+                                    <p className="mt-1.5 text-xs text-ink-muted">Endring av startdato gjenopptar en pauset plan.</p>
+                                )}
+                            </div>
+                            <div>
+                                <label htmlFor="plan-total-weeks" className="mb-2 block text-sm font-medium text-ink-muted">Varighet i uker</label>
+                                <input
+                                    id="plan-total-weeks"
+                                    type="number"
+                                    inputMode="numeric"
+                                    min="1"
+                                    max="52"
+                                    value={totalWeeks}
+                                    onChange={handleTotalWeeksChange}
+                                    disabled={isSaving}
+                                    aria-invalid={!weeksValid}
+                                    aria-describedby={!weeksValid ? 'plan-weeks-error' : undefined}
+                                    className={`w-full rounded-xl border bg-surface-50 px-4 py-3 font-medium outline-none focus:ring-2 focus:ring-accent disabled:opacity-60 ${weeksValid ? 'border-surface-200' : 'border-error/50'}`}
+                                />
+                                {!weeksValid && <p id="plan-weeks-error" className="mt-1.5 text-xs text-error">Velg et tall mellom 1 og 52.</p>}
+                            </div>
                         </div>
-                    </div>
+                    </section>
 
-                    <div>
-                        <InputLabel>Antall uker</InputLabel>
-                        <input
-                            type="number"
-                            inputMode="numeric"
-                            min="1"
-                            max="52"
-                            value={totalWeeks}
-                            onChange={handleTotalWeeksChange}
-                            aria-invalid={totalWeeks !== '' && (Number(totalWeeks) < 1 || Number(totalWeeks) > 52)}
-                            className={`w-full px-4 py-3.5 bg-surface-50 border rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium ${totalWeeks !== '' && (Number(totalWeeks) < 1 || Number(totalWeeks) > 52) ? 'border-error/40' : 'border-surface-200'}`}
-                        />
-                        {totalWeeks !== '' && (Number(totalWeeks) < 1 || Number(totalWeeks) > 52) && (
-                            <p className="text-error text-xs mt-1.5">Velg mellom 1 og 52 uker.</p>
-                        )}
-                    </div>
-
-                    <div>
-                        <InputLabel>Ukentlig skrittmål</InputLabel>
+                    <section aria-labelledby="plan-goal-title" className="border-t border-surface-200 pt-4">
+                        <h3 id="plan-goal-title" className="font-semibold text-ink">Mål</h3>
+                        <p className="mb-3 text-sm text-ink-muted">Skrittmålet vises i ukesrapporten.</p>
+                        <label htmlFor="plan-step-goal" className="mb-2 block text-sm font-medium text-ink-muted">Skrittmål</label>
                         <div className="relative">
-                            <Footprints className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" size={18} />
+                            <Footprints className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" size={18} />
                             <input
+                                id="plan-step-goal"
                                 type="number"
                                 inputMode="numeric"
                                 min="1000"
@@ -490,51 +536,62 @@ const PlanSettingsModal = React.memo(({ userData, onClose, onUpdateData, onOpenP
                                 step="1000"
                                 value={stepGoal}
                                 onChange={handleStepGoalChange}
-                                aria-invalid={stepGoal !== '' && (Number(stepGoal) < 1000 || Number(stepGoal) > 100000)}
-                                className={`w-full pl-12 pr-4 py-3.5 bg-surface-50 border rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium ${stepGoal !== '' && (Number(stepGoal) < 1000 || Number(stepGoal) > 100000) ? 'border-error/40' : 'border-surface-200'}`}
+                                disabled={isSaving}
+                                aria-invalid={!stepGoalValid}
+                                aria-describedby={!stepGoalValid ? 'plan-steps-error' : undefined}
+                                className={`w-full rounded-xl border bg-surface-50 py-3 pl-10 pr-4 font-medium outline-none focus:ring-2 focus:ring-accent disabled:opacity-60 ${stepGoalValid ? 'border-surface-200' : 'border-error/50'}`}
                             />
                         </div>
-                        {stepGoal !== '' && (Number(stepGoal) < 1000 || Number(stepGoal) > 100000) && (
-                            <p className="text-error text-xs mt-1.5">Velg mellom 1 000 og 100 000 skritt.</p>
-                        )}
-                    </div>
+                        {!stepGoalValid && <p id="plan-steps-error" className="mt-1.5 text-xs text-error">Velg et tall mellom 1 000 og 100 000.</p>}
+                    </section>
 
-                    {userData.startDate && (
-                        <Button
-                            variant="secondary"
-                            size="lg"
-                            className="w-full"
-                            onClick={handlePauseResume}
+                    <section aria-labelledby="plan-more-title" className="border-t border-surface-200 pt-4">
+                        <h3 id="plan-more-title" className="mb-3 font-semibold text-ink">Administrasjon</h3>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                        <button
+                            type="button"
+                            onClick={handleOpenPeriods}
+                            disabled={isSaving}
+                            className="flex min-h-14 w-full items-center gap-3 rounded-xl border border-surface-200 bg-surface-50 px-4 py-3 text-left transition-colors hover:bg-surface-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-60"
                         >
-                            {userData.isPaused
-                                ? <><Play size={18} /> Gjenoppta plan</>
-                                : <><Pause size={18} /> Pause plan</>
-                            }
+                            <Activity size={19} className="shrink-0 text-ink-muted" />
+                            <span className="min-w-0 flex-1">
+                                <span className="block font-medium">Coaching-runder</span>
+                                <span className="block truncate text-xs text-ink-muted">
+                                    {userData.periods?.find(period => period.isActive)?.name || `${userData.periods?.length || 0} runder`}
+                                </span>
+                            </span>
+                            <ArrowRight size={18} className="shrink-0 text-ink-muted" />
+                        </button>
+                        {userData.startDate && (
+                            <button
+                                type="button"
+                                onClick={handlePauseResume}
+                                disabled={isSaving}
+                                className="flex min-h-14 w-full items-center gap-3 rounded-xl border border-surface-200 bg-surface-50 px-4 py-3 text-left transition-colors hover:bg-surface-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-60"
+                            >
+                                {userData.isPaused ? <Play size={19} className="shrink-0 text-ink-muted" /> : <Pause size={19} className="shrink-0 text-ink-muted" />}
+                                <span className="min-w-0 flex-1">
+                                    <span className="block font-medium">{userData.isPaused ? 'Gjenoppta plan' : 'Pause plan'}</span>
+                                    <span className="block text-xs text-ink-muted">{userData.isPaused ? 'Fortsett der dere slapp' : 'Sett fremdriften på vent'}</span>
+                                </span>
+                                <ArrowRight size={18} className="shrink-0 text-ink-muted" />
+                            </button>
+                        )}
+                        </div>
+                    </section>
+                </div>
+
+                <div className="shrink-0 border-t border-surface-200 bg-white px-5 pt-4 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] sm:px-6 sm:pb-4">
+                    {saveError && <p className="mb-3 text-sm text-error" role="alert">{saveError}</p>}
+                    <div className="flex gap-3">
+                        <Button variant="secondary" size="md" className="flex-1" onClick={handleClose} disabled={isSaving}>
+                            {hasChanges ? 'Avbryt' : 'Lukk'}
                         </Button>
-                    )}
-
-                    <Button
-                        variant="secondary"
-                        size="lg"
-                        className="w-full"
-                        onClick={onOpenPeriodModal}
-                    >
-                        <Activity size={18} /> Administrer runder <ArrowRight size={16} />
-                    </Button>
-
-                    <Button
-                        variant="primary"
-                        size="lg"
-                        className="w-full"
-                        onClick={handleSave}
-                        disabled={
-                            !hasChanges ||
-                            (totalWeeks !== '' && (Number(totalWeeks) < 1 || Number(totalWeeks) > 52)) ||
-                            (stepGoal !== '' && (Number(stepGoal) < 1000 || Number(stepGoal) > 100000))
-                        }
-                    >
-                        <Check size={18} /> Lagre endringer
-                    </Button>
+                        <Button variant="primary" size="md" className="flex-1" onClick={handleSave} disabled={isSaving || !hasChanges || !weeksValid || !stepGoalValid || !dateValid}>
+                            {isSaving ? <><Loader2 size={17} className="animate-spin" /> Lagrer...</> : <><Check size={17} /> Lagre</>}
+                        </Button>
+                    </div>
                 </div>
             </Card>
         </div>
@@ -632,7 +689,10 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
 
     const handleOpenPlanSettings = useCallback(() => setShowPlanSettings(true), []);
     const handleClosePlanSettings = useCallback(() => setShowPlanSettings(false), []);
-    const handleClosePeriodModal = useCallback(() => setShowPeriodModal(false), []);
+    const handleClosePeriodModal = useCallback(() => {
+        setShowPeriodModal(false);
+        setShowPlanSettings(true);
+    }, []);
     const handleOpenPeriodFromSettings = useCallback(() => {
         setShowPlanSettings(false);
         setShowPeriodModal(true);
@@ -641,9 +701,9 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
     const handleCreatePeriod = useCallback(async (name, startingWeight, goalWeight) => {
         setPeriodLoading(true);
         try {
-            await onUpdateData({ action: 'create_period', name, startingWeight, goalWeight });
-            setShowPeriodModal(false);
-            toast('Runde opprettet');
+            const result = await onUpdateData({ action: 'create_period', name, startingWeight, goalWeight });
+            if (result === true) toast('Runde opprettet');
+            return result;
         } finally {
             setPeriodLoading(false);
         }
@@ -652,9 +712,9 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
     const handleEndPeriod = useCallback(async (periodId) => {
         setPeriodLoading(true);
         try {
-            await onUpdateData({ action: 'end_period', periodId });
-            setShowPeriodModal(false);
-            toast('Runde avsluttet');
+            const result = await onUpdateData({ action: 'end_period', periodId });
+            if (result === true) toast('Runde avsluttet');
+            return result;
         } finally {
             setPeriodLoading(false);
         }
@@ -663,12 +723,13 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
     const handleUpdatePeriodCb = useCallback(async (periodId, updates) => {
         setPeriodLoading(true);
         try {
-            await onUpdateData({ action: 'update_period', periodId, ...updates });
-            setShowPeriodModal(false);
+            const result = await onUpdateData({ action: 'update_period', periodId, ...updates });
+            if (result === true) toast('Runde oppdatert');
+            return result;
         } finally {
             setPeriodLoading(false);
         }
-    }, [onUpdateData]);
+    }, [onUpdateData, toast]);
 
     const handleDeletePeriod = useCallback(async (periodId) => {
         setPeriodLoading(true);
