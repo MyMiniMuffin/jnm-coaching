@@ -17,6 +17,7 @@ const sql = neon(process.env.NETLIFY_DATABASE_URL);
 const getFormattedUsersList = () => sql`
   SELECT
     u.id, u.username, u.name, u.role, u.start_date, u.is_archived,
+    u.last_active_at as "lastActiveAt",
     COALESCE(unread.cnt, 0)::integer as "unreadCheckins",
     latest.last_date as "lastCheckinDate"
   FROM users u

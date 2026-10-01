@@ -167,6 +167,7 @@ const mutateUserData = async (userId, type, data, errorMessage) => {
 };
 
 export const api = {
+    recordActivity: () => request('/.netlify/functions/activity', { method: 'POST' }),
     getUsers: async (useCache = false) => {
         if (useCache) {
             const cached = cache.get('users-list');

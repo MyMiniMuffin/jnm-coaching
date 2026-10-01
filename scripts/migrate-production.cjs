@@ -19,8 +19,16 @@ async function main() {
   `;
   if (columns.length !== 1) throw new Error('Password-change column verification failed');
   console.log('Database migration 003: applied and verified.');
+  await sql(readFileSync(join(__dirname, '../migrations/004_add_last_active.sql'), 'utf8'));
+  const activityColumns = await sql`
+    SELECT column_name FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'users'
+      AND column_name = 'last_active_at' AND data_type = 'timestamp with time zone'
+  `;
+  if (activityColumns.length !== 1) throw new Error('Activity column verification failed');
+  console.log('Database migration 004: applied and verified.');
 }
 main().catch(() => {
-  console.error('Database migration failed; deployment stopped. Check database configuration and migration 003.');
+  console.error('Database migration failed; deployment stopped. Check database configuration and migrations 003/004.');
   process.exitCode = 1;
 });

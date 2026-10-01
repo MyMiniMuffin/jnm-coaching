@@ -12,6 +12,7 @@ import { haptic } from './lib/haptic';
 
 // Hooks
 import { useSwipe, usePullToRefresh, useOnlineStatus, useDesktop } from './hooks';
+import { useActivity } from './lib/useActivity';
 
 // Components (eagerly loaded — small and used everywhere)
 import { Skeleton, Button } from './components/ui';
@@ -59,6 +60,7 @@ const App = () => {
     const isOnline = useOnlineStatus();
     const isDesktop = useDesktop();
     const [currentUser, setCurrentUser] = useState(readBootUser);
+    useActivity(currentUser?.id);
     const [activeTab, setActiveTab] = useState('dashboard');
     const [allUsers, setAllUsers] = useState(() => {
         const user = readBootUser();

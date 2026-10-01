@@ -6,6 +6,24 @@ import { useConfirm } from '../components/ConfirmDialog';
 import { haptic } from '../lib/haptic';
 import { formatDateNO } from '../lib/formatters';
 
+const RecentActivityDot = ({ lastActiveAt }) => {
+    const [now, setNow] = useState(Date.now);
+    useEffect(() => {
+        const interval = window.setInterval(() => setNow(Date.now()), 15000);
+        return () => window.clearInterval(interval);
+    }, []);
+    const lastActive = Date.parse(lastActiveAt);
+    if (!Number.isFinite(lastActive) || now - lastActive >= 5 * 60000) return null;
+    return (
+        <span
+            className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-green-500 ring-2 ring-white"
+            role="img"
+            aria-label="Aktiv siste 5 minutter"
+            title="Aktiv siste 5 minutter"
+        />
+    );
+};
+
 const ClientActionsMenu = ({ client, isPending, open, onOpenChange, onArchive, onReset, onDelete }) => {
     const menuRef = useRef(null);
 
@@ -408,8 +426,9 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
                                 }}
                                 className="flex min-h-12 min-w-0 flex-1 items-center gap-4 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:cursor-wait"
                             >
-                                <span className={`w-12 h-12 shrink-0 rounded-xl flex items-center justify-center text-lg font-semibold ${showArchived ? 'bg-surface-200 text-ink-muted' : client.unreadCheckins > 0 ? 'bg-accent/10 text-accent' : 'bg-surface-100 text-ink'}`}>
+                                <span className={`relative w-12 h-12 shrink-0 rounded-xl flex items-center justify-center text-lg font-semibold ${showArchived ? 'bg-surface-200 text-ink-muted' : client.unreadCheckins > 0 ? 'bg-accent/10 text-accent' : 'bg-surface-100 text-ink'}`}>
                                     {client.name.charAt(0)}
+                                    <RecentActivityDot lastActiveAt={client.lastActiveAt} />
                                 </span>
                                 <span className="min-w-0">
                                     <span className="block font-medium truncate">{client.name}</span>
