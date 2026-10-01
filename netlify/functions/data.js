@@ -356,7 +356,12 @@ exports.handler = async (event) => {
         // PAUSE/RESUME håndteres separat for å unngå race conditions
         if (data.action === 'pause') {
           const now = new Date().toISOString();
-          await sql`UPDATE users SET is_paused = true, paused_at = ${now} WHERE id = ${userId}`;
+          const updated = await sql`
+            UPDATE users SET is_paused = true, paused_at = ${now}
+            WHERE id = ${userId}
+            RETURNING start_date AS "startDate", is_paused AS "isPaused", paused_at AS "pausedAt"
+          `;
+          return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ success: true, ...updated[0] }) };
         } else if (data.action === 'resume') {
           const userRes = await sql`SELECT start_date, paused_at FROM users WHERE id = ${userId}`;
           const u = userRes[0];
@@ -369,9 +374,19 @@ exports.handler = async (event) => {
             const oldStart = new Date(u.start_date);
             const newStart = new Date(oldStart.getTime() + diffTime).toISOString();
 
-            await sql`UPDATE users SET start_date = ${newStart}, is_paused = false, paused_at = NULL WHERE id = ${userId}`;
+            const updated = await sql`
+              UPDATE users SET start_date = ${newStart}, is_paused = false, paused_at = NULL
+              WHERE id = ${userId}
+              RETURNING start_date AS "startDate", is_paused AS "isPaused", paused_at AS "pausedAt"
+            `;
+            return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ success: true, ...updated[0] }) };
           } else {
-            await sql`UPDATE users SET is_paused = false WHERE id = ${userId}`;
+            const updated = await sql`
+              UPDATE users SET is_paused = false, paused_at = NULL
+              WHERE id = ${userId}
+              RETURNING start_date AS "startDate", is_paused AS "isPaused", paused_at AS "pausedAt"
+            `;
+            return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ success: true, ...updated[0] }) };
           }
         } else {
           // Vanlige plan-oppdateringer (ikke pause/resume)

@@ -529,65 +529,69 @@ const App = () => {
             // Håndter periode-spesifikke actions
             if (updates.action === 'create_period') {
                 const result = await api.createPeriod(viewingClient.id, updates.name, updates.startingWeight, updates.goalWeight);
-                if (result.authError) { setShowReauthPrompt(true); }
-                if (result.data?.period) {
-                    const newPeriod = result.data.period;
-                    setCurrentData(prev => ({
-                        ...prev,
-                        periods: [
-                            newPeriod,
-                            ...(prev.periods || []).map(period => ({ ...period, isActive: false }))
-                        ],
-                        currentPeriodId: newPeriod.id,
-                        startingWeight: newPeriod.startingWeight
-                    }));
+                if (result.authError) {
+                    setShowReauthPrompt(true);
+                    return { error: 'Økten er utløpt. Logg inn på nytt.' };
                 }
-                return;
+                if (!result.data?.period) return { error: 'Kunne ikke opprette runden.' };
+                const newPeriod = result.data.period;
+                setCurrentData(prev => ({
+                    ...prev,
+                    periods: [
+                        newPeriod,
+                        ...(prev.periods || []).map(period => ({ ...period, isActive: false }))
+                    ],
+                    currentPeriodId: newPeriod.id,
+                    startingWeight: newPeriod.startingWeight
+                }));
+                return true;
             } else if (updates.action === 'end_period') {
                 const result = await api.endPeriod(viewingClient.id, updates.periodId);
-                if (result.authError) { setShowReauthPrompt(true); }
-                else {
-                    const endDate = new Date().toISOString();
-                    setCurrentData(prev => ({
-                        ...prev,
-                        periods: (prev.periods || []).map(period =>
-                            period.id === updates.periodId
-                                ? { ...period, isActive: false, endDate }
-                                : period
-                        ),
-                        currentPeriodId: prev.currentPeriodId === updates.periodId ? null : prev.currentPeriodId
-                    }));
+                if (result.authError) {
+                    setShowReauthPrompt(true);
+                    return { error: 'Økten er utløpt. Logg inn på nytt.' };
                 }
-                return;
+                const endDate = new Date().toISOString();
+                setCurrentData(prev => ({
+                    ...prev,
+                    periods: (prev.periods || []).map(period =>
+                        period.id === updates.periodId
+                            ? { ...period, isActive: false, endDate }
+                            : period
+                    ),
+                    currentPeriodId: prev.currentPeriodId === updates.periodId ? null : prev.currentPeriodId
+                }));
+                return true;
             } else if (updates.action === 'update_period') {
                 const { periodId, ...periodUpdates } = updates;
                 const result = await api.updatePeriod(viewingClient.id, periodId, periodUpdates);
-                if (result.authError) { setShowReauthPrompt(true); }
-                else {
-                    setCurrentData(prev => {
-                        const updatedPeriods = (prev.periods || []).map(period =>
-                            period.id === periodId
-                                ? {
-                                    ...period,
-                                    ...(periodUpdates.name !== undefined ? { name: periodUpdates.name.trim() } : {}),
-                                    ...(periodUpdates.startDate !== undefined ? { startDate: periodUpdates.startDate || null } : {}),
-                                    ...(periodUpdates.endDate !== undefined ? { endDate: periodUpdates.endDate || null } : {}),
-                                    ...(periodUpdates.startingWeight !== undefined ? { startingWeight: parseFloat(periodUpdates.startingWeight) } : {}),
-                                    ...(periodUpdates.goalWeight !== undefined ? { goalWeight: periodUpdates.goalWeight ? parseFloat(periodUpdates.goalWeight) : null } : {}),
-                                    ...(periodUpdates.notes !== undefined ? { notes: periodUpdates.notes } : {})
-                                }
-                                : period
-                        );
-                        return {
-                            ...prev,
-                            periods: updatedPeriods,
-                            startingWeight: prev.currentPeriodId === periodId && periodUpdates.startingWeight !== undefined
-                                ? parseFloat(periodUpdates.startingWeight)
-                                : prev.startingWeight
-                        };
-                    });
+                if (result.authError) {
+                    setShowReauthPrompt(true);
+                    return { error: 'Økten er utløpt. Logg inn på nytt.' };
                 }
-                return;
+                setCurrentData(prev => {
+                    const updatedPeriods = (prev.periods || []).map(period =>
+                        period.id === periodId
+                            ? {
+                                ...period,
+                                ...(periodUpdates.name !== undefined ? { name: periodUpdates.name.trim() } : {}),
+                                ...(periodUpdates.startDate !== undefined ? { startDate: periodUpdates.startDate || null } : {}),
+                                ...(periodUpdates.endDate !== undefined ? { endDate: periodUpdates.endDate || null } : {}),
+                                ...(periodUpdates.startingWeight !== undefined ? { startingWeight: parseFloat(periodUpdates.startingWeight) } : {}),
+                                ...(periodUpdates.goalWeight !== undefined ? { goalWeight: periodUpdates.goalWeight ? parseFloat(periodUpdates.goalWeight) : null } : {}),
+                                ...(periodUpdates.notes !== undefined ? { notes: periodUpdates.notes } : {})
+                            }
+                            : period
+                    );
+                    return {
+                        ...prev,
+                        periods: updatedPeriods,
+                        startingWeight: prev.currentPeriodId === periodId && periodUpdates.startingWeight !== undefined
+                            ? parseFloat(periodUpdates.startingWeight)
+                            : prev.startingWeight
+                    };
+                });
+                return true;
             } else if (updates.action === 'delete_period') {
                 const result = await api.deletePeriod(viewingClient.id, updates.periodId);
                 if (result.authError) {
@@ -605,33 +609,42 @@ const App = () => {
                 }));
                 return true;
             } else if (updates.action === 'pause') {
-                setCurrentData(prev => {
-                    previousData = prev;
-                    return { ...prev, isPaused: true, pausedAt: new Date().toISOString() };
-                });
                 const result = await api.saveUserData(viewingClient.id, updates);
                 if (result.authError) {
                     setShowReauthPrompt(true);
-                    setCurrentData(previousData);
+                    return { error: 'Økten er utløpt. Logg inn på nytt.' };
                 }
-                return;
+                setCurrentData(prev => ({
+                    ...prev,
+                    isPaused: result.data?.isPaused ?? true,
+                    pausedAt: result.data?.pausedAt || new Date().toISOString()
+                }));
+                toast('Planen er pauset');
+                return true;
             } else if (updates.action === 'resume') {
-                setCurrentData(prev => {
-                    previousData = prev;
-                    return { ...prev, isPaused: false, pausedAt: null };
-                });
                 const result = await api.saveUserData(viewingClient.id, updates);
                 if (result.authError) {
                     setShowReauthPrompt(true);
-                    setCurrentData(previousData);
+                    return { error: 'Økten er utløpt. Logg inn på nytt.' };
                 }
-                return;
+                setCurrentData(prev => ({
+                    ...prev,
+                    isPaused: result.data?.isPaused ?? false,
+                    pausedAt: result.data?.pausedAt ?? null,
+                    startDate: result.data?.startDate ?? prev.startDate
+                }));
+                toast('Planen er gjenopptatt');
+                return true;
             }
 
             // Standard oppdateringer - optimistisk UI med rollback
             setCurrentData(prev => {
                 previousData = prev;
-                return { ...prev, ...updates };
+                return {
+                    ...prev,
+                    ...updates,
+                    ...(updates.startDate !== undefined ? { isPaused: false, pausedAt: null } : {})
+                };
             });
             const result = await api.saveUserData(viewingClient.id, updates);
             if (result.authError) {
