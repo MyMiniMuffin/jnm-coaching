@@ -2,7 +2,7 @@ import React from 'react';
 import { LogOut, ChevronLeft, WifiOff } from 'lucide-react';
 
 const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOffline = false }) => (
-    <header className="sticky top-0 z-40 border-b border-surface-200/80 bg-surface-50/94 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-surface-200/80 bg-surface-50">
         <div className="safe-area-pt" />
         {isOffline && (
             <div className="bg-warning text-white text-center text-sm py-2 px-4 flex items-center justify-center gap-2">

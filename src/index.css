@@ -525,7 +525,7 @@ input:focus, textarea:focus, select:focus, button:focus-visible {
     }
 
     .app-frame:not(.app-frame-nav) header {
-        background: rgba(241, 240, 236, 0.94);
+        background: #F1F0EC;
         border-bottom-color: rgba(23, 23, 23, 0.08);
     }
 
