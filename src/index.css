@@ -472,13 +472,31 @@ input:focus, textarea:focus, select:focus, button:focus-visible {
 @media (min-width: 640px) and (max-width: 1023px) {
     .app-shell,
     .app-frame {
-        max-width: 28rem;
+        max-width: 48rem;
         margin-left: auto;
         margin-right: auto;
         border-left: 1px solid rgba(23, 23, 23, 0.08);
         border-right: 1px solid rgba(23, 23, 23, 0.08);
         box-shadow: 0 28px 90px rgba(23, 23, 23, 0.10);
     }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+    .header-inner {
+        max-width: 48rem;
+    }
+}
+
+.modal-backdrop {
+    padding-top: max(1rem, env(safe-area-inset-top, 0px));
+    padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+}
+
+.modal-scroll-panel {
+    max-height: calc(100dvh - max(1rem, env(safe-area-inset-top, 0px)) - max(1rem, env(safe-area-inset-bottom, 0px)));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    overflow-wrap: anywhere;
 }
 
 @media (max-width: 639px) {

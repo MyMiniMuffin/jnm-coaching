@@ -106,8 +106,8 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
     }, [editingPeriod, onUpdatePeriod]);
 
     return (
-        <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-            <Card ref={modalRef} className="w-full max-w-md p-6 max-h-[80vh] overflow-y-auto animate-scale-in" role="dialog" aria-modal="true" aria-labelledby="period-modal-title" onKeyDown={(event) => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); onClose(); } }}>
+        <div className="modal-backdrop fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+            <Card ref={modalRef} className="modal-scroll-panel w-full max-w-md p-4 sm:p-6 animate-scale-in" role="dialog" aria-modal="true" aria-labelledby="period-modal-title" onKeyDown={(event) => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); onClose(); } }}>
                 <div className="flex items-center gap-2 mb-6">
                     <IconButton onClick={onClose} aria-label="Tilbake til planinnstillinger" disabled={isLoading}>
                         <ArrowLeft size={20} />
@@ -122,7 +122,7 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                             <div className="mb-6">
                                 <p className="text-xs text-ink-muted uppercase tracking-wide mb-3">Aktiv runde</p>
                                 <div className="p-4 bg-success/5 border border-success/20 rounded-xl">
-                                    <div className="flex justify-between items-start mb-3">
+                                    <div className="flex flex-wrap justify-between items-start gap-2 mb-3">
                                         <div>
                                             {editingPeriodId === activePeriod.id ? (
                                                 <div className="space-y-2">
@@ -130,7 +130,7 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                                         type="text"
                                                         value={editingPeriod.name}
                                                         onChange={(e) => handleEditFieldChange('name', e.target.value)}
-                                                        className="w-full px-3 py-2 bg-white border border-success/20 rounded-lg outline-none focus:ring-2 focus:ring-accent"
+                                                        className="min-w-0 w-full px-3 py-2 bg-white border border-success/20 rounded-lg outline-none focus:ring-2 focus:ring-accent"
                                                         placeholder="Navn på runde"
                                                         autoFocus
                                                     />
@@ -156,7 +156,7 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                                 </div>
                                             ) : (
                                                 <>
-                                                    <p className="font-semibold text-ink">{activePeriod.name}</p>
+                                                    <p className="break-words font-semibold text-ink">{activePeriod.name}</p>
                                                     <p className="text-sm text-ink-muted">Startet {formatDateNO(activePeriod.startDate)}</p>
                                                 </>
                                             )}
@@ -217,7 +217,7 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                 <div className="space-y-2">
                                     {periods.filter(p => !p.isActive).map(period => (
                                         <div key={period.id} className="p-4 bg-surface-50 rounded-xl">
-                                            <div className="flex justify-between items-start mb-2">
+                                            <div className="flex flex-wrap justify-between items-start gap-2 mb-2">
                                                 <div>
                                                     {editingPeriodId === period.id ? (
                                                         <div className="space-y-2">
@@ -225,18 +225,18 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                                                 type="text"
                                                                 value={editingPeriod.name}
                                                                 onChange={(e) => handleEditFieldChange('name', e.target.value)}
-                                                                className="w-full px-3 py-2 bg-white border border-surface-200 rounded-lg outline-none focus:ring-2 focus:ring-accent"
+                                                                className="min-w-0 w-full px-3 py-2 bg-white border border-surface-200 rounded-lg outline-none focus:ring-2 focus:ring-accent"
                                                                 placeholder="Navn på runde"
                                                                 autoFocus
                                                             />
-                                                            <div className="grid grid-cols-2 gap-2">
+                                                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                                                                 <div>
                                                                     <InputLabel>Startdato</InputLabel>
                                                                     <input
                                                                         type="date"
                                                                         value={editingPeriod.startDate}
                                                                         onChange={(e) => handleEditFieldChange('startDate', e.target.value)}
-                                                                        className="w-full px-3 py-2 bg-white border border-surface-200 rounded-lg outline-none focus:ring-2 focus:ring-accent"
+                                                                        className="min-w-0 w-full px-3 py-2 bg-white border border-surface-200 rounded-lg outline-none focus:ring-2 focus:ring-accent"
                                                                     />
                                                                 </div>
                                                                 <div>
@@ -245,7 +245,7 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                                                         type="date"
                                                                         value={editingPeriod.endDate}
                                                                         onChange={(e) => handleEditFieldChange('endDate', e.target.value)}
-                                                                        className="w-full px-3 py-2 bg-white border border-surface-200 rounded-lg outline-none focus:ring-2 focus:ring-accent"
+                                                                        className="min-w-0 w-full px-3 py-2 bg-white border border-surface-200 rounded-lg outline-none focus:ring-2 focus:ring-accent"
                                                                     />
                                                                 </div>
                                                             </div>
@@ -271,7 +271,7 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                                         </div>
                                                     ) : (
                                                         <>
-                                                            <p className="font-medium">{period.name}</p>
+                                                            <p className="break-words font-medium">{period.name}</p>
                                                             <p className="text-xs text-ink-muted">
                                                                 {formatDateNO(period.startDate)} - {period.endDate ? formatDateNO(period.endDate) : 'Pågår'}
                                                             </p>
@@ -299,7 +299,7 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                                     </div>
                                                 )}
                                             </div>
-                                            <div className="flex gap-2 text-xs">
+                                            <div className="flex flex-wrap gap-2 text-xs">
                                                 {period.startingWeight && (
                                                     <Badge variant="muted">
                                                         Start: {formatWeight(period.startingWeight)} kg
@@ -769,7 +769,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
             {/* Hero Card */}
             <div className="px-5 py-4 lg:px-7 lg:py-6 hero-tint text-white rounded-xl relative overflow-hidden ring-1 ring-white/10">
                 <div className="relative z-10">
-                    <div className="flex justify-between items-start mb-3">
+                    <div className="flex flex-wrap justify-between items-start gap-2 mb-3">
                         <div>
                             <p className="text-white/70 text-xs">
                                 {activePeriod ? activePeriod.name : (userData.isPaused ? 'Plan på pause' : userData.startDate ? 'Din fremgang' : 'Velkommen')}
@@ -854,7 +854,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                     interactive
                     onClick={onOpenWeightHistory}
                 >
-                    <div className="flex justify-between items-start mb-3">
+                    <div className="flex flex-wrap justify-between items-start gap-2 mb-3">
                         <div className="w-10 h-10 bg-surface-100 rounded-xl flex items-center justify-center text-ink-muted group-hover:bg-surface-200 transition-colors">
                             <Scale size={20} />
                         </div>
@@ -873,7 +873,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                     interactive={isCoach}
                     onClick={isCoach ? handleOpenPlanSettings : undefined}
                 >
-                    <div className="flex justify-between items-start mb-3">
+                    <div className="flex flex-wrap justify-between items-start gap-2 mb-3">
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-ink-muted ${isCoach ? 'bg-surface-100 group-hover:bg-surface-200 transition-colors' : 'bg-white'}`}>
                             <Footprints size={20} />
                         </div>

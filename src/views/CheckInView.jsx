@@ -621,7 +621,7 @@ const CheckInView = React.memo(({
                         renderEditForm(featuredReport)
                     ) : (
                         <>
-                            <div className="flex justify-between items-start mb-4">
+                            <div className="flex flex-wrap justify-between items-start gap-2 mb-4">
                                 <div>
                                     <p className="font-medium">{formatDateNO(featuredReport.date)}</p>
                                     <p className="text-xs text-ink-muted">
@@ -634,7 +634,7 @@ const CheckInView = React.memo(({
                                         )}
                                     </p>
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex shrink-0 flex-wrap items-center gap-2">
                                     {canEdit && onUpdate && (
                                         <IconButton type="button" onClick={() => startEdit(featuredReport)} aria-label="Rediger rapport" tone="accent">
                                             <Pencil size={16} />

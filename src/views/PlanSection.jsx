@@ -42,7 +42,7 @@ const SmallIconButton = ({ label, disabled = false, tone = 'neutral', compact = 
         aria-label={label}
         title={label}
         disabled={disabled}
-        className={`inline-flex shrink-0 items-center justify-center rounded-lg transition-colors disabled:opacity-25 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${compact ? 'h-10 w-10' : 'h-11 w-11'} ${tone === 'danger' ? 'text-ink-faint hover:bg-error/10 hover:text-error' : 'text-ink-muted hover:bg-surface-100 hover:text-ink'}`}
+        className={`inline-flex shrink-0 items-center justify-center rounded-lg transition-colors disabled:opacity-25 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${compact ? 'h-11 w-11 sm:h-10 sm:w-10' : 'h-11 w-11'} ${tone === 'danger' ? 'text-ink-faint hover:bg-error/10 hover:text-error' : 'text-ink-muted hover:bg-surface-100 hover:text-ink'}`}
         {...props}
     >
         {children}
@@ -451,13 +451,13 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                 </p>
             )}
             <Card className="overflow-hidden">
-                <div className="flex justify-between items-center gap-3 p-5 border-b border-surface-100 bg-white">
+                <div className="flex flex-wrap justify-between items-center gap-3 p-4 sm:p-5 border-b border-surface-100 bg-white">
                     <div className="flex items-center gap-3 min-w-0">
                         <div className="w-10 h-10 shrink-0 rounded-lg bg-surface-100 flex items-center justify-center text-ink-muted">
                             <Icon size={20} />
                         </div>
                         <div className="min-w-0">
-                            <h2 className="text-[1.05rem] font-semibold">{title}</h2>
+                            <h2 className="break-words text-[1.05rem] font-semibold">{title}</h2>
                             {!isReadOnly && isEditing && (
                                 <p className="section-label mt-0.5">
                                     {saveState === 'saving' ? 'Lagrer endringer...' : saveState === 'dirty' ? 'Ulagrede endringer' : type === 'diet' ? 'Rediger måltider og matvarer' : 'Rediger seksjoner og punkter'}
@@ -502,7 +502,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
 
                 {isEditing && !isReadOnly && showTextImport && (
                     <div className="border-b border-surface-100 bg-surface-50 p-4 sm:p-5">
-                        <div className="mb-3 flex items-start justify-between gap-4">
+                        <div className="mb-3 flex flex-col items-start justify-between gap-3 sm:flex-row sm:gap-4">
                             <div>
                                 <h3 className="text-base font-semibold text-ink">Importer {title.toLowerCase()} fra tekst</h3>
                                 <p className="mt-1 text-sm text-ink-muted">
@@ -581,7 +581,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
 
                                     <div>
                                         {type === 'workout' && section.items.length > 0 && (
-                                            <div className="grid grid-cols-[minmax(0,1fr)_3.75rem_5rem_2.5rem] gap-2 bg-surface-50 px-3 py-2 sm:grid-cols-[minmax(0,1fr)_4.5rem_6.5rem_2.5rem]">
+                                            <div className="hidden sm:grid grid-cols-[minmax(0,1fr)_3.75rem_5rem_2.5rem] gap-2 bg-surface-50 px-3 py-2 sm:grid-cols-[minmax(0,1fr)_4.5rem_6.5rem_2.5rem]">
                                                 <span className="section-label">Øvelse</span>
                                                 <span className="section-label text-center">Sett</span>
                                                 <span className="section-label text-center">Reps</span>
@@ -589,7 +589,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                                             </div>
                                         )}
                                         {type === 'diet' && section.items.length > 0 && (
-                                            <div className="grid grid-cols-[1.5rem_minmax(0,1fr)_2.5rem] gap-2 bg-surface-50 px-3 py-2">
+                                            <div className="grid grid-cols-[1.5rem_minmax(0,1fr)_2.75rem] sm:grid-cols-[1.5rem_minmax(0,1fr)_2.5rem] gap-2 bg-surface-50 px-3 py-2">
                                                 <span className="section-label text-center">Nr.</span>
                                                 <span className="section-label">Matvare / mengde</span>
                                                 <span className="sr-only">Handlinger</span>
@@ -597,8 +597,8 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                                         )}
                                         {section.items.map((item, itemIndex) => (
                                             type === 'workout' ? (
-                                                <div key={item.key} className="px-3 py-1.5">
-                                                    <div className="grid grid-cols-[minmax(0,1fr)_3.75rem_5rem_2.5rem] items-start gap-2 sm:grid-cols-[minmax(0,1fr)_4.5rem_6.5rem_2.5rem]">
+                                                <div key={item.key} className="border-b border-surface-100 py-3 last:border-b-0 sm:border-0 sm:px-3 sm:py-1.5">
+                                                    <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2.75rem] items-start gap-2 sm:grid-cols-[minmax(0,1fr)_4.5rem_6.5rem_2.5rem]">
                                                         <AutoGrowTextarea
                                                             aria-label={`Øvelse ${itemIndex + 1}`}
                                                             data-item-key={item.key}
@@ -606,32 +606,38 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                                                             value={item.text}
                                                             onChange={event => updateItem(sectionIndex, itemIndex, 'text', event.target.value)}
                                                             onKeyDown={event => handleItemKeyDown(event, section, sectionIndex, item, itemIndex, 'text')}
-                                                            className="min-h-[2.5rem] w-full resize-none overflow-hidden rounded-lg border border-surface-200 bg-white px-3 py-2 text-sm leading-6 outline-none placeholder:text-ink-faint focus:border-accent focus:ring-2 focus:ring-accent"
+                                                            className="col-span-2 min-h-11 min-w-0 w-full sm:col-span-1 resize-none overflow-hidden rounded-lg border border-surface-200 bg-white px-3 py-2 text-sm leading-6 outline-none placeholder:text-ink-faint focus:border-accent focus:ring-2 focus:ring-accent"
                                                             placeholder={itemPlaceholder}
                                                         />
-                                                        <input
-                                                            aria-label={`Sett for øvelse ${itemIndex + 1}`}
-                                                            data-item-key={item.key}
-                                                            data-item-field="sets"
-                                                            value={item.sets || ''}
-                                                            onChange={event => updateItem(sectionIndex, itemIndex, 'sets', event.target.value)}
-                                                            onKeyDown={event => handleItemKeyDown(event, section, sectionIndex, item, itemIndex, 'sets')}
-                                                            inputMode="numeric"
-                                                            className="h-[2.5rem] w-full rounded-lg border border-surface-200 bg-white px-2 text-center text-sm font-semibold tabular-nums outline-none focus:border-accent focus:ring-2 focus:ring-accent"
-                                                            placeholder="3"
-                                                        />
-                                                        <input
-                                                            aria-label={`Reps for øvelse ${itemIndex + 1}`}
-                                                            data-item-key={item.key}
-                                                            data-item-field="reps"
-                                                            value={item.reps || ''}
-                                                            onChange={event => updateItem(sectionIndex, itemIndex, 'reps', event.target.value)}
-                                                            onKeyDown={event => handleItemKeyDown(event, section, sectionIndex, item, itemIndex, 'reps')}
-                                                            inputMode="text"
-                                                            className="h-[2.5rem] w-full rounded-lg border border-surface-200 bg-white px-2 text-center text-sm font-semibold tabular-nums outline-none focus:border-accent focus:ring-2 focus:ring-accent"
-                                                            placeholder="8–10"
-                                                        />
-                                                        <div className="flex h-10 items-center justify-end">
+                                                        <label className="min-w-0">
+                                                            <span className="mb-1 block text-xs text-ink-muted sm:hidden">Sett</span>
+                                                            <input
+                                                                aria-label={`Sett for øvelse ${itemIndex + 1}`}
+                                                                data-item-key={item.key}
+                                                                data-item-field="sets"
+                                                                value={item.sets || ''}
+                                                                onChange={event => updateItem(sectionIndex, itemIndex, 'sets', event.target.value)}
+                                                                onKeyDown={event => handleItemKeyDown(event, section, sectionIndex, item, itemIndex, 'sets')}
+                                                                inputMode="numeric"
+                                                                className="h-11 min-w-0 w-full rounded-lg border border-surface-200 bg-white px-2 text-center text-sm font-semibold tabular-nums outline-none focus:border-accent focus:ring-2 focus:ring-accent"
+                                                                placeholder="3"
+                                                            />
+                                                        </label>
+                                                        <label className="min-w-0">
+                                                            <span className="mb-1 block text-xs text-ink-muted sm:hidden">Reps</span>
+                                                            <input
+                                                                aria-label={`Reps for øvelse ${itemIndex + 1}`}
+                                                                data-item-key={item.key}
+                                                                data-item-field="reps"
+                                                                value={item.reps || ''}
+                                                                onChange={event => updateItem(sectionIndex, itemIndex, 'reps', event.target.value)}
+                                                                onKeyDown={event => handleItemKeyDown(event, section, sectionIndex, item, itemIndex, 'reps')}
+                                                                inputMode="text"
+                                                                className="h-11 min-w-0 w-full rounded-lg border border-surface-200 bg-white px-2 text-center text-sm font-semibold tabular-nums outline-none focus:border-accent focus:ring-2 focus:ring-accent"
+                                                                placeholder="8–10"
+                                                            />
+                                                        </label>
+                                                        <div className="col-start-3 row-start-1 flex h-11 items-center justify-end sm:col-start-auto sm:row-start-auto">
                                                             <RowMenu
                                                                 label={`Handlinger for øvelse ${itemIndex + 1}`}
                                                                 items={[
@@ -644,8 +650,8 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                                                     </div>
                                                 </div>
                                             ) : (
-                                                <div key={item.key} className="border-b border-surface-100 px-3 py-2 last:border-b-0">
-                                                    <div className="grid grid-cols-[1.5rem_minmax(0,1fr)_2.5rem] items-start gap-2">
+                                                <div key={item.key} className="border-b border-surface-100 py-2 sm:px-3 last:border-b-0">
+                                                    <div className="grid grid-cols-[1.5rem_minmax(0,1fr)_2.75rem] sm:grid-cols-[1.5rem_minmax(0,1fr)_2.5rem] items-start gap-2">
                                                         <span className="flex h-10 items-center justify-center text-[11px] tabular-nums text-ink-faint">{String(itemIndex + 1).padStart(2, '0')}</span>
                                                         <AutoGrowTextarea
                                                             aria-label={`Matvare ${itemIndex + 1}`}
@@ -669,7 +675,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                                                     </div>
 
                                                     {(item.subItems || []).map((subItem, subItemIndex) => (
-                                                        <div key={subItem.key} className="ml-8 mt-2 flex items-start gap-2 border-l border-surface-200 pl-3">
+                                                        <div key={subItem.key} className="ml-2 mt-2 flex items-start gap-2 border-l border-surface-200 pl-2 sm:ml-8 sm:pl-3">
                                                             <CornerDownRight className="mt-3 shrink-0 text-ink-faint" size={13} />
                                                             <AutoGrowTextarea
                                                                 aria-label={`Valg ${subItemIndex + 1} for matvare ${itemIndex + 1}`}
@@ -710,7 +716,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                                                     <button
                                                         type="button"
                                                         onClick={() => addSubItem(sectionIndex, itemIndex)}
-                                                        className="ml-8 mt-1 inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium text-ink-muted hover:bg-surface-100 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                                                        className="ml-2 sm:ml-8 mt-1 inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium text-ink-muted hover:bg-surface-100 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                                                     >
                                                         <CornerDownRight size={13} /> Legg til valg
                                                     </button>
@@ -733,7 +739,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                             {displayPlan.sections.map(section => (
                                 <section key={section.key}>
                                     {section.title && (
-                                        <h3 className="text-[1.08rem] font-semibold leading-tight text-ink">{section.title}</h3>
+                                        <h3 className="break-words text-[1.08rem] font-semibold leading-tight text-ink">{section.title}</h3>
                                     )}
                                     {section.items.length > 0 && (
                                         type === 'workout' && section.items.some(item => item.sets || item.reps) ? (
@@ -746,7 +752,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                                                 <ul className="divide-y divide-surface-100">
                                                     {section.items.map(item => (
                                                         <li key={item.key} className="grid grid-cols-[minmax(0,1fr)_3.75rem_5rem] items-center gap-2 px-3 py-2 text-sm leading-5 text-ink/85 sm:grid-cols-[minmax(0,1fr)_4.5rem_6.5rem]">
-                                                            <span className="min-w-0 whitespace-pre-wrap font-medium">{item.text}</span>
+                                                            <span className="min-w-0 break-words whitespace-pre-wrap font-medium">{item.text}</span>
                                                             <span className="text-center font-semibold tabular-nums text-ink">{item.sets || '—'}</span>
                                                             <span className="break-words text-center font-semibold tabular-nums leading-5 text-ink">{item.reps || '—'}</span>
                                                         </li>
@@ -757,13 +763,13 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                                             <ul className={`${section.title ? 'mt-1.5' : ''} space-y-0`}>
                                                 {section.items.map(item => (
                                                     <li key={item.key} className="px-1 py-0.5 text-sm leading-5 text-ink/80">
-                                                        <div className="whitespace-pre-wrap">{item.text}</div>
+                                                        <div className="break-words whitespace-pre-wrap">{item.text}</div>
                                                         {(item.subItems || []).length > 0 && (
                                                             <ul className="ml-4 mt-0.5 space-y-0 border-l border-surface-200 pl-2.5">
                                                                 {item.subItems.map(subItem => (
                                                                     <li key={subItem.key} className="flex items-start gap-1.5 py-0 text-[0.82rem] leading-5 text-ink-muted">
                                                                         <span className="text-ink-faint">–</span>
-                                                                        <span className="whitespace-pre-wrap">{subItem.text}</span>
+                                                                        <span className="break-words whitespace-pre-wrap">{subItem.text}</span>
                                                                     </li>
                                                                 ))}
                                                             </ul>

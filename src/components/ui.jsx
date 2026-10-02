@@ -112,7 +112,7 @@ const BUTTON_SIZES = {
 export const Button = React.memo(({ children, variant = 'primary', size = 'md', className = '', ...props }) => (
     <button
         type="button"
-        className={`min-h-11 min-w-11 font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${BUTTON_VARIANTS[variant]} ${BUTTON_SIZES[size]} ${className}`}
+        className={`min-h-11 min-w-11 font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 [&>svg]:shrink-0 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${BUTTON_VARIANTS[variant]} ${BUTTON_SIZES[size]} ${className}`}
         {...props}
     >
         {children}
@@ -169,14 +169,14 @@ export const TextField = React.memo(React.forwardRef(({
     id,
     ...props
 }, ref) => (
-    <div className={className}>
+    <div className={`min-w-0 ${className}`}>
         {label && <label htmlFor={id} className="block text-sm font-medium text-ink-muted mb-2">{label}</label>}
         <div className="relative">
             {Icon && <Icon className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" size={18} />}
             <input
                 id={id}
                 ref={ref}
-                className={`w-full ${Icon ? 'pl-12' : 'px-4'} pr-4 py-3.5 bg-surface-50 border rounded-xl outline-none transition-all focus:ring-2 focus:ring-accent focus:border-accent text-base font-medium placeholder-ink-faint disabled:opacity-50 ${error ? 'border-error/40' : 'border-surface-200'} ${inputClassName}`}
+                className={`min-w-0 w-full ${Icon ? 'pl-12' : 'px-4'} pr-4 py-3.5 bg-surface-50 border rounded-xl outline-none transition-all focus:ring-2 focus:ring-accent focus:border-accent text-base font-medium placeholder-ink-faint disabled:opacity-50 ${error ? 'border-error/40' : 'border-surface-200'} ${inputClassName}`}
                 aria-invalid={error ? true : undefined}
                 {...props}
             />
@@ -239,14 +239,14 @@ export const SelectField = React.memo(({
 }) => {
     const [autoId] = React.useState(() => providedId || `select-field-${++selectFieldCounter}`);
     return (
-        <div className={className}>
+        <div className={`min-w-0 ${className}`}>
             {label && <label htmlFor={autoId} className="block text-sm font-medium text-ink-muted mb-2">{label}</label>}
             <div className="relative">
                 <select
                     id={autoId}
                     value={value}
                     onChange={onChange}
-                    className={`w-full p-3.5 bg-surface-50 border border-surface-200 rounded-xl appearance-none focus:ring-2 focus:ring-accent focus:border-accent outline-none font-medium cursor-pointer ${selectClassName}`}
+                    className={`min-w-0 w-full p-3.5 pr-10 bg-surface-50 border border-surface-200 rounded-xl appearance-none focus:ring-2 focus:ring-accent focus:border-accent outline-none font-medium cursor-pointer ${selectClassName}`}
                     {...props}
                 >
                     {options.map(opt => <option key={opt} value={opt}>{displayLabels[opt] || opt}</option>)}

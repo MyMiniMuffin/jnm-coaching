@@ -250,8 +250,8 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
     return (
         <div className="space-y-5 pb-8 animate-slide-up">
             {showModal && (
-                <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in" onClick={closeModal}>
-                    <Card className="w-full max-w-sm p-6 animate-scale-in" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="new-athlete-title">
+                <div className="modal-backdrop fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in" onClick={closeModal}>
+                    <Card className="modal-scroll-panel w-full max-w-sm p-5 sm:p-6 animate-scale-in" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="new-athlete-title">
                         <div className="flex justify-between items-center mb-6">
                             <h2 id="new-athlete-title" className="text-xl font-display">Ny utøver</h2>
                             <IconButton onClick={closeModal} aria-label="Lukk">
@@ -273,8 +273,8 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
 
             {/* Passord-reset modal */}
             {resetTarget && (
-                <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in" onClick={closeResetModal}>
-                    <Card className="w-full max-w-sm p-6 animate-scale-in" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="reset-password-title" aria-describedby="reset-password-description">
+                <div className="modal-backdrop fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in" onClick={closeResetModal}>
+                    <Card className="modal-scroll-panel w-full max-w-sm p-5 sm:p-6 animate-scale-in" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="reset-password-title" aria-describedby="reset-password-description">
                         <div className="flex justify-between items-center mb-6">
                             <h2 id="reset-password-title" className="text-xl font-display">Tilbakestill passord</h2>
                             <IconButton onClick={closeResetModal} aria-label="Lukk">
@@ -299,7 +299,7 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
                     <div className="min-w-0">
                         <p className="text-white/70 text-xs">Oversikt</p>
                         <h2 className="text-2xl font-display leading-tight">Utøvere</h2>
-                        <div className="flex items-center gap-1.5 mt-1.5 text-xs text-white/75">
+                        <div className="flex flex-wrap items-center gap-1.5 mt-1.5 text-xs text-white/75">
                             <BellRing size={12} className="shrink-0" />
                             <span>
                                 {notificationPermission === 'granted'
@@ -412,7 +412,7 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
                         return (
                         <Card
                             key={client.id}
-                            className={`p-4 flex items-center justify-between group ${showArchived ? 'opacity-60' : client.unreadCheckins > 0 ? 'border-accent/30 bg-accent/5' : ''} ${isPending ? 'opacity-70' : 'hover:border-surface-300'}`}
+                            className={`p-3 sm:p-4 flex items-center justify-between gap-1 group ${showArchived ? 'opacity-60' : client.unreadCheckins > 0 ? 'border-accent/30 bg-accent/5' : ''} ${isPending ? 'opacity-70' : 'hover:border-surface-300'}`}
                         >
                             <button
                                 type="button"
@@ -424,13 +424,13 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
                                     }
                                     onSelectClient(client);
                                 }}
-                                className="flex min-h-12 min-w-0 flex-1 items-center gap-4 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:cursor-wait"
+                                className="flex min-h-12 min-w-0 flex-1 items-center gap-2.5 sm:gap-4 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:cursor-wait"
                             >
                                 <span className={`relative w-12 h-12 shrink-0 rounded-xl flex items-center justify-center text-lg font-semibold ${showArchived ? 'bg-surface-200 text-ink-muted' : client.unreadCheckins > 0 ? 'bg-accent/10 text-accent' : 'bg-surface-100 text-ink'}`}>
                                     {client.name.charAt(0)}
                                     <RecentActivityDot lastActiveAt={client.lastActiveAt} />
                                 </span>
-                                <span className="min-w-0">
+                                <span className="min-w-0 flex-1">
                                     <span className="block font-medium truncate">{client.name}</span>
                                     <span className={`block text-sm ${client.unreadCheckins > 0 ? 'text-accent font-medium' : 'text-ink-muted'}`}>
                                         {client.unreadCheckins > 0

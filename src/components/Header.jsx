@@ -22,7 +22,7 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
                 </button>
                 <div className="flex-1 text-center min-w-0 lg:text-left">
                     <p className="font-semibold text-ink truncate leading-6">{viewingClient.name}</p>
-                    <p className="text-[11px] leading-4 text-ink-muted">@{viewingClient.username}</p>
+                    <p className="truncate text-[11px] leading-4 text-ink-muted">@{viewingClient.username}</p>
                 </div>
                 <button
                     type="button"
