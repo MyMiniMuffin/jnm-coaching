@@ -156,7 +156,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
     }, [saveState]);
 
     const Icon = type === 'diet' ? Utensils : Dumbbell;
-    const title = type === 'diet' ? 'Matplan' : (planTitle || 'Treningsplan');
+    const title = planTitle || (type === 'diet' ? 'Matplan' : 'Treningsplan');
     const itemPlaceholder = type === 'diet'
         ? 'For eksempel: Havregrøt med bær'
         : 'For eksempel: Knebøy';

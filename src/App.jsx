@@ -28,7 +28,7 @@ const CoachDashboard = React.lazy(() => import('./views/CoachDashboard'));
 const DashboardView = React.lazy(() => import('./views/DashboardView'));
 const WeightProgressView = React.lazy(() => import('./views/WeightProgressView'));
 const GalleryView = React.lazy(() => import('./views/GalleryView'));
-const PlanSection = React.lazy(() => import('./views/PlanSection'));
+const DietPlansSection = React.lazy(() => import('./views/DietPlansSection'));
 const WorkoutPlansSection = React.lazy(() => import('./views/WorkoutPlansSection'));
 const CheckInView = React.lazy(() => import('./views/CheckInView'));
 
@@ -1293,7 +1293,7 @@ const App = () => {
                                 onAddGalleryImage={handleAddGalleryImage}
                                 onDeleteGalleryImage={handleDeleteGalleryImage}
                             /> :
-                            activeTab === 'diet' ? <PlanSection type="diet" content={currentData.dietPlan} onSave={handleSaveDietPlan} isReadOnly={!isCoach || Boolean(viewingClient?.is_archived)} isArchived={Boolean(isCoach && viewingClient?.is_archived)} /> :
+                            activeTab === 'diet' ? <DietPlansSection content={currentData.dietPlan} onSave={handleSaveDietPlan} isReadOnly={!isCoach || Boolean(viewingClient?.is_archived)} isArchived={Boolean(isCoach && viewingClient?.is_archived)} /> :
                             activeTab === 'workout' ? <WorkoutPlansSection content={currentData.workoutPlan} onSave={handleSaveWorkoutPlan} isReadOnly={!isCoach || Boolean(viewingClient?.is_archived)} isArchived={Boolean(isCoach && viewingClient?.is_archived)} /> :
                             <CheckInView checkins={currentData.checkins} onNewCheckin={handleNewCheckin} onDelete={handleDeleteCheckin} onUpdate={handleUpdateCheckin} canEdit={Boolean(viewingClient)} isReadOnly={isCoach} canDelete={Boolean(viewingClient)} stepGoal={currentData.stepGoal} draftKey={viewingClient?.id || currentUser?.id || 'default'} uploadUserId={viewingClient?.id} startDate={currentData.startDate} totalWeeks={currentData.totalWeeks} />}
                         </div>
