@@ -161,7 +161,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
         ? 'For eksempel: Havregrøt med bær'
         : 'For eksempel: Knebøy';
     const editorHint = type === 'diet'
-        ? 'Del planen inn i måltider eller andre fokusområder.'
+        ? 'Legg inn matvarer med mengde, og bruk valg for alternativer eller tilbehør.'
         : 'Del planen inn i treningsdager eller andre fokusområder.';
     const canSave = saveState === 'dirty' && !isSaving;
 
@@ -349,14 +349,14 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
     }, [markChanged]);
 
     const handleRemoveSection = useCallback(async (sectionIndex) => {
-        const confirmed = await confirmDialog('Seksjonen og alt innholdet i den blir fjernet.', {
-            title: 'Slett seksjon?',
+        const confirmed = await confirmDialog(type === 'diet' ? 'Måltidet og alt innholdet i det blir fjernet.' : 'Seksjonen og alt innholdet i den blir fjernet.', {
+            title: type === 'diet' ? 'Slett måltid?' : 'Slett seksjon?',
             confirmText: 'Slett',
             destructive: true
         });
         if (!confirmed) return;
         removeSection(sectionIndex);
-    }, [confirmDialog, removeSection]);
+    }, [confirmDialog, removeSection, type]);
 
     const moveSection = useCallback((sectionIndex, direction) => {
         markChanged(current => ({
@@ -460,7 +460,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                             <h2 className="text-[1.05rem] font-semibold">{title}</h2>
                             {!isReadOnly && isEditing && (
                                 <p className="section-label mt-0.5">
-                                    {saveState === 'saving' ? 'Lagrer endringer...' : saveState === 'dirty' ? 'Ulagrede endringer' : 'Rediger seksjoner og punkter'}
+                                    {saveState === 'saving' ? 'Lagrer endringer...' : saveState === 'dirty' ? 'Ulagrede endringer' : type === 'diet' ? 'Rediger måltider og matvarer' : 'Rediger seksjoner og punkter'}
                                 </p>
                             )}
                         </div>
@@ -481,7 +481,10 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
 
                 {isEditing && !isReadOnly && (
                     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-surface-100 bg-white px-5 py-3.5">
-                        <p className="text-sm text-ink-muted">{editorHint}</p>
+                        <div>
+                            <p className="text-sm text-ink-muted">{editorHint}</p>
+                            {type === 'diet' && <p className="mt-1 text-xs text-ink-faint">Enter legger til neste matvare. Shift + Enter gir linjeskift.</p>}
+                        </div>
                         <div className="flex flex-wrap gap-2">
                             <input ref={importFileRef} type="file" accept="text/plain,.txt" className="hidden" onChange={handleImportFile} />
                             <Button variant="ghost" size="sm" onClick={handleExportText} disabled={draft.sections.length === 0}>
@@ -545,7 +548,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                             action={isEditing && !isReadOnly ? (
                                 <div className="flex flex-wrap justify-center gap-2">
                                     <Button variant="secondary" onClick={insertTemplate}><FileText size={17} /> Bruk forslag</Button>
-                                    <Button onClick={addSection}><Plus size={17} /> Ny seksjon</Button>
+                                    <Button onClick={addSection}><Plus size={17} /> {type === 'diet' ? 'Nytt måltid' : 'Ny seksjon'}</Button>
                                 </div>
                             ) : null}
                         />
@@ -555,17 +558,17 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                                 <div key={section.key} data-section={sectionIndex}>
                                     <div className="mb-4">
                                         <div className="mb-2 flex items-center justify-between gap-3">
-                                            <span className="section-label tabular-nums">Seksjon {String(sectionIndex + 1).padStart(2, '0')}</span>
+                                            <span className="section-label tabular-nums">{type === 'diet' ? 'Måltid' : 'Seksjon'} {String(sectionIndex + 1).padStart(2, '0')}</span>
                                             <RowMenu
-                                                label={`Handlinger for seksjon ${sectionIndex + 1}`}
+                                                label={`Handlinger for ${type === 'diet' ? 'måltid' : 'seksjon'} ${sectionIndex + 1}`}
                                                 items={[
                                                     { label: 'Flytt opp', icon: <ArrowUp size={15} />, disabled: sectionIndex === 0, onClick: () => moveSection(sectionIndex, -1) },
                                                     { label: 'Flytt ned', icon: <ArrowDown size={15} />, disabled: sectionIndex === displayPlan.sections.length - 1, onClick: () => moveSection(sectionIndex, 1) },
-                                                    { label: 'Slett seksjon', icon: <Trash2 size={15} />, tone: 'danger', onClick: () => handleRemoveSection(sectionIndex) }
+                                                    { label: type === 'diet' ? 'Slett måltid' : 'Slett seksjon', icon: <Trash2 size={15} />, tone: 'danger', onClick: () => handleRemoveSection(sectionIndex) }
                                                 ]}
                                             />
                                         </div>
-                                        <label className="sr-only" htmlFor={`plan-section-${section.key}`}>Seksjonsnavn</label>
+                                        <label className="sr-only" htmlFor={`plan-section-${section.key}`}>{type === 'diet' ? 'Måltidsnavn' : 'Seksjonsnavn'}</label>
                                         <input
                                             id={`plan-section-${section.key}`}
                                             data-new-section={sectionIndex === displayPlan.sections.length - 1 ? 'true' : undefined}
@@ -582,6 +585,13 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                                                 <span className="section-label">Øvelse</span>
                                                 <span className="section-label text-center">Sett</span>
                                                 <span className="section-label text-center">Reps</span>
+                                                <span className="sr-only">Handlinger</span>
+                                            </div>
+                                        )}
+                                        {type === 'diet' && section.items.length > 0 && (
+                                            <div className="grid grid-cols-[1.5rem_minmax(0,1fr)_2.5rem] gap-2 bg-surface-50 px-3 py-2">
+                                                <span className="section-label text-center">Nr.</span>
+                                                <span className="section-label">Matvare / mengde</span>
                                                 <span className="sr-only">Handlinger</span>
                                             </div>
                                         )}
@@ -634,35 +644,35 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                                                     </div>
                                                 </div>
                                             ) : (
-                                                <div key={item.key} className="group py-0.5">
-                                                    <div className="flex items-start gap-1.5">
-                                                        <span className="mt-1.5 w-5 shrink-0 text-[11px] tabular-nums text-ink-faint">{String(itemIndex + 1).padStart(2, '0')}</span>
+                                                <div key={item.key} className="border-b border-surface-100 px-3 py-2 last:border-b-0">
+                                                    <div className="grid grid-cols-[1.5rem_minmax(0,1fr)_2.5rem] items-start gap-2">
+                                                        <span className="flex h-10 items-center justify-center text-[11px] tabular-nums text-ink-faint">{String(itemIndex + 1).padStart(2, '0')}</span>
                                                         <AutoGrowTextarea
-                                                            aria-label={`Punkt ${itemIndex + 1}`}
+                                                            aria-label={`Matvare ${itemIndex + 1}`}
                                                             data-item-key={item.key}
                                                             data-item-field="text"
                                                             value={item.text}
                                                             onChange={event => updateItem(sectionIndex, itemIndex, 'text', event.target.value)}
                                                             onKeyDown={event => handleItemKeyDown(event, section, sectionIndex, item, itemIndex, 'text')}
-                                                            className="min-h-8 min-w-0 flex-1 resize-none overflow-hidden bg-transparent px-1 py-1 text-sm leading-5 outline-none placeholder:text-ink-faint"
+                                                            className="min-h-[2.5rem] w-full min-w-0 resize-none overflow-hidden rounded-lg border border-surface-200 bg-white px-3 py-2 text-sm leading-6 outline-none placeholder:text-ink-faint focus:border-accent focus:ring-2 focus:ring-accent"
                                                             placeholder={itemPlaceholder}
                                                         />
                                                         <RowMenu
-                                                            label={`Handlinger for punkt ${itemIndex + 1}`}
+                                                            label={`Handlinger for matvare ${itemIndex + 1}`}
                                                             items={[
                                                                 { label: 'Legg til valg', icon: <CornerDownRight size={15} />, onClick: () => addSubItem(sectionIndex, itemIndex) },
                                                                 { label: 'Flytt opp', icon: <ArrowUp size={15} />, disabled: itemIndex === 0, onClick: () => moveItem(sectionIndex, itemIndex, -1) },
                                                                 { label: 'Flytt ned', icon: <ArrowDown size={15} />, disabled: itemIndex === section.items.length - 1, onClick: () => moveItem(sectionIndex, itemIndex, 1) },
-                                                                { label: 'Slett punkt', icon: <Trash2 size={15} />, tone: 'danger', onClick: () => removeItem(sectionIndex, itemIndex) }
+                                                                { label: 'Slett matvare', icon: <Trash2 size={15} />, tone: 'danger', onClick: () => removeItem(sectionIndex, itemIndex) }
                                                             ]}
                                                         />
                                                     </div>
 
                                                     {(item.subItems || []).map((subItem, subItemIndex) => (
-                                                        <div key={subItem.key} className="ml-6 flex items-start gap-1 border-l border-surface-200 pl-2">
-                                                            <CornerDownRight className="mt-2 shrink-0 text-ink-faint" size={13} />
+                                                        <div key={subItem.key} className="ml-8 mt-2 flex items-start gap-2 border-l border-surface-200 pl-3">
+                                                            <CornerDownRight className="mt-3 shrink-0 text-ink-faint" size={13} />
                                                             <AutoGrowTextarea
-                                                                aria-label={`Valg ${subItemIndex + 1} under punkt ${itemIndex + 1}`}
+                                                                aria-label={`Valg ${subItemIndex + 1} for matvare ${itemIndex + 1}`}
                                                                 data-sub-item={subItemIndex === (item.subItems || []).length - 1 ? `${sectionIndex}-${itemIndex}-new` : undefined}
                                                                 value={subItem.text}
                                                                 onChange={event => updateSubItem(sectionIndex, itemIndex, subItemIndex, event.target.value)}
@@ -683,8 +693,8 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                                                                         removeSubItem(sectionIndex, itemIndex, subItemIndex);
                                                                     }
                                                                 }}
-                                                                className="min-h-8 min-w-0 flex-1 resize-none overflow-hidden bg-transparent px-1 py-1 text-[0.82rem] leading-5 text-ink-muted outline-none placeholder:text-ink-faint"
-                                                                placeholder="For eksempel: med bær"
+                                                                className="min-h-[2.5rem] min-w-0 flex-1 resize-none overflow-hidden rounded-lg border border-surface-200 bg-surface-50 px-3 py-2 text-sm leading-6 text-ink-muted outline-none placeholder:text-ink-faint focus:border-accent focus:ring-2 focus:ring-accent"
+                                                                placeholder="For eksempel: 100 g bær eller 1 banan"
                                                             />
                                                             <SmallIconButton
                                                                 compact
@@ -700,7 +710,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                                                     <button
                                                         type="button"
                                                         onClick={() => addSubItem(sectionIndex, itemIndex)}
-                                                        className={`ml-7 inline-flex min-h-10 items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-ink-muted transition-opacity hover:bg-surface-100 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${(item.subItems || []).length > 0 ? '' : 'lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100'}`}
+                                                        className="ml-8 mt-1 inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium text-ink-muted hover:bg-surface-100 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                                                     >
                                                         <CornerDownRight size={13} /> Legg til valg
                                                     </button>
@@ -708,14 +718,14 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                                             )
                                         ))}
                                         <Button variant="ghost" size="sm" onClick={() => addItem(sectionIndex)} className="mt-2">
-                                            <Plus size={16} /> {type === 'workout' ? 'Legg til øvelse' : 'Legg til punkt'}
+                                            <Plus size={16} /> {type === 'workout' ? 'Legg til øvelse' : 'Legg til matvare'}
                                         </Button>
                                     </div>
                                 </div>
                             ))}
 
                             <Button variant="secondary" onClick={addSection} className="w-full border border-dashed border-surface-300 bg-transparent py-3 shadow-none">
-                                <Plus size={17} /> Legg til seksjon
+                                <Plus size={17} /> {type === 'diet' ? 'Legg til måltid' : 'Legg til seksjon'}
                             </Button>
                         </div>
                     ) : (
