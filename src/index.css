@@ -95,14 +95,31 @@ input[type="checkbox"]:checked {
     box-shadow: 0 -8px 24px rgba(23, 23, 23, 0.07);
 }
 
-/* Anchor from the top on iOS Home Screen apps: WebKit can retain a stale
-   bottom anchor when the standalone viewport changes during launch/resume. */
+/* Installed iOS apps can exclude safe areas from dvh at cold start.
+   vh includes them; keep the navigation's safe-area spacer inside that height.
+   The class also covers iOS installs whose display-mode query reports browser. */
 @supports (-webkit-touch-callout: none) {
     @media (display-mode: standalone) and (max-width: 1023px) {
         .mobile-bottom-nav {
-            top: 100dvh;
+            top: 100vh;
             bottom: auto;
             transform: translateY(-100%);
+        }
+
+        .app-frame {
+            min-height: 100vh;
+        }
+    }
+
+    @media (max-width: 1023px) {
+        html.ios-standalone .mobile-bottom-nav {
+            top: 100vh;
+            bottom: auto;
+            transform: translateY(-100%);
+        }
+
+        html.ios-standalone .app-frame {
+            min-height: 100vh;
         }
     }
 }
