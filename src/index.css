@@ -95,6 +95,18 @@ input[type="checkbox"]:checked {
     box-shadow: 0 -8px 24px rgba(23, 23, 23, 0.07);
 }
 
+/* Anchor from the top on iOS Home Screen apps: WebKit can retain a stale
+   bottom anchor when the standalone viewport changes during launch/resume. */
+@supports (-webkit-touch-callout: none) {
+    @media (display-mode: standalone) and (max-width: 1023px) {
+        .mobile-bottom-nav {
+            top: 100dvh;
+            bottom: auto;
+            transform: translateY(-100%);
+        }
+    }
+}
+
 .hide-scrollbar::-webkit-scrollbar { display: none; }
 .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
