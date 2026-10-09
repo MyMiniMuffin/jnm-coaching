@@ -30,6 +30,7 @@ module.exports = {
           good: '#527062',
           medium: '#946C17',
           poor: '#AE4D48',
+          training: '#526B85',
         },
         success: '#546B3E',
         warning: '#CA8A04',

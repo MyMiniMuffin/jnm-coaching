@@ -7,6 +7,7 @@ const scoreStyles = {
     good: { text: 'text-report-good', bar: 'bg-report-good', label: 'Bra' },
     medium: { text: 'text-report-medium', bar: 'bg-report-medium', label: 'Medium' },
     poor: { text: 'text-report-poor', bar: 'bg-report-poor', label: 'Dårlig' },
+    training: { text: 'text-report-training', bar: 'bg-report-training', label: '' },
     neutral: { text: 'text-ink', bar: 'bg-ink/45', label: '' },
 };
 
@@ -15,8 +16,8 @@ const ReportMetrics = React.memo(({ report, className = '' }) => {
         { label: 'Nøyaktighet', value: report.accuracy ?? '–', tone: getScoreTone(report.accuracy), width: clampPercent((parseInt(report.accuracy, 10) || 0) * 10) },
         { label: 'Energi', value: report.energy ?? '–', tone: getScoreTone(report.energy), width: clampPercent((parseInt(report.energy, 10) || 0) * 10) },
         { label: 'Søvn', value: report.sleep ?? '–', tone: getScoreTone(report.sleep), width: clampPercent((parseInt(report.sleep, 10) || 0) * 10) },
-        { label: 'Styrke', value: report.strengthSessions || 0, width: clampPercent(Math.round(((parseInt(report.strengthSessions, 10) || 0) / 7) * 100)) },
-        { label: 'Cardio', value: report.cardioSessions || 0, width: clampPercent(Math.round(((parseInt(report.cardioSessions, 10) || 0) / 7) * 100)) },
+        { label: 'Styrke', value: report.strengthSessions || 0, tone: 'training', width: clampPercent(Math.round(((parseInt(report.strengthSessions, 10) || 0) / 7) * 100)) },
+        { label: 'Cardio', value: report.cardioSessions || 0, tone: 'training', width: clampPercent(Math.round(((parseInt(report.cardioSessions, 10) || 0) / 7) * 100)) },
     ];
 
     const statusClass = (isActive) => isActive
