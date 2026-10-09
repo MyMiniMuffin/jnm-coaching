@@ -409,10 +409,11 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
                 ) : (
                     displayedClients.map(client => {
                         const isPending = pendingClientAction?.clientId === client.id;
+                        const isMenuOpen = openMenuId === client.id;
                         return (
                         <Card
                             key={client.id}
-                            className={`p-3 sm:p-4 flex items-center justify-between gap-1 group ${showArchived ? 'opacity-60' : client.unreadCheckins > 0 ? 'border-accent/30 bg-accent/5' : ''} ${isPending ? 'opacity-70' : 'hover:border-surface-300'}`}
+                            className={`relative ${isMenuOpen ? 'z-30' : 'z-0'} p-3 sm:p-4 flex items-center justify-between gap-1 group ${showArchived ? (isMenuOpen ? '' : 'opacity-60') : client.unreadCheckins > 0 ? 'border-accent/30 bg-accent/5' : ''} ${isPending ? 'opacity-70' : 'hover:border-surface-300'}`}
                         >
                             <button
                                 type="button"
@@ -446,7 +447,7 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
                                 <ClientActionsMenu
                                     client={client}
                                     isPending={isPending}
-                                    open={openMenuId === client.id}
+                                    open={isMenuOpen}
                                     onOpenChange={(nextOpen) => setOpenMenuId(nextOpen ? client.id : null)}
                                     onArchive={() => handleArchiveToggle(client)}
                                     onReset={() => openResetModal(client)}
