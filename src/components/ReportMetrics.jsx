@@ -5,15 +5,15 @@ const clampPercent = (value) => Math.max(0, Math.min(100, value));
 
 const ReportMetrics = React.memo(({ report, className = '' }) => {
     const metrics = [
-        { label: 'Plan', value: report.accuracy ?? 0, width: clampPercent((parseInt(report.accuracy, 10) || 0) * 10), color: 'bg-ink/45' },
-        { label: 'Energi', value: report.energy ?? 0, width: clampPercent((parseInt(report.energy, 10) || 0) * 10), color: 'bg-accent' },
-        { label: 'Søvn', value: report.sleep ?? 0, width: clampPercent((parseInt(report.sleep, 10) || 0) * 10), color: 'bg-accent/60' },
-        { label: 'Styrke', value: report.strengthSessions || 0, width: clampPercent(Math.round(((parseInt(report.strengthSessions, 10) || 0) / 7) * 100)), color: 'bg-ink/45' },
-        { label: 'Cardio', value: report.cardioSessions || 0, width: clampPercent(Math.round(((parseInt(report.cardioSessions, 10) || 0) / 7) * 100)), color: 'bg-ink/45' },
+        { label: 'Plan', value: report.accuracy ?? 0, width: clampPercent((parseInt(report.accuracy, 10) || 0) * 10) },
+        { label: 'Energi', value: report.energy ?? 0, width: clampPercent((parseInt(report.energy, 10) || 0) * 10) },
+        { label: 'Søvn', value: report.sleep ?? 0, width: clampPercent((parseInt(report.sleep, 10) || 0) * 10) },
+        { label: 'Styrke', value: report.strengthSessions || 0, width: clampPercent(Math.round(((parseInt(report.strengthSessions, 10) || 0) / 7) * 100)) },
+        { label: 'Cardio', value: report.cardioSessions || 0, width: clampPercent(Math.round(((parseInt(report.cardioSessions, 10) || 0) / 7) * 100)) },
     ];
 
     const statusClass = (isActive) => isActive
-        ? 'border-accent/20 bg-accent/10 text-accent'
+        ? 'border-report-border bg-report-soft text-report'
         : 'border-surface-200 bg-surface-100 text-ink-muted';
 
     return (
@@ -22,8 +22,8 @@ const ReportMetrics = React.memo(({ report, className = '' }) => {
                 {metrics.map(metric => (
                     <div key={metric.label} className="min-w-0">
                         <p className="text-lg font-semibold leading-none text-ink tabular-nums">{metric.value}</p>
-                        <div className="mx-0.5 mt-2 h-1 overflow-hidden rounded-full bg-surface-200">
-                            <div className={`h-full rounded-full ${metric.color}`} style={{ width: `${metric.width}%` }} />
+                        <div className="mx-0.5 mt-2 h-1 overflow-hidden rounded-full bg-report-track">
+                            <div className="h-full rounded-full bg-report" style={{ width: `${metric.width}%` }} />
                         </div>
                         <p className="mt-1.5 truncate text-[10px] text-ink-muted">{metric.label}</p>
                     </div>

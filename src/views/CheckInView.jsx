@@ -616,7 +616,7 @@ const CheckInView = React.memo(({
             </div>
 
             {featuredReport && !showForm && (
-                <Card className="p-5">
+                <Card className="report-card p-5">
                     {editingId === featuredReport.id && editForm ? (
                         renderEditForm(featuredReport)
                     ) : (
@@ -785,14 +785,14 @@ const CheckInView = React.memo(({
 
                             if (isEditing && editForm) {
                                 return (
-                                    <Card key={entry.id} className="p-5">
+                                    <Card key={entry.id} className="report-card p-5">
                                         {renderEditForm(entry)}
                                     </Card>
                                 );
                             }
 
                             return (
-                                <Card key={entry.id} className="overflow-hidden">
+                                <Card key={entry.id} className="report-card overflow-hidden">
                                     <div className="flex items-center gap-2 px-4 py-3">
                                         <button
                                             type="button"
