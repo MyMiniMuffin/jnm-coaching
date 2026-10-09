@@ -474,7 +474,18 @@ input:focus, textarea:focus, select:focus, button:focus-visible {
 
 .surface-card.report-card {
     background: #FAFAF7;
+}
+
+.report-card[data-report-tone="good"] {
     border-color: #CDDAD0;
+}
+
+.report-card[data-report-tone="medium"] {
+    border-color: #E4D4A7;
+}
+
+.report-card[data-report-tone="poor"] {
+    border-color: #E3BFBC;
 }
 
 .surface-card-interactive:hover {

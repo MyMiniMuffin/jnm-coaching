@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { Card, Badge, Button, EmptyState, IconButton, InputLabel, SegmentedControl, SessionStepper } from '../components/ui';
 import ReportMetrics from '../components/ReportMetrics';
+import { getReportTone } from '../lib/reportStatus';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
 import { api } from '../lib/api';
@@ -616,7 +617,7 @@ const CheckInView = React.memo(({
             </div>
 
             {featuredReport && !showForm && (
-                <Card className="report-card p-5">
+                <Card className="report-card p-5" data-report-tone={getReportTone(featuredReport)}>
                     {editingId === featuredReport.id && editForm ? (
                         renderEditForm(featuredReport)
                     ) : (
@@ -785,14 +786,14 @@ const CheckInView = React.memo(({
 
                             if (isEditing && editForm) {
                                 return (
-                                    <Card key={entry.id} className="report-card p-5">
+                                    <Card key={entry.id} className="report-card p-5" data-report-tone={getReportTone(entry)}>
                                         {renderEditForm(entry)}
                                     </Card>
                                 );
                             }
 
                             return (
-                                <Card key={entry.id} className="report-card overflow-hidden">
+                                <Card key={entry.id} className="report-card overflow-hidden" data-report-tone={getReportTone(entry)}>
                                     <div className="flex items-center gap-2 px-4 py-3">
                                         <button
                                             type="button"

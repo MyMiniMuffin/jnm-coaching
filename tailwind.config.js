@@ -27,10 +27,9 @@ module.exports = {
           hover: '#9B4E2A',
         },
         report: {
-          DEFAULT: '#527062',
-          soft: '#EAF0EB',
-          border: '#CDDAD0',
-          track: '#E1E8E2',
+          good: '#527062',
+          medium: '#946C17',
+          poor: '#AE4D48',
         },
         success: '#546B3E',
         warning: '#CA8A04',
