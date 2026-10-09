@@ -1,4 +1,4 @@
-import { haptic } from './haptic';
+import { haptic } from './haptic.js';
 
 export const getOriginalImage = (url) => {
     if (!url || typeof url !== 'string') return url;
@@ -41,6 +41,35 @@ const triggerAnchorDownload = (href, filename) => {
     document.body.appendChild(link);
     link.click();
     link.remove();
+};
+
+export const createImageArchive = async (images) => {
+    if (!images.length) throw new Error('Ingen bilder valgt');
+    const { default: JSZip } = await import('jszip');
+    const archive = new JSZip();
+    for (const [index, image] of images.entries()) {
+        const source = getOriginalImage(image.url);
+        if (!source) throw new Error('Mangler bildeadresse');
+        const response = await fetch(source, { mode: 'cors' });
+        if (!response.ok) throw new Error('Kunne ikke hente alle bildene');
+        archive.file(buildImageFilename({
+            date: image.date || image.timestamp,
+            label: image.label,
+            suffix: index + 1
+        }), await response.arrayBuffer());
+    }
+    return archive.generateAsync({ type: 'uint8array', compression: 'STORE' });
+};
+
+export const downloadImagesArchive = async (images) => {
+    const contents = await createImageArchive(images);
+    const objectUrl = URL.createObjectURL(new Blob([contents], { type: 'application/zip' }));
+    try {
+        triggerAnchorDownload(objectUrl, 'jnm-bilder.zip');
+        haptic('save');
+    } finally {
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
+    }
 };
 
 export const downloadImageFile = async (url, filename = 'jnm-bilde.jpg') => {

@@ -10,7 +10,7 @@ import { api } from '../lib/api';
 import { formatDateNO, formatWeight, getThumbnail, getFullSizeImage } from '../lib/formatters';
 import { IMAGE_ZOOM_PROPS } from '../lib/zoomConfig';
 import { haptic } from '../lib/haptic';
-import { buildImageFilename, downloadImageFile } from '../lib/downloadImage';
+import { buildImageFilename, downloadImageFile, downloadImagesArchive } from '../lib/downloadImage';
 
 const ImageModal = React.lazy(() => import('../components/ImageModal'));
 
@@ -299,36 +299,25 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
     const handleDownloadSelected = async () => {
         if (isDownloading || selectedDownloadImages.length === 0) return;
         setIsDownloading(true);
-        let failed = 0;
-        for (const [index, img] of selectedDownloadImages.entries()) {
-            try {
-                await downloadImageFile(img.url, buildImageFilename({ date: img.date || img.timestamp, label: img.label, suffix: index + 1 }));
-            } catch {
-                failed += 1;
-            }
-        }
-        setIsDownloading(false);
-        if (failed) {
-            toast(`${failed} av ${selectedDownloadImages.length} bilder kunne ikke lastes ned. Prøv igjen.`, 'error');
-        } else {
-            toast(`${selectedDownloadImages.length} bilder er lastet ned`);
+        try {
+            await downloadImagesArchive(selectedDownloadImages);
+            toast(`${selectedDownloadImages.length} bilder er samlet i ZIP-filen`);
             setSelectedDownloads(new Set());
+        } catch {
+            toast('Kunne ikke laste ned alle bildene. Prøv igjen.', 'error');
+        } finally {
+            setIsDownloading(false);
         }
     };
 
     const handleDownloadCompare = useCallback(async () => {
         if (!compareImages.before?.url || !compareImages.after?.url) return;
         try {
-            await downloadImageFile(compareImages.before.url, buildImageFilename({
-                date: compareImages.before.date || compareImages.before.timestamp,
-                label: compareImages.before.label || 'for'
-            }));
-            await new Promise(resolve => setTimeout(resolve, 250));
-            await downloadImageFile(compareImages.after.url, buildImageFilename({
-                date: compareImages.after.date || compareImages.after.timestamp,
-                label: compareImages.after.label || 'etter'
-            }));
-            toast('Før- og etterbildene er lastet ned');
+            await downloadImagesArchive([
+                { ...compareImages.before, label: compareImages.before.label || 'for' },
+                { ...compareImages.after, label: compareImages.after.label || 'etter' }
+            ]);
+            toast('Før- og etterbildene er samlet i ZIP-filen');
         } catch {
             toast('Kunne ikke laste ned bildene', 'error');
         }
@@ -676,7 +665,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                     <Card className="flex flex-wrap items-center justify-between gap-3 p-3">
                         <div aria-live="polite">
                             <p className="text-sm font-medium">{selectedDownloadImages.length} bilder valgt</p>
-                            <p className="text-xs text-ink-muted">Trykk på bildene du vil laste ned.</p>
+                            <p className="text-xs text-ink-muted">Velg bilder og last ned samlet som ZIP.</p>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
                             <Button variant="secondary" size="sm" disabled={isDownloading} onClick={() => setSelectedDownloads(new Set(allImages.map(img => img.url)))}>Velg alle</Button>
