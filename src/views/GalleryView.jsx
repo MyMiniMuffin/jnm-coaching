@@ -1,6 +1,6 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Camera, X, Loader2, Plus, Eye, TrendingUp, TrendingDown, Minus, Download } from 'lucide-react';
+import { Camera, X, Loader2, Plus, Eye, TrendingUp, TrendingDown, Minus, Download, MoreHorizontal, Trash2 } from 'lucide-react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { Card, Button, EmptyState, IconButton, TextField } from '../components/ui';
 import { useToast } from '../components/Toast';
@@ -21,6 +21,86 @@ const TRANSFORM_CONTENT_STYLE = { width: "100%", height: "100%", display: "flex"
 const getImageKey = (img, fallbackIndex) => {
     if (img.isGalleryImage) return `gallery-${img.galleryImageId}`;
     return `checkin-${img.checkinId}-${fallbackIndex}`;
+};
+
+const ImageActionsMenu = ({ image, onDownload, onDelete, deleting }) => {
+    const [open, setOpen] = useState(false);
+    const [position, setPosition] = useState({ top: 0, left: 0 });
+    const triggerRef = useRef(null);
+    const menuRef = useRef(null);
+    const deleteDisabled = deleting || String(image.galleryImageId).startsWith('temp_');
+
+    useLayoutEffect(() => {
+        if (!open) return;
+        const trigger = triggerRef.current.getBoundingClientRect();
+        const menu = menuRef.current.getBoundingClientRect();
+        setPosition({
+            left: Math.max(8, Math.min(trigger.right - menu.width, window.innerWidth - menu.width - 8)),
+            top: trigger.bottom + menu.height + 12 <= window.innerHeight
+                ? trigger.bottom + 4
+                : Math.max(8, trigger.top - menu.height - 4)
+        });
+        menuRef.current.querySelector('button')?.focus();
+    }, [open]);
+
+    useEffect(() => {
+        if (!open) return;
+        const dismiss = (event) => {
+            if (event.type === 'pointerdown' && (triggerRef.current?.contains(event.target) || menuRef.current?.contains(event.target))) return;
+            if (event.type === 'keydown') {
+                if (event.key !== 'Escape') return;
+                event.preventDefault();
+                event.stopPropagation();
+                triggerRef.current?.focus();
+            }
+            setOpen(false);
+        };
+        document.addEventListener('pointerdown', dismiss);
+        document.addEventListener('keydown', dismiss, true);
+        window.addEventListener('resize', dismiss);
+        window.addEventListener('scroll', dismiss, true);
+        return () => {
+            document.removeEventListener('pointerdown', dismiss);
+            document.removeEventListener('keydown', dismiss, true);
+            window.removeEventListener('resize', dismiss);
+            window.removeEventListener('scroll', dismiss, true);
+        };
+    }, [open]);
+
+    const run = (action) => {
+        setOpen(false);
+        triggerRef.current?.focus();
+        action();
+    };
+
+    return <>
+        <button
+            ref={triggerRef}
+            type="button"
+            aria-label={`Bildehandlinger fra ${formatDateNO(image.date)}`}
+            aria-haspopup="menu"
+            aria-expanded={open}
+            onClick={(event) => { event.stopPropagation(); setOpen(value => !value); }}
+            className="absolute top-1 right-1 z-10 inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg bg-white/90 p-2 text-ink shadow-sm backdrop-blur-sm hover:bg-surface-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
+            <MoreHorizontal size={18} />
+        </button>
+        {open && createPortal(
+            <div ref={menuRef} role="menu" aria-label="Bildehandlinger" style={position}
+                className="fixed z-[150] w-52 rounded-xl border border-surface-200 bg-white p-1 shadow-lg"
+                onClick={(event) => event.stopPropagation()}>
+                <button type="button" role="menuitem" onClick={() => run(onDownload)}
+                    className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-ink hover:bg-surface-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                    <Download size={16} /> Last ned bilde
+                </button>
+                {onDelete && <button type="button" role="menuitem" disabled={deleteDisabled} onClick={() => run(onDelete)}
+                    className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-error hover:bg-error/10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                    {deleteDisabled ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                    {deleting ? 'Sletter…' : deleteDisabled ? 'Lagrer…' : 'Slett bilde'}
+                </button>}
+            </div>, document.body
+        )}
+    </>;
 };
 
 const CompareZoomImage = React.memo(({ image, label }) => (
@@ -835,7 +915,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                                         alt=""
                                     />
                                     {img.isGalleryImage && img.label && (
-                                        <span className={`absolute top-1.5 left-1.5 truncate bg-ink/80 text-white text-[10px] font-medium px-2 py-0.5 rounded-full backdrop-blur-sm ${isCoach && onDeleteGalleryImage ? 'right-[6.5rem]' : 'right-12'}`}>
+                                        <span className="absolute top-1.5 left-1.5 right-12 truncate bg-ink/80 text-white text-[10px] font-medium px-2 py-0.5 rounded-full backdrop-blur-sm">
                                             {img.label}
                                         </span>
                                     )}
@@ -848,28 +928,21 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                                         </span>
                                     </span>
                                 </button>
-                                {/* Slett-knapp for coach på gallery-bilder - alltid synlig */}
-                                <IconButton
+                                {isCoach ? (
+                                    <ImageActionsMenu
+                                        image={img}
+                                        onDownload={() => handleDownloadImage(img)}
+                                        onDelete={img.isGalleryImage && onDeleteGalleryImage ? () => handleDeleteGalleryImage(img.galleryImageId) : undefined}
+                                        deleting={deletingImageId === img.galleryImageId}
+                                    />
+                                ) : <IconButton
                                     type="button"
                                     onClick={(e) => { e.stopPropagation(); handleDownloadImage(img); }}
                                     aria-label={`Last ned bilde fra ${formatDateNO(img.date)}`}
-                                    className={`absolute top-1 z-10 rounded-lg bg-white/90 text-ink shadow-sm backdrop-blur-sm active:scale-[0.98] ${isCoach && img.isGalleryImage && onDeleteGalleryImage ? 'right-14' : 'right-1'}`}
+                                    className="absolute top-1 right-1 z-10 rounded-lg bg-white/90 text-ink shadow-sm backdrop-blur-sm active:scale-[0.98]"
                                 >
                                     <Download size={18} />
-                                </IconButton>
-                                {isCoach && img.isGalleryImage && onDeleteGalleryImage && (
-                                    <IconButton
-                                        onClick={(e) => { e.stopPropagation(); handleDeleteGalleryImage(img.galleryImageId); }}
-                                        aria-label={String(img.galleryImageId).startsWith('temp_') ? 'Bildet lagres fortsatt' : `Slett ${img.label || 'bilde'} fra ${formatDateNO(img.date)}`}
-                                        tone="danger"
-                                        disabled={String(img.galleryImageId).startsWith('temp_') || deletingImageId === img.galleryImageId}
-                                        className="absolute top-1 right-1 z-10 rounded-lg bg-white/90 text-error shadow-sm backdrop-blur-sm active:scale-[0.98] disabled:cursor-wait disabled:opacity-70"
-                                    >
-                                        {String(img.galleryImageId).startsWith('temp_') || deletingImageId === img.galleryImageId
-                                            ? <Loader2 size={18} className="animate-spin" />
-                                            : <X size={18} />}
-                                    </IconButton>
-                                )}
+                                </IconButton>}
                             </div>
                         ))}
                     </div>
