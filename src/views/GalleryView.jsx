@@ -1,6 +1,6 @@
-import React, { useState, useCallback, useMemo, useEffect, useLayoutEffect, useRef } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Camera, X, Loader2, Plus, Eye, TrendingUp, TrendingDown, Minus, Download, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Camera, X, Loader2, Plus, Eye, TrendingUp, TrendingDown, Minus, Download, Check, Trash2 } from 'lucide-react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { Card, Button, EmptyState, IconButton, TextField } from '../components/ui';
 import { useToast } from '../components/Toast';
@@ -21,86 +21,6 @@ const TRANSFORM_CONTENT_STYLE = { width: "100%", height: "100%", display: "flex"
 const getImageKey = (img, fallbackIndex) => {
     if (img.isGalleryImage) return `gallery-${img.galleryImageId}`;
     return `checkin-${img.checkinId}-${fallbackIndex}`;
-};
-
-const ImageActionsMenu = ({ image, onDownload, onDelete, deleting }) => {
-    const [open, setOpen] = useState(false);
-    const [position, setPosition] = useState({ top: 0, left: 0 });
-    const triggerRef = useRef(null);
-    const menuRef = useRef(null);
-    const deleteDisabled = deleting || String(image.galleryImageId).startsWith('temp_');
-
-    useLayoutEffect(() => {
-        if (!open) return;
-        const trigger = triggerRef.current.getBoundingClientRect();
-        const menu = menuRef.current.getBoundingClientRect();
-        setPosition({
-            left: Math.max(8, Math.min(trigger.right - menu.width, window.innerWidth - menu.width - 8)),
-            top: trigger.bottom + menu.height + 12 <= window.innerHeight
-                ? trigger.bottom + 4
-                : Math.max(8, trigger.top - menu.height - 4)
-        });
-        menuRef.current.querySelector('button')?.focus();
-    }, [open]);
-
-    useEffect(() => {
-        if (!open) return;
-        const dismiss = (event) => {
-            if (event.type === 'pointerdown' && (triggerRef.current?.contains(event.target) || menuRef.current?.contains(event.target))) return;
-            if (event.type === 'keydown') {
-                if (event.key !== 'Escape') return;
-                event.preventDefault();
-                event.stopPropagation();
-                triggerRef.current?.focus();
-            }
-            setOpen(false);
-        };
-        document.addEventListener('pointerdown', dismiss);
-        document.addEventListener('keydown', dismiss, true);
-        window.addEventListener('resize', dismiss);
-        window.addEventListener('scroll', dismiss, true);
-        return () => {
-            document.removeEventListener('pointerdown', dismiss);
-            document.removeEventListener('keydown', dismiss, true);
-            window.removeEventListener('resize', dismiss);
-            window.removeEventListener('scroll', dismiss, true);
-        };
-    }, [open]);
-
-    const run = (action) => {
-        setOpen(false);
-        triggerRef.current?.focus();
-        action();
-    };
-
-    return <>
-        <button
-            ref={triggerRef}
-            type="button"
-            aria-label={`Bildehandlinger fra ${formatDateNO(image.date)}`}
-            aria-haspopup="menu"
-            aria-expanded={open}
-            onClick={(event) => { event.stopPropagation(); setOpen(value => !value); }}
-            className="absolute top-1 right-1 z-10 inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg bg-white/90 p-2 text-ink shadow-sm backdrop-blur-sm hover:bg-surface-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-        >
-            <MoreHorizontal size={18} />
-        </button>
-        {open && createPortal(
-            <div ref={menuRef} role="menu" aria-label="Bildehandlinger" style={position}
-                className="fixed z-[150] w-52 rounded-xl border border-surface-200 bg-white p-1 shadow-lg"
-                onClick={(event) => event.stopPropagation()}>
-                <button type="button" role="menuitem" onClick={() => run(onDownload)}
-                    className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-ink hover:bg-surface-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
-                    <Download size={16} /> Last ned bilde
-                </button>
-                {onDelete && <button type="button" role="menuitem" disabled={deleteDisabled} onClick={() => run(onDelete)}
-                    className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-error hover:bg-error/10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
-                    {deleteDisabled ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
-                    {deleting ? 'Sletter…' : deleteDisabled ? 'Lagrer…' : 'Slett bilde'}
-                </button>}
-            </div>, document.body
-        )}
-    </>;
 };
 
 const CompareZoomImage = React.memo(({ image, label }) => (
@@ -241,6 +161,9 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
     const [selectedUploadFiles, setSelectedUploadFiles] = useState([]);
     const [visibleImageCount, setVisibleImageCount] = useState(IMAGE_BATCH_SIZE);
     const [deletingImageId, setDeletingImageId] = useState(null);
+    const [downloadMode, setDownloadMode] = useState(false);
+    const [selectedDownloads, setSelectedDownloads] = useState(() => new Set());
+    const [isDownloading, setIsDownloading] = useState(false);
     const tilePointerRef = React.useRef(null);
     const compareTopRef = React.useRef(null);
 
@@ -368,6 +291,31 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
         }
     }, [toast]);
 
+    const selectedDownloadImages = allImages.filter(img => selectedDownloads.has(img.url));
+    const toggleDownloadMode = () => {
+        setDownloadMode(value => !value);
+        setSelectedDownloads(new Set());
+    };
+    const handleDownloadSelected = async () => {
+        if (isDownloading || selectedDownloadImages.length === 0) return;
+        setIsDownloading(true);
+        let failed = 0;
+        for (const [index, img] of selectedDownloadImages.entries()) {
+            try {
+                await downloadImageFile(img.url, buildImageFilename({ date: img.date || img.timestamp, label: img.label, suffix: index + 1 }));
+            } catch {
+                failed += 1;
+            }
+        }
+        setIsDownloading(false);
+        if (failed) {
+            toast(`${failed} av ${selectedDownloadImages.length} bilder kunne ikke lastes ned. Prøv igjen.`, 'error');
+        } else {
+            toast(`${selectedDownloadImages.length} bilder er lastet ned`);
+            setSelectedDownloads(new Set());
+        }
+    };
+
     const handleDownloadCompare = useCallback(async () => {
         if (!compareImages.before?.url || !compareImages.after?.url) return;
         try {
@@ -387,13 +335,23 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
     }, [compareImages.after, compareImages.before, toast]);
 
     const handleImageClick = useCallback((img, idx) => {
+        if (downloadMode) {
+            if (isDownloading) return;
+            setSelectedDownloads(previous => {
+                const next = new Set(previous);
+                if (next.has(img.url)) next.delete(img.url);
+                else next.add(img.url);
+                return next;
+            });
+            return;
+        }
         if (selectingFor) {
             setCompareImages(prev => ({ ...prev, [selectingFor]: img }));
             setSelectingFor(null);
         } else {
             openLightbox(idx);
         }
-    }, [selectingFor, openLightbox]);
+    }, [downloadMode, isDownloading, selectingFor, openLightbox]);
 
     const handleCompareImageClick = useCallback((img) => {
         setCompareImages(prev => {
@@ -429,6 +387,8 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
     }, [handleImageClick]);
 
     const startCompare = useCallback(() => {
+        setDownloadMode(false);
+        setSelectedDownloads(new Set());
         // Auto-velg eldste og nyeste bilde som standard
         if (allImages.length >= 2) {
             const oldest = allImages[allImages.length - 1];
@@ -686,7 +646,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                             {viewMode === 'compare' ? 'Velg bilder å sammenligne' : `${allImages.length} bilder`}
                         </p>
                     </div>
-                    <div className="flex shrink-0 items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                         {viewMode === 'compare' ? (
                             <Button variant="secondary" size="sm" onClick={clearCompare}>
                                 <X size={16} /> Lukk
@@ -694,19 +654,40 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                         ) : (
                             <>
                                 {allImages.length >= 2 && (
-                                    <Button variant="secondary" size="sm" onClick={startCompare}>
+                                    <Button variant="secondary" size="sm" onClick={startCompare} disabled={isDownloading}>
                                         <Eye size={16} /> Sammenlign
                                     </Button>
                                 )}
                                 {isCoach && onAddGalleryImage && (
-                                    <Button variant="primary" size="sm" onClick={() => setShowUploadModal(true)}>
+                                    <Button variant="primary" size="sm" onClick={() => setShowUploadModal(true)} disabled={isDownloading}>
                                         <Plus size={16} /> Last opp
+                                    </Button>
+                                )}
+                                {isCoach && (
+                                    <Button variant={downloadMode ? 'primary' : 'secondary'} size="sm" aria-pressed={downloadMode} onClick={toggleDownloadMode} disabled={isDownloading}>
+                                        <Download size={16} /> Last ned
                                     </Button>
                                 )}
                             </>
                         )}
                     </div>
                 </div>
+                {isCoach && downloadMode && viewMode === 'grid' && (
+                    <Card className="flex flex-wrap items-center justify-between gap-3 p-3">
+                        <div aria-live="polite">
+                            <p className="text-sm font-medium">{selectedDownloadImages.length} bilder valgt</p>
+                            <p className="text-xs text-ink-muted">Trykk på bildene du vil laste ned.</p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Button variant="secondary" size="sm" disabled={isDownloading} onClick={() => setSelectedDownloads(new Set(allImages.map(img => img.url)))}>Velg alle</Button>
+                            <Button variant="secondary" size="sm" disabled={isDownloading || selectedDownloadImages.length === 0} onClick={() => setSelectedDownloads(new Set())}>Fjern valg</Button>
+                            <Button variant="primary" size="sm" disabled={isDownloading || selectedDownloadImages.length === 0} onClick={handleDownloadSelected}>
+                                {isDownloading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                                {isDownloading ? 'Laster ned…' : `Last ned valgte (${selectedDownloadImages.length})`}
+                            </Button>
+                        </div>
+                    </Card>
+                )}
             </div>
 
             {/* Sammenlign-modus */}
@@ -904,7 +885,9 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                                     onPointerDown={(e) => handleTilePointerDown(e, img, idx)}
                                     onPointerUp={handleTilePointerUp}
                                     onKeyDown={(e) => handleTileKeyDown(e, img, idx)}
-                                    aria-label={`Vis ${img.label || 'fremgangsbilde'} fra ${formatDateNO(img.date)}`}
+                                    aria-pressed={downloadMode ? selectedDownloads.has(img.url) : undefined}
+                                    aria-disabled={downloadMode && isDownloading ? true : undefined}
+                                    aria-label={`${downloadMode ? 'Velg' : 'Vis'} ${img.label || 'fremgangsbilde'} fra ${formatDateNO(img.date)}`}
                                 >
                                     <img
                                         src={getThumbnail(img.url)}
@@ -915,7 +898,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                                         alt=""
                                     />
                                     {img.isGalleryImage && img.label && (
-                                        <span className="absolute top-1.5 left-1.5 right-12 truncate bg-ink/80 text-white text-[10px] font-medium px-2 py-0.5 rounded-full backdrop-blur-sm">
+                                        <span className={`absolute top-1.5 left-1.5 ${downloadMode || !isCoach || (img.isGalleryImage && onDeleteGalleryImage) ? 'right-12' : 'right-1.5'} truncate bg-ink/80 text-white text-[10px] font-medium px-2 py-0.5 rounded-full backdrop-blur-sm`}>
                                             {img.label}
                                         </span>
                                     )}
@@ -927,15 +910,20 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                                             )}
                                         </span>
                                     </span>
+                                    {downloadMode && <span className={`absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full border-2 ${selectedDownloads.has(img.url) ? 'border-accent bg-accent text-white' : 'border-white bg-black/30'}`}>
+                                        {selectedDownloads.has(img.url) && <Check size={16} />}
+                                    </span>}
+                                    {downloadMode && selectedDownloads.has(img.url) && <span className="pointer-events-none absolute inset-0 rounded-lg ring-4 ring-inset ring-accent" />}
                                 </button>
-                                {isCoach ? (
-                                    <ImageActionsMenu
-                                        image={img}
-                                        onDownload={() => handleDownloadImage(img)}
-                                        onDelete={img.isGalleryImage && onDeleteGalleryImage ? () => handleDeleteGalleryImage(img.galleryImageId) : undefined}
-                                        deleting={deletingImageId === img.galleryImageId}
-                                    />
-                                ) : <IconButton
+                                {isCoach && !downloadMode && img.isGalleryImage && onDeleteGalleryImage && <IconButton
+                                    onClick={(event) => { event.stopPropagation(); handleDeleteGalleryImage(img.galleryImageId); }}
+                                    aria-label={`Slett ${img.label || 'bilde'} fra ${formatDateNO(img.date)}`}
+                                    disabled={String(img.galleryImageId).startsWith('temp_') || deletingImageId === img.galleryImageId}
+                                    tone="danger"
+                                    className="absolute top-1 right-1 z-10 rounded-lg bg-white/90 text-error shadow-sm backdrop-blur-sm">
+                                    {String(img.galleryImageId).startsWith('temp_') || deletingImageId === img.galleryImageId ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
+                                </IconButton>}
+                                {!isCoach && <IconButton
                                     type="button"
                                     onClick={(e) => { e.stopPropagation(); handleDownloadImage(img); }}
                                     aria-label={`Last ned bilde fra ${formatDateNO(img.date)}`}
