@@ -1,3 +1,4 @@
+import ImageViewerLoading from '../components/ImageViewerLoading';
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Camera, X, Loader2, Plus, Eye, TrendingUp, TrendingDown, Minus, Download, Check, Trash2 } from 'lucide-react';
@@ -603,7 +604,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
             {uploadModal}
 
             {lightbox.isOpen && (
-                <React.Suspense fallback={null}>
+                <React.Suspense fallback={<ImageViewerLoading onClose={closeLightbox} />}>
                     <ImageModal
                         images={lightbox.images}
                         initialIndex={lightbox.index}

@@ -49,8 +49,8 @@ export const getThumbnail = (url) => {
     return url.replace('/upload/', '/upload/w_200,h_200,c_fill,q_auto,f_auto/');
 };
 
-export const getFullSizeImage = (url) => {
+export const getFullSizeImage = (url, width = 1280) => {
     if (!url || typeof url !== 'string') return url;
     if (!url.includes('cloudinary.com')) return url;
-    return url.replace('/upload/', '/upload/w_1280,c_limit,q_auto,f_auto/');
+    return url.replace('/upload/', `/upload/w_${width},c_limit,q_auto,f_auto/`);
 };

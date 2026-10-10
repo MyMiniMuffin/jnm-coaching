@@ -108,7 +108,7 @@ exports.handler = async (event) => {
       allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
       max_bytes: 10485760, // 10MB max
       transformation: [
-        { width: 1200, height: 1200, crop: 'limit', quality: 'auto:good' }
+        { width: 2560, height: 2560, crop: 'limit', quality: 'auto:good' }
       ]
     });
 

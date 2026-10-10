@@ -1,3 +1,4 @@
+import ImageViewerLoading from '../components/ImageViewerLoading';
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   Check, Camera, X, Trash2, Loader2, Scale,
@@ -604,7 +605,7 @@ const CheckInView = React.memo(({
     return (
         <div className={`space-y-5 animate-slide-up ${showForm ? 'pb-52 lg:pb-24' : 'pb-32 lg:pb-8'}`}>
             {lightbox.isOpen && (
-                <React.Suspense fallback={null}>
+                <React.Suspense fallback={<ImageViewerLoading onClose={closeLightbox} />}>
                     <ImageModal images={lightbox.images} initialIndex={lightbox.index} onClose={closeLightbox} />
                 </React.Suspense>
             )}

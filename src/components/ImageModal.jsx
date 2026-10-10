@@ -21,10 +21,18 @@ const resolveImageFilename = (image, index) => {
 const WRAPPER_STYLE = { width: "100%", height: "100%" };
 const CONTENT_STYLE = { width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" };
 
+const ZoomDetail = ({ url }) => {
+    const [ready, setReady] = useState(false);
+    return <img src={getFullSizeImage(url, 2560)} alt="" aria-hidden="true" draggable={false}
+        decoding="async" onLoad={() => setReady(true)}
+        className={`pointer-events-none absolute inset-0 h-full w-full object-contain select-none ${ready ? 'opacity-100' : 'opacity-0'}`} />;
+};
+
 const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
     const toast = useToast();
     const safeInitialIndex = Math.max(0, Math.min(initialIndex || 0, (images?.length || 1) - 1));
     const [index, setIndex] = useState(safeInitialIndex);
+    const [retryCount, setRetryCount] = useState(0);
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState(false);
     const [isZoomed, setIsZoomed] = useState(false);
@@ -65,6 +73,8 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
     const goToIndex = useCallback((nextIndex, nextDirection) => {
         const boundedIndex = Math.max(0, Math.min(nextIndex, (images?.length || 1) - 1));
         if (boundedIndex === indexRef.current) return;
+        indexRef.current = boundedIndex;
+        touchStartRef.current = null;
         scaleRef.current = 1;
         setIsZoomed(false);
         setDirection(nextDirection);
@@ -84,7 +94,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
     }, [goToIndex]);
 
     const handleTouchStart = useCallback((e) => {
-        if (e.touches?.length !== 1) {
+        if (e.touches?.length !== 1 || scaleRef.current > 1.02 || e.target.closest?.('button, a')) {
             touchStartRef.current = null;
             return;
         }
@@ -116,8 +126,10 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
         if (!images || images.length === 0) return;
         const handleKeyDown = (e) => {
             if (e.key === 'ArrowRight') {
+                e.preventDefault();
                 goToIndex(indexRef.current + 1, 1);
             } else if (e.key === 'ArrowLeft') {
+                e.preventDefault();
                 goToIndex(indexRef.current - 1, -1);
             } else if (e.key === 'Escape') {
                 onCloseRef.current();
@@ -158,7 +170,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
         if (image.complete && image.naturalWidth > 0) {
             setLoading(false);
         }
-    }, [currentImageSrc]);
+    }, [currentImageSrc, retryCount]);
 
     if (!images || images.length === 0) return null;
 
@@ -171,6 +183,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
             aria-labelledby="image-viewer-title"
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
+            onTouchCancel={() => { touchStartRef.current = null; }}
             style={{ height: '100dvh' }}
         >
             <h2 id="image-viewer-title" className="sr-only">Bildevisning</h2>
@@ -229,8 +242,17 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
                         contentStyle={CONTENT_STYLE}
                     >
                         {loading && !loadError && (
+                            <img
+                                src={getFullSizeImage(currentImageUrl, 400)}
+                                alt=""
+                                aria-hidden="true"
+                                className="absolute inset-0 h-full w-full object-contain opacity-60"
+                                decoding="async"
+                            />
+                        )}
+                        {loading && !loadError && (
                             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3" aria-hidden="true">
-                                <div className="w-[min(70vw,420px)] aspect-[3/4] rounded-xl bg-white/7 border border-white/10 animate-pulse flex items-center justify-center shadow-[0_24px_70px_rgba(0,0,0,0.35)]">
+                                <div className="rounded-full bg-black/50 p-4 flex items-center justify-center">
                                     <Loader2 className="text-white/70 animate-spin" size={32} />
                                 </div>
                                 <p className="text-white/50 text-xs">Laster bilde…</p>
@@ -238,26 +260,36 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
                         )}
                         <img
                             ref={imageRef}
-                            key={currentImageSrc}
+                            key={`${currentImageSrc}-${retryCount}`}
                             src={currentImageSrc}
+                            decoding="async"
                             onLoad={() => { setLoading(false); setLoadError(false); }}
                             onError={(event) => {
-                                if (currentImageUrl && event.currentTarget.src !== currentImageUrl) {
+                                if (currentImageUrl && !event.currentTarget.dataset.fallback) {
+                                    event.currentTarget.dataset.fallback = 'true';
                                     event.currentTarget.src = currentImageUrl;
                                     return;
                                 }
                                 setLoading(false);
                                 setLoadError(true);
                             }}
-                            className={`block h-full w-full object-contain select-none rounded-sm shadow-[0_24px_90px_rgba(0,0,0,0.32)] transition-all duration-300 ease-out ${loading || loadError ? `opacity-0 ${direction > 0 ? 'translate-x-4' : direction < 0 ? '-translate-x-4' : 'scale-[0.99]'}` : 'opacity-100 translate-x-0 scale-100'}`}
+                            className={`block h-full w-full object-contain select-none rounded-sm shadow-[0_24px_90px_rgba(0,0,0,0.32)] transition-opacity duration-150 ease-out ${loading || loadError ? `opacity-0 ${direction > 0 ? 'translate-x-4' : direction < 0 ? '-translate-x-4' : 'scale-[0.99]'}` : 'opacity-100 translate-x-0 scale-100'}`}
                             alt={`${imageTitle}${imageDate ? ` fra ${imageDate}` : ''}`}
                             draggable={false}
                         />
+                        {isZoomed && !loading && !loadError && (
+                            <ZoomDetail key={currentImageUrl} url={currentImageUrl} />
+                        )}
                         {loadError && (
                             <div className="absolute inset-0 flex items-center justify-center px-12 text-center" role="alert">
-                                <p className="rounded-xl bg-white/10 px-5 py-4 text-sm text-white/85 backdrop-blur-md">
-                                    Bildet kunne ikke lastes inn. Prøv et annet bilde eller åpne galleriet på nytt.
-                                </p>
+                                <div className="rounded-xl bg-white/10 px-5 py-4 text-sm text-white/85 backdrop-blur-md">
+                                    <p>Bildet kunne ikke lastes inn.</p>
+                                    <button type="button" className="mt-3 min-h-11 rounded-lg bg-white/15 px-4 font-medium hover:bg-white/25" onClick={() => {
+                                        setLoadError(false);
+                                        setLoading(true);
+                                        setRetryCount(count => count + 1);
+                                    }}>Prøv igjen</button>
+                                </div>
                             </div>
                         )}
                     </TransformComponent>
