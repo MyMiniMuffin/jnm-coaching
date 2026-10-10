@@ -1,9 +1,9 @@
 .onboarding-page {
     --coaching-black: #171717;
-    --coaching-accent: #b5603a;
+    --coaching-accent: #246568;
     min-height: 100vh;
     background:
-        radial-gradient(circle at 8% 0%, rgba(181, 96, 58, 0.1), transparent 30rem),
+        radial-gradient(circle at 8% 0%, rgba(36, 101, 104, 0.1), transparent 30rem),
         #f7f7f4;
     padding-bottom: 5.5rem;
     font-family: var(--font-sans);
@@ -82,7 +82,7 @@
 .onboarding-field:focus {
     border-color: var(--coaching-accent);
     background: #fff;
-    box-shadow: 0 0 0 3px rgba(181, 96, 58, 0.14);
+    box-shadow: 0 0 0 3px rgba(36, 101, 104, 0.14);
 }
 
 .onboarding-select {
@@ -135,9 +135,9 @@
     display: flex;
     cursor: pointer;
     gap: 0.9rem;
-    border: 1px solid rgba(181, 96, 58, 0.22);
+    border: 1px solid rgba(36, 101, 104, 0.22);
     border-radius: 1rem;
-    background: rgba(181, 96, 58, 0.06);
+    background: rgba(36, 101, 104, 0.06);
     padding: 1rem;
 }
 
@@ -164,12 +164,12 @@
 
 .onboarding-photo-field:hover {
     border-color: var(--coaching-accent);
-    background: rgba(181, 96, 58, 0.035);
+    background: rgba(36, 101, 104, 0.035);
 }
 
 .onboarding-photo-field:focus-within {
     border-color: var(--coaching-accent);
-    box-shadow: 0 0 0 3px rgba(181, 96, 58, 0.14);
+    box-shadow: 0 0 0 3px rgba(36, 101, 104, 0.14);
 }
 
 .onboarding-photo-field input {
@@ -210,7 +210,7 @@
     align-items: center;
     justify-content: center;
     border-radius: 9999px;
-    background: rgba(181, 96, 58, 0.1);
+    background: rgba(36, 101, 104, 0.1);
     color: var(--coaching-accent);
 }
 
@@ -256,7 +256,7 @@
     justify-content: center;
     margin-bottom: 1.5rem;
     border-radius: 9999px;
-    background: rgba(181, 96, 58, 0.12);
+    background: rgba(36, 101, 104, 0.12);
     color: var(--coaching-accent);
 }
 

@@ -23,8 +23,8 @@ module.exports = {
           faint: '#8A847A',
         },
         accent: {
-          DEFAULT: '#B5603A',
-          hover: '#9B4E2A',
+          DEFAULT: '#246568',
+          hover: '#1B5053',
         },
         report: {
           good: '#527062',

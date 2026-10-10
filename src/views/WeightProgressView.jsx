@@ -151,8 +151,8 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
                     <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-32" role="img" aria-label="Vektutvikling over tid med markører for nye coaching-runder">
                         <defs>
                             <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
-                                <stop offset="0%" stopColor="#B5603A" stopOpacity="0.45" />
-                                <stop offset="100%" stopColor="#B5603A" />
+                                <stop offset="0%" stopColor="#246568" stopOpacity="0.45" />
+                                <stop offset="100%" stopColor="#246568" />
                             </linearGradient>
                         </defs>
                         {periodMarkers.map((marker) => (
@@ -184,7 +184,7 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
                                     x2={marker.x}
                                     y1={chartTop}
                                     y2={chartBottom}
-                                    stroke="#B5603A"
+                                    stroke="#246568"
                                     strokeWidth="1.5"
                                     strokeDasharray="4 4"
                                 />
@@ -192,7 +192,7 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
                                     cx={marker.x}
                                     cy={chartTop}
                                     r="3"
-                                    fill="#B5603A"
+                                    fill="#246568"
                                 />
                             </g>
                         ))}

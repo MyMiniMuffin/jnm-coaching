@@ -57,17 +57,17 @@ const LoginScreen = React.memo(({ onLogin }) => {
     };
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-6 relative animate-fade-in lg:bg-transparent">
+        <div className="login-page flex flex-col items-center justify-center px-5 py-10 animate-fade-in">
             <div className="text-center mb-8">
-                <div className="w-20 h-20 mx-auto mb-7 rounded-xl bg-white p-2 shadow-sm ring-1 ring-surface-200">
+                <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-white p-2 shadow-sm ring-1 ring-surface-200">
                     <img src={APP_ICON} alt="Logo" className="w-full h-full" />
                 </div>
-                <h1 className="text-3xl font-display text-ink mb-2">JNM Coaching</h1>
+                <h1 className="text-4xl font-display text-ink mb-3">JNM Coaching</h1>
                 <p className="text-ink-muted">{mustChangePassword ? 'Velg ditt eget passord' : 'Logg inn for å fortsette'}</p>
             </div>
 
-            <div className="w-full max-w-sm rounded-xl border border-surface-200 bg-white p-5 shadow-sm lg:p-7">
-                <form onSubmit={handleLogin} className="space-y-4">
+            <div className="login-card w-full max-w-sm rounded-2xl border border-surface-200 bg-white p-6 sm:p-8">
+                <form onSubmit={handleLogin} className="space-y-5">
                     {!mustChangePassword && <>
                     <TextField
                         label="Brukernavn"
@@ -80,9 +80,10 @@ const LoginScreen = React.memo(({ onLogin }) => {
                         autoComplete="username"
                     />
                     <div>
-                        <label className="block text-sm font-medium text-ink-muted mb-2">Passord</label>
+                        <label htmlFor="login-password" className="block text-sm font-medium text-ink-muted mb-2">Passord</label>
                         <div className="relative">
                             <input
+                                id="login-password"
                                 type={showPassword ? 'text' : 'password'}
                                 value={password}
                                 onChange={handlePasswordChange}
@@ -134,7 +135,7 @@ const LoginScreen = React.memo(({ onLogin }) => {
                 </form>
             </div>
 
-            <p className="absolute bottom-8 text-ink-faint text-xs">JNM Coaching © {new Date().getFullYear()}</p>
+            <p className="mt-8 text-ink-muted text-xs">JNM Coaching © {new Date().getFullYear()}</p>
         </div>
     );
 });

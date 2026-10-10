@@ -1,8 +1,8 @@
 .coaching-page {
     --coaching-black: #171717;
-    --coaching-accent: #b5603a;
-    --coaching-accent-dark: #9b4e2a;
-    --coaching-accent-light: #d89a7d;
+    --coaching-accent: #246568;
+    --coaching-accent-dark: #1b5053;
+    --coaching-accent-light: #91c4c2;
     background: #fff;
     color: var(--coaching-black);
     font-family: var(--font-sans);
@@ -14,7 +14,7 @@
 }
 
 .coaching-header {
-    border-bottom: 1px solid rgba(181, 96, 58, 0.1);
+    border-bottom: 1px solid rgba(36, 101, 104, 0.1);
     background: rgba(247, 247, 244, 0.86);
     -webkit-backdrop-filter: blur(24px) saturate(1.25);
     backdrop-filter: blur(24px) saturate(1.25);
@@ -22,7 +22,7 @@
 
 .coaching-hero {
     background:
-        radial-gradient(circle at 88% 8%, rgba(181, 96, 58, 0.13), transparent 34rem),
+        radial-gradient(circle at 88% 8%, rgba(36, 101, 104, 0.13), transparent 34rem),
         linear-gradient(180deg, rgba(247, 247, 244, 0.76), rgba(255, 255, 255, 0) 42%),
         #fff;
 }
@@ -47,7 +47,7 @@
 
 .coaching-statement {
     background:
-        radial-gradient(circle at 85% 50%, rgba(181, 96, 58, 0.28), transparent 34rem),
+        radial-gradient(circle at 85% 50%, rgba(36, 101, 104, 0.28), transparent 34rem),
         var(--coaching-black);
 }
 
@@ -135,7 +135,7 @@
 .coaching-field:focus {
     border-color: var(--coaching-accent);
     background: #fff;
-    box-shadow: 0 0 0 3px rgba(181, 96, 58, 0.14);
+    box-shadow: 0 0 0 3px rgba(36, 101, 104, 0.14);
 }
 
 .coaching-social-link {
