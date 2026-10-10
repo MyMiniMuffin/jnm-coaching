@@ -47,16 +47,24 @@ export const createImageArchive = async (images) => {
     if (!images.length) throw new Error('Ingen bilder valgt');
     const { default: JSZip } = await import('jszip');
     const archive = new JSZip();
-    for (const [index, image] of images.entries()) {
-        const source = getOriginalImage(image.url);
-        if (!source) throw new Error('Mangler bildeadresse');
-        const response = await fetch(source, { mode: 'cors' });
-        if (!response.ok) throw new Error('Kunne ikke hente alle bildene');
-        archive.file(buildImageFilename({
-            date: image.date || image.timestamp,
-            label: image.label,
-            suffix: index + 1
-        }), await response.arrayBuffer());
+    // Fetch a small batch concurrently, without opening a connection for every
+    // image in a large gallery. Keep filenames tied to the original selection.
+    for (let offset = 0; offset < images.length; offset += 4) {
+        const batch = await Promise.all(images.slice(offset, offset + 4).map(async (image, index) => {
+            const source = getOriginalImage(image.url);
+            if (!source) throw new Error('Mangler bildeadresse');
+            const response = await fetch(source, { mode: 'cors' });
+            if (!response.ok) throw new Error('Kunne ikke hente alle bildene');
+            return {
+                filename: buildImageFilename({
+                    date: image.date || image.timestamp,
+                    label: image.label,
+                    suffix: offset + index + 1
+                }),
+                contents: await response.arrayBuffer()
+            };
+        }));
+        batch.forEach(({ filename, contents }) => archive.file(filename, contents));
     }
     return archive.generateAsync({ type: 'uint8array', compression: 'STORE' });
 };

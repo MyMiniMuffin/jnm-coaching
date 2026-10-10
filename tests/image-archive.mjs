@@ -25,3 +25,34 @@ test('failed image fetch rejects instead of returning an incomplete archive', as
     await assert.rejects(createImageArchive([{ url: 'https://example.com/image.jpg' }]), /Kunne ikke hente alle bildene/);
     await assert.rejects(createImageArchive([]), /Ingen bilder valgt/);
 });
+
+test('downloads at most four images concurrently and preserves selection order', async (t) => {
+    let active = 0;
+    let peak = 0;
+    const pending = [];
+    t.mock.method(globalThis, 'fetch', (url) => {
+        active += 1;
+        peak = Math.max(peak, active);
+        return new Promise(resolve => pending.push(() => {
+            active -= 1;
+            resolve(new Response(new Uint8Array([Number(url.split('/').pop())])));
+        }));
+    });
+    const images = Array.from({ length: 9 }, (_, index) => ({ url: `https://example.com/${index}` }));
+    const result = createImageArchive(images);
+    for (const batchSize of [4, 4, 1]) {
+        // Wait for dynamic import / the preceding batch to finish, with a bound
+        // so a regression fails rather than leaving the test hanging.
+        for (let attempt = 0; pending.length < batchSize && attempt < 100; attempt += 1) {
+            await new Promise(resolve => setTimeout(resolve, 5));
+        }
+        assert.equal(pending.length, batchSize);
+        pending.splice(0).reverse().forEach(finish => finish());
+    }
+    const zip = await JSZip.loadAsync(await result);
+    assert.equal(peak, 4);
+    assert.equal(Object.keys(zip.files).length, 9);
+    for (let index = 0; index < images.length; index += 1) {
+        assert.deepEqual([...await zip.file(`jnm-${index + 1}.jpg`).async('uint8array')], [index]);
+    }
+});

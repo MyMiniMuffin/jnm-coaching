@@ -55,6 +55,33 @@ const readCachedUserData = (userId) => {
     return isPlainObject(cached) ? mergeUserData(INITIAL_DATA_STATE, cached) : INITIAL_DATA_STATE;
 };
 
+// Keep gesture state below App so dragging only redraws the refresh indicator.
+// The children keep their identity while this component updates its own state.
+const RefreshFrame = ({ children, onRefresh, enabled, swipeHandlers }) => {
+    const { handlers, pullIndicator } = usePullToRefresh(onRefresh, { enabled });
+    return (
+        <div
+            className="app-frame app-frame-nav"
+            onTouchStart={(event) => {
+                swipeHandlers.onTouchStart(event);
+                handlers.onTouchStart(event);
+            }}
+            onTouchMove={(event) => {
+                swipeHandlers.onTouchMove(event);
+                handlers.onTouchMove(event);
+            }}
+            onTouchEnd={(event) => {
+                swipeHandlers.onTouchEnd(event);
+                handlers.onTouchEnd(event);
+            }}
+            onTouchCancel={handlers.onTouchCancel}
+        >
+            {pullIndicator}
+            {children}
+        </div>
+    );
+};
+
 const App = () => {
     const toast = useToast();
     const isOnline = useOnlineStatus();
@@ -331,7 +358,7 @@ const App = () => {
 
         const timeoutId = setTimeout(registerServiceWorker, 1500);
         return () => clearTimeout(timeoutId);
-    }, [currentUser]);
+    }, [currentUser?.id]);
 
     // Prefetch view-chunks når appen er lastet (gjør tab-bytte instant)
     useEffect(() => {
@@ -344,7 +371,7 @@ const App = () => {
             const timeoutId = setTimeout(() => prefetchViews(currentUser.role), 2000);
             return () => clearTimeout(timeoutId);
         }
-    }, [currentUser]);
+    }, [currentUser?.role]);
 
     // Visibility change handler - sjekk session når app blir synlig
     useEffect(() => {
@@ -1112,25 +1139,6 @@ const App = () => {
         }
     }, [viewingClient]);
 
-    const { handlers: pullHandlers, pullIndicator } = usePullToRefresh(handleRefresh, {
-        enabled: !isDesktop && !isClientLoading && !!viewingClient
-    });
-
-    const appTouchHandlers = {
-        onTouchStart: (event) => {
-            swipeHandlers.onTouchStart(event);
-            pullHandlers.onTouchStart(event);
-        },
-        onTouchMove: (event) => {
-            swipeHandlers.onTouchMove(event);
-            pullHandlers.onTouchMove(event);
-        },
-        onTouchEnd: (event) => {
-            swipeHandlers.onTouchEnd(event);
-            pullHandlers.onTouchEnd(event);
-        }
-    };
-
     if (isLoading) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center bg-surface-50">
@@ -1244,14 +1252,14 @@ const App = () => {
     const contentWide = activeTab === 'gallery';
 
     return (
-        <div
-            className="app-frame app-frame-nav"
-            {...appTouchHandlers}
+        <RefreshFrame
+            onRefresh={handleRefresh}
+            enabled={!isDesktop && !isClientLoading && !!viewingClient}
+            swipeHandlers={swipeHandlers}
         >
             <Navigation activeTab={activeTab} setActiveTab={handleTabChange} />
             <div className={`app-stage ${contentWide ? 'app-stage-wide' : ''}`}>
             {showReauthPrompt && <ReauthPrompt onReauth={handleReauth} />}
-            {pullIndicator}
             <Header
                 user={currentUser}
                 viewingClient={isCoach ? viewingClient : null}
@@ -1301,7 +1309,7 @@ const App = () => {
                 )}
             </main>
             </div>
-        </div>
+        </RefreshFrame>
     );
 };
 

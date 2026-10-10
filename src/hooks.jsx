@@ -81,7 +81,7 @@ export const usePullToRefresh = (onRefresh, options = {}) => {
     }, [enabled, refreshing]);
 
     const handleTouchMove = useCallback((e) => {
-        if (!pulling || !startY.current || refreshing) return;
+        if (!pulling || startY.current === null || refreshing) return;
         const currentY = e.touches[0].clientY;
         const distance = Math.max(0, (currentY - startY.current) * 0.5);
         setPullDistance(Math.min(distance, threshold * 1.5));
@@ -103,6 +103,12 @@ export const usePullToRefresh = (onRefresh, options = {}) => {
         setPullDistance(0);
         startY.current = null;
     }, [pulling, pullDistance, threshold, onRefresh]);
+
+    const handleTouchCancel = useCallback(() => {
+        setPulling(false);
+        setPullDistance(0);
+        startY.current = null;
+    }, []);
 
     const pullIndicator = useMemo(() => {
         if (pullDistance <= 0 && !refreshing) return null;
@@ -129,7 +135,8 @@ export const usePullToRefresh = (onRefresh, options = {}) => {
         handlers: {
             onTouchStart: handleTouchStart,
             onTouchMove: handleTouchMove,
-            onTouchEnd: handleTouchEnd
+            onTouchEnd: handleTouchEnd,
+            onTouchCancel: handleTouchCancel
         },
         pullIndicator,
         refreshing
