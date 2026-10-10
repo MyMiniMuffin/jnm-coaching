@@ -93,7 +93,7 @@ select {
 @supports (-webkit-touch-callout: none) {
     @media (max-width: 1023px) {
         .app-header > .app-header-top-inset {
-            padding-top: calc(env(safe-area-inset-top, 0px) + 1.5rem);
+            padding-top: calc(env(safe-area-inset-top, 0px) + 1rem);
         }
     }
 }
