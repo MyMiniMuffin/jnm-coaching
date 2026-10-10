@@ -2,8 +2,8 @@ import React from 'react';
 import { LogOut, ChevronLeft, WifiOff } from 'lucide-react';
 
 const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOffline = false }) => (
-    <header className="sticky top-0 z-40 border-b border-surface-200/80 bg-surface-50">
-        <div className="safe-area-pt" />
+    <header className="app-header sticky top-0 z-40 border-b border-surface-200/80 bg-surface-50">
+        <div className="app-header-top-inset" aria-hidden="true" />
         {isOffline && (
             <div className="bg-warning text-white text-center text-sm py-2 px-4 flex items-center justify-center gap-2">
                 <WifiOff size={14} /> Ingen nettilkobling — viser lagrede data

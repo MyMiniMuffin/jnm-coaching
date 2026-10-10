@@ -83,6 +83,21 @@ select {
 .safe-area-pb { padding-bottom: env(safe-area-inset-bottom); }
 .safe-area-pt { padding-top: env(safe-area-inset-top); }
 
+.app-header-top-inset {
+    padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Leave extra clearance for the top-edge fade reported on iPhone.
+   Keep it inside the opaque sticky header so it remains during scrolling.
+   Scope to the app header; image viewers have their own safe-area layout. */
+@supports (-webkit-touch-callout: none) {
+    @media (max-width: 1023px) {
+        .app-header > .app-header-top-inset {
+            padding-top: calc(env(safe-area-inset-top, 0px) + 1.5rem);
+        }
+    }
+}
+
 .login-page {
     min-height: 100svh;
     background:
