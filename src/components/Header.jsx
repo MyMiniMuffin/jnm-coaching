@@ -10,7 +10,7 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
             </div>
         )}
         {isClientPreview && (
-            <div className="border-b border-accent/20 bg-accent/10 px-4 py-3" role="status">
+            <div className="border-b border-accent/20 bg-accent/10 px-4 py-3 lg:px-0" role="status">
                 <div className="header-inner flex flex-wrap items-center justify-between gap-2">
                     <div className="min-w-0">
                         <p className="flex items-center gap-2 text-sm font-semibold text-ink"><Eye size={16} /> Klientvisning</p>
@@ -23,7 +23,7 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
             </div>
         )}
         {viewingClient ? (
-            <div className="header-inner flex flex-wrap items-center px-3 py-3 gap-2 lg:px-0 lg:py-4">
+            <div className="header-inner flex flex-wrap items-center px-3 py-3 gap-2 lg:px-8 lg:py-4">
                 <button
                     type="button"
                     onClick={onClearClient}
@@ -52,7 +52,7 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
                 </button>
             </div>
         ) : (
-            <div className="header-inner flex justify-between items-center px-5 py-3 lg:px-0 lg:py-4">
+            <div className="header-inner flex justify-between items-center px-5 py-3 lg:px-8 lg:py-4">
                 <p className="font-semibold text-ink truncate min-w-0">{user.name}</p>
                 <button type="button" onClick={onLogout} aria-label="Logg ut" className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-ink-muted transition-colors hover:bg-surface-100 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent shrink-0">
                     <LogOut size={20} />
