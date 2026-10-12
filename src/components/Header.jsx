@@ -1,7 +1,7 @@
 import React from 'react';
-import { LogOut, ChevronLeft, WifiOff } from 'lucide-react';
+import { LogOut, ChevronLeft, WifiOff, Eye } from 'lucide-react';
 
-const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOffline = false }) => (
+const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOffline = false, isClientPreview = false, onToggleClientPreview, previewDisabled = false }) => (
     <header className="app-header sticky top-0 z-40 border-b border-surface-200/80 bg-surface-50">
         <div className="app-header-top-inset" aria-hidden="true" />
         {isOffline && (
@@ -9,8 +9,21 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
                 <WifiOff size={14} /> Ingen nettilkobling — viser lagrede data
             </div>
         )}
+        {isClientPreview && (
+            <div className="border-b border-accent/20 bg-accent/10 px-4 py-3" role="status">
+                <div className="header-inner flex flex-wrap items-center justify-between gap-2">
+                    <div className="min-w-0">
+                        <p className="flex items-center gap-2 text-sm font-semibold text-ink"><Eye size={16} /> Klientvisning</p>
+                        <p className="mt-1 text-xs text-ink-muted">Forhåndsvisning · Endringer og innsending er deaktivert.</p>
+                    </div>
+                    <button type="button" onClick={onToggleClientPreview} className="min-h-11 rounded-lg px-3 py-2 text-sm font-semibold text-accent hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                        Tilbake til coach
+                    </button>
+                </div>
+            </div>
+        )}
         {viewingClient ? (
-            <div className="header-inner flex items-center px-3 py-3 gap-2 lg:px-0 lg:py-4">
+            <div className="header-inner flex flex-wrap items-center px-3 py-3 gap-2 lg:px-0 lg:py-4">
                 <button
                     type="button"
                     onClick={onClearClient}
@@ -24,6 +37,11 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
                     <p className="font-semibold text-ink truncate leading-6">{viewingClient.name}</p>
                     <p className="truncate text-[11px] leading-4 text-ink-muted">@{viewingClient.username}</p>
                 </div>
+                {onToggleClientPreview && (
+                    <button type="button" onClick={onToggleClientPreview} disabled={previewDisabled} className="order-last flex w-full min-h-11 shrink-0 items-center justify-center gap-1.5 sm:order-none sm:w-auto rounded-lg px-2.5 py-2 text-xs font-medium text-accent hover:bg-surface-100 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:text-sm">
+                        <Eye size={18} /> Vis som klient
+                    </button>
+                )}
                 <button
                     type="button"
                     onClick={onLogout}

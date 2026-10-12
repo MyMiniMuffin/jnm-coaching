@@ -100,6 +100,7 @@ const App = () => {
         return user?.role === 'athlete' ? user : null;
     });
 
+    const [isClientPreview, setIsClientPreview] = useState(false);
     const [isClientLoading, setIsClientLoading] = useState(false);
     const [showWeightHistory, setShowWeightHistory] = useState(false);
     const selectClientRef = useRef(0);
@@ -494,6 +495,7 @@ const App = () => {
     }, []);
 
     const handleLogout = useCallback(() => {
+        setIsClientPreview(false);
         clearSession();
         cache.invalidateAll();
         clearUiState();
@@ -507,6 +509,7 @@ const App = () => {
     }, []);
 
     const handleReauth = useCallback(() => {
+        setIsClientPreview(false);
         clearSession();
         cache.invalidateAll();
         clearUiState();
@@ -754,6 +757,7 @@ const App = () => {
     }, [viewingClient, toast]);
 
     const handleClearClient = useCallback(() => {
+        setIsClientPreview(false);
         setViewingClient(null);
         setActiveTab('dashboard');
     }, []);
@@ -763,6 +767,7 @@ const App = () => {
         const requestId = ++selectClientRef.current;
         const previousData = currentDataRef.current;
         const cachedData = cache.get(`user-data-${client.id}`, { allowStale: true });
+        setIsClientPreview(false);
         setViewingClient(client);
         if (isPlainObject(cachedData)) {
             setCurrentData(mergeUserData(INITIAL_DATA_STATE, cachedData));
@@ -1096,12 +1101,12 @@ const App = () => {
             setActiveTab(TAB_ORDER[currentTabIndex - 1]);
             window.scrollTo({ top: 0, behavior: 'auto' });
             return true;
-        } else if (currentTabIndex === 0 && currentUser?.role === 'coach' && viewingClient) {
+        } else if (currentTabIndex === 0 && currentUser?.role === 'coach' && viewingClient && !isClientPreview) {
             handleClearClient();
             return true;
         }
         return false;
-    }, [currentTabIndex, showWeightHistory, currentUser?.role, viewingClient, handleClearClient]);
+    }, [currentTabIndex, showWeightHistory, currentUser?.role, viewingClient, handleClearClient, isClientPreview]);
 
     const handleEdgeSwipe = useCallback((direction) => {
         if (swipeEdgeTimeoutRef.current) {
@@ -1153,8 +1158,16 @@ const App = () => {
 
     if (!currentUser) return <LoginScreen onLogin={handleLogin} />;
 
-    const isCoach = currentUser.role === 'coach';
-    const isArchived = currentUser.is_archived && !isCoach;
+    const isCoach = currentUser.role === 'coach' && !isClientPreview;
+    const displayUser = isClientPreview ? viewingClient : currentUser;
+    const isArchived = displayUser?.is_archived && !isCoach;
+    const toggleClientPreview = () => {
+        setIsClientPreview(value => !value);
+        setShowWeightHistory(false);
+        setActiveTab('dashboard');
+        setSwipeDirection('none');
+        window.scrollTo({ top: 0, behavior: 'auto' });
+    };
 
     // Arkivert bruker - begrenset tilgang
     if (isArchived) {
@@ -1162,7 +1175,7 @@ const App = () => {
             <div className="app-frame">
                 <div className="app-stage">
                 {showReauthPrompt && <ReauthPrompt onReauth={handleReauth} />}
-                <Header user={currentUser} onLogout={handleLogout} isOffline={!isOnline} />
+                <Header user={displayUser} onLogout={handleLogout} isOffline={!isOnline} isClientPreview={isClientPreview} onToggleClientPreview={toggleClientPreview} />
                 <main className="app-content">
                     <div className="flex flex-col items-center justify-center min-h-[70vh] text-center px-6 animate-fade-in">
                         <div className="w-20 h-20 bg-surface-100 rounded-xl flex items-center justify-center text-ink-muted mb-6">
@@ -1227,7 +1240,7 @@ const App = () => {
             <div className="app-frame">
                 <div className="app-stage app-stage-wide">
                 {showReauthPrompt && <ReauthPrompt onReauth={handleReauth} />}
-                <Header user={currentUser} onLogout={handleLogout} isOffline={!isOnline} />
+                <Header user={displayUser} onLogout={handleLogout} isOffline={!isOnline} isClientPreview={isClientPreview} onToggleClientPreview={toggleClientPreview} />
                 <main className="app-content app-content-wide">
                     <ViewErrorBoundary><Suspense fallback={<ViewSkeleton />}>
                         <CoachDashboard
@@ -1261,7 +1274,10 @@ const App = () => {
             <div className={`app-stage ${contentWide ? 'app-stage-wide' : ''}`}>
             {showReauthPrompt && <ReauthPrompt onReauth={handleReauth} />}
             <Header
-                user={currentUser}
+                user={displayUser}
+                isClientPreview={isClientPreview}
+                onToggleClientPreview={toggleClientPreview}
+                previewDisabled={isClientLoading}
                 viewingClient={isCoach ? viewingClient : null}
                 onLogout={handleLogout}
                 onClearClient={handleClearClient}
@@ -1279,7 +1295,7 @@ const App = () => {
                 ) : (
                     <ViewErrorBoundary><Suspense fallback={<ViewSkeleton tab={activeTab} />}>
                         <div
-                            key={activeTab}
+                            key={`${activeTab}-${isClientPreview ? 'preview' : 'coach'}`}
                             className={`${swipeDirection !== 'none' ? `view-enter view-enter-${swipeDirection}` : ''} ${swipeEdge ? `view-edge-${swipeEdge}` : ''}`}
                         >
                             {activeTab === 'dashboard' ? (
@@ -1303,7 +1319,7 @@ const App = () => {
                             /> :
                             activeTab === 'diet' ? <DietPlansSection content={currentData.dietPlan} onSave={handleSaveDietPlan} isReadOnly={!isCoach || Boolean(viewingClient?.is_archived)} isArchived={Boolean(isCoach && viewingClient?.is_archived)} /> :
                             activeTab === 'workout' ? <WorkoutPlansSection content={currentData.workoutPlan} onSave={handleSaveWorkoutPlan} isReadOnly={!isCoach || Boolean(viewingClient?.is_archived)} isArchived={Boolean(isCoach && viewingClient?.is_archived)} /> :
-                            <CheckInView checkins={currentData.checkins} onNewCheckin={handleNewCheckin} onDelete={handleDeleteCheckin} onUpdate={handleUpdateCheckin} canEdit={Boolean(viewingClient)} isReadOnly={isCoach} canDelete={Boolean(viewingClient)} stepGoal={currentData.stepGoal} draftKey={viewingClient?.id || currentUser?.id || 'default'} uploadUserId={viewingClient?.id} startDate={currentData.startDate} totalWeeks={currentData.totalWeeks} />}
+                            <CheckInView checkins={currentData.checkins} onNewCheckin={handleNewCheckin} onDelete={handleDeleteCheckin} onUpdate={handleUpdateCheckin} canEdit={Boolean(viewingClient) && !isClientPreview} isReadOnly={isCoach} isPreview={isClientPreview} canDelete={Boolean(viewingClient) && !isClientPreview} stepGoal={currentData.stepGoal} draftKey={viewingClient?.id || currentUser?.id || 'default'} uploadUserId={viewingClient?.id} startDate={currentData.startDate} totalWeeks={currentData.totalWeeks} />}
                         </div>
                     </Suspense></ViewErrorBoundary>
                 )}

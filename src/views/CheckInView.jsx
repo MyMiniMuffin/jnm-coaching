@@ -252,6 +252,7 @@ const CheckInView = React.memo(({
     onUpdate,
     canEdit = false,
     isReadOnly,
+    isPreview = false,
     canDelete = !isReadOnly,
     stepGoal,
     hideForm = false,
@@ -306,7 +307,7 @@ const CheckInView = React.memo(({
     );
 
     useEffect(() => {
-        if (isReadOnly || hideForm) return;
+        if (isPreview || isReadOnly || hideForm) return;
         try {
             const savedDraft = localStorage.getItem(storageKey);
             if (savedDraft) {
@@ -318,10 +319,10 @@ const CheckInView = React.memo(({
         } catch (e) {
             console.error('[CheckIn] Kunne ikke laste utkast:', e);
         }
-    }, [storageKey, isReadOnly, hideForm]);
+    }, [storageKey, isReadOnly, hideForm, isPreview]);
 
     useEffect(() => {
-        if (isReadOnly || hideForm || !showForm) return;
+        if (isPreview || isReadOnly || hideForm || !showForm) return;
 
         const timeoutId = setTimeout(() => {
             try {
@@ -336,7 +337,7 @@ const CheckInView = React.memo(({
         }, 350);
 
         return () => clearTimeout(timeoutId);
-    }, [formData, hasDraftContent, storageKey, isReadOnly, hideForm, showForm]);
+    }, [formData, hasDraftContent, storageKey, isReadOnly, hideForm, showForm, isPreview]);
 
     const closeLightbox = useCallback(() => {
         setLightbox(prev => ({ ...prev, isOpen: false }));
@@ -347,6 +348,7 @@ const CheckInView = React.memo(({
     }, []);
 
     const handleImageUpload = useCallback(async (e) => {
+        if (isPreview) return;
         const files = Array.from(e.target.files);
         e.target.value = '';
         if (files.length === 0) return;
@@ -389,7 +391,7 @@ const CheckInView = React.memo(({
         } finally {
             setIsCompressing(false);
         }
-    }, [uploadUserId]);
+    }, [uploadUserId, isPreview]);
 
     const removeImage = useCallback((indexToRemove) => {
         setFormData(prev => ({ ...prev, images: prev.images.filter((_, index) => index !== indexToRemove) }));
@@ -430,6 +432,7 @@ const CheckInView = React.memo(({
 
     const handleSubmit = useCallback(async (e) => {
         e.preventDefault();
+        if (isPreview) return;
         const weightNum = parseFloat(formData.weight);
         if (!formData.weight || isNaN(weightNum) || weightNum < 20 || weightNum > 500) {
             setWeightFieldError('Skriv inn en gyldig vekt mellom 20 og 500 kg.');
@@ -459,7 +462,7 @@ const CheckInView = React.memo(({
         } finally {
             setIsSubmitting(false);
         }
-    }, [formData, onNewCheckin, storageKey, toast]);
+    }, [formData, onNewCheckin, storageKey, toast, isPreview]);
 
     const [visibleReportCount, setVisibleReportCount] = useState(REPORT_BATCH_SIZE);
     const visibleCheckins = useMemo(
@@ -671,7 +674,8 @@ const CheckInView = React.memo(({
             )}
 
             {showForm && (
-                <form id="weekly-checkin-form" onSubmit={handleSubmit} className="space-y-5">
+                <form id="weekly-checkin-form" onSubmit={handleSubmit}>
+                    <fieldset disabled={isPreview} className="min-w-0 space-y-5">
                     {restoredDraft && (
                         <Card className="border-success/20 bg-success/10 p-4">
                             <div className="flex items-start justify-between gap-3">
@@ -731,6 +735,7 @@ const CheckInView = React.memo(({
                             Avbryt
                         </Button>
                     )}
+                    </fieldset>
                 </form>
             )}
 
@@ -751,7 +756,7 @@ const CheckInView = React.memo(({
                             type="submit"
                             form="weekly-checkin-form"
                             className="flex-1 lg:flex-none"
-                            disabled={isSubmitting || isCompressing}
+                            disabled={isPreview || isSubmitting || isCompressing}
                         >
                             {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
                             {isSubmitting ? 'Sender…' : 'Send rapport'}
