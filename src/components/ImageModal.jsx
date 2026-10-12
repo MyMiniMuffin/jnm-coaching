@@ -28,7 +28,7 @@ const ZoomDetail = ({ url }) => {
         className={`pointer-events-none absolute inset-0 h-full w-full object-contain select-none ${ready ? 'opacity-100' : 'opacity-0'}`} />;
 };
 
-const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
+const ImageModal = React.memo(({ images, initialIndex, onClose, canDownload = false }) => {
     const toast = useToast();
     const safeInitialIndex = Math.max(0, Math.min(initialIndex || 0, (images?.length || 1) - 1));
     const [index, setIndex] = useState(safeInitialIndex);
@@ -145,7 +145,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
 
     const handleDownload = useCallback(async (event) => {
         event?.stopPropagation();
-        if (!currentImageUrl || downloading) return;
+        if (!canDownload || !currentImageUrl || downloading) return;
         setDownloading(true);
         try {
             await downloadImageFile(currentImageUrl, resolveImageFilename(currentImage, index));
@@ -155,7 +155,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
         } finally {
             setDownloading(false);
         }
-    }, [currentImage, currentImageUrl, downloading, index, toast]);
+    }, [canDownload, currentImage, currentImageUrl, downloading, index, toast]);
     const imageTitle = currentImage?.label || (currentImage?.isGalleryImage ? 'Fremgangsbilde' : 'Rapportbilde');
     const imageDate = formatDateNO(currentImage?.date || currentImage?.timestamp);
     const imageWeight = currentImage?.weight ? `${formatWeight(currentImage.weight)} kg` : '';
@@ -194,7 +194,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
                 className="absolute right-4 z-[120] flex items-center gap-2"
                 style={{ top: 'calc(env(safe-area-inset-top, 20px) + 12px)' }}
             >
-                <button
+                {canDownload && <button
                     type="button"
                     onClick={handleDownload}
                     disabled={downloading}
@@ -202,7 +202,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose }) => {
                     className="text-white/75 hover:text-white min-h-[44px] min-w-[44px] p-2 rounded-full bg-white/10 hover:bg-white/18 backdrop-blur-md ring-1 ring-white/10 transition-all disabled:opacity-60"
                 >
                     {downloading ? <Loader2 size={22} className="animate-spin" /> : <Download size={22} />}
-                </button>
+                </button>}
                 <button
                     type="button"
                     onClick={onClose}

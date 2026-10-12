@@ -1319,7 +1319,7 @@ const App = () => {
                             /> :
                             activeTab === 'diet' ? <DietPlansSection content={currentData.dietPlan} onSave={handleSaveDietPlan} isReadOnly={!isCoach || Boolean(viewingClient?.is_archived)} isArchived={Boolean(isCoach && viewingClient?.is_archived)} /> :
                             activeTab === 'workout' ? <WorkoutPlansSection content={currentData.workoutPlan} onSave={handleSaveWorkoutPlan} isReadOnly={!isCoach || Boolean(viewingClient?.is_archived)} isArchived={Boolean(isCoach && viewingClient?.is_archived)} /> :
-                            <CheckInView checkins={currentData.checkins} onNewCheckin={handleNewCheckin} onDelete={handleDeleteCheckin} onUpdate={handleUpdateCheckin} canEdit={Boolean(viewingClient) && !isClientPreview} isReadOnly={isCoach} isPreview={isClientPreview} canDelete={Boolean(viewingClient) && !isClientPreview} stepGoal={currentData.stepGoal} draftKey={viewingClient?.id || currentUser?.id || 'default'} uploadUserId={viewingClient?.id} startDate={currentData.startDate} totalWeeks={currentData.totalWeeks} />}
+                            <CheckInView canDownloadImages={isCoach} checkins={currentData.checkins} onNewCheckin={handleNewCheckin} onDelete={handleDeleteCheckin} onUpdate={handleUpdateCheckin} canEdit={Boolean(viewingClient) && !isClientPreview} isReadOnly={isCoach} isPreview={isClientPreview} canDelete={Boolean(viewingClient) && !isClientPreview} stepGoal={currentData.stepGoal} draftKey={viewingClient?.id || currentUser?.id || 'default'} uploadUserId={viewingClient?.id} startDate={currentData.startDate} totalWeeks={currentData.totalWeeks} />}
                         </div>
                     </Suspense></ViewErrorBoundary>
                 )}

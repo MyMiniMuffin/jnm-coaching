@@ -251,6 +251,7 @@ const CheckInView = React.memo(({
     onDelete,
     onUpdate,
     canEdit = false,
+    canDownloadImages = false,
     isReadOnly,
     isPreview = false,
     canDelete = !isReadOnly,
@@ -609,7 +610,7 @@ const CheckInView = React.memo(({
         <div className={`space-y-5 animate-slide-up ${showForm ? 'pb-52 lg:pb-24' : 'pb-32 lg:pb-8'}`}>
             {lightbox.isOpen && (
                 <React.Suspense fallback={<ImageViewerLoading onClose={closeLightbox} />}>
-                    <ImageModal images={lightbox.images} initialIndex={lightbox.index} onClose={closeLightbox} />
+                    <ImageModal canDownload={canDownloadImages} images={lightbox.images} initialIndex={lightbox.index} onClose={closeLightbox} />
                 </React.Suspense>
             )}
 

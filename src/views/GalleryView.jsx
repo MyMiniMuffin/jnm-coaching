@@ -11,7 +11,7 @@ import { api } from '../lib/api';
 import { formatDateNO, formatWeight, getThumbnail, getFullSizeImage } from '../lib/formatters';
 import { IMAGE_ZOOM_PROPS } from '../lib/zoomConfig';
 import { haptic } from '../lib/haptic';
-import { buildImageFilename, downloadImageFile, downloadImagesArchive } from '../lib/downloadImage';
+import { downloadImagesArchive } from '../lib/downloadImage';
 
 const ImageModal = React.lazy(() => import('../components/ImageModal'));
 
@@ -278,27 +278,13 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
         setLightbox({ isOpen: true, images: allImages, index });
     }, [allImages, selectingFor]);
 
-    const handleDownloadImage = useCallback(async (img, suffix) => {
-        if (!img?.url) return;
-        try {
-            await downloadImageFile(img.url, buildImageFilename({
-                date: img.date || img.timestamp,
-                label: img.label,
-                suffix
-            }));
-            toast('Bildet er lastet ned');
-        } catch {
-            toast('Kunne ikke laste ned bildet', 'error');
-        }
-    }, [toast]);
-
     const selectedDownloadImages = allImages.filter(img => selectedDownloads.has(img.url));
     const toggleDownloadMode = () => {
         setDownloadMode(value => !value);
         setSelectedDownloads(new Set());
     };
     const handleDownloadSelected = async () => {
-        if (isDownloading || selectedDownloadImages.length === 0) return;
+        if (!isCoach || isDownloading || selectedDownloadImages.length === 0) return;
         setIsDownloading(true);
         try {
             await downloadImagesArchive(selectedDownloadImages);
@@ -312,7 +298,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
     };
 
     const handleDownloadCompare = useCallback(async () => {
-        if (!compareImages.before?.url || !compareImages.after?.url) return;
+        if (!isCoach || !compareImages.before?.url || !compareImages.after?.url) return;
         try {
             await downloadImagesArchive([
                 { ...compareImages.before, label: compareImages.before.label || 'for' },
@@ -322,7 +308,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
         } catch {
             toast('Kunne ikke laste ned bildene', 'error');
         }
-    }, [compareImages.after, compareImages.before, toast]);
+    }, [isCoach, compareImages.after, compareImages.before, toast]);
 
     const handleImageClick = useCallback((img, idx) => {
         if (downloadMode) {
@@ -608,6 +594,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                     <ImageModal
                         images={lightbox.images}
                         initialIndex={lightbox.index}
+                        canDownload={isCoach}
                         onClose={closeLightbox}
                     />
                 </React.Suspense>
@@ -621,7 +608,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                     daysDiff={daysDiff}
                     weightDiff={weightDiff}
                     onClose={closeFullscreenCompare}
-                    onDownload={handleDownloadCompare}
+                    onDownload={isCoach ? handleDownloadCompare : undefined}
                 />
             )}
 
@@ -789,7 +776,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
 
                     {/* Fullskjerm-knapp */}
                     {compareImages.before && compareImages.after && (
-                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        <div className={`grid grid-cols-1 gap-2 ${isCoach ? 'sm:grid-cols-2' : ''}`}>
                             <Button
                                 variant="primary"
                                 size="md"
@@ -798,14 +785,14 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                             >
                                 <Eye size={18} /> Se i fullskjerm
                             </Button>
-                            <Button
+                            {isCoach && <Button
                                 variant="secondary"
                                 size="md"
                                 className="w-full"
                                 onClick={handleDownloadCompare}
                             >
                                 <Download size={18} /> Last ned begge
-                            </Button>
+                            </Button>}
                         </div>
                     )}
 
@@ -888,7 +875,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                                         alt=""
                                     />
                                     {img.isGalleryImage && img.label && (
-                                        <span className={`absolute top-1.5 left-1.5 ${downloadMode || !isCoach || (img.isGalleryImage && onDeleteGalleryImage) ? 'right-12' : 'right-1.5'} truncate bg-ink/80 text-white text-[10px] font-medium px-2 py-0.5 rounded-full backdrop-blur-sm`}>
+                                        <span className={`absolute top-1.5 left-1.5 ${downloadMode || (isCoach && img.isGalleryImage && onDeleteGalleryImage) ? 'right-12' : 'right-1.5'} truncate bg-ink/80 text-white text-[10px] font-medium px-2 py-0.5 rounded-full backdrop-blur-sm`}>
                                             {img.label}
                                         </span>
                                     )}
@@ -912,14 +899,6 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                                     tone="danger"
                                     className="absolute top-1 right-1 z-10 rounded-lg bg-white/90 text-error shadow-sm backdrop-blur-sm">
                                     {String(img.galleryImageId).startsWith('temp_') || deletingImageId === img.galleryImageId ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
-                                </IconButton>}
-                                {!isCoach && <IconButton
-                                    type="button"
-                                    onClick={(e) => { e.stopPropagation(); handleDownloadImage(img); }}
-                                    aria-label={`Last ned bilde fra ${formatDateNO(img.date)}`}
-                                    className="absolute top-1 right-1 z-10 rounded-lg bg-white/90 text-ink shadow-sm backdrop-blur-sm active:scale-[0.98]"
-                                >
-                                    <Download size={18} />
                                 </IconButton>}
                             </div>
                         ))}
