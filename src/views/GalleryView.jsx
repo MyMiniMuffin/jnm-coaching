@@ -586,7 +586,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
     }
 
     return (
-        <div className="space-y-5 pb-32 lg:pb-8 animate-slide-up">
+        <div className={`space-y-5 pb-32 lg:pb-8 animate-slide-up ${viewMode === 'compare' ? 'w-full lg:max-w-2xl lg:mx-auto' : ''}`}>
             {uploadModal}
 
             {lightbox.isOpen && (
@@ -677,7 +677,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                             <p className="section-label text-center">Før</p>
                             <button
                                 type="button"
-                                className={`relative aspect-[4/5] max-h-[42vh] rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${selectingFor === 'before' ? 'border-ink ring-2 ring-ink/20' : 'border-surface-200'}`}
+                                className={`relative block w-full max-w-[33.6vh] mx-auto aspect-[4/5] rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${selectingFor === 'before' ? 'border-ink ring-2 ring-ink/20' : 'border-surface-200'}`}
                                 onClick={() => setSelectingFor(selectingFor === 'before' ? null : 'before')}
                                 aria-pressed={selectingFor === 'before'}
                                 aria-label={compareImages.before ? `Bytt før-bilde, valgt ${formatDateNO(compareImages.before.date)}` : 'Velg før-bilde'}
@@ -717,7 +717,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                             <p className="section-label text-center">Etter</p>
                             <button
                                 type="button"
-                                className={`relative aspect-[4/5] max-h-[42vh] rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${selectingFor === 'after' ? 'border-ink ring-2 ring-ink/20' : 'border-surface-200'}`}
+                                className={`relative block w-full max-w-[33.6vh] mx-auto aspect-[4/5] rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${selectingFor === 'after' ? 'border-ink ring-2 ring-ink/20' : 'border-surface-200'}`}
                                 onClick={() => setSelectingFor(selectingFor === 'after' ? null : 'after')}
                                 aria-pressed={selectingFor === 'after'}
                                 aria-label={compareImages.after ? `Bytt etter-bilde, valgt ${formatDateNO(compareImages.after.date)}` : 'Velg etter-bilde'}
