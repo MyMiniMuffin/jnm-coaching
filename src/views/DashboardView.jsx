@@ -134,7 +134,21 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                                         placeholder="Navn på runde"
                                                         autoFocus
                                                     />
-                                                    {editError && <p className="text-error text-xs">{editError}</p>}
+                                                    <div>
+                                                        <label htmlFor="active-period-start-date" className="block text-sm font-medium text-ink-muted mb-2">Startdato</label>
+                                                        <input
+                                                            id="active-period-start-date"
+                                                            type="date"
+                                                            value={editingPeriod.startDate}
+                                                            onChange={(e) => handleEditFieldChange('startDate', e.target.value)}
+                                                            disabled={isLoading}
+                                                            required
+                                                            aria-invalid={!!editError}
+                                                            aria-describedby={editError ? 'active-period-edit-error' : undefined}
+                                                            className="min-w-0 w-full px-3 py-2 bg-white border border-success/20 rounded-lg outline-none focus:ring-2 focus:ring-accent disabled:opacity-60"
+                                                        />
+                                                    </div>
+                                                    {editError && <p id="active-period-edit-error" role="alert" className="text-error text-xs">{editError}</p>}
                                                     <div className="flex gap-2">
                                                         <Button
                                                             variant="secondary"
@@ -150,7 +164,7 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                                             onClick={() => handleSaveRename(activePeriod.id)}
                                                             disabled={isLoading}
                                                         >
-                                                            {isLoading ? <><Loader2 size={14} className="animate-spin" /> Lagrer...</> : 'Lagre navn'}
+                                                            {isLoading ? <><Loader2 size={14} className="animate-spin" /> Lagrer...</> : 'Lagre endringer'}
                                                         </Button>
                                                     </div>
                                                 </div>
@@ -166,7 +180,7 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                                 <>
                                                     <IconButton
                                                         onClick={() => handleStartRename(activePeriod)}
-                                                        aria-label={`Rediger navn på ${activePeriod.name}`}
+                                                        aria-label={`Rediger ${activePeriod.name}`}
                                                         disabled={isLoading}
                                                         tone="accent"
                                                     >
@@ -282,7 +296,7 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                                     <div className="flex items-center">
                                                         <IconButton
                                                             onClick={() => handleStartRename(period)}
-                                                            aria-label={`Rediger navn på ${period.name}`}
+                                                            aria-label={`Rediger ${period.name}`}
                                                             disabled={isLoading}
                                                             tone="accent"
                                                         >
