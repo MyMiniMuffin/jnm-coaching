@@ -672,7 +672,8 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
             oldestRelevantWeight = parsedWeight;
         }
 
-        const avgAccuracy = (accuracySum / checkins.length).toFixed(1);
+        const stepsAccuracy = Math.round((stepsHit / checkins.length) * 100);
+        const avgAccuracy = Math.round((accuracySum / checkins.length) * 10);
         let weightChange = null;
 
         if (newestRelevantWeight !== null && activePeriod?.startingWeight) {
@@ -684,7 +685,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
             weightChange = (newestRelevantWeight - oldestRelevantWeight).toFixed(1);
         }
 
-        return { totalStrength, totalCardio, stepsHit, avgAccuracy, weightChange, totalCheckins: checkins.length, periodCheckins: periodCheckinsCount };
+        return { totalStrength, totalCardio, stepsAccuracy, avgAccuracy, weightChange, totalCheckins: checkins.length, periodCheckins: periodCheckinsCount };
     }, [checkins, activePeriod]);
 
     const handleOpenPlanSettings = useCallback(() => setShowPlanSettings(true), []);
@@ -893,19 +894,19 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center mb-5">
                             <div>
                                 <div className="text-2xl font-semibold text-ink">{stats.totalStrength}</div>
-                                <div className="stat-label mt-1">Styrke</div>
+                                <div className="stat-label mt-1">Styrkeøkter</div>
                             </div>
                             <div>
                                 <div className="text-2xl font-semibold text-ink">{stats.totalCardio}</div>
-                                <div className="stat-label mt-1">Cardio</div>
+                                <div className="stat-label mt-1">Cardioøkter</div>
                             </div>
                             <div>
-                                <div className="text-2xl font-semibold text-ink tabular-nums">{stats.stepsHit}/{stats.totalCheckins}</div>
+                                <div className="text-2xl font-semibold text-ink tabular-nums">{stats.stepsAccuracy}%</div>
                                 <div className="stat-label mt-1">Skrittmål</div>
                             </div>
                             <div>
-                                <div className="text-2xl font-semibold text-ink tabular-nums">{stats.avgAccuracy}</div>
-                                <div className="stat-label mt-1">Plan</div>
+                                <div className="text-2xl font-semibold text-ink tabular-nums">{stats.avgAccuracy}%</div>
+                                <div className="stat-label mt-1">Nøyaktighet</div>
                             </div>
                         </div>
 
