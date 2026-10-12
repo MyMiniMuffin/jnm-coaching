@@ -1,80 +1,83 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeft, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { Card, Badge, Button, EmptyState } from '../components/ui';
 import { formatWeight, formatDateNO } from '../lib/formatters';
 
-const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
-    const [activeTooltip, setActiveTooltip] = useState(null);
+const WeightProgressView = React.memo(({ checkins = [], periods = [], onBack }) => {
+    const [selectedIndex, setSelectedIndex] = useState(null);
+    const chartRef = useRef(null);
+    const [width, setWidth] = useState(360);
 
     // OPTIMALISERING: Memoize filtrering og sortering
     const validCheckins = useMemo(() =>
-        checkins.filter(c => c.weight && parseFloat(c.weight) > 0).sort((a, b) => a.timestamp - b.timestamp),
+        checkins.filter(c => Number.isFinite(parseFloat(c.weight)) && parseFloat(c.weight) > 0 && Number.isFinite(c.timestamp)).sort((a, b) => a.timestamp - b.timestamp),
         [checkins]
     );
+
+    useEffect(() => {
+        const element = chartRef.current;
+        if (!element) return;
+        const observer = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width));
+        observer.observe(element);
+        return () => observer.disconnect();
+    }, [validCheckins.length]);
+
+    useEffect(() => setSelectedIndex(null), [checkins]);
 
     // OPTIMALISERING: Reverser en gang i stedet for i hver map-iterasjon
     const reversedCheckins = useMemo(() => [...validCheckins].reverse(), [validCheckins]);
 
-    if (validCheckins.length === 0) return (
-        <div className="flex flex-col items-center justify-center h-[60vh] animate-fade-in">
-            <EmptyState
-                title="Ingen vektdata enda"
-                description="Når en rapport med vekt sendes inn, vises utviklingen her."
-                action={<Button variant="secondary" onClick={onBack}>Tilbake</Button>}
-            />
-        </div>
-    );
-
-    const first = validCheckins[0];
-    const last = validCheckins[validCheckins.length - 1];
-    const totalChange = (parseFloat(last.weight) - parseFloat(first.weight)).toFixed(1);
-    const isDown = parseFloat(totalChange) < 0;
-    const isSame = parseFloat(totalChange) === 0;
-
-    const width = 300;
-    const height = 140;
-    const padding = 16;
-    const chartTop = padding;
-    const chartBottom = height - padding;
+    const height = 240;
+    const chartLeft = 46;
+    const chartRight = width - 16;
+    const chartTop = 24;
+    const chartBottom = height - 38;
 
     // Memoize tunge beregninger (min/max over alle vekter + SVG-koordinater)
-    const { points, chartPoints, periodMarkers, dividersByEntryId } = useMemo(() => {
+    const { points, chartPoints, periodMarkers, dividersByEntryId, yTicks, dateTicks } = useMemo(() => {
+        if (!validCheckins.length) return { chartPoints: [], periodMarkers: [], dividersByEntryId: new Map(), yTicks: [], dateTicks: [] };
         const weights = validCheckins.map(c => parseFloat(c.weight));
-        const minW = Math.min(...weights) - 0.5;
-        const maxW = Math.max(...weights) + 0.5;
+        const lowest = Math.min(...weights);
+        const highest = Math.max(...weights);
+        // Round the scale to readable steps, with at least 2 kg of vertical context.
+        const rawStep = Math.max(2, highest - lowest + 1) / 4;
+        const magnitude = 10 ** Math.floor(Math.log10(rawStep));
+        const step = [1, 2, 2.5, 5, 10].find(value => value * magnitude >= rawStep) * magnitude;
+        const margin = Math.max(0.5, (2 - (highest - lowest)) / 2);
+        const minW = Math.floor((lowest - margin) / step) * step;
+        const maxW = Math.ceil((highest + margin) / step) * step;
+        const yFor = weight => chartBottom - ((weight - minW) / (maxW - minW)) * (chartBottom - chartTop);
+        const yTicks = Array.from({ length: Math.round((maxW - minW) / step) + 1 }, (_, i) => {
+            const value = minW + i * step;
+            return { value, y: yFor(value) };
+        });
         const timestamps = validCheckins.map(c => c.timestamp);
         const minT = Math.min(...timestamps);
         const maxT = Math.max(...timestamps);
 
-        const pts = validCheckins.map(c => {
-            const x = minT === maxT ? width / 2 : ((c.timestamp - minT) / (maxT - minT)) * (width - 2 * padding) + padding;
-            const y = minW === maxW ? height / 2 : height - padding - ((parseFloat(c.weight) - minW) / (maxW - minW)) * (height - 2 * padding);
-            return { x, y };
+        const xFor = timestamp => minT === maxT
+            ? (chartLeft + chartRight) / 2
+            : chartLeft + ((timestamp - minT) / (maxT - minT)) * (chartRight - chartLeft);
+        const pts = validCheckins.map(c => ({ x: xFor(c.timestamp), y: yFor(parseFloat(c.weight)) }));
+        const tickCount = minT === maxT ? 1 : width < 480 ? 2 : 4;
+        const dateTicks = Array.from({ length: tickCount }, (_, i) => {
+            const timestamp = minT + (maxT - minT) * (tickCount === 1 ? 0 : i / (tickCount - 1));
+            return { timestamp, x: xFor(timestamp) };
         });
 
         const markers = periods
             .filter(period => period?.startDate)
             .map(period => {
                 const startTimestamp = new Date(period.startDate).getTime();
-                const endTimestamp = period.endDate ? new Date(period.endDate).getTime() : null;
-                if (Number.isNaN(startTimestamp)) return null;
-
-                const startsAfterChart = startTimestamp > maxT;
-                const overlapsChart = startTimestamp <= maxT && (endTimestamp === null || !Number.isNaN(endTimestamp) && endTimestamp >= minT);
-                if (!overlapsChart && !startsAfterChart) return null;
-
-                const markerTimestamp = Math.max(minT, Math.min(maxT, startTimestamp));
-
-                const x = minT === maxT
-                    ? width / 2
-                    : ((markerTimestamp - minT) / (maxT - minT)) * (width - 2 * padding) + padding;
+                // Only actual starts inside the displayed dates belong on this timeline.
+                if (!Number.isFinite(startTimestamp) || startTimestamp < minT || startTimestamp > maxT) return null;
+                const x = xFor(startTimestamp);
 
                 return {
                     id: period.id,
                     x,
                     label: period.name || 'Ny runde',
                     shortDate: formatDateNO(period.startDate),
-                    isClampedToStart: startTimestamp < minT,
                     tooltipText: `${period.name || 'Ny runde'} startet ${formatDateNO(period.startDate)}`
                 };
             })
@@ -109,11 +112,30 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
             points: pts.map(p => `${p.x},${p.y}`).join(' '),
             chartPoints: pts,
             periodMarkers: markers,
-            dividersByEntryId
+            dividersByEntryId,
+            yTicks,
+            dateTicks
         };
-    }, [validCheckins, periods, reversedCheckins]);
+    }, [validCheckins, periods, reversedCheckins, width]);
 
-    const latestPeriodMarker = periodMarkers[periodMarkers.length - 1] || null;
+    if (validCheckins.length === 0) return (
+        <div className="flex flex-col items-center justify-center h-[60vh] animate-fade-in">
+            <EmptyState
+                title="Ingen vektdata enda"
+                description="Når en rapport med vekt sendes inn, vises utviklingen her."
+                action={<Button variant="secondary" onClick={onBack}>Tilbake</Button>}
+            />
+        </div>
+    );
+
+    const first = validCheckins[0];
+    const last = validCheckins[validCheckins.length - 1];
+    const totalChange = (parseFloat(last.weight) - parseFloat(first.weight)).toFixed(1);
+    const isDown = parseFloat(totalChange) < 0;
+    const isSame = parseFloat(totalChange) === 0;
+    const activeIndex = Math.min(selectedIndex ?? validCheckins.length - 1, validCheckins.length - 1);
+    const activeEntry = validCheckins[activeIndex];
+    const activePoint = chartPoints[activeIndex];
 
     return (
         <div className="space-y-6 animate-slide-up pb-32 lg:pb-8">
@@ -126,112 +148,80 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
 
             <div className="grid grid-cols-2 gap-4">
                 <Card className="p-5">
-                    <p className="section-label mb-1">Endring</p>
+                    <p className="section-label mb-1">Total endring</p>
                     <div className={`text-2xl font-semibold flex items-center gap-2 ${isSame ? 'text-ink-muted' : 'text-ink'}`}>
                         {totalChange > 0 ? '+' : ''}{totalChange.replace('.', ',')} kg
                         {isDown ? <TrendingDown size={20} /> : isSame ? <Minus size={20} /> : <TrendingUp size={20} />}
                     </div>
                 </Card>
                 <Card className="p-5">
-                    <p className="section-label mb-1">Nåværende</p>
+                    <p className="section-label mb-1">Siste måling</p>
                     <p className="text-2xl font-semibold tabular-nums">{formatWeight(last.weight)} kg</p>
                 </Card>
             </div>
 
-            {validCheckins.length > 1 && (
-                <Card className="relative p-4 overflow-visible">
-                    <div className="mb-3">
-                        <p className="section-label">Utvikling</p>
-                        <p className="text-sm text-ink-muted mt-1">
-                            {latestPeriodMarker
-                                ? `Siste runde startet ${latestPeriodMarker.shortDate}`
-                                : 'Hold over punktene for å se vekt'}
-                        </p>
+            <Card className="p-4 sm:p-5">
+                <div className="flex items-start justify-between gap-3">
+                    <p className="section-label">Utvikling</p>
+                    <div className="text-right" aria-live="polite" aria-atomic="true">
+                        <p className="font-semibold tabular-nums">{formatWeight(activeEntry.weight)} kg</p>
+                        <p className="text-xs text-ink-muted">{formatDateNO(activeEntry.date || activeEntry.timestamp)}</p>
                     </div>
-                    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-32" role="img" aria-label="Vektutvikling over tid med markører for nye coaching-runder">
-                        <defs>
-                            <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
-                                <stop offset="0%" stopColor="#246568" stopOpacity="0.45" />
-                                <stop offset="100%" stopColor="#246568" />
-                            </linearGradient>
-                        </defs>
-                        {periodMarkers.map((marker) => (
-                            <g
-                                key={marker.id}
-                                onMouseEnter={() => setActiveTooltip({
-                                    id: marker.id,
-                                    xPercent: (marker.x / width) * 100,
-                                    text: marker.tooltipText
-                                })}
-                                onMouseLeave={() => setActiveTooltip(null)}
-                                onFocus={() => setActiveTooltip({
-                                    id: marker.id,
-                                    xPercent: (marker.x / width) * 100,
-                                    text: marker.tooltipText
-                                })}
-                                onBlur={() => setActiveTooltip(null)}
-                            >
-                                <line
-                                    x1={marker.x}
-                                    x2={marker.x}
-                                    y1={chartTop}
-                                    y2={chartBottom}
-                                    stroke="transparent"
-                                    strokeWidth="16"
-                                />
-                                <line
-                                    x1={marker.x}
-                                    x2={marker.x}
-                                    y1={chartTop}
-                                    y2={chartBottom}
-                                    stroke="#246568"
-                                    strokeWidth="1.5"
-                                    strokeDasharray="4 4"
-                                />
-                                <circle
-                                    cx={marker.x}
-                                    cy={chartTop}
-                                    r="3"
-                                    fill="#246568"
-                                />
+                </div>
+                <div ref={chartRef} className="mt-3">
+                    <svg viewBox={`0 0 ${width} ${height}`} className="block w-full overflow-visible" role="group" aria-label="Vektutvikling. Velg et målepunkt for å se dato og vekt.">
+                        {yTicks.map(tick => (
+                            <g key={tick.value}>
+                                <line x1={chartLeft} x2={chartRight} y1={tick.y} y2={tick.y} className="stroke-surface-200" strokeDasharray="3 4" />
+                                <text x={chartLeft - 10} y={tick.y} dy="0.35em" textAnchor="end" className="fill-ink-muted text-xs tabular-nums">{tick.value.toLocaleString('nb-NO', { maximumFractionDigits: 1 })}</text>
                             </g>
                         ))}
-                        <polyline fill="none" stroke="url(#lineGradient)" strokeWidth="2" points={points} strokeLinecap="round" strokeLinejoin="round" />
-                        {chartPoints.map((p, i) => (
-                            <circle
-                                key={i}
-                                cx={p.x}
-                                cy={p.y}
-                                r="4"
-                                fill="#F7F7F4"
-                                stroke="#171717"
-                                strokeWidth="2"
-                                onMouseEnter={() => setActiveTooltip({
-                                    id: `point-${validCheckins[i].id ?? i}`,
-                                    xPercent: (p.x / width) * 100,
-                                    text: `${formatWeight(validCheckins[i].weight)} kg`
-                                })}
-                                onMouseLeave={() => setActiveTooltip(null)}
-                                onClick={() => setActiveTooltip((current) => current?.id === `point-${validCheckins[i].id ?? i}` ? null : {
-                                    id: `point-${validCheckins[i].id ?? i}`,
-                                    xPercent: (p.x / width) * 100,
-                                    text: `${formatWeight(validCheckins[i].weight)} kg`
-                                })}
-                            />
+                        {dateTicks.map((tick, i) => (
+                            <text key={tick.timestamp} x={tick.x} y={height - 12} textAnchor={dateTicks.length === 1 ? 'middle' : i === 0 ? 'start' : i === dateTicks.length - 1 ? 'end' : 'middle'} className="fill-ink-muted text-xs">
+                                {formatDateNO(tick.timestamp)}
+                            </text>
+                        ))}
+                        {periodMarkers.map(marker => (
+                            <line key={marker.id} x1={marker.x} x2={marker.x} y1={chartTop} y2={chartBottom} className="stroke-accent/40" strokeWidth="1.5" strokeDasharray="4 4">
+                                <title>{marker.tooltipText}</title>
+                            </line>
+                        ))}
+                        <polyline fill="none" className="stroke-accent" strokeWidth="2.5" points={points} strokeLinecap="round" strokeLinejoin="round" />
+                        <line x1={activePoint.x} x2={activePoint.x} y1={chartTop} y2={chartBottom} className="stroke-ink/20" strokeDasharray="2 4" pointerEvents="none" />
+                        {chartPoints.map((point, i) => (
+                            <g
+                                key={validCheckins[i].id ?? i}
+                                role="button"
+                                tabIndex={i === activeIndex ? 0 : -1}
+                                aria-label={`${formatDateNO(validCheckins[i].date || validCheckins[i].timestamp)}: ${formatWeight(validCheckins[i].weight)} kg`}
+                                aria-pressed={i === activeIndex}
+                                className="cursor-pointer outline-none group"
+                                onMouseEnter={() => setSelectedIndex(i)}
+                                onClick={() => setSelectedIndex(i)}
+                                onFocus={() => setSelectedIndex(i)}
+                                onKeyDown={event => {
+                                    const next = event.key === 'ArrowLeft' ? Math.max(0, i - 1)
+                                        : event.key === 'ArrowRight' ? Math.min(chartPoints.length - 1, i + 1)
+                                        : event.key === 'Home' ? 0
+                                        : event.key === 'End' ? chartPoints.length - 1 : null;
+                                    if (next !== null) {
+                                        event.preventDefault();
+                                        setSelectedIndex(next);
+                                        event.currentTarget.parentElement.querySelectorAll('[role="button"]')[next]?.focus();
+                                    } else if (event.key === 'Enter' || event.key === ' ') {
+                                        event.preventDefault();
+                                        setSelectedIndex(i);
+                                    }
+                                }}
+                            >
+                                <circle cx={point.x} cy={point.y} r="22" fill="transparent" />
+                                <circle cx={point.x} cy={point.y} r="10" className="fill-none stroke-accent opacity-0 group-focus-visible:opacity-100" strokeWidth="2" />
+                                <circle cx={point.x} cy={point.y} r={i === activeIndex ? 5 : 3.5} className={i === activeIndex ? 'fill-accent stroke-white' : 'fill-white stroke-accent'} strokeWidth="2" pointerEvents="none" />
+                            </g>
                         ))}
                     </svg>
-                    {activeTooltip && (
-                        <div
-                            className="pointer-events-none absolute top-10 z-10 -translate-x-1/2 rounded-xl bg-ink px-3 py-2 text-xs font-medium text-surface-50 shadow-lg"
-                            style={{
-                                left: `${Math.max(20, Math.min(80, activeTooltip.xPercent))}%`
-                            }}
-                        >
-                            {activeTooltip.text}
-                        </div>
-                    )}
-                </Card>
-            )}
+                </div>
+            </Card>
 
             <div className="space-y-2">
                 <p className="section-label px-1">Historikk</p>
@@ -254,7 +244,6 @@ const WeightProgressView = React.memo(({ checkins, periods = [], onBack }) => {
                             <Card className="p-4 flex justify-between items-center">
                                 <div>
                                     <p className="font-medium">{formatDateNO(entry.date)}</p>
-                                    <p className="text-xs text-ink-muted">{new Date(entry.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
                                 </div>
                                 <div className="flex items-center gap-3">
                                     {prev && change !== 0 && (
