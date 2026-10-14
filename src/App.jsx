@@ -15,7 +15,7 @@ import { useSwipe, usePullToRefresh, useOnlineStatus, useDesktop } from './hooks
 import { useActivity } from './lib/useActivity';
 
 // Components (eagerly loaded — small and used everywhere)
-import { Skeleton, Button } from './components/ui';
+import { Skeleton, Button, IconButton, PageTitle } from './components/ui';
 import { useToast } from './components/Toast';
 import LoginScreen from './components/LoginScreen';
 import ReauthPrompt from './components/ReauthPrompt';
@@ -156,7 +156,7 @@ const App = () => {
             ? clientsWithNewCheckins.map(client => `${client.name}: +${client.delta}`).join(', ')
             : 'Trykk deg inn i appen for å lese rapporten.';
 
-        const notification = new Notification('Ny check-in mottatt', {
+        const notification = new Notification('Ny rapport mottatt', {
             body,
             icon: '/icon-192.png',
             badge: '/icon-192.png',
@@ -530,7 +530,7 @@ const App = () => {
         }
         const savedCheckin = result.data?.checkin;
         if (!savedCheckin) {
-            throw new Error('Mangler lagret check-in fra serveren');
+            throw new Error('Mangler lagret rapport fra serveren');
         }
         setCurrentData(prev => ({
             ...prev,
@@ -543,7 +543,7 @@ const App = () => {
     const periodActionSavingRef = React.useRef(false);
 
     const handleUpdateData = useCallback(async (keyOrObj, value) => {
-        if (!viewingClient) return { error: 'Velg en klient før du lagrer.' };
+        if (!viewingClient) return { error: 'Velg en utøver før du lagrer.' };
 
         const updates = typeof keyOrObj === 'string' ? { [keyOrObj]: value } : keyOrObj;
         const isPeriodAction = ['create_period', 'end_period', 'update_period', 'delete_period'].includes(updates?.action);
@@ -1182,7 +1182,7 @@ const App = () => {
                         <div className="w-20 h-20 bg-surface-100 rounded-xl flex items-center justify-center text-ink-muted mb-6">
                             <Pause size={40} />
                         </div>
-                        <h2 className="text-2xl font-display text-ink mb-3">Kontoen er pauset</h2>
+                        <PageTitle className="mb-3">Kontoen er pauset</PageTitle>
                         <p className="text-ink-muted leading-relaxed mb-8">
                             Din konto er for øyeblikket satt på pause av coachen din.
                             Du kan fortsatt se historikken din, men kan ikke sende inn nye rapporter.
@@ -1211,10 +1211,10 @@ const App = () => {
                     {activeTab === 'history' && (
                         <div className="fixed inset-0 bg-surface-50 z-50 overflow-auto">
                             <div className="sticky top-0 bg-surface-50/95 backdrop-blur-md border-b border-surface-200 px-4 py-4 flex items-center gap-3">
-                                <button type="button" onClick={() => setActiveTab('dashboard')} aria-label="Tilbake til dashboard" className="p-2 hover:bg-surface-100 rounded-xl">
-                                    <ChevronLeft size={24} />
-                                </button>
-                                <h2 className="text-xl font-display">Din historikk</h2>
+                                <IconButton onClick={() => setActiveTab('dashboard')} aria-label="Tilbake til dashboard" className="-ml-2">
+                                    <ChevronLeft size={22} />
+                                </IconButton>
+                                <PageTitle>Din historikk</PageTitle>
                             </div>
                             <div className="p-4 pb-8">
                                 <ViewErrorBoundary><Suspense fallback={<ViewSkeleton />}>

@@ -3,7 +3,7 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Camera, X, Loader2, Plus, Eye, TrendingUp, TrendingDown, Minus, Download, Check, Trash2 } from 'lucide-react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
-import { Card, Button, EmptyState, IconButton, TextField } from '../components/ui';
+import { Card, Button, EmptyState, IconButton, PageTitle, TextField } from '../components/ui';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
 import { useEscapeKey, useFocusTrap } from '../hooks';
@@ -574,7 +574,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                 <EmptyState
                     icon={Camera}
                     title="Ingen bilder enda"
-                    description="Bilder fra ukesrapporter vil vises her"
+                    description="Bilder fra ukesrapporter vises her."
                     action={isCoach && onAddGalleryImage ? (
                         <Button variant="primary" size="md" onClick={() => setShowUploadModal(true)}>
                             <Plus size={18} /> Last opp startbilde
@@ -616,9 +616,9 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
             <div ref={compareTopRef} className="space-y-3 scroll-mt-4">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="min-w-0 mr-auto">
-                        <h2 className="text-[1.7rem] leading-none font-display">
+                        <PageTitle>
                             {viewMode === 'compare' ? 'Sammenlign' : 'Fremgangsgalleri'}
-                        </h2>
+                        </PageTitle>
                         <p className="text-sm text-ink-muted mt-1">
                             {viewMode === 'compare' ? 'Velg bilder å sammenligne' : `${allImages.length} bilder`}
                         </p>

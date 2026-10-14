@@ -16,7 +16,7 @@ import {
     CornerDownRight,
     MoreHorizontal
 } from 'lucide-react';
-import { Card, Button, EmptyState } from '../components/ui';
+import { Card, Button, EmptyState, TextArea } from '../components/ui';
 import { useConfirm } from '../components/ConfirmDialog';
 import { haptic } from '../lib/haptic';
 import {
@@ -447,7 +447,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
         <div className={`space-y-5 animate-slide-up ${isEditing && !isReadOnly ? 'pb-52 lg:pb-24' : 'pb-32 lg:pb-8'}`}>
             {isArchived && (
                 <p role="status" className="rounded-xl border border-surface-200 bg-surface-100 px-4 py-3 text-sm text-ink-muted">
-                    Klienten er arkivert. Gjenopprett klienten under «Klienter» før du endrer planen.
+                    Utøveren er arkivert. Gjenopprett utøveren fra utøverlisten før du endrer planen.
                 </p>
             )}
             <Card className="overflow-hidden">
@@ -483,7 +483,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-surface-100 bg-white px-5 py-3.5">
                         <div>
                             <p className="text-sm text-ink-muted">{editorHint}</p>
-                            {type === 'diet' && <p className="mt-1 text-xs text-ink-faint">Enter legger til neste matvare. Shift + Enter gir linjeskift.</p>}
+                            {type === 'diet' && <p className="mt-1 text-xs text-ink-muted">Enter legger til neste matvare. Shift + Enter gir linjeskift.</p>}
                         </div>
                         <div className="flex flex-wrap gap-2">
                             <input ref={importFileRef} type="file" accept="text/plain,.txt" className="hidden" onChange={handleImportFile} />
@@ -515,20 +515,21 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                                 Velg .txt-fil
                             </Button>
                         </div>
-                        <textarea
+                        <TextArea
+                            id={`${type}-plan-import`}
                             value={importText}
                             onChange={event => {
                                 setImportText(event.target.value);
                                 setImportError('');
                             }}
                             rows={10}
-                            className={`w-full resize-y rounded-xl border bg-white px-4 py-3 text-sm leading-6 outline-none focus:border-accent focus:ring-2 focus:ring-accent ${importError ? 'border-error/40' : 'border-surface-200'}`}
+                            inputClassName="!resize-y !text-sm leading-6"
+                            error={importError}
                             placeholder={type === 'workout'
                                 ? '[Dag 1 – Underkropp]\nKnebøy: 4 × 6\nRumensk markløft: 3 × 8\n\n[Dag 2 – Overkropp]\nBenkpress: 4 × 6'
                                 : '[Frokost]\nHavregrøt\n  - med bær\n  - med banan\nKaffe eller vann\n\n[Lunsj]\nKylling, ris og grønnsaker'}
                             aria-label={`${title} i ren tekst`}
                         />
-                        {importError && <p className="mt-1.5 text-xs text-error">{importError}</p>}
                         <p className="mt-2 text-xs text-ink-muted">Importen erstatter innholdet i editoren. Endringen lagres først når du trykker «Lagre».</p>
                         <div className="mt-4 flex justify-end gap-2">
                             <Button variant="ghost" size="sm" onClick={handleCloseTextImport}>Avbryt</Button>

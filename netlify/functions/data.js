@@ -44,7 +44,7 @@ const sendCoachPushNotifications = async ({ athleteId, athleteName, unreadCount,
     if (!subscriptions.length) return;
 
     const payload = JSON.stringify({
-      title: 'Ny check-in mottatt',
+      title: 'Ny rapport mottatt',
       body: unreadCount > 1
         ? `${athleteName} har nå ${unreadCount} uleste rapporter.`
         : `${athleteName} har sendt inn en ny rapport.`,

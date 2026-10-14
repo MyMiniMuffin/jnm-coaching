@@ -2,13 +2,7 @@ import React from 'react';
 import { ChevronDown } from 'lucide-react';
 import { haptic } from '../lib/haptic';
 
-const SEGMENT_COLORS = (n) => {
-    if (n >= 8) return 'bg-success text-white';
-    if (n >= 5) return 'bg-warning text-white';
-    return 'bg-error text-white';
-};
-
-export const SegmentedControl = React.memo(({ label, hint, value, onChange, options, colorize = false }) => {
+export const SegmentedControl = React.memo(({ label, hint, value, onChange, options }) => {
     const wrap = options.length > 7;
     return (
         <div>
@@ -20,7 +14,6 @@ export const SegmentedControl = React.memo(({ label, hint, value, onChange, opti
             }>
                 {options.map(opt => {
                     const isSelected = Number(value) === Number(opt);
-                    const selectedCls = colorize ? SEGMENT_COLORS(Number(opt)) : 'bg-ink text-white';
                     return (
                         <button
                             key={opt}
@@ -32,7 +25,7 @@ export const SegmentedControl = React.memo(({ label, hint, value, onChange, opti
                             }}
                             className={`${wrap ? '' : 'flex-1'} min-h-[44px] py-2 rounded-lg text-sm font-semibold transition-all duration-150 active:scale-[0.98] tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 ${
                                 isSelected
-                                    ? `${selectedCls} shadow-sm`
+                                    ? 'bg-ink text-white shadow-sm'
                                     : 'text-ink-muted hover:bg-white/70'
                             }`}
                         >
@@ -80,6 +73,10 @@ export const SessionStepper = React.memo(({ label, value, onChange, min = 0, max
     );
 });
 
+export const PageTitle = React.memo(({ children, className = '', ...props }) => (
+    <h2 className={`text-[1.7rem] leading-tight font-display text-ink ${className}`} {...props}>{children}</h2>
+));
+
 export const Skeleton = React.memo(({ className }) => (
     <div className={`bg-surface-200 animate-pulse rounded-xl ${className}`} />
 ));
@@ -87,7 +84,7 @@ export const Skeleton = React.memo(({ className }) => (
 const BADGE_VARIANTS = {
     default: 'bg-surface-200 text-ink',
     success: 'bg-success/10 text-success border border-success/20',
-    warning: 'bg-warning/10 text-warning border border-warning/20',
+    warning: 'bg-warning/10 text-warning-ink border border-warning/20',
     muted: 'bg-surface-100 text-ink-muted border border-surface-200',
 };
 
@@ -159,6 +156,16 @@ export const InputLabel = React.memo(({ children }) => (
     <label className="block text-sm font-medium text-ink-muted mb-2">{children}</label>
 ));
 
+// Felles utseende for tekstfelt, tekstområder og nedtrekkslister.
+const FIELD_BASE = 'min-w-0 w-full bg-surface-50 border rounded-xl outline-none transition-all focus:ring-2 focus:ring-accent focus:border-accent text-base font-medium placeholder-ink-faint disabled:opacity-50';
+
+const FieldMessage = ({ id, error, hint }) => {
+    const messageId = id ? `${id}-message` : undefined;
+    if (error) return <p id={messageId} role="alert" className="text-error text-xs mt-1.5">{error}</p>;
+    if (hint) return <p id={messageId} className="text-xs text-ink-muted mt-1.5">{hint}</p>;
+    return null;
+};
+
 export const TextField = React.memo(React.forwardRef(({
     label,
     icon: Icon,
@@ -176,16 +183,36 @@ export const TextField = React.memo(React.forwardRef(({
             <input
                 id={id}
                 ref={ref}
-                className={`min-w-0 w-full ${Icon ? 'pl-12' : 'px-4'} pr-4 py-3.5 bg-surface-50 border rounded-xl outline-none transition-all focus:ring-2 focus:ring-accent focus:border-accent text-base font-medium placeholder-ink-faint disabled:opacity-50 ${error ? 'border-error/40' : 'border-surface-200'} ${inputClassName}`}
+                className={`${FIELD_BASE} ${Icon ? 'pl-12' : 'px-4'} pr-4 py-3.5 ${error ? 'border-error/40' : 'border-surface-200'} ${inputClassName}`}
                 aria-invalid={error ? true : undefined}
+                aria-describedby={id && (error || hint) ? `${id}-message` : undefined}
                 {...props}
             />
         </div>
-        {error ? (
-            <p className="text-error text-xs mt-1.5">{error}</p>
-        ) : hint ? (
-            <p className="text-xs text-ink-muted mt-1.5">{hint}</p>
-        ) : null}
+        <FieldMessage id={id} error={error} hint={hint} />
+    </div>
+)));
+
+export const TextArea = React.memo(React.forwardRef(({
+    label,
+    className = '',
+    inputClassName = '',
+    error,
+    hint,
+    id,
+    ...props
+}, ref) => (
+    <div className={`min-w-0 ${className}`}>
+        {label && <label htmlFor={id} className="block text-sm font-medium text-ink-muted mb-2">{label}</label>}
+        <textarea
+            id={id}
+            ref={ref}
+            className={`${FIELD_BASE} block px-4 py-3.5 resize-none ${error ? 'border-error/40' : 'border-surface-200'} ${inputClassName}`}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={id && (error || hint) ? `${id}-message` : undefined}
+            {...props}
+        />
+        <FieldMessage id={id} error={error} hint={hint} />
     </div>
 )));
 
@@ -197,7 +224,7 @@ export const EmptyState = React.memo(({ icon: Icon, title, description, action }
             </div>
         )}
         <p className="text-base font-semibold text-ink mb-1">{title}</p>
-        {description && <p className="text-ink-faint text-sm">{description}</p>}
+        {description && <p className="text-ink-muted text-sm">{description}</p>}
         {action && <div className="mt-6 flex justify-center">{action}</div>}
     </div>
 ));

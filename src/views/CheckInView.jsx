@@ -4,7 +4,7 @@ import {
   Check, Camera, X, Trash2, Loader2, Scale,
   Activity, AlertCircle, Save, Pencil, ChevronDown, Plus
 } from 'lucide-react';
-import { Card, Badge, Button, EmptyState, IconButton, InputLabel, SegmentedControl, SessionStepper } from '../components/ui';
+import { Card, Badge, Button, EmptyState, IconButton, InputLabel, SegmentedControl, SessionStepper, TextArea } from '../components/ui';
 import ReportMetrics from '../components/ReportMetrics';
 import { getReportTone } from '../lib/reportStatus';
 import { useToast } from '../components/Toast';
@@ -107,10 +107,11 @@ const CheckinFields = ({
 }) => (
     <div className="space-y-5">
         <div>
-            <InputLabel>Vekt (kg)</InputLabel>
+            <label htmlFor="checkin-weight" className="block text-sm font-medium text-ink-muted mb-2">Vekt (kg)</label>
             <div className="relative">
                 <Scale className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" size={18} />
                 <input
+                    id="checkin-weight"
                     ref={weightInputRef}
                     type="number"
                     inputMode="decimal"
@@ -122,12 +123,12 @@ const CheckinFields = ({
                     aria-describedby={weightError ? 'weight-error' : undefined}
                     value={values.weight}
                     onChange={(event) => onField('weight', event.target.value)}
-                    className={`w-full pl-12 pr-4 py-3.5 bg-surface-50 border rounded-xl outline-none focus:ring-2 focus:ring-accent focus:border-accent font-medium text-lg placeholder-ink-faint ${weightError ? 'border-error/40' : 'border-surface-200'}`}
+                    className={`w-full pl-12 pr-4 py-3.5 bg-surface-50 border rounded-xl outline-none focus:ring-2 focus:ring-accent focus:border-accent text-base font-medium placeholder-ink-faint ${weightError ? 'border-error/40' : 'border-surface-200'}`}
                     placeholder="f.eks. 83.5"
                 />
             </div>
             {weightError ? (
-                <p id="weight-error" className="text-error text-xs mt-1.5">{weightError}</p>
+                <p id="weight-error" role="alert" className="text-error text-xs mt-1.5">{weightError}</p>
             ) : lastWeight != null && (
                 <p className="text-xs text-ink-muted mt-1.5">
                     Forrige: {formatWeight(lastWeight)} kg
@@ -197,16 +198,15 @@ const CheckinFields = ({
             </label>
         </div>
 
-        <div>
-            <InputLabel>Kommentar, valgfritt</InputLabel>
-            <textarea
-                value={values.comment}
-                onChange={(event) => onField('comment', event.target.value)}
-                maxLength={5000}
-                className="w-full px-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl h-28 outline-none resize-none focus:ring-2 focus:ring-accent focus:border-accent"
-                placeholder="Hvordan har uken vært?"
-            />
-        </div>
+        <TextArea
+            id="checkin-comment"
+            label="Kommentar, valgfritt"
+            value={values.comment}
+            onChange={(event) => onField('comment', event.target.value)}
+            maxLength={5000}
+            inputClassName="h-28"
+            placeholder="Hvordan har uken vært?"
+        />
 
         {showImages && (
             <div>

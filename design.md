@@ -40,17 +40,31 @@ Fargepaletten er definert i `tailwind.config.js`.
 | Primær tekst | `ink` | `#171717` | Overskrifter, innhold og primærknapper |
 | Sekundær tekst | `ink-muted` | `#525252` | Beskrivelser og etiketter |
 | Svak tekst | `ink-faint` | `#8A847A` | Metadata og inaktive ikoner |
-| Aksent | `accent` | `#B5603A` | Fokus, lenker, ulest og utvalgte handlinger |
-| Aksent hover | `accent-hover` | `#9B4E2A` | Hover på aksentfarge |
+| Aksent | `accent` | `#246568` | Fokus, lenker, ulest og utvalgte handlinger |
+| Aksent hover | `accent-hover` | `#1B5053` | Hover på aksentfarge |
 | Suksess | `success` | `#546B3E` | Bekreftet eller positiv status |
-| Advarsel | `warning` | `#CA8A04` | Noe som krever oppmerksomhet |
+| Advarsel | `warning` | `#CA8A04` | Bakgrunn for advarsler (`bg-warning`, `bg-warning/10`) |
+| Advarselstekst | `warning-ink` | `#854D0E` | Tekst og ikon på lys advarselsbakgrunn |
 | Feil | `error` | `#DC2626` | Feil og destruktive handlinger |
+
+### Rapportfarger
+
+Brukes kun for vurderinger i ukesrapporter (`ReportMetrics`). Skala 1–10: 8+ er bra, 5–7 middels, under 5 dårlig.
+
+| Rolle | Tailwind | Verdi |
+| --- | --- | --- |
+| Bra | `report-good` | `#527062` |
+| Middels | `report-medium` | `#946C17` |
+| Dårlig | `report-poor` | `#AE4D48` |
+| Trening | `report-training` | `#526B85` |
 
 ### Fargeregler
 
 - Primær handling er som hovedregel mørk (`bg-ink text-white`), ikke aksentfarget.
 - Aksentfargen brukes sparsomt til fokus, lenker, uleste elementer, avkrysning og små detaljer.
 - Statusfarger skal alltid kombineres med tekst eller ikon. Farge alene skal ikke bære betydning.
+- `warning` er for lys til tekst. Bruk `text-warning-ink` på lys bakgrunn og `text-ink` på `bg-warning`.
+- I CSS brukes `theme('colors.…')` i stedet for hex-verdier.
 - Flater skal normalt være hvite eller `surface-50/100`. Tonede flater brukes kun når de forklarer status eller hierarki.
 - Maks én tydelig mørk eller dekorativ hero-flate per skjerm.
 
@@ -67,7 +81,8 @@ Serif er en aksent, ikke standardskriften for overskrifter. I kompakte eller dat
 
 | Nivå | Anbefalt klasse | Bruk |
 | --- | --- | --- |
-| Sidetittel | `text-[1.7rem] font-display` | Én hovedtittel øverst på skjermen |
+| Sidetittel | `PageTitle` (`text-[1.7rem] leading-tight font-display`) | Én hovedtittel øverst på skjermen |
+| Modaltittel | `text-xl font-display` | Tittel i modaler og dialoger |
 | Hero-tall/tittel | `text-2xl` | Viktigste nøkkeltall eller kort hero-tekst |
 | Seksjonstittel | `text-base font-semibold` | Vanlige innholdsseksjoner |
 | Kompakt seksjonstittel | `text-[1.05rem] font-semibold` | Matplan, lister og tette flater |
@@ -83,6 +98,7 @@ Serif er en aksent, ikke standardskriften for overskrifter. I kompakte eller dat
 - Store tekstblokker bør ikke være bredere enn appens innholdskolonne.
 - Tall som sammenlignes i kolonner skal bruke `tabular-nums`.
 - Norsk tekst skal være kort, konkret og skrevet i vanlig setningskasus.
+- Fast terminologi: «utøver» (ikke klient), «rapport» (ikke check-in), «runde» (ikke periode).
 
 ## 4. Avstand og layout
 
@@ -144,12 +160,12 @@ Bruk `Card` for en selvstendig innholdsgruppe eller interaktiv enhet. Ikke bruk 
 
 ### Skjemafelt
 
-Bruk `TextField`, `SelectField`, `InputLabel`, `ToggleGroup` og `SegmentedControl` der de passer.
+Bruk `TextField`, `TextArea`, `SelectField`, `InputLabel`, `ToggleGroup` og `SegmentedControl` der de passer. Ikke lag egne `<input>`-stiler; unntaket er den kompakte strukturerte planeditoren.
 
 - Etikett står over feltet.
 - Standard feltbakgrunn er `surface-50`.
 - Fokus bruker `ring-2 ring-accent border-accent`.
-- Feilmelding står rett under feltet og kobles visuelt til feltet.
+- Feilmelding står rett under feltet og kobles til feltet (`error`-prop gir `aria-describedby`).
 - Placeholder er et eksempel, ikke en erstatning for etikett når betydningen kan være uklar.
 
 ### Modaler

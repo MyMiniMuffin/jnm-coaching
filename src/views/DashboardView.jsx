@@ -3,7 +3,7 @@ import {
   Scale, Footprints, Pencil, ChevronRight, TrendingUp, TrendingDown, Minus,
   X, Plus, Check, Loader2, Pause, Play, Activity, ArrowRight, ArrowLeft, Trash2
 } from 'lucide-react';
-import { Card, Badge, Button, IconButton, InputLabel } from '../components/ui';
+import { Card, Badge, Button, IconButton, TextField } from '../components/ui';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
 import { useFocusTrap } from '../hooks';
@@ -126,29 +126,25 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                         <div>
                                             {editingPeriodId === activePeriod.id ? (
                                                 <div className="space-y-2">
-                                                    <input
+                                                    <TextField
+                                                        id="active-period-name"
+                                                        label="Navn på runde"
                                                         type="text"
                                                         value={editingPeriod.name}
                                                         onChange={(e) => handleEditFieldChange('name', e.target.value)}
-                                                        className="min-w-0 w-full px-3 py-2 bg-white border border-success/20 rounded-lg outline-none focus:ring-2 focus:ring-accent"
                                                         placeholder="Navn på runde"
                                                         autoFocus
                                                     />
-                                                    <div>
-                                                        <label htmlFor="active-period-start-date" className="block text-sm font-medium text-ink-muted mb-2">Startdato</label>
-                                                        <input
-                                                            id="active-period-start-date"
-                                                            type="date"
-                                                            value={editingPeriod.startDate}
-                                                            onChange={(e) => handleEditFieldChange('startDate', e.target.value)}
-                                                            disabled={isLoading}
-                                                            required
-                                                            aria-invalid={!!editError}
-                                                            aria-describedby={editError ? 'active-period-edit-error' : undefined}
-                                                            className="min-w-0 w-full px-3 py-2 bg-white border border-success/20 rounded-lg outline-none focus:ring-2 focus:ring-accent disabled:opacity-60"
-                                                        />
-                                                    </div>
-                                                    {editError && <p id="active-period-edit-error" role="alert" className="text-error text-xs">{editError}</p>}
+                                                    <TextField
+                                                        id="active-period-start-date"
+                                                        label="Startdato"
+                                                        type="date"
+                                                        value={editingPeriod.startDate}
+                                                        onChange={(e) => handleEditFieldChange('startDate', e.target.value)}
+                                                        disabled={isLoading}
+                                                        required
+                                                        error={editError}
+                                                    />
                                                     <div className="flex gap-2">
                                                         <Button
                                                             variant="secondary"
@@ -201,12 +197,12 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                     </div>
                                     <div className="grid grid-cols-2 gap-3 text-sm">
                                         <div>
-                                            <p className="text-ink-faint">Startvekt</p>
+                                            <p className="text-ink-muted">Startvekt</p>
                                             <p className="font-semibold">{activePeriod.startingWeight ? formatWeight(activePeriod.startingWeight) + ' kg' : 'Ikke satt'}</p>
                                         </div>
                                         {activePeriod.goalWeight && (
                                             <div>
-                                                <p className="text-ink-faint">Målvekt</p>
+                                                <p className="text-ink-muted">Målvekt</p>
                                                 <p className="font-semibold">{formatWeight(activePeriod.goalWeight)} kg</p>
                                             </div>
                                         )}
@@ -235,35 +231,32 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                                 <div>
                                                     {editingPeriodId === period.id ? (
                                                         <div className="space-y-2">
-                                                            <input
+                                                            <TextField
+                                                                id={`period-${period.id}-name`}
+                                                                label="Navn på runde"
                                                                 type="text"
                                                                 value={editingPeriod.name}
                                                                 onChange={(e) => handleEditFieldChange('name', e.target.value)}
-                                                                className="min-w-0 w-full px-3 py-2 bg-white border border-surface-200 rounded-lg outline-none focus:ring-2 focus:ring-accent"
                                                                 placeholder="Navn på runde"
                                                                 autoFocus
                                                             />
                                                             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                                                                <div>
-                                                                    <InputLabel>Startdato</InputLabel>
-                                                                    <input
-                                                                        type="date"
-                                                                        value={editingPeriod.startDate}
-                                                                        onChange={(e) => handleEditFieldChange('startDate', e.target.value)}
-                                                                        className="min-w-0 w-full px-3 py-2 bg-white border border-surface-200 rounded-lg outline-none focus:ring-2 focus:ring-accent"
-                                                                    />
-                                                                </div>
-                                                                <div>
-                                                                    <InputLabel>Sluttdato</InputLabel>
-                                                                    <input
-                                                                        type="date"
-                                                                        value={editingPeriod.endDate}
-                                                                        onChange={(e) => handleEditFieldChange('endDate', e.target.value)}
-                                                                        className="min-w-0 w-full px-3 py-2 bg-white border border-surface-200 rounded-lg outline-none focus:ring-2 focus:ring-accent"
-                                                                    />
-                                                                </div>
+                                                                <TextField
+                                                                    id={`period-${period.id}-start-date`}
+                                                                    label="Startdato"
+                                                                    type="date"
+                                                                    value={editingPeriod.startDate}
+                                                                    onChange={(e) => handleEditFieldChange('startDate', e.target.value)}
+                                                                />
+                                                                <TextField
+                                                                    id={`period-${period.id}-end-date`}
+                                                                    label="Sluttdato"
+                                                                    type="date"
+                                                                    value={editingPeriod.endDate}
+                                                                    onChange={(e) => handleEditFieldChange('endDate', e.target.value)}
+                                                                />
                                                             </div>
-                                                            {editError && <p className="text-error text-xs">{editError}</p>}
+                                                            {editError && <p role="alert" className="text-error text-xs">{editError}</p>}
                                                             <div className="flex gap-2">
                                                                 <Button
                                                                     variant="secondary"
@@ -343,47 +336,39 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                     </div>
                 ) : (
                     <form onSubmit={handleCreate} className="space-y-4">
-                        <div>
-                            <InputLabel>Navn på runde</InputLabel>
-                            <input 
-                                type="text"
-                                value={formData.name}
-                                onChange={handleNameChange}
-                                placeholder={`Runde ${periods.length + 1}`}
-                                className="w-full px-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-accent"
-                            />
-                        </div>
-                        
-                        <div>
-                            <InputLabel>Startvekt (kg) *</InputLabel>
-                            <div className="relative">
-                                <Scale className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" size={18} />
-                                <input 
-                                    type="number"
-                                    inputMode="decimal"
-                                    step="0.1"
-                                    required
-                                    value={formData.startingWeight}
-                                    onChange={handleStartingWeightChange}
-                                    placeholder="0.0"
-                                    className={`w-full pl-12 pr-4 py-3.5 bg-surface-50 border rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium text-lg ${weightError ? 'border-error/40' : 'border-surface-200'}`}
-                                />
-                            </div>
-                            {weightError && <p className="text-error text-xs mt-1.5">{weightError}</p>}
-                        </div>
+                        <TextField
+                            id="new-period-name"
+                            label="Navn på runde"
+                            type="text"
+                            value={formData.name}
+                            onChange={handleNameChange}
+                            placeholder={`Runde ${periods.length + 1}`}
+                        />
 
-                        <div>
-                            <InputLabel>Målvekt (kg, valgfritt)</InputLabel>
-                            <input 
-                                type="number"
-                                inputMode="decimal"
-                                step="0.1"
-                                value={formData.goalWeight}
-                                onChange={handleGoalWeightChange}
-                                placeholder="0.0"
-                                className="w-full px-4 py-3.5 bg-surface-50 border border-surface-200 rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium text-lg"
-                            />
-                        </div>
+                        <TextField
+                            id="new-period-starting-weight"
+                            label="Startvekt (kg) *"
+                            icon={Scale}
+                            type="number"
+                            inputMode="decimal"
+                            step="0.1"
+                            required
+                            value={formData.startingWeight}
+                            onChange={handleStartingWeightChange}
+                            placeholder="0.0"
+                            error={weightError}
+                        />
+
+                        <TextField
+                            id="new-period-goal-weight"
+                            label="Målvekt (kg, valgfritt)"
+                            type="number"
+                            inputMode="decimal"
+                            step="0.1"
+                            value={formData.goalWeight}
+                            onChange={handleGoalWeightChange}
+                            placeholder="0.0"
+                        />
 
                         <div className="flex gap-2 pt-2">
                             <Button type="button" variant="secondary" size="lg" className="flex-1" onClick={() => setView('list')}>
@@ -498,65 +483,48 @@ const PlanSettingsModal = React.memo(({ userData, onClose, onUpdateData, onOpenP
                         <h3 id="plan-timeline-title" className="font-semibold text-ink">Tidsplan</h3>
                         <p className="mb-3 text-sm text-ink-muted">Startdato og varighet styrer ukevisningen og fremdriften.</p>
                         <div className="grid gap-4 sm:grid-cols-2">
-                            <div>
-                                <label htmlFor="plan-start-date" className="mb-2 block text-sm font-medium text-ink-muted">Startdato</label>
-                                <div>
-                                    <input
-                                        id="plan-start-date"
-                                        type="date"
-                                        value={startDate}
-                                        onChange={handleStartDateChange}
-                                        disabled={isSaving}
-                                        aria-invalid={!dateValid}
-                                        className="w-full min-w-0 rounded-xl border border-surface-200 bg-surface-50 px-3 py-3 font-medium outline-none focus:ring-2 focus:ring-accent disabled:opacity-60"
-                                    />
-                                </div>
-                                {userData.isPaused && startDate !== origStartDate && (
-                                    <p className="mt-1.5 text-xs text-ink-muted">Endring av startdato gjenopptar en pauset plan.</p>
-                                )}
-                            </div>
-                            <div>
-                                <label htmlFor="plan-total-weeks" className="mb-2 block text-sm font-medium text-ink-muted">Varighet i uker</label>
-                                <input
-                                    id="plan-total-weeks"
-                                    type="number"
-                                    inputMode="numeric"
-                                    min="1"
-                                    max="52"
-                                    value={totalWeeks}
-                                    onChange={handleTotalWeeksChange}
-                                    disabled={isSaving}
-                                    aria-invalid={!weeksValid}
-                                    aria-describedby={!weeksValid ? 'plan-weeks-error' : undefined}
-                                    className={`w-full rounded-xl border bg-surface-50 px-4 py-3 font-medium outline-none focus:ring-2 focus:ring-accent disabled:opacity-60 ${weeksValid ? 'border-surface-200' : 'border-error/50'}`}
-                                />
-                                {!weeksValid && <p id="plan-weeks-error" className="mt-1.5 text-xs text-error">Velg et tall mellom 1 og 52.</p>}
-                            </div>
+                            <TextField
+                                id="plan-start-date"
+                                label="Startdato"
+                                type="date"
+                                value={startDate}
+                                onChange={handleStartDateChange}
+                                disabled={isSaving}
+                                error={dateValid ? undefined : 'Velg en gyldig dato.'}
+                                hint={userData.isPaused && startDate !== origStartDate ? 'Endring av startdato gjenopptar en pauset plan.' : undefined}
+                            />
+                            <TextField
+                                id="plan-total-weeks"
+                                label="Varighet i uker"
+                                type="number"
+                                inputMode="numeric"
+                                min="1"
+                                max="52"
+                                value={totalWeeks}
+                                onChange={handleTotalWeeksChange}
+                                disabled={isSaving}
+                                error={weeksValid ? undefined : 'Velg et tall mellom 1 og 52.'}
+                            />
                         </div>
                     </section>
 
                     <section aria-labelledby="plan-goal-title" className="border-t border-surface-200 pt-4">
                         <h3 id="plan-goal-title" className="font-semibold text-ink">Mål</h3>
                         <p className="mb-3 text-sm text-ink-muted">Skrittmålet vises i ukesrapporten.</p>
-                        <label htmlFor="plan-step-goal" className="mb-2 block text-sm font-medium text-ink-muted">Skrittmål</label>
-                        <div className="relative">
-                            <Footprints className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" size={18} />
-                            <input
-                                id="plan-step-goal"
-                                type="number"
-                                inputMode="numeric"
-                                min="1000"
-                                max="100000"
-                                step="1000"
-                                value={stepGoal}
-                                onChange={handleStepGoalChange}
-                                disabled={isSaving}
-                                aria-invalid={!stepGoalValid}
-                                aria-describedby={!stepGoalValid ? 'plan-steps-error' : undefined}
-                                className={`w-full rounded-xl border bg-surface-50 py-3 pl-10 pr-4 font-medium outline-none focus:ring-2 focus:ring-accent disabled:opacity-60 ${stepGoalValid ? 'border-surface-200' : 'border-error/50'}`}
-                            />
-                        </div>
-                        {!stepGoalValid && <p id="plan-steps-error" className="mt-1.5 text-xs text-error">Velg et tall mellom 1 000 og 100 000.</p>}
+                        <TextField
+                            id="plan-step-goal"
+                            label="Skrittmål"
+                            icon={Footprints}
+                            type="number"
+                            inputMode="numeric"
+                            min="1000"
+                            max="100000"
+                            step="1000"
+                            value={stepGoal}
+                            onChange={handleStepGoalChange}
+                            disabled={isSaving}
+                            error={stepGoalValid ? undefined : 'Velg et tall mellom 1 000 og 100 000.'}
+                        />
                     </section>
 
                     <section aria-labelledby="plan-more-title" className="border-t border-surface-200 pt-4">

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeft, TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import { Card, Badge, Button, EmptyState } from '../components/ui';
+import { Card, Badge, Button, EmptyState, IconButton, PageTitle } from '../components/ui';
 import { formatWeight, formatDateNO } from '../lib/formatters';
 
 const WeightProgressView = React.memo(({ checkins = [], periods = [], onBack }) => {
@@ -140,10 +140,10 @@ const WeightProgressView = React.memo(({ checkins = [], periods = [], onBack }) 
     return (
         <div className="space-y-6 animate-slide-up pb-32 lg:pb-8">
             <div className="flex items-center gap-2">
-                <button type="button" onClick={onBack} aria-label="Tilbake til hjem" className="-ml-2 flex h-11 w-11 items-center justify-center rounded-lg text-ink-muted transition-colors hover:bg-surface-100 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                <IconButton onClick={onBack} aria-label="Tilbake til hjem" className="-ml-2">
                     <ChevronLeft size={22} />
-                </button>
-                <h2 className="text-[1.7rem] font-display text-ink">Vektutvikling</h2>
+                </IconButton>
+                <PageTitle>Vektutvikling</PageTitle>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
