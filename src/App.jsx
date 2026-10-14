@@ -427,8 +427,9 @@ const App = () => {
             }
         };
 
+        // Ikke poll i bakgrunnen; visibilitychange henter ferske data ved retur.
         const intervalId = window.setInterval(() => {
-            refreshUsers(true);
+            if (document.visibilityState === 'visible') refreshUsers(true);
         }, 60000);
 
         setIsUsersLoading(true);

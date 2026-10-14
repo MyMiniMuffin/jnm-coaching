@@ -513,26 +513,25 @@ exports.handler = async (event) => {
             period_id as "periodId", is_read as "isRead"
         `;
 
-        const unreadCountResult = await sql`
-          SELECT COUNT(*)::integer AS count
-          FROM checkins
-          WHERE user_id = ${userId} AND is_read = false
-        `;
-
-        const unreadTotalResult = await sql`
-          SELECT COUNT(*)::integer AS count
+        // Begge tellingene i én rundtur. Målbrukeren er en aktiv utøver (sjekket over),
+        // så egne uleste rapporter er alltid med i totalen.
+        const unreadResult = await sql`
+          SELECT
+            COUNT(*) FILTER (WHERE c.user_id = ${userId})::integer AS count,
+            COUNT(*)::integer AS total
           FROM checkins c
           INNER JOIN users u ON u.id = c.user_id
           WHERE c.is_read = false
             AND u.role = 'athlete'
             AND COALESCE(u.is_archived, false) = false
         `;
+        const unreadCount = unreadResult[0]?.count || 1;
 
         await sendCoachPushNotifications({
           athleteId: userId,
           athleteName: targetUser.name || 'En utøver',
-          unreadCount: unreadCountResult[0]?.count || 1,
-          unreadTotal: unreadTotalResult[0]?.count || unreadCountResult[0]?.count || 1
+          unreadCount,
+          unreadTotal: unreadResult[0]?.total || unreadCount
         });
 
         return {
@@ -548,16 +547,6 @@ exports.handler = async (event) => {
       else if (type === 'update_checkin') {
         if (!data.checkinId) {
           return { statusCode: 400, body: JSON.stringify({ error: 'Mangler checkin-ID' }) };
-        }
-
-        // SIKKERHET: Verifiser at checkin tilhører valgt bruker.
-        // Coach kan oppdatere for en utøver de har åpnet; athlete kan kun oppdatere egne.
-        const checkinMatch = await sql`
-          SELECT id FROM checkins WHERE id = ${data.checkinId} AND user_id = ${userId}
-        `;
-
-        if (checkinMatch.length === 0) {
-          return { statusCode: 403, body: JSON.stringify({ error: 'Ingen tilgang til denne rapporten' }) };
         }
 
         // Valider feltene som faktisk er sendt med
@@ -605,8 +594,10 @@ exports.handler = async (event) => {
             period_id as "periodId", is_read as "isRead"
         `;
 
+        // SIKKERHET: WHERE user_id begrenser oppdateringen til valgt bruker.
+        // Ingen rad tilbake betyr at rapporten ikke finnes eller tilhører en annen.
         if (!updated[0]) {
-          return { statusCode: 500, body: JSON.stringify({ error: 'Kunne ikke oppdatere rapporten' }) };
+          return { statusCode: 403, body: JSON.stringify({ error: 'Ingen tilgang til denne rapporten' }) };
         }
 
         return {
@@ -624,17 +615,15 @@ exports.handler = async (event) => {
           return { statusCode: 400, body: JSON.stringify({ error: 'Mangler checkin-ID' }) };
         }
 
-        // SIKKERHET: Verifiser at checkin tilhorer valgt bruker.
+        // SIKKERHET: WHERE user_id begrenser slettingen til valgt bruker.
         // Coach kan slette for en utøver de har åpnet, men ikke på tvers av brukere.
-        const checkinMatch = await sql`
-          SELECT id FROM checkins WHERE id = ${data.checkinId} AND user_id = ${userId}
+        const deleted = await sql`
+          DELETE FROM checkins WHERE id = ${data.checkinId} AND user_id = ${userId} RETURNING id
         `;
 
-        if (checkinMatch.length === 0) {
+        if (deleted.length === 0) {
           return { statusCode: 403, body: JSON.stringify({ error: 'Ingen tilgang til denne rapporten' }) };
         }
-
-        await sql`DELETE FROM checkins WHERE id = ${data.checkinId} AND user_id = ${userId}`;
       }
 
       else if (type === 'mark_checkins_read') {
