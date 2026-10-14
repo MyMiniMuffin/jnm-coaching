@@ -24,7 +24,7 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
             </div>
         )}
         {viewingClient ? (
-            <div className="header-inner flex flex-wrap items-center px-3 py-3 gap-2 lg:px-8 lg:py-4">
+            <div className="header-inner flex items-center px-3 py-3 gap-1 lg:gap-2 lg:px-8 lg:py-4">
                 <button
                     type="button"
                     onClick={onClearClient}
@@ -39,9 +39,10 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
                     <p className="truncate text-[11px] leading-4 text-ink-muted">@{viewingClient.username}</p>
                 </div>
                 {onToggleClientPreview && (
-                    <button type="button" onClick={onToggleClientPreview} disabled={previewDisabled} className="order-last flex w-full min-h-11 shrink-0 items-center justify-center gap-1.5 sm:order-none sm:w-auto rounded-lg px-2.5 py-2 text-xs font-medium text-accent hover:bg-surface-100 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:text-sm">
-                        <Eye size={18} /> Vis som utøver
-                    </button>
+                    <IconButton onClick={onToggleClientPreview} disabled={previewDisabled} aria-label="Vis som utøver" title="Vis som utøver" className="shrink-0 gap-1.5 disabled:opacity-50 lg:px-3">
+                        <Eye size={20} />
+                        <span className="hidden text-sm font-medium lg:inline">Vis som utøver</span>
+                    </IconButton>
                 )}
                 <IconButton onClick={onLogout} aria-label="Logg ut" className="shrink-0">
                     <LogOut size={20} />
