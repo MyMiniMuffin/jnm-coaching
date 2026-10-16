@@ -62,8 +62,8 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
         setEditingPeriodId(period.id);
         setEditingPeriod({
             name: period.name || '',
-            startDate: period.startDate ? period.startDate.split('T')[0] : '',
-            endDate: period.endDate ? period.endDate.split('T')[0] : ''
+            startDate: toDateInputValue(period.startDate),
+            endDate: toDateInputValue(period.endDate)
         });
         setEditError('');
     }, []);

@@ -3,15 +3,27 @@ import { ChevronLeft, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { Card, Badge, Button, EmptyState, IconButton, PageTitle } from '../components/ui';
 import { formatWeight, formatDateNO } from '../lib/formatters';
 
-const WeightProgressView = React.memo(({ checkins = [], periods = [], onBack }) => {
+const EMPTY_LIST = [];
+const EMPTY_CHART = {
+    points: '',
+    chartPoints: EMPTY_LIST,
+    periodMarkers: EMPTY_LIST,
+    dividersByEntryId: new Map(),
+    yTicks: EMPTY_LIST,
+    dateTicks: EMPTY_LIST
+};
+
+const WeightProgressView = React.memo(({ checkins = EMPTY_LIST, periods = EMPTY_LIST, onBack }) => {
     const [selectedIndex, setSelectedIndex] = useState(null);
     const chartRef = useRef(null);
     const [width, setWidth] = useState(360);
+    const checkinList = Array.isArray(checkins) ? checkins : EMPTY_LIST;
+    const periodList = Array.isArray(periods) ? periods : EMPTY_LIST;
 
     // OPTIMALISERING: Memoize filtrering og sortering
     const validCheckins = useMemo(() =>
-        checkins.filter(c => Number.isFinite(parseFloat(c.weight)) && parseFloat(c.weight) > 0 && Number.isFinite(c.timestamp)).sort((a, b) => a.timestamp - b.timestamp),
-        [checkins]
+        checkinList.filter(c => Number.isFinite(parseFloat(c.weight)) && parseFloat(c.weight) > 0 && Number.isFinite(c.timestamp)).sort((a, b) => a.timestamp - b.timestamp),
+        [checkinList]
     );
 
     useEffect(() => {
@@ -22,32 +34,36 @@ const WeightProgressView = React.memo(({ checkins = [], periods = [], onBack }) 
         return () => observer.disconnect();
     }, [validCheckins.length]);
 
-    useEffect(() => setSelectedIndex(null), [checkins]);
+    useEffect(() => setSelectedIndex(null), [checkinList]);
 
     // OPTIMALISERING: Reverser en gang i stedet for i hver map-iterasjon
     const reversedCheckins = useMemo(() => [...validCheckins].reverse(), [validCheckins]);
 
     const height = 240;
     const chartLeft = 46;
-    const chartRight = width - 16;
+    const chartRight = Math.max(chartLeft + 1, width - 16);
     const chartTop = 24;
     const chartBottom = height - 38;
 
     // Memoize tunge beregninger (min/max over alle vekter + SVG-koordinater)
     const { points, chartPoints, periodMarkers, dividersByEntryId, yTicks, dateTicks } = useMemo(() => {
-        if (!validCheckins.length) return { chartPoints: [], periodMarkers: [], dividersByEntryId: new Map(), yTicks: [], dateTicks: [] };
+        if (!validCheckins.length) return EMPTY_CHART;
         const weights = validCheckins.map(c => parseFloat(c.weight));
         const lowest = Math.min(...weights);
         const highest = Math.max(...weights);
         // Round the scale to readable steps, with at least 2 kg of vertical context.
         const rawStep = Math.max(2, highest - lowest + 1) / 4;
         const magnitude = 10 ** Math.floor(Math.log10(rawStep));
-        const step = [1, 2, 2.5, 5, 10].find(value => value * magnitude >= rawStep) * magnitude;
+        const step = ([1, 2, 2.5, 5, 10].find(value => value * magnitude >= rawStep) ?? 10) * magnitude;
+        if (!Number.isFinite(step) || step <= 0) return EMPTY_CHART;
         const margin = Math.max(0.5, (2 - (highest - lowest)) / 2);
         const minW = Math.floor((lowest - margin) / step) * step;
         const maxW = Math.ceil((highest + margin) / step) * step;
-        const yFor = weight => chartBottom - ((weight - minW) / (maxW - minW)) * (chartBottom - chartTop);
-        const yTicks = Array.from({ length: Math.round((maxW - minW) / step) + 1 }, (_, i) => {
+        const range = maxW - minW;
+        if (!Number.isFinite(range) || range <= 0) return EMPTY_CHART;
+        const yFor = weight => chartBottom - ((weight - minW) / range) * (chartBottom - chartTop);
+        const tickCount = Math.min(24, Math.round(range / step) + 1);
+        const yTicks = Array.from({ length: Math.max(2, tickCount) }, (_, i) => {
             const value = minW + i * step;
             return { value, y: yFor(value) };
         });
@@ -59,13 +75,13 @@ const WeightProgressView = React.memo(({ checkins = [], periods = [], onBack }) 
             ? (chartLeft + chartRight) / 2
             : chartLeft + ((timestamp - minT) / (maxT - minT)) * (chartRight - chartLeft);
         const pts = validCheckins.map(c => ({ x: xFor(c.timestamp), y: yFor(parseFloat(c.weight)) }));
-        const tickCount = minT === maxT ? 1 : width < 480 ? 2 : 4;
-        const dateTicks = Array.from({ length: tickCount }, (_, i) => {
-            const timestamp = minT + (maxT - minT) * (tickCount === 1 ? 0 : i / (tickCount - 1));
+        const dateTickCount = minT === maxT ? 1 : width < 480 ? 2 : 4;
+        const dateTicks = Array.from({ length: dateTickCount }, (_, i) => {
+            const timestamp = minT + (maxT - minT) * (dateTickCount === 1 ? 0 : i / (dateTickCount - 1));
             return { timestamp, x: xFor(timestamp) };
         });
 
-        const markers = periods
+        const markers = periodList
             .filter(period => period?.startDate)
             .map(period => {
                 const startTimestamp = new Date(period.startDate).getTime();
@@ -83,7 +99,7 @@ const WeightProgressView = React.memo(({ checkins = [], periods = [], onBack }) 
             })
             .filter(Boolean);
 
-        const sortedPeriods = [...periods]
+        const sortedPeriods = [...periodList]
             .filter(period => period?.startDate)
             .map(period => ({
                 id: period.id,
@@ -116,7 +132,7 @@ const WeightProgressView = React.memo(({ checkins = [], periods = [], onBack }) 
             yTicks,
             dateTicks
         };
-    }, [validCheckins, periods, reversedCheckins, width]);
+    }, [validCheckins, periodList, reversedCheckins, width, chartLeft, chartRight, chartBottom, chartTop]);
 
     if (validCheckins.length === 0) return (
         <div className="flex flex-col items-center justify-center h-[60vh] animate-fade-in">
@@ -133,7 +149,8 @@ const WeightProgressView = React.memo(({ checkins = [], periods = [], onBack }) 
     const totalChange = (parseFloat(last.weight) - parseFloat(first.weight)).toFixed(1);
     const isDown = parseFloat(totalChange) < 0;
     const isSame = parseFloat(totalChange) === 0;
-    const activeIndex = Math.min(selectedIndex ?? validCheckins.length - 1, validCheckins.length - 1);
+    const lastIndex = validCheckins.length - 1;
+    const activeIndex = Math.max(0, Math.min(Number.isFinite(selectedIndex) ? selectedIndex : lastIndex, lastIndex));
     const activeEntry = validCheckins[activeIndex];
     const activePoint = chartPoints[activeIndex];
 
@@ -163,10 +180,12 @@ const WeightProgressView = React.memo(({ checkins = [], periods = [], onBack }) 
             <Card className="p-4 sm:p-5">
                 <div className="flex items-start justify-between gap-3">
                     <p className="section-label">Utvikling</p>
-                    <div className="text-right" aria-live="polite" aria-atomic="true">
-                        <p className="font-semibold tabular-nums">{formatWeight(activeEntry.weight)} kg</p>
-                        <p className="text-xs text-ink-muted">{formatDateNO(activeEntry.date || activeEntry.timestamp)}</p>
-                    </div>
+                    {activeEntry && (
+                        <div className="text-right" aria-live="polite" aria-atomic="true">
+                            <p className="font-semibold tabular-nums">{formatWeight(activeEntry.weight)} kg</p>
+                            <p className="text-xs text-ink-muted">{formatDateNO(activeEntry.date || activeEntry.timestamp)}</p>
+                        </div>
+                    )}
                 </div>
                 <div ref={chartRef} className="mt-3">
                     <svg viewBox={`0 0 ${width} ${height}`} className="block w-full overflow-visible" role="group" aria-label="Vektutvikling. Velg et målepunkt for å se dato og vekt.">
@@ -187,7 +206,9 @@ const WeightProgressView = React.memo(({ checkins = [], periods = [], onBack }) 
                             </line>
                         ))}
                         <polyline fill="none" className="stroke-accent" strokeWidth="2.5" points={points} strokeLinecap="round" strokeLinejoin="round" />
-                        <line x1={activePoint.x} x2={activePoint.x} y1={chartTop} y2={chartBottom} className="stroke-ink/20" strokeDasharray="2 4" pointerEvents="none" />
+                        {activePoint && (
+                            <line x1={activePoint.x} x2={activePoint.x} y1={chartTop} y2={chartBottom} className="stroke-ink/20" strokeDasharray="2 4" pointerEvents="none" />
+                        )}
                         {chartPoints.map((point, i) => (
                             <g
                                 key={validCheckins[i].id ?? i}
