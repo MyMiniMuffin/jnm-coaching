@@ -10,7 +10,7 @@ import { getReportTone } from '../lib/reportStatus';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
 import { api } from '../lib/api';
-import { formatDateNO, formatWeight, formatWeightDelta, getThumbnail } from '../lib/formatters';
+import { formatDateNO, formatWeight, formatWeightDelta, getThumbnail, todayLocalISODate } from '../lib/formatters';
 import { OPTIONS_1_TO_10, INITIAL_FORM_DATA } from '../lib/config';
 import { haptic } from '../lib/haptic';
 
@@ -286,12 +286,12 @@ const CheckInView = React.memo(({
         () => sortedCheckins.find(entry => isSameWeek(parseEntryDate(entry))) || null,
         [sortedCheckins]
     );
-    const featuredReport = thisWeekReport || ((isReadOnly || hideForm) ? sortedCheckins[0] || null : null);
+    const featuredReport = thisWeekReport || ((isReadOnly || hideForm || isPreview) ? sortedCheckins[0] || null : null);
     const olderReports = useMemo(
         () => featuredReport ? sortedCheckins.filter(entry => entry.id !== featuredReport.id) : sortedCheckins,
         [sortedCheckins, featuredReport]
     );
-    const showForm = !isReadOnly && !hideForm && (composing || !thisWeekReport);
+    const showForm = !isPreview && !isReadOnly && !hideForm && (composing || !thisWeekReport);
     const planWeek = getPlanWeek(startDate, totalWeeks);
     const weekRange = formatWeekRange(featuredReport ? parseEntryDate(featuredReport) : new Date());
     const hasDraftContent = Boolean(
@@ -417,12 +417,13 @@ const CheckInView = React.memo(({
     const dismissDraftNotice = useCallback(() => setRestoredDraft(false), []);
 
     const startCompose = useCallback(() => {
+        if (isPreview) return;
         setFormData(INITIAL_FORM_DATA);
         setRestoredDraft(false);
         setErrorMessage('');
         setWeightFieldError('');
         setComposing(true);
-    }, []);
+    }, [isPreview]);
 
     const cancelCompose = useCallback(() => {
         setComposing(false);
@@ -447,7 +448,7 @@ const CheckInView = React.memo(({
         try {
             const newEntry = {
                 id: Date.now(),
-                date: new Date().toISOString().split('T')[0],
+                date: todayLocalISODate(),
                 timestamp: Date.now(),
                 ...formData
             };
@@ -664,7 +665,7 @@ const CheckInView = React.memo(({
                                 </div>
                             </div>
                             {renderReportBody(featuredReport)}
-                            {!isReadOnly && !hideForm && thisWeekReport && (
+                            {!isPreview && !isReadOnly && !hideForm && thisWeekReport && (
                                 <Button variant="secondary" size="sm" className="mt-5" onClick={startCompose}>
                                     <Plus size={16} /> Send ny rapport
                                 </Button>

@@ -12,16 +12,16 @@ const sql = async (strings, ...values) => {
   if (query.includes('SELECT role, is_archived')) {
     return [{ role: 'athlete', is_archived: false, current_period_id: null }];
   }
-  if (query.includes('SELECT start_date, paused_at')) {
-    return [{ start_date: '2026-09-01T00:00:00.000Z', paused_at: '2026-09-15T00:00:00.000Z' }];
+  if (query.includes('SELECT start_date AS "startDate"')) {
+    return [{ startDate: '2026-09-01T00:00:00.000Z', isPaused: false, pausedAt: null }];
   }
   if (query.includes('UPDATE users SET is_paused = true')) {
     lastUpdate = 'pause';
     return [{ startDate: '2026-09-01T00:00:00.000Z', isPaused: true, pausedAt: values[0] }];
   }
-  if (query.includes('UPDATE users SET start_date =')) {
+  if (query.includes('start_date + (NOW() - paused_at)')) {
     lastUpdate = 'resume';
-    return [{ startDate: values[0], isPaused: false, pausedAt: null }];
+    return [{ startDate: '2026-09-08T00:00:00.000Z', isPaused: false, pausedAt: null }];
   }
   throw new Error(`Unexpected query: ${query}`);
 };

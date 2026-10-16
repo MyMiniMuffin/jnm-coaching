@@ -8,7 +8,7 @@ import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
 import { useEscapeKey, useFocusTrap } from '../hooks';
 import { api } from '../lib/api';
-import { formatDateNO, formatWeight, getThumbnail, getFullSizeImage } from '../lib/formatters';
+import { formatDateNO, formatWeight, getThumbnail, getFullSizeImage, todayLocalISODate } from '../lib/formatters';
 import { IMAGE_ZOOM_PROPS } from '../lib/zoomConfig';
 import { haptic } from '../lib/haptic';
 import { downloadImagesArchive } from '../lib/downloadImage';
@@ -158,7 +158,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
     const [fullscreenCompare, setFullscreenCompare] = useState(false);
     const [showUploadModal, setShowUploadModal] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
-    const [uploadForm, setUploadForm] = useState({ label: 'Startbilde', date: new Date().toISOString().split('T')[0], weight: '' });
+    const [uploadForm, setUploadForm] = useState({ label: 'Startbilde', date: todayLocalISODate(), weight: '' });
     const [selectedUploadFiles, setSelectedUploadFiles] = useState([]);
     const [visibleImageCount, setVisibleImageCount] = useState(IMAGE_BATCH_SIZE);
     const [deletingImageId, setDeletingImageId] = useState(null);
@@ -443,7 +443,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
 
             setShowUploadModal(false);
             setSelectedUploadFiles([]);
-            setUploadForm({ label: 'Startbilde', date: new Date().toISOString().split('T')[0], weight: '' });
+            setUploadForm({ label: 'Startbilde', date: todayLocalISODate(), weight: '' });
         } catch (err) {
             console.error(err);
             toast(err.message || 'Bildeopplasting feilet', 'error');
@@ -499,7 +499,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
         setShowUploadModal(false);
         setSelectedUploadFiles([]);
         setUploadProgress('');
-        setUploadForm({ label: 'Startbilde', date: new Date().toISOString().split('T')[0], weight: '' });
+        setUploadForm({ label: 'Startbilde', date: todayLocalISODate(), weight: '' });
     }, [isUploading]);
 
     const closeFullscreenCompare = useCallback(() => {

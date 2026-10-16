@@ -207,13 +207,14 @@ exports.handler = async (event) => {
         return { statusCode: 403, body: JSON.stringify({ error: 'Kan ikke slette en annen coach' }) };
       }
 
-      // Slett brukerens relaterte data først (pga database-regler)
-      await Promise.all([
+      // Slett i rekkefølge i én transaksjon: nullstill FK-er før perioder/bruker fjernes
+      await sql.transaction([
+        sql`UPDATE users SET current_period_id = NULL WHERE id = ${userId}`,
         sql`DELETE FROM checkins WHERE user_id = ${userId}`,
+        sql`DELETE FROM gallery_images WHERE user_id = ${userId}`,
         sql`DELETE FROM coaching_periods WHERE user_id = ${userId}`,
-        sql`DELETE FROM gallery_images WHERE user_id = ${userId}`
+        sql`DELETE FROM users WHERE id = ${userId}`
       ]);
-      await sql`DELETE FROM users WHERE id = ${userId}`;
       
       const allUsers = await getFormattedUsersList();
       return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(allUsers) };

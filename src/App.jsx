@@ -9,6 +9,7 @@ import { clearUiState, isUiStateFresh, readUiState, saveUiState } from './lib/ui
 import { getNotificationPermission, prefetchViews, supportsPushNotifications, urlBase64ToUint8Array } from './lib/browserCapabilities';
 import { setAppBadgeCount, unreadCheckinTotal } from './lib/appBadge';
 import { haptic } from './lib/haptic';
+import { todayLocalISODate } from './lib/formatters';
 
 // Hooks
 import { useSwipe, usePullToRefresh, useOnlineStatus, useDesktop } from './hooks';
@@ -810,18 +811,22 @@ const App = () => {
             setAllUsers(prev => prev.map(u =>
                 u.id === client.id ? { ...u, unreadCheckins: 0 } : u
             ));
+            // Hold poll-snapshot i sync, ellers mistes varsel hvis N nye rapporter kommer før neste poll.
+            coachUnreadSnapshotRef.current.set(client.id, 0);
             api.markCheckinsRead(client.id).then(result => {
                 if (result.authError) {
                     setShowReauthPrompt(true);
                     setAllUsers(prev => prev.map(u =>
                         u.id === client.id ? { ...u, unreadCheckins: previousUnread } : u
                     ));
+                    coachUnreadSnapshotRef.current.set(client.id, previousUnread);
                 }
             }).catch(e => {
                 console.error('Kunne ikke markere innsjekk som lest:', e);
                 setAllUsers(prev => prev.map(u =>
                     u.id === client.id ? { ...u, unreadCheckins: previousUnread } : u
                 ));
+                coachUnreadSnapshotRef.current.set(client.id, previousUnread);
             });
         }
     }, []);
@@ -1011,7 +1016,7 @@ const App = () => {
             id: tempId,
             url: imageUrl,
             label: label || 'Startbilde',
-            date: date || new Date().toISOString().split('T')[0],
+            date: date || todayLocalISODate(),
             weight: weight ? parseFloat(weight) : null,
             timestamp: Date.now()
         };
@@ -1161,7 +1166,8 @@ const App = () => {
 
     const isCoach = currentUser.role === 'coach' && !isClientPreview;
     const displayUser = isClientPreview ? viewingClient : currentUser;
-    const isArchived = displayUser?.is_archived && !isCoach;
+    // Arkiv-veggen er kun for innloggede utøvere — coach (inkl. forhåndsvisning) skal se vanlig UI.
+    const isArchived = Boolean(displayUser?.is_archived) && currentUser.role !== 'coach';
     const toggleClientPreview = () => {
         setIsClientPreview(value => !value);
         setShowWeightHistory(false);

@@ -7,7 +7,7 @@ import { Card, Badge, Button, IconButton, TextField } from '../components/ui';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
 import { useFocusTrap } from '../hooks';
-import { formatDateNO, formatWeight } from '../lib/formatters';
+import { formatDateNO, formatWeight, toDateInputValue } from '../lib/formatters';
 import { haptic } from '../lib/haptic';
 
 const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCreatePeriod, onEndPeriod, onUpdatePeriod, onDeletePeriod }) => {
@@ -134,6 +134,7 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                                         onChange={(e) => handleEditFieldChange('name', e.target.value)}
                                                         placeholder="Navn på runde"
                                                         autoFocus
+                                                        error={editError}
                                                     />
                                                     <TextField
                                                         id="active-period-start-date"
@@ -143,7 +144,6 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                                         onChange={(e) => handleEditFieldChange('startDate', e.target.value)}
                                                         disabled={isLoading}
                                                         required
-                                                        error={editError}
                                                     />
                                                     <div className="flex gap-2">
                                                         <Button
@@ -390,14 +390,14 @@ const PlanSettingsModal = React.memo(({ userData, onClose, onUpdateData, onOpenP
     const confirmDialog = useConfirm();
     const modalRef = useFocusTrap(true);
     const [startDate, setStartDate] = useState(
-        userData.startDate ? new Date(userData.startDate).toISOString().split('T')[0] : ''
+        userData.startDate ? toDateInputValue(userData.startDate) : ''
     );
     const [totalWeeks, setTotalWeeks] = useState(String(userData.totalWeeks || 12));
     const [stepGoal, setStepGoal] = useState(String(userData.stepGoal || 10000));
     const [isSaving, setIsSaving] = useState(false);
     const [saveError, setSaveError] = useState('');
 
-    const origStartDate = userData.startDate ? new Date(userData.startDate).toISOString().split('T')[0] : '';
+    const origStartDate = userData.startDate ? toDateInputValue(userData.startDate) : '';
     const origTotalWeeks = String(userData.totalWeeks || 12);
     const origStepGoal = String(userData.stepGoal || 10000);
 
