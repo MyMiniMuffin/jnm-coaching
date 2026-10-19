@@ -29,12 +29,12 @@ self.addEventListener('push', (event) => {
     data = event.data ? event.data.json() : {};
   } catch (error) {
     data = {
-      title: 'Ny check-in mottatt',
+      title: 'Ny rapport mottatt',
       body: event.data ? event.data.text() : 'En utøver har sendt inn en ny rapport.'
     };
   }
 
-  const title = data.title || 'Ny check-in mottatt';
+  const title = data.title || 'Ny rapport mottatt';
   const options = {
     body: data.body || 'En utøver har sendt inn en ny rapport.',
     icon: data.icon || '/icon-192.png',

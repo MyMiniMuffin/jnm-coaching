@@ -3,12 +3,12 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Camera, X, Loader2, Plus, Eye, TrendingUp, TrendingDown, Minus, Download, Check, Trash2 } from 'lucide-react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
-import { Card, Button, EmptyState, IconButton, TextField } from '../components/ui';
+import { Card, Button, EmptyState, IconButton, PageTitle, TextField } from '../components/ui';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
 import { useEscapeKey, useFocusTrap } from '../hooks';
 import { api } from '../lib/api';
-import { formatDateNO, formatWeight, getThumbnail, getFullSizeImage } from '../lib/formatters';
+import { formatDateNO, formatWeight, getThumbnail, getFullSizeImage, todayLocalISODate } from '../lib/formatters';
 import { IMAGE_ZOOM_PROPS } from '../lib/zoomConfig';
 import { haptic } from '../lib/haptic';
 import { downloadImagesArchive } from '../lib/downloadImage';
@@ -158,7 +158,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
     const [fullscreenCompare, setFullscreenCompare] = useState(false);
     const [showUploadModal, setShowUploadModal] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
-    const [uploadForm, setUploadForm] = useState({ label: 'Startbilde', date: new Date().toISOString().split('T')[0], weight: '' });
+    const [uploadForm, setUploadForm] = useState({ label: 'Startbilde', date: todayLocalISODate(), weight: '' });
     const [selectedUploadFiles, setSelectedUploadFiles] = useState([]);
     const [visibleImageCount, setVisibleImageCount] = useState(IMAGE_BATCH_SIZE);
     const [deletingImageId, setDeletingImageId] = useState(null);
@@ -443,7 +443,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
 
             setShowUploadModal(false);
             setSelectedUploadFiles([]);
-            setUploadForm({ label: 'Startbilde', date: new Date().toISOString().split('T')[0], weight: '' });
+            setUploadForm({ label: 'Startbilde', date: todayLocalISODate(), weight: '' });
         } catch (err) {
             console.error(err);
             toast(err.message || 'Bildeopplasting feilet', 'error');
@@ -499,7 +499,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
         setShowUploadModal(false);
         setSelectedUploadFiles([]);
         setUploadProgress('');
-        setUploadForm({ label: 'Startbilde', date: new Date().toISOString().split('T')[0], weight: '' });
+        setUploadForm({ label: 'Startbilde', date: todayLocalISODate(), weight: '' });
     }, [isUploading]);
 
     const closeFullscreenCompare = useCallback(() => {
@@ -574,7 +574,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                 <EmptyState
                     icon={Camera}
                     title="Ingen bilder enda"
-                    description="Bilder fra ukesrapporter vil vises her"
+                    description="Bilder fra ukesrapporter vises her."
                     action={isCoach && onAddGalleryImage ? (
                         <Button variant="primary" size="md" onClick={() => setShowUploadModal(true)}>
                             <Plus size={18} /> Last opp startbilde
@@ -616,9 +616,9 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
             <div ref={compareTopRef} className="space-y-3 scroll-mt-4">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="min-w-0 mr-auto">
-                        <h2 className="text-[1.7rem] leading-none font-display">
+                        <PageTitle>
                             {viewMode === 'compare' ? 'Sammenlign' : 'Fremgangsgalleri'}
-                        </h2>
+                        </PageTitle>
                         <p className="text-sm text-ink-muted mt-1">
                             {viewMode === 'compare' ? 'Velg bilder å sammenligne' : `${allImages.length} bilder`}
                         </p>

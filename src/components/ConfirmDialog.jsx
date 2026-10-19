@@ -47,7 +47,7 @@ export const ConfirmProvider = ({ children }) => {
                                 <AlertTriangle size={20} />
                             </div>
                             <div>
-                                {state.title && <h3 id="confirm-dialog-title" className="font-display text-lg mb-1">{state.title}</h3>}
+                                {state.title && <h2 id="confirm-dialog-title" className="font-display text-xl mb-1">{state.title}</h2>}
                                 <p id="confirm-dialog-message" className="text-ink-muted text-sm">{state.message}</p>
                             </div>
                         </div>

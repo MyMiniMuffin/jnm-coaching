@@ -83,7 +83,7 @@ const NamedPlansSection = ({ type, content, onSave, isReadOnly, isArchived = fal
         <div className="space-y-5">
             {isArchived && (
                 <p role="status" className="rounded-xl border border-surface-200 bg-surface-100 px-4 py-3 text-sm text-ink-muted">
-                    Klienten er arkivert. Gjenopprett klienten under «Klienter» før du endrer {isDiet ? 'diettene' : 'treningsplanene'}.
+                    Utøveren er arkivert. Gjenopprett utøveren fra utøverlisten før du endrer {isDiet ? 'diettene' : 'treningsplanene'}.
                 </p>
             )}
             {(showPlanPicker || !isReadOnly) && <Card className="p-4 sm:p-5">
@@ -147,7 +147,7 @@ const NamedPlansSection = ({ type, content, onSave, isReadOnly, isArchived = fal
                             value={name}
                             onChange={event => setName(event.target.value)}
                             placeholder={isDiet ? 'For eksempel: Treningsdager' : 'For eksempel: Deload'}
-                            className="h-11 min-w-0 w-full flex-none sm:w-auto sm:flex-1 rounded-lg border border-surface-200 bg-white px-3 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent"
+                            className="h-11 min-w-0 w-full flex-none sm:w-auto sm:flex-1 rounded-xl border border-surface-200 bg-surface-50 px-4 text-sm font-medium placeholder-ink-faint outline-none focus:border-accent focus:ring-2 focus:ring-accent"
                         />
                         <Button type="submit" size="sm" disabled={!canSaveName}>
                             <Check size={16} /> {nameMode === 'new' ? 'Opprett' : 'Lagre navn'}
@@ -155,7 +155,7 @@ const NamedPlansSection = ({ type, content, onSave, isReadOnly, isArchived = fal
                         <Button type="button" variant="ghost" size="sm" disabled={isSaving} onClick={() => setNameMode(null)} aria-label="Avbryt navnendring">
                             <X size={16} />
                         </Button>
-                        {duplicateName && <p className="w-full text-xs text-error">Dette navnet er allerede i bruk.</p>}
+                        {duplicateName && <p role="alert" className="w-full text-xs text-error">Dette navnet er allerede i bruk.</p>}
                     </form>
                 )}
             </Card>}

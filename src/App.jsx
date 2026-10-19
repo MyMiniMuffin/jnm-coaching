@@ -10,13 +10,14 @@ import { getNotificationPermission, prefetchViews, supportsPushNotifications, ur
 import { isNativeApp } from './lib/platform';
 import { setAppBadgeCount, unreadCheckinTotal } from './lib/appBadge';
 import { haptic } from './lib/haptic';
+import { todayLocalISODate } from './lib/formatters';
 
 // Hooks
 import { useSwipe, usePullToRefresh, useOnlineStatus, useDesktop } from './hooks';
 import { useActivity } from './lib/useActivity';
 
 // Components (eagerly loaded — small and used everywhere)
-import { Skeleton, Button } from './components/ui';
+import { Skeleton, Button, IconButton, PageTitle } from './components/ui';
 import { useToast } from './components/Toast';
 import LoginScreen from './components/LoginScreen';
 import ReauthPrompt from './components/ReauthPrompt';
@@ -157,7 +158,7 @@ const App = () => {
             ? clientsWithNewCheckins.map(client => `${client.name}: +${client.delta}`).join(', ')
             : 'Trykk deg inn i appen for å lese rapporten.';
 
-        const notification = new Notification('Ny check-in mottatt', {
+        const notification = new Notification('Ny rapport mottatt', {
             body,
             icon: '/icon-192.png',
             badge: '/icon-192.png',
@@ -172,16 +173,29 @@ const App = () => {
 
     const applyUsersList = useCallback((nextUsers, { notify = false } = {}) => {
         if (!Array.isArray(nextUsers)) return;
-        setAllUsers(nextUsers);
+        const normalizedUsers = nextUsers.map(user => (
+            user && typeof user === 'object'
+                ? { ...user, is_archived: Boolean(user.is_archived) }
+                : user
+        ));
+        setAllUsers(normalizedUsers);
 
         setCurrentUser(prevUser => {
             if (!prevUser) return prevUser;
-            const refreshedUser = nextUsers.find(user => user.id === prevUser.id);
+            const refreshedUser = normalizedUsers.find(user => user.id === prevUser.id);
             return refreshedUser ? { ...prevUser, ...refreshedUser } : prevUser;
         });
 
+        // Hold åpen klient i sync med arkivstatus fra listen, ellers kan diet/trening
+        // og andre arkiv-guards bruke utdatert is_archived.
+        setViewingClient(prevClient => {
+            if (!prevClient) return prevClient;
+            const refreshedClient = normalizedUsers.find(user => user.id === prevClient.id);
+            return refreshedClient ? { ...prevClient, ...refreshedClient } : prevClient;
+        });
+
         const nextUnreadSnapshot = new Map(
-            nextUsers
+            normalizedUsers
                 .filter(user => user.role === 'athlete')
                 .map(user => [user.id, Number(user.unreadCheckins) || 0])
         );
@@ -193,7 +207,7 @@ const App = () => {
         }
 
         if (notify) {
-            const clientsWithNewCheckins = nextUsers
+            const clientsWithNewCheckins = normalizedUsers
                 .filter(user => user.role === 'athlete')
                 .map(user => {
                     const previousUnread = coachUnreadSnapshotRef.current.get(user.id) || 0;
@@ -428,8 +442,9 @@ const App = () => {
             }
         };
 
+        // Ikke poll i bakgrunnen; visibilitychange henter ferske data ved retur.
         const intervalId = window.setInterval(() => {
-            refreshUsers(true);
+            if (document.visibilityState === 'visible') refreshUsers(true);
         }, 60000);
 
         setIsUsersLoading(true);
@@ -530,7 +545,7 @@ const App = () => {
         }
         const savedCheckin = result.data?.checkin;
         if (!savedCheckin) {
-            throw new Error('Mangler lagret check-in fra serveren');
+            throw new Error('Mangler lagret rapport fra serveren');
         }
         setCurrentData(prev => ({
             ...prev,
@@ -543,7 +558,7 @@ const App = () => {
     const periodActionSavingRef = React.useRef(false);
 
     const handleUpdateData = useCallback(async (keyOrObj, value) => {
-        if (!viewingClient) return { error: 'Velg en klient før du lagrer.' };
+        if (!viewingClient) return { error: 'Velg en utøver før du lagrer.' };
 
         const updates = typeof keyOrObj === 'string' ? { [keyOrObj]: value } : keyOrObj;
         const isPeriodAction = ['create_period', 'end_period', 'update_period', 'delete_period'].includes(updates?.action);
@@ -810,18 +825,22 @@ const App = () => {
             setAllUsers(prev => prev.map(u =>
                 u.id === client.id ? { ...u, unreadCheckins: 0 } : u
             ));
+            // Hold poll-snapshot i sync, ellers mistes varsel hvis N nye rapporter kommer før neste poll.
+            coachUnreadSnapshotRef.current.set(client.id, 0);
             api.markCheckinsRead(client.id).then(result => {
                 if (result.authError) {
                     setShowReauthPrompt(true);
                     setAllUsers(prev => prev.map(u =>
                         u.id === client.id ? { ...u, unreadCheckins: previousUnread } : u
                     ));
+                    coachUnreadSnapshotRef.current.set(client.id, previousUnread);
                 }
             }).catch(e => {
                 console.error('Kunne ikke markere innsjekk som lest:', e);
                 setAllUsers(prev => prev.map(u =>
                     u.id === client.id ? { ...u, unreadCheckins: previousUnread } : u
                 ));
+                coachUnreadSnapshotRef.current.set(client.id, previousUnread);
             });
         }
     }, []);
@@ -1011,7 +1030,7 @@ const App = () => {
             id: tempId,
             url: imageUrl,
             label: label || 'Startbilde',
-            date: date || new Date().toISOString().split('T')[0],
+            date: date || todayLocalISODate(),
             weight: weight ? parseFloat(weight) : null,
             timestamp: Date.now()
         };
@@ -1161,7 +1180,8 @@ const App = () => {
 
     const isCoach = currentUser.role === 'coach' && !isClientPreview;
     const displayUser = isClientPreview ? viewingClient : currentUser;
-    const isArchived = displayUser?.is_archived && !isCoach;
+    // Arkiv-veggen er kun for innloggede utøvere — coach (inkl. forhåndsvisning) skal se vanlig UI.
+    const isArchived = Boolean(displayUser?.is_archived) && currentUser.role !== 'coach';
     const toggleClientPreview = () => {
         setIsClientPreview(value => !value);
         setShowWeightHistory(false);
@@ -1182,7 +1202,7 @@ const App = () => {
                         <div className="w-20 h-20 bg-surface-100 rounded-xl flex items-center justify-center text-ink-muted mb-6">
                             <Pause size={40} />
                         </div>
-                        <h2 className="text-2xl font-display text-ink mb-3">Kontoen er pauset</h2>
+                        <PageTitle className="mb-3">Kontoen er pauset</PageTitle>
                         <p className="text-ink-muted leading-relaxed mb-8">
                             Din konto er for øyeblikket satt på pause av coachen din.
                             Du kan fortsatt se historikken din, men kan ikke sende inn nye rapporter.
@@ -1210,16 +1230,19 @@ const App = () => {
 
                     {activeTab === 'history' && (
                         <div className="fixed inset-0 bg-surface-50 z-50 overflow-auto">
-                            <div className="sticky top-0 bg-surface-50/95 backdrop-blur-md border-b border-surface-200 px-4 py-4 flex items-center gap-3">
-                                <button type="button" onClick={() => setActiveTab('dashboard')} aria-label="Tilbake til dashboard" className="p-2 hover:bg-surface-100 rounded-xl">
-                                    <ChevronLeft size={24} />
-                                </button>
-                                <h2 className="text-xl font-display">Din historikk</h2>
+                            <div className="sticky top-0 z-10 border-b border-surface-200 bg-surface-50/95 backdrop-blur-md">
+                                <div className="app-header-top-inset" aria-hidden="true" />
+                                <div className="header-inner flex items-center gap-3 px-4 py-3 lg:px-8 lg:py-4">
+                                    <IconButton onClick={() => setActiveTab('dashboard')} aria-label="Tilbake til dashboard" className="-ml-2">
+                                        <ChevronLeft size={22} />
+                                    </IconButton>
+                                    <PageTitle>Din historikk</PageTitle>
+                                </div>
                             </div>
                             <div className="p-4 pb-8">
-                                <ViewErrorBoundary><Suspense fallback={<ViewSkeleton />}>
+                                <ViewErrorBoundary resetKey="archived-history"><Suspense fallback={<ViewSkeleton />}>
                                     <CheckInView
-                                        checkins={currentData.checkins}
+                                        checkins={currentData.checkins || []}
                                         onNewCheckin={() => {}}
                                         onDelete={() => {}}
                                         isReadOnly={true}
@@ -1294,7 +1317,8 @@ const App = () => {
                         </div>
                     </div>
                 ) : (
-                    <ViewErrorBoundary><Suspense fallback={<ViewSkeleton tab={activeTab} />}>
+                    <ViewErrorBoundary resetKey={`${activeTab}-${showWeightHistory ? 'weight' : 'main'}-${viewingClient?.id || 'self'}`}>
+                        <Suspense fallback={<ViewSkeleton tab={activeTab} />}>
                         <div
                             key={`${activeTab}-${isClientPreview ? 'preview' : 'coach'}`}
                             className={`${swipeDirection !== 'none' ? `view-enter view-enter-${swipeDirection}` : ''} ${swipeEdge ? `view-edge-${swipeEdge}` : ''}`}
@@ -1302,8 +1326,8 @@ const App = () => {
                             {activeTab === 'dashboard' ? (
                                 showWeightHistory ? (
                                     <WeightProgressView
-                                        checkins={currentData.checkins}
-                                        periods={currentData.periods}
+                                        checkins={currentData.checkins || []}
+                                        periods={currentData.periods || []}
                                         onBack={handleCloseWeightHistory}
                                     />
                                 ) : (
@@ -1311,7 +1335,7 @@ const App = () => {
                                 )
                             ) :
                             activeTab === 'gallery' ? <GalleryView
-                                checkins={currentData.checkins}
+                                checkins={currentData.checkins || []}
                                 galleryImages={currentData.galleryImages || []}
                                 isCoach={isCoach}
                                 uploadUserId={viewingClient?.id}
@@ -1320,9 +1344,10 @@ const App = () => {
                             /> :
                             activeTab === 'diet' ? <DietPlansSection content={currentData.dietPlan} onSave={handleSaveDietPlan} isReadOnly={!isCoach || Boolean(viewingClient?.is_archived)} isArchived={Boolean(isCoach && viewingClient?.is_archived)} /> :
                             activeTab === 'workout' ? <WorkoutPlansSection content={currentData.workoutPlan} onSave={handleSaveWorkoutPlan} isReadOnly={!isCoach || Boolean(viewingClient?.is_archived)} isArchived={Boolean(isCoach && viewingClient?.is_archived)} /> :
-                            <CheckInView canDownloadImages={isCoach} checkins={currentData.checkins} onNewCheckin={handleNewCheckin} onDelete={handleDeleteCheckin} onUpdate={handleUpdateCheckin} canEdit={Boolean(viewingClient) && !isClientPreview} isReadOnly={isCoach} isPreview={isClientPreview} canDelete={Boolean(viewingClient) && !isClientPreview} stepGoal={currentData.stepGoal} draftKey={viewingClient?.id || currentUser?.id || 'default'} uploadUserId={viewingClient?.id} startDate={currentData.startDate} totalWeeks={currentData.totalWeeks} />}
+                            <CheckInView canDownloadImages={isCoach} checkins={currentData.checkins || []} onNewCheckin={handleNewCheckin} onDelete={handleDeleteCheckin} onUpdate={handleUpdateCheckin} canEdit={Boolean(viewingClient) && !isClientPreview} isReadOnly={isCoach} isPreview={isClientPreview} canDelete={Boolean(viewingClient) && !isClientPreview} stepGoal={currentData.stepGoal} draftKey={viewingClient?.id || currentUser?.id || 'default'} uploadUserId={viewingClient?.id} startDate={currentData.startDate} totalWeeks={currentData.totalWeeks} />}
                         </div>
-                    </Suspense></ViewErrorBoundary>
+                        </Suspense>
+                    </ViewErrorBoundary>
                 )}
             </main>
             </div>

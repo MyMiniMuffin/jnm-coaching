@@ -33,7 +33,10 @@ module.exports = {
           training: '#526B85',
         },
         success: '#546B3E',
-        warning: '#CA8A04',
+        warning: {
+          DEFAULT: '#CA8A04',
+          ink: '#854D0E',
+        },
         error: '#DC2626',
       },
       animation: {

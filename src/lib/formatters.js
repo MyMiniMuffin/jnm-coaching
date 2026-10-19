@@ -32,6 +32,24 @@ const toLocalDate = (value) => {
     return Number.isNaN(parsed.getTime()) ? null : parsed;
 };
 
+/** Lokal kalenderdato som YYYY-MM-DD (unngår UTC-forskyvning fra toISOString). */
+export const todayLocalISODate = (value = new Date()) => {
+    const date = value instanceof Date ? value : toLocalDate(value);
+    if (!date || Number.isNaN(date.getTime())) return '';
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
+/** Verdi for <input type="date">: bruk YYYY-MM-DD-prefiks når det finnes. */
+export const toDateInputValue = (value) => {
+    if (!value && value !== 0) return '';
+    const prefix = String(value).split('T')[0];
+    if (/^\d{4}-\d{2}-\d{2}$/.test(prefix)) return prefix;
+    return todayLocalISODate(value);
+};
+
 export const formatDateNO = (dateString) => {
     const date = toLocalDate(dateString);
     if (!date) return '';

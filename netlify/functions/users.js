@@ -13,7 +13,9 @@ if (!process.env.NETLIFY_DATABASE_URL) {
 // Gjenbruk SQL-tilkobling mellom warm invocations
 const sql = neon(process.env.NETLIFY_DATABASE_URL);
 
-// Felles query for å hente formatert brukerliste — én query uten korrelert subquery
+// Felles query for å hente formatert brukerliste. Siste rapport hentes med
+// LATERAL ... LIMIT 1 per bruker, slik at idx_checkins_user_created brukes i
+// stedet for å sortere hele checkins-tabellen ved hver coach-polling.
 const getFormattedUsersList = () => sql`
   SELECT
     u.id, u.username, u.name, u.role, u.start_date, u.is_archived,
@@ -27,12 +29,13 @@ const getFormattedUsersList = () => sql`
     WHERE is_read = false
     GROUP BY user_id
   ) unread ON unread.user_id = u.id
-  LEFT JOIN (
-    SELECT DISTINCT ON (user_id)
-      user_id, LEFT(date::text, 10) as last_date
-    FROM checkins
-    ORDER BY user_id, created_at DESC
-  ) latest ON latest.user_id = u.id
+  LEFT JOIN LATERAL (
+    SELECT LEFT(c.date::text, 10) as last_date
+    FROM checkins c
+    WHERE c.user_id = u.id
+    ORDER BY c.created_at DESC
+    LIMIT 1
+  ) latest ON true
   ORDER BY u.name ASC
 `;
 
@@ -204,13 +207,14 @@ exports.handler = async (event) => {
         return { statusCode: 403, body: JSON.stringify({ error: 'Kan ikke slette en annen coach' }) };
       }
 
-      // Slett brukerens relaterte data først (pga database-regler)
-      await Promise.all([
+      // Slett i rekkefølge i én transaksjon: nullstill FK-er før perioder/bruker fjernes
+      await sql.transaction([
+        sql`UPDATE users SET current_period_id = NULL WHERE id = ${userId}`,
         sql`DELETE FROM checkins WHERE user_id = ${userId}`,
+        sql`DELETE FROM gallery_images WHERE user_id = ${userId}`,
         sql`DELETE FROM coaching_periods WHERE user_id = ${userId}`,
-        sql`DELETE FROM gallery_images WHERE user_id = ${userId}`
+        sql`DELETE FROM users WHERE id = ${userId}`
       ]);
-      await sql`DELETE FROM users WHERE id = ${userId}`;
       
       const allUsers = await getFormattedUsersList();
       return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(allUsers) };

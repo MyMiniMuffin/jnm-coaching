@@ -1,12 +1,13 @@
 import React from 'react';
 import AccountMenu from './AccountMenu';
 import { LogOut, ChevronLeft, WifiOff, Eye } from 'lucide-react';
+import { IconButton } from './ui';
 
 const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOffline = false, isClientPreview = false, onToggleClientPreview, previewDisabled = false }) => (
     <header className="app-header sticky top-0 z-40 border-b border-surface-200/80 bg-surface-50">
         <div className="app-header-top-inset" aria-hidden="true" />
         {isOffline && (
-            <div className="bg-warning text-white text-center text-sm py-2 px-4 flex items-center justify-center gap-2">
+            <div className="bg-warning text-ink text-center text-sm py-2 px-4 flex items-center justify-center gap-2">
                 <WifiOff size={14} /> Ingen nettilkobling — viser lagrede data
             </div>
         )}
@@ -14,7 +15,7 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
             <div className="border-b border-accent/20 bg-accent/10 px-4 py-3 lg:px-0" role="status">
                 <div className="header-inner flex flex-wrap items-center justify-between gap-2">
                     <div className="min-w-0">
-                        <p className="flex items-center gap-2 text-sm font-semibold text-ink"><Eye size={16} /> Klientvisning</p>
+                        <p className="flex items-center gap-2 text-sm font-semibold text-ink"><Eye size={16} /> Utøvervisning</p>
                         <p className="mt-1 text-xs text-ink-muted">Forhåndsvisning · Endringer og innsending er deaktivert.</p>
                     </div>
                     <button type="button" onClick={onToggleClientPreview} className="min-h-11 rounded-lg px-3 py-2 text-sm font-semibold text-accent hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
@@ -24,42 +25,40 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
             </div>
         )}
         {viewingClient ? (
-            <div className="header-inner flex flex-wrap items-center px-3 py-3 gap-2 lg:px-8 lg:py-4">
+            <div className="header-inner flex items-center px-3 py-3 gap-1 lg:gap-2 lg:px-8 lg:py-4">
                 <button
                     type="button"
                     onClick={onClearClient}
-                    aria-label="Tilbake til klientliste"
+                    aria-label="Tilbake til utøverlisten"
                     className="flex min-h-11 items-center gap-0.5 rounded-lg px-2.5 py-2 text-accent transition-colors hover:bg-surface-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent shrink-0"
                 >
                     <ChevronLeft size={20} strokeWidth={2.5} />
-                    <span className="text-sm font-medium">Klienter</span>
+                    <span className="text-sm font-medium">Utøvere</span>
                 </button>
                 <div className="flex-1 text-center min-w-0 lg:text-left">
                     <p className="font-semibold text-ink truncate leading-6">{viewingClient.name}</p>
                     <p className="truncate text-[11px] leading-4 text-ink-muted">@{viewingClient.username}</p>
                 </div>
                 {onToggleClientPreview && (
-                    <button type="button" onClick={onToggleClientPreview} disabled={previewDisabled} className="order-last flex w-full min-h-11 shrink-0 items-center justify-center gap-1.5 sm:order-none sm:w-auto rounded-lg px-2.5 py-2 text-xs font-medium text-accent hover:bg-surface-100 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:text-sm">
-                        <Eye size={18} /> Vis som klient
-                    </button>
+                    <IconButton onClick={onToggleClientPreview} disabled={previewDisabled} aria-label="Vis som utøver" title="Vis som utøver" className="shrink-0 gap-1.5 disabled:opacity-50 lg:px-3">
+                        <Eye size={20} />
+                        <span className="hidden text-sm font-medium lg:inline">Vis som utøver</span>
+                    </IconButton>
                 )}
                 <AccountMenu user={isClientPreview ? null : user} />
-                <button
-                    type="button"
-                    onClick={onLogout}
-                    aria-label="Logg ut"
-                    className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-ink-muted transition-colors hover:bg-surface-100 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent shrink-0"
-                >
+                <IconButton onClick={onLogout} aria-label="Logg ut" className="shrink-0">
                     <LogOut size={20} />
-                </button>
+                </IconButton>
             </div>
         ) : (
             <div className="header-inner flex justify-between items-center px-5 py-3 lg:px-8 lg:py-4">
                 <p className="font-semibold text-ink truncate min-w-0">{user.name}</p>
-                <div className="flex items-center gap-1"><AccountMenu user={isClientPreview ? null : user} />
-                <button type="button" onClick={onLogout} aria-label="Logg ut" className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-ink-muted transition-colors hover:bg-surface-100 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent shrink-0">
-                    <LogOut size={20} />
-                </button></div>
+                <div className="flex items-center gap-1">
+                    <AccountMenu user={isClientPreview ? null : user} />
+                    <IconButton onClick={onLogout} aria-label="Logg ut" className="shrink-0">
+                        <LogOut size={20} />
+                    </IconButton>
+                </div>
             </div>
         )}
     </header>

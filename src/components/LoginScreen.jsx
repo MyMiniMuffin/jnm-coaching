@@ -107,7 +107,7 @@ const LoginScreen = React.memo(({ onLogin }) => {
                             </button>
                         </div>
                         {isCapsLockOn && (
-                            <p className="text-warning bg-warning/10 border border-warning/20 px-3 py-2 rounded-xl text-sm mt-2">
+                            <p className="text-warning-ink bg-warning/10 border border-warning/20 px-3 py-2 rounded-xl text-sm mt-2">
                                 Caps Lock er på. Det kan gjøre passordet feil.
                             </p>
                         )}

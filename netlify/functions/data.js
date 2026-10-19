@@ -44,7 +44,7 @@ const sendCoachPushNotifications = async ({ athleteId, athleteName, unreadCount,
     if (!subscriptions.length) return;
 
     const payload = JSON.stringify({
-      title: 'Ny check-in mottatt',
+      title: 'Ny rapport mottatt',
       body: unreadCount > 1
         ? `${athleteName} har nå ${unreadCount} uleste rapporter.`
         : `${athleteName} har sendt inn en ny rapport.`,
@@ -53,7 +53,7 @@ const sendCoachPushNotifications = async ({ athleteId, athleteName, unreadCount,
       clientId: athleteId,
       icon: '/icon-192.png',
       badge: '/icon-192.png',
-      unreadTotal: unreadTotal || unreadCount || 1
+      unreadTotal: unreadTotal ?? unreadCount ?? 1
     });
 
     await Promise.allSettled(subscriptions.map(async (subscription) => {
@@ -77,6 +77,20 @@ const sendCoachPushNotifications = async ({ athleteId, athleteName, unreadCount,
   } catch (error) {
     console.error('Kunne ikke sende coach-pushvarsler:', error);
   }
+};
+
+/** Avvis datoer som JS Date ruller framover (f.eks. 2023-02-29 → 2023-03-01). */
+const isValidCalendarDate = (dateStr) => {
+  if (!dateStr || typeof dateStr !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    return false;
+  }
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  return (
+    parsed.getUTCFullYear() === year &&
+    parsed.getUTCMonth() === month - 1 &&
+    parsed.getUTCDate() === day
+  );
 };
 
 // Validering av checkin-data
@@ -353,41 +367,44 @@ exports.handler = async (event) => {
       }
 
       if (type === 'plan_update') {
-        // PAUSE/RESUME håndteres separat for å unngå race conditions
+        // PAUSE/RESUME: WHERE-klausuler gjør operasjonene idempotente under concurrent requests
         if (data.action === 'pause') {
           const now = new Date().toISOString();
           const updated = await sql`
             UPDATE users SET is_paused = true, paused_at = ${now}
-            WHERE id = ${userId}
+            WHERE id = ${userId} AND COALESCE(is_paused, false) = false
             RETURNING start_date AS "startDate", is_paused AS "isPaused", paused_at AS "pausedAt"
           `;
-          return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ success: true, ...updated[0] }) };
-        } else if (data.action === 'resume') {
-          const userRes = await sql`SELECT start_date, paused_at FROM users WHERE id = ${userId}`;
-          const u = userRes[0];
-
-          if (u && u.paused_at && u.start_date) {
-            const pauseStart = new Date(u.paused_at);
-            const now = new Date();
-            const diffTime = now - pauseStart;
-
-            const oldStart = new Date(u.start_date);
-            const newStart = new Date(oldStart.getTime() + diffTime).toISOString();
-
-            const updated = await sql`
-              UPDATE users SET start_date = ${newStart}, is_paused = false, paused_at = NULL
-              WHERE id = ${userId}
-              RETURNING start_date AS "startDate", is_paused AS "isPaused", paused_at AS "pausedAt"
-            `;
-            return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ success: true, ...updated[0] }) };
-          } else {
-            const updated = await sql`
-              UPDATE users SET is_paused = false, paused_at = NULL
-              WHERE id = ${userId}
-              RETURNING start_date AS "startDate", is_paused AS "isPaused", paused_at AS "pausedAt"
-            `;
+          if (updated[0]) {
             return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ success: true, ...updated[0] }) };
           }
+          const current = await sql`
+            SELECT start_date AS "startDate", is_paused AS "isPaused", paused_at AS "pausedAt"
+            FROM users WHERE id = ${userId}
+          `;
+          return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ success: true, ...current[0] }) };
+        } else if (data.action === 'resume') {
+          // Én atomisk UPDATE: forskyv start_date med pause-varighet bare hvis fortsatt pauset
+          const updated = await sql`
+            UPDATE users SET
+              start_date = CASE
+                WHEN paused_at IS NOT NULL AND start_date IS NOT NULL
+                THEN start_date + (NOW() - paused_at)
+                ELSE start_date
+              END,
+              is_paused = false,
+              paused_at = NULL
+            WHERE id = ${userId} AND COALESCE(is_paused, false) = true
+            RETURNING start_date AS "startDate", is_paused AS "isPaused", paused_at AS "pausedAt"
+          `;
+          if (updated[0]) {
+            return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ success: true, ...updated[0] }) };
+          }
+          const current = await sql`
+            SELECT start_date AS "startDate", is_paused AS "isPaused", paused_at AS "pausedAt"
+            FROM users WHERE id = ${userId}
+          `;
+          return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ success: true, ...current[0] }) };
         } else {
           // Vanlige plan-oppdateringer (ikke pause/resume)
           const updates = {};
@@ -457,8 +474,8 @@ exports.handler = async (event) => {
       }
       
       else if (type === 'new_checkin') {
-        // Valider dato
-        if (!data.date || !/^\d{4}-\d{2}-\d{2}$/.test(data.date) || isNaN(new Date(data.date).getTime())) {
+        // Valider dato (ekte kalenderdato, ikke JS Date-rollover)
+        if (!isValidCalendarDate(data.date)) {
           return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig dato' }) };
         }
 
@@ -513,26 +530,26 @@ exports.handler = async (event) => {
             period_id as "periodId", is_read as "isRead"
         `;
 
-        const unreadCountResult = await sql`
-          SELECT COUNT(*)::integer AS count
-          FROM checkins
-          WHERE user_id = ${userId} AND is_read = false
-        `;
-
-        const unreadTotalResult = await sql`
-          SELECT COUNT(*)::integer AS count
+        // Begge tellingene i én rundtur. Målbrukeren er en aktiv utøver (sjekket over),
+        // så egne uleste rapporter er alltid med i totalen.
+        const unreadResult = await sql`
+          SELECT
+            COUNT(*) FILTER (WHERE c.user_id = ${userId})::integer AS count,
+            COUNT(*)::integer AS total
           FROM checkins c
           INNER JOIN users u ON u.id = c.user_id
           WHERE c.is_read = false
             AND u.role = 'athlete'
             AND COALESCE(u.is_archived, false) = false
         `;
+        const unreadCount = unreadResult[0]?.count ?? 1;
+        const unreadTotal = unreadResult[0]?.total ?? unreadCount;
 
         await sendCoachPushNotifications({
           athleteId: userId,
           athleteName: targetUser.name || 'En utøver',
-          unreadCount: unreadCountResult[0]?.count || 1,
-          unreadTotal: unreadTotalResult[0]?.count || unreadCountResult[0]?.count || 1
+          unreadCount,
+          unreadTotal
         });
 
         return {
@@ -548,16 +565,6 @@ exports.handler = async (event) => {
       else if (type === 'update_checkin') {
         if (!data.checkinId) {
           return { statusCode: 400, body: JSON.stringify({ error: 'Mangler checkin-ID' }) };
-        }
-
-        // SIKKERHET: Verifiser at checkin tilhører valgt bruker.
-        // Coach kan oppdatere for en utøver de har åpnet; athlete kan kun oppdatere egne.
-        const checkinMatch = await sql`
-          SELECT id FROM checkins WHERE id = ${data.checkinId} AND user_id = ${userId}
-        `;
-
-        if (checkinMatch.length === 0) {
-          return { statusCode: 403, body: JSON.stringify({ error: 'Ingen tilgang til denne rapporten' }) };
         }
 
         // Valider feltene som faktisk er sendt med
@@ -605,8 +612,10 @@ exports.handler = async (event) => {
             period_id as "periodId", is_read as "isRead"
         `;
 
+        // SIKKERHET: WHERE user_id begrenser oppdateringen til valgt bruker.
+        // Ingen rad tilbake betyr at rapporten ikke finnes eller tilhører en annen.
         if (!updated[0]) {
-          return { statusCode: 500, body: JSON.stringify({ error: 'Kunne ikke oppdatere rapporten' }) };
+          return { statusCode: 403, body: JSON.stringify({ error: 'Ingen tilgang til denne rapporten' }) };
         }
 
         return {
@@ -624,17 +633,15 @@ exports.handler = async (event) => {
           return { statusCode: 400, body: JSON.stringify({ error: 'Mangler checkin-ID' }) };
         }
 
-        // SIKKERHET: Verifiser at checkin tilhorer valgt bruker.
+        // SIKKERHET: WHERE user_id begrenser slettingen til valgt bruker.
         // Coach kan slette for en utøver de har åpnet, men ikke på tvers av brukere.
-        const checkinMatch = await sql`
-          SELECT id FROM checkins WHERE id = ${data.checkinId} AND user_id = ${userId}
+        const deleted = await sql`
+          DELETE FROM checkins WHERE id = ${data.checkinId} AND user_id = ${userId} RETURNING id
         `;
 
-        if (checkinMatch.length === 0) {
+        if (deleted.length === 0) {
           return { statusCode: 403, body: JSON.stringify({ error: 'Ingen tilgang til denne rapporten' }) };
         }
-
-        await sql`DELETE FROM checkins WHERE id = ${data.checkinId} AND user_id = ${userId}`;
       }
 
       else if (type === 'mark_checkins_read') {
@@ -718,7 +725,7 @@ exports.handler = async (event) => {
         
         const endDate = new Date().toISOString();
 
-        await Promise.all([
+        await sql.transaction([
           sql`UPDATE coaching_periods SET end_date = ${endDate}, is_active = false WHERE id = ${periodId} AND user_id = ${userId}`,
           sql`UPDATE users SET current_period_id = NULL WHERE id = ${userId} AND current_period_id = ${periodId}`
         ]);
@@ -877,9 +884,9 @@ exports.handler = async (event) => {
           return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig bilde-URL — kun Cloudinary-URLer er tillatt' }) };
         }
         const label = (data.label && typeof data.label === 'string') ? data.label.substring(0, 200) : 'Startbilde';
-        // Valider dato (samme mønster som new_checkin)
-        const date = data.date || new Date().toISOString().split('T')[0];
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || isNaN(new Date(date).getTime())) {
+        // Valider dato (samme kalenderregel som new_checkin); krev gyldig dato fra klient
+        const date = data.date;
+        if (!isValidCalendarDate(date)) {
           return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig dato' }) };
         }
         const weight = data.weight ? parseFloat(data.weight) : null;

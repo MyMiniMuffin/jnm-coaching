@@ -3,11 +3,18 @@ import React from 'react';
 export class ViewErrorBoundary extends React.Component {
     constructor(props) {
         super(props);
-        this.state = { hasError: false };
+        this.state = { hasError: false, resetKey: props.resetKey };
     }
 
     static getDerivedStateFromError() {
         return { hasError: true };
+    }
+
+    static getDerivedStateFromProps(props, state) {
+        if (props.resetKey !== state.resetKey) {
+            return { hasError: false, resetKey: props.resetKey };
+        }
+        return null;
     }
 
     componentDidCatch(error, info) {
@@ -26,7 +33,7 @@ export class ViewErrorBoundary extends React.Component {
                         <line x1="12" y1="16" x2="12.01" y2="16" />
                     </svg>
                 </div>
-                <h2 className="text-lg font-display mb-2">Noe gikk galt</h2>
+                <h2 className="text-xl font-display mb-2">Noe gikk galt</h2>
                 <p className="text-ink-muted text-sm mb-4">Denne visningen kunne ikke lastes.</p>
                 <button
                     type="button"
