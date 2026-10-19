@@ -1,3 +1,4 @@
+import DeletionRequests from '../components/DeletionRequests';
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { Plus, X, Trash2, User, ChevronRight, Loader2, KeyRound, BellRing, Search, ArrowUpDown, MoreHorizontal, ArchiveRestore, Archive } from 'lucide-react';
 import { Card, Button, EmptyState, IconButton, TextField, ToggleGroup, SelectField } from '../components/ui';
@@ -249,6 +250,7 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
 
     return (
         <div className="space-y-5 pb-8 animate-slide-up">
+            <DeletionRequests allUsers={allUsers} onSelectClient={onSelectClient} />
             {showModal && (
                 <div className="modal-backdrop fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in" onClick={closeModal}>
                     <Card className="modal-scroll-panel w-full max-w-sm p-5 sm:p-6 animate-scale-in" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="new-athlete-title">

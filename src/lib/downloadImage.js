@@ -1,4 +1,6 @@
 import { haptic } from './haptic.js';
+import { shareNativeFile } from './nativeFiles.js';
+import { Capacitor } from '@capacitor/core';
 
 export const getOriginalImage = (url) => {
     if (!url || typeof url !== 'string') return url;
@@ -71,7 +73,9 @@ export const createImageArchive = async (images) => {
 
 export const downloadImagesArchive = async (images) => {
     const contents = await createImageArchive(images);
-    const objectUrl = URL.createObjectURL(new Blob([contents], { type: 'application/zip' }));
+    const blob = new Blob([contents], { type: 'application/zip' });
+    if (await shareNativeFile(blob, 'jnm-bilder.zip')) return;
+    const objectUrl = URL.createObjectURL(blob);
     try {
         triggerAnchorDownload(objectUrl, 'jnm-bilder.zip');
         haptic('save');
@@ -90,11 +94,13 @@ export const downloadImageFile = async (url, filename = 'jnm-bilde.jpg') => {
         const response = await fetch(source, { mode: 'cors' });
         if (!response.ok) throw new Error('Kunne ikke hente bildet');
         const blob = await response.blob();
+        if (await shareNativeFile(blob, filename)) return;
         const objectUrl = URL.createObjectURL(blob);
         triggerAnchorDownload(objectUrl, filename);
         setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
         return;
-    } catch {
+    } catch (error) {
+        if (Capacitor.isNativePlatform()) throw error;
         if (source.includes('cloudinary.com')) {
             const stem = filename.replace(/\.[a-z0-9]+$/i, '');
             const attachmentUrl = source.replace('/upload/', `/upload/fl_attachment:${encodeURIComponent(stem)}/`);

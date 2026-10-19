@@ -1,4 +1,5 @@
 import { getToken } from './session';
+import { apiFetch } from './platform';
 
 // --- CACHE LAYER (med localStorage for persistent cache) ---
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutter
@@ -136,7 +137,7 @@ const request = async (url, {
     // kan servere opptil ett minutt gammelt svar.
     cacheMode
 } = {}) => {
-    const response = await fetch(url, {
+    const response = await apiFetch(url, {
         method,
         headers: auth ? getAuthHeaders() : { 'Content-Type': 'application/json' },
         ...(cacheMode ? { cache: cacheMode } : {}),
@@ -167,6 +168,15 @@ const mutateUserData = async (userId, type, data, errorMessage) => {
 };
 
 export const api = {
+    getDeletionRequest: () => request('/.netlify/functions/account-deletion', { cacheMode: 'no-store' }),
+    requestAccountDeletion: (password, contactEmail) => request('/.netlify/functions/account-deletion', {
+        method: 'POST', body: { password, contactEmail }
+    }),
+    getDeletionAssets: (id) => request(`/.netlify/functions/account-deletion?scope=assets&requestId=${encodeURIComponent(id)}`, { cacheMode: 'no-store' }),
+    getDeletionRequests: () => request('/.netlify/functions/account-deletion?scope=pending', { cacheMode: 'no-store' }),
+    completeDeletionRequest: (id) => request('/.netlify/functions/account-deletion', {
+        method: 'PATCH', body: { id, imagesRemoved: true, confirmationSent: true }
+    }),
     recordActivity: () => request('/.netlify/functions/activity', { method: 'POST' }),
     getUsers: async (useCache = false) => {
         if (useCache) {

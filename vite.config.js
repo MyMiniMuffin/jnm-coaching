@@ -16,6 +16,8 @@ export default defineConfig({
     },
     rollupOptions: {
       input: {
+        privacy: fileURLToPath(new URL('./personvern/index.html', import.meta.url)),
+        support: fileURLToPath(new URL('./support/index.html', import.meta.url)),
         app: fileURLToPath(new URL('./index.html', import.meta.url)),
         coaching: fileURLToPath(new URL('./coaching/index.html', import.meta.url)),
         onboarding: fileURLToPath(new URL('./oppstart/index.html', import.meta.url)),

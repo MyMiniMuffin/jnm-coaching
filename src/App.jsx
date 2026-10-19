@@ -7,6 +7,7 @@ import { api, cache } from './lib/api';
 import { APP_ICON, INITIAL_DATA_STATE, TAB_ORDER } from './lib/config';
 import { clearUiState, isUiStateFresh, readUiState, saveUiState } from './lib/uiState';
 import { getNotificationPermission, prefetchViews, supportsPushNotifications, urlBase64ToUint8Array } from './lib/browserCapabilities';
+import { isNativeApp } from './lib/platform';
 import { setAppBadgeCount, unreadCheckinTotal } from './lib/appBadge';
 import { haptic } from './lib/haptic';
 
@@ -338,7 +339,7 @@ const App = () => {
     }, [currentUser?.role]);
 
     useEffect(() => {
-        if (!currentUser || typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+        if (isNativeApp() || !currentUser || typeof window === 'undefined' || !('serviceWorker' in navigator)) {
             return;
         }
 

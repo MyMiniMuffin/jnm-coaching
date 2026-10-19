@@ -1,4 +1,5 @@
 import React from 'react';
+import AccountMenu from './AccountMenu';
 import { LogOut, ChevronLeft, WifiOff, Eye } from 'lucide-react';
 
 const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOffline = false, isClientPreview = false, onToggleClientPreview, previewDisabled = false }) => (
@@ -42,6 +43,7 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
                         <Eye size={18} /> Vis som klient
                     </button>
                 )}
+                <AccountMenu user={isClientPreview ? null : user} />
                 <button
                     type="button"
                     onClick={onLogout}
@@ -54,9 +56,10 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
         ) : (
             <div className="header-inner flex justify-between items-center px-5 py-3 lg:px-8 lg:py-4">
                 <p className="font-semibold text-ink truncate min-w-0">{user.name}</p>
+                <div className="flex items-center gap-1"><AccountMenu user={isClientPreview ? null : user} />
                 <button type="button" onClick={onLogout} aria-label="Logg ut" className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-ink-muted transition-colors hover:bg-surface-100 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent shrink-0">
                     <LogOut size={20} />
-                </button>
+                </button></div>
             </div>
         )}
     </header>

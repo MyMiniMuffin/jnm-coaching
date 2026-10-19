@@ -27,8 +27,16 @@ async function main() {
   `;
   if (activityColumns.length !== 1) throw new Error('Activity column verification failed');
   console.log('Database migration 004: applied and verified.');
+  await sql(readFileSync(join(__dirname, '../migrations/005_account_deletion_requests.sql'), 'utf8'));
+  const requestColumns = await sql`
+    SELECT column_name FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'account_deletion_requests'
+      AND column_name IN ('user_id', 'contact_email', 'requested_at', 'completed_at')
+  `;
+  if (requestColumns.length !== 4) throw new Error('Account deletion request table verification failed');
+  console.log('Database migration 005: applied and verified.');
 }
 main().catch(() => {
-  console.error('Database migration failed; deployment stopped. Check database configuration and migrations 003/004.');
+  console.error('Database migration failed; deployment stopped. Check database configuration and migrations 003/004/005.');
   process.exitCode = 1;
 });

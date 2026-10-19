@@ -1,3 +1,6 @@
+import { Capacitor } from '@capacitor/core';
+import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
+
 const PATTERNS = {
     tap: 10,
     save: 12,
@@ -14,7 +17,15 @@ const prefersReducedMotion = () =>
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 export const haptic = (kind = 'tap') => {
-    if (!canVibrate() || prefersReducedMotion()) return;
+    if (prefersReducedMotion()) return;
+    if (Capacitor.isNativePlatform()) {
+        const feedback = kind === 'confirm'
+            ? Haptics.notification({ type: NotificationType.Success })
+            : Haptics.impact({ style: ImpactStyle.Light });
+        feedback.catch(() => {});
+        return;
+    }
+    if (!canVibrate()) return;
     const pattern = PATTERNS[kind] ?? kind;
     try {
         navigator.vibrate(pattern);

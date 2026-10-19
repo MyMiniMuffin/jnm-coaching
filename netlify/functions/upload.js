@@ -103,7 +103,8 @@ exports.handler = async (event) => {
 
     // Last opp til Cloudinary med signed upload
     const result = await cloudinary.uploader.upload(image, {
-      folder: 'jnm_coaching',
+      // Keep all uploads attributable to the account, including abandoned drafts.
+      folder: `jnm_coaching/users/${parseInt(userId, 10)}`,
       resource_type: 'image',
       allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
       max_bytes: 10485760, // 10MB max

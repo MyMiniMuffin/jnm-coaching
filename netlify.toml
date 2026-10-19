@@ -16,6 +16,16 @@
   to = "/oppstart/"
   status = 301
 
+[[redirects]]
+  from = "/personvern"
+  to = "/personvern/"
+  status = 301
+
+[[redirects]]
+  from = "/support"
+  to = "/support/"
+  status = 301
+
 [[headers]]
   for = "/*"
   [headers.values]
@@ -76,5 +86,16 @@
 
 [[headers]]
   for = "/sw.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# Public app support and privacy pages must receive updated policy text.
+[[headers]]
+  for = "/personvern/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/support/*"
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"

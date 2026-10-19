@@ -1,3 +1,5 @@
+import { isNativeApp } from './platform';
+
 const VIEW_PREFETCHERS = [
     () => import('../views/DashboardView'),
     () => import('../views/CheckInView'),
@@ -29,6 +31,7 @@ export const prefetchViews = (role) => {
 };
 
 export const supportsPushNotifications = () => (
+    !isNativeApp() &&
     typeof window !== 'undefined' &&
     typeof navigator !== 'undefined' &&
     'Notification' in window &&

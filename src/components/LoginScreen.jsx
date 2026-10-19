@@ -4,6 +4,8 @@ import { Button, TextField } from './ui';
 import { api } from '../lib/api';
 import { APP_ICON } from '../lib/config';
 import { haptic } from '../lib/haptic';
+import AccountMenu from './AccountMenu';
+import { isNativeApp } from '../lib/platform';
 
 const LoginScreen = React.memo(({ onLogin }) => {
     const [mustChangePassword, setMustChangePassword] = useState(false);
@@ -76,7 +78,7 @@ const LoginScreen = React.memo(({ onLogin }) => {
                         onChange={handleUsernameChange}
                         disabled={isLoading}
                         placeholder="Skriv inn brukernavn"
-                        autoFocus
+                        autoFocus={!isNativeApp()}
                         autoComplete="username"
                     />
                     <div>
@@ -135,7 +137,8 @@ const LoginScreen = React.memo(({ onLogin }) => {
                 </form>
             </div>
 
-            <p className="mt-8 text-ink-muted text-xs">JNM Coaching © {new Date().getFullYear()}</p>
+            <div className="mt-5"><AccountMenu /></div>
+            <p className="mt-3 text-ink-muted text-xs">JNM Coaching © {new Date().getFullYear()}</p>
         </div>
     );
 });

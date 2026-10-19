@@ -1,0 +1,9 @@
+{
+  "appId": "no.jnmcoaching.app",
+  "appName": "JNM Coaching",
+  "webDir": "dist",
+  "ios": {
+    "backgroundColor": "#F7F7F4",
+    "contentInset": "never"
+  }
+}
