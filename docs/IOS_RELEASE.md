@@ -43,6 +43,16 @@ Netlify-feilen i migrering 005 skyldtes to SQL-kommandoer i samme Neon-kall. Tab
 
 Kjør `npm run ios:sync` etter React-endringer, øk buildnummeret og arkiver i Xcode før ny opplasting. Appgrensesnittet følger det native bygget, mens serverdata og nettleserversjonen følger vanlig Netlify-deploy. `VITE_API_ORIGIN` kan settes ved bygg for en separat HTTPS-testserver; bare offentlige verdier skal ligge i `VITE_*`.
 
+## Automatiske bygg og kontroller
+
+GitHub Actions i `.github/workflows/checks.yml` kjører på push til `main`, pull requests mot `main` og manuell start. Node 22 installerer låste avhengigheter med `npm ci`, kjører alle tester, bygger produksjonsgrensesnittet og kontrollerer shell-syntaksen til Xcode Cloud-skriptet. Jobben har kun lesetilgang til repoet og trenger ingen produksjons- eller signeringshemmeligheter.
+
+Det delte `App`-skjemaet er sjekket inn i `ios/App/App.xcodeproj/xcshareddata/xcschemes/App.xcscheme`. Xcode Cloud bruker `ios/App/ci_scripts/ci_post_clone.sh` til å installere Node 22 ved behov, hente låste npm-avhengigheter, kjøre testene og bygge/synkronisere Capacitor før Swift-pakkene og arkivet bygges. Dette er nødvendig fordi `node_modules`, webressurser og genererte Capacitor-filer ikke ligger i Git. Scriptet kjører ingen produksjonsmigreringer. Swift-avhengighetene er låst i prosjektets `Package.resolved`.
+
+Lokalt er det nye post-clone-skriptet kjørt fra start til slutt: 28 tester og webbygg passerer. Et nytt Release-simulatorbygg med det delte skjemaet viser BUILD SUCCEEDED. Første push-utløste GitHub-kjøring [39377204189](https://github.com/MyMiniMuffin/jnm-coaching/actions/runs/39377204189) viser Success (27 sekunder). Tilkobling av repo og aktivering av arbeidsflyt i Xcode Cloud føres inn her når dette er verifisert. Oppsettassistenten i Xcode står på tilkobling av kildekoderepoet; brukerbekreftelse på denne tilgangen er etterspurt.
+
+GitHub-kontrollene endrer ikke eksisterende Netlify-deploy: en push til `main` kan starte både Netlify og kontrollene samtidig. Det er derfor fortsatt nødvendig å teste før push. Nye App Store-versjoner må velges og sendes til Apples vurdering selv om bygg/opplasting automatiseres.
+
 ## Manuell behandling av sletteforespørsler
 
 Brukeren har valgt manuell behandling innen 30 dager. Passordbekreftet forespørsel og coach-kø er publisert i backend og i build 2. Nye bildeopplastinger plasseres under `jnm_coaching/users/<id>` for å kunne finne også avbrutte opplastinger.
