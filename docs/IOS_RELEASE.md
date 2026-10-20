@@ -41,7 +41,7 @@ Netlify-feilen i migrering 005 skyldtes to SQL-kommandoer i samme Neon-kall. Tab
 
 ## Neste native versjon
 
-Kjør `npm run ios:sync` etter React-endringer, øk buildnummeret og arkiver i Xcode før ny opplasting. Appgrensesnittet følger det native bygget, mens serverdata og nettleserversjonen følger vanlig Netlify-deploy. `VITE_API_ORIGIN` kan settes ved bygg for en separat HTTPS-testserver; bare offentlige verdier skal ligge i `VITE_*`.
+Vanlige iOS-bygg kjøres nå av Xcode Cloud etter push til `main`. Ved manuell arkivering: kjør `npm run ios:sync` etter React-endringer og velg et byggnummer høyere enn siste Cloud-/App Store Connect-bygg før opplasting. Appgrensesnittet følger det native bygget, mens serverdata og nettleserversjonen følger vanlig Netlify-deploy. `VITE_API_ORIGIN` kan settes ved bygg for en separat HTTPS-testserver; bare offentlige verdier skal ligge i `VITE_*`.
 
 ## Automatiske bygg og kontroller
 
@@ -49,9 +49,11 @@ GitHub Actions i `.github/workflows/checks.yml` kjører på push til `main`, pul
 
 Det delte `App`-skjemaet er sjekket inn i `ios/App/App.xcodeproj/xcshareddata/xcschemes/App.xcscheme`. Xcode Cloud bruker `ios/App/ci_scripts/ci_post_clone.sh` til å installere Node 22 ved behov, hente låste npm-avhengigheter, kjøre testene og bygge/synkronisere Capacitor før Swift-pakkene og arkivet bygges. Dette er nødvendig fordi `node_modules`, webressurser og genererte Capacitor-filer ikke ligger i Git. Scriptet kjører ingen produksjonsmigreringer. Swift-avhengighetene er låst i prosjektets `Package.resolved`.
 
-Lokalt er det nye post-clone-skriptet kjørt fra start til slutt: 28 tester og webbygg passerer. Et nytt Release-simulatorbygg med det delte skjemaet viser BUILD SUCCEEDED. Første push-utløste GitHub-kjøring [39377204189](https://github.com/MyMiniMuffin/jnm-coaching/actions/runs/39377204189) viser Success (27 sekunder). Tilkobling av repo og aktivering av arbeidsflyt i Xcode Cloud føres inn her når dette er verifisert. Oppsettassistenten i Xcode står på tilkobling av kildekoderepoet; brukerbekreftelse på denne tilgangen er etterspurt.
+Lokalt er det nye post-clone-skriptet kjørt fra start til slutt: 28 tester og webbygg passerer. Et nytt Release-simulatorbygg med det delte skjemaet viser BUILD SUCCEEDED. Første push-utløste GitHub-kjøring [39377204189](https://github.com/MyMiniMuffin/jnm-coaching/actions/runs/39377204189) viser Success (27 sekunder). Brukeren har godkjent repo-tilkoblingen. Cloud-produkt `6b4285c4-488e-4098-a6a6-dea0c386764d`, arbeidsflyt `719C5884-6C8C-48AD-805B-6DDCC8D98D44` (**JNM Coaching main → App Store Connect**) er aktivert. Den starter ved push til `main` eller manuelt, og nyere push avbryter eldre bygg på samme gren. Endringer som bare berører `docs/` starter ikke et nytt iOS-bygg; blandede kode-/dokumentasjonsendringer bygger fortsatt. Arkivhandlingen bruker `App`-skjemaet og App Store Connect-distribusjon med Apple-administrert signering. Vellykkede arkiver sendes automatisk til den eksisterende TestFlight-gruppen «JNM intern testing» med én tester. Ingen nye testere eller signeringshemmeligheter er opprettet i GitHub. Nummereringen starter på 3 og øker automatisk. Første Cloud-bygg [3](https://appstoreconnect.apple.com/teams/ae398e16-edfe-4e41-ab6a-de739d30ccfe/xcode-cloud/products/6b4285c4-488e-4098-a6a6-dea0c386764d/builds/20ff36fd-b053-4886-b97b-b3c4b2b8efad) passerer som vanlig iOS-bygg; første distribusjonsarkiv verifiseres separat.
 
 GitHub-kontrollene endrer ikke eksisterende Netlify-deploy: en push til `main` kan starte både Netlify og kontrollene samtidig. Det er derfor fortsatt nødvendig å teste før push. Nye App Store-versjoner må velges og sendes til Apples vurdering selv om bygg/opplasting automatiseres.
+
+Demokontoen `apple_review` er skjult fra coachens brukerliste, tellinger og varsler gjennom filtrering i `users`-endepunktet. Kontoen er fortsatt aktiv og innlogging/egne data beholdes for Apples vurdering. Dette krever ikke nytt appbygg for eksisterende installasjoner.
 
 ## Manuell behandling av sletteforespørsler
 
