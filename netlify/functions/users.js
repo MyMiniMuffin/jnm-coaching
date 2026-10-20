@@ -36,6 +36,9 @@ const getFormattedUsersList = () => sql`
     ORDER BY c.created_at DESC
     LIMIT 1
   ) latest ON true
+  -- Hold App Review-demoen utenfor klientoversikt, tellinger og coach-varsler.
+  -- Kontoen beholdes aktiv; innlogging og egne data bruker andre endepunkter.
+  WHERE NOT (u.role = 'athlete' AND LOWER(u.username) = 'apple_review')
   ORDER BY u.name ASC
 `;
 
