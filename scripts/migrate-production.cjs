@@ -37,8 +37,22 @@ async function main() {
   `;
   if (requestColumns.length !== 4) throw new Error('Account deletion request table verification failed');
   console.log('Database migrations 005/006: applied and verified.');
+  await sql(readFileSync(join(__dirname, '../migrations/007_push_subscriptions_platform.sql'), 'utf8'));
+  await sql(readFileSync(join(__dirname, '../migrations/008_push_subscriptions_p256dh_nullable.sql'), 'utf8'));
+  await sql(readFileSync(join(__dirname, '../migrations/009_push_subscriptions_auth_nullable.sql'), 'utf8'));
+  const pushColumns = await sql`
+    SELECT column_name, is_nullable FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'push_subscriptions'
+      AND column_name IN ('platform', 'p256dh', 'auth')
+  `;
+  const byName = Object.fromEntries(pushColumns.map((row) => [row.column_name, row]));
+  if (!byName.platform) throw new Error('Push platform column verification failed');
+  if (byName.p256dh?.is_nullable !== 'YES' || byName.auth?.is_nullable !== 'YES') {
+    throw new Error('Push key nullability verification failed');
+  }
+  console.log('Database migrations 007/008/009: applied and verified.');
 }
 main().catch((error) => {
-  console.error('Database migration failed; deployment stopped. Check database configuration and migrations 003/004/005/006. SQLSTATE:', error.code || 'unknown');
+  console.error('Database migration failed; deployment stopped. Check database configuration and migrations 003–009. SQLSTATE:', error.code || 'unknown');
   process.exitCode = 1;
 });

@@ -1,126 +1,67 @@
 # Push Notifications Setup
 
-Denne guiden gjør web push-oppsettet deploy-klart for coach-varsler i JNM Coaching.
+JNM Coaching støtter to leveringskanaler for coach-varsler når en utøver sender inn rapport:
 
-## Hva som allerede er implementert
+1. **Web Push** (nettleser / PWA) via VAPID + `web-push`
+2. **APNs** (iOS App Store / TestFlight) via Capacitor Push Notifications
 
-- Coach kan aktivere pushvarsler i appen.
-- Nettleseren registrerer `service worker` via [public/sw.js](/Users/jonas/Desktop/jnm-coaching/public/sw.js).
-- Coach-abonnementer lagres via [netlify/functions/push-subscriptions.js](/Users/jonas/Desktop/jnm-coaching/netlify/functions/push-subscriptions.js).
-- Når en utøver sender inn en check-in, forsøker backend å sende push fra [netlify/functions/data.js](/Users/jonas/Desktop/jnm-coaching/netlify/functions/data.js).
-- Appen beholder polling-basert varsel som fallback hvis push ikke er tilgjengelig.
+Begge registreres via `/.netlify/functions/push-subscriptions` og sendes fra check-in-flyten i `netlify/functions/data.js` → `push-delivery.js`.
 
-## 1. Kjør database-migrasjonen
+## Allerede implementert
 
-Kjør SQL-filen:
+- Coach kan aktivere varsler i coach-dashboardet («Slå på»).
+- Nettleser: service worker i `public/sw.js`, VAPID-abonnement lagres i `push_subscriptions`.
+- iOS: `@capacitor/push-notifications` ber om tillatelse, registrerer APNs-token og lagrer det som `platform=ios`.
+- Ved ny check-in sendes push til alle aktive coach-abonnementer (web + iOS).
+- Polling i appen er fortsatt fallback.
 
-- [migrations/002_add_push_subscriptions.sql](/Users/jonas/Desktop/jnm-coaching/migrations/002_add_push_subscriptions.sql)
+## Oppsett
 
-Den oppretter tabellen `push_subscriptions` som lagrer coach-abonnementer.
+Se den oppdaterte guiden med App Store / APNs-steg:
 
-## 2. Generer VAPID-nøkler
+- [docs/push-notifications-setup.md i prosjektlageret](/cursor/stores/bc-2a27334c-cc21-4da9-a2a1-62113146ca4a/docs/push-notifications-setup.md) (for Jonas)
+- Kortversjon i repo: seksjonene under
 
-Kjør i prosjektet:
+### Database
+
+Migrasjonene `007`–`009` kjøres automatisk ved produksjonsdeploy (`scripts/migrate-production.cjs`).
+
+### Web Push (Netlify + Vite)
 
 ```bash
 npm run generate-vapid
 ```
 
-Det gir deg:
-
-- `publicKey`
-- `privateKey`
-
-## 3. Sett miljøvariabler
-
-### I Netlify
-
-Legg inn disse miljøvariablene i Netlify:
+Sett i Netlify:
 
 - `WEB_PUSH_PUBLIC_KEY`
 - `WEB_PUSH_PRIVATE_KEY`
-- `WEB_PUSH_SUBJECT`
+- `WEB_PUSH_SUBJECT` (f.eks. `mailto:kontakt@perfectmorning.dev`)
 
-Anbefalt verdi for `WEB_PUSH_SUBJECT`:
+Sett i frontend-build:
 
-```text
-mailto:din-epost@domene.no
-```
+- `VITE_WEB_PUSH_PUBLIC_KEY` (= samme som public key)
 
-### I frontend-miljøet
+### iOS / APNs (Netlify)
 
-Legg inn denne variabelen for Vite:
+Sett i Netlify (hemmeligheter – ikke i repo):
 
-- `VITE_WEB_PUSH_PUBLIC_KEY`
+- `APNS_KEY_ID`
+- `APNS_TEAM_ID` (`55FDY26LN7`)
+- `APNS_BUNDLE_ID` (`no.jnmcoaching.app`)
+- `APNS_PRIVATE_KEY` (PEM-innhold fra `.p8`)
+- `APNS_PRODUCTION=true` for TestFlight/App Store
 
-Denne skal ha samme verdi som `WEB_PUSH_PUBLIC_KEY`.
+I Apple Developer / Xcode Cloud må Push Notifications-capability være aktiv for App ID `no.jnmcoaching.app`. Entitlement `App/App.entitlements` ligger i repoet.
 
-Hvis du bruker lokal `.env`, kan den se slik ut:
+Etter kodeendringer: Xcode Cloud bygger ny iOS-versjon fra `main`. Coach må åpne appen, trykke «Slå på» og godta systemdialogen.
 
-```env
-VITE_WEB_PUSH_PUBLIC_KEY=din_public_key_her
-```
+## Test
 
-## 4. Deploy
+1. Deploy Netlify (migrasjoner + funksjoner).
+2. Vent på / last opp iOS-bygg med push-capability.
+3. Coach på iPhone: «Slå på» → godta varsler.
+4. Utøver sender check-in.
+5. Coach skal få APNs-varsel (bakgrunn) eller in-app toast (forgrunn).
 
-Etter at miljøvariablene er lagt inn:
-
-```bash
-npm run build
-```
-
-Deploy deretter som vanlig til Netlify.
-
-Merk:
-
-- [netlify.toml](/Users/jonas/Desktop/jnm-coaching/netlify.toml) er oppdatert slik at `sw.js` ikke caches hardt.
-- Det gjør at service worker-endringer slår gjennom raskere etter deploy.
-
-## 5. Test ende til ende
-
-Anbefalt testløp:
-
-1. Deploy endringene.
-2. Åpne coach-appen i en støttet nettleser.
-3. Logg inn som coach.
-4. Trykk `Slå på` for varsler i coach-dashboardet.
-5. Godkjenn varsler i nettleseren.
-6. Logg inn som utøver i en annen sesjon eller enhet.
-7. Send inn en ny check-in.
-8. Bekreft at coach får:
-   - in-app varsel
-   - pushvarsel hvis nettleseren/enheten støtter det
-
-## 6. Hvis push ikke kommer
-
-Sjekk dette først:
-
-- `VITE_WEB_PUSH_PUBLIC_KEY` er satt i frontend-builden.
-- `WEB_PUSH_PUBLIC_KEY` og `WEB_PUSH_PRIVATE_KEY` er satt i Netlify.
-- databasen har tabellen `push_subscriptions`
-- coach faktisk godkjente varsler
-- coach bruker en nettleser/enhet som støtter `Notification`, `serviceWorker` og `PushManager`
-
-Nyttige steder å inspisere:
-
-- [src/App.jsx](/Users/jonas/Desktop/jnm-coaching/src/App.jsx)
-- [netlify/functions/push-subscriptions.js](/Users/jonas/Desktop/jnm-coaching/netlify/functions/push-subscriptions.js)
-- [netlify/functions/data.js](/Users/jonas/Desktop/jnm-coaching/netlify/functions/data.js)
-- nettleserens DevTools: `Application` / `Service Workers` / `Push Messaging`
-- Netlify function logs
-
-## 7. Kjente avgrensninger
-
-- Dette er web push, ikke native mobil-push.
-- Støtte varierer mellom nettlesere og PWA-modus.
-- Polling-varsler i appen fungerer fortsatt som backup.
-- Varslet åpner appen på `/`; det er ikke laget direkte navigasjon til en spesifikk utøver ennå.
-- App-ikonet kan vise antall uleste rapporter via Badging API. Det fungerer typisk på Android-PWA. På iPhone er merket upålitelig eller fraværende.
-- Merket oppdateres ved push og fra coach-listen, og tømmes når rapportene er lest eller coach logger ut.
-
-## 8. Neste naturlige forbedringer
-
-- Navigere direkte til riktig klient ved `notificationclick`
-- støtte for å skru av pushvarsler i UI
-- vise abonnementsstatus per enhet
-- rydde gamle abonnementer periodisk
+Web: samme flyt i støttet nettleser med VAPID-nøkler satt.

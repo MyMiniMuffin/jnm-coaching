@@ -312,7 +312,7 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
                                             ? 'Varsler ikke støttet'
                                             : 'Varsler ikke aktivert'}
                             </span>
-                            {notificationPermission === 'default' && (
+                            {(notificationPermission === 'default' || notificationPermission === 'prompt') && (
                                 <button type="button" onClick={onEnableNotifications} className="underline underline-offset-2 text-white/80 hover:text-white">
                                     Slå på
                                 </button>

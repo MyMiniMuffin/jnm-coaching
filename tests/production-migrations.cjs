@@ -17,6 +17,13 @@ test('production migrations send separate SQL statements and verify the resultin
     queries.push(text);
     if (text.includes('information_schema.columns')) {
       if (text.includes('account_deletion_requests')) return Array.from({ length: 4 }, () => ({}));
+      if (text.includes('push_subscriptions')) {
+        return [
+          { column_name: 'platform', is_nullable: 'NO' },
+          { column_name: 'p256dh', is_nullable: 'YES' },
+          { column_name: 'auth', is_nullable: 'YES' }
+        ];
+      }
       return [{}];
     }
     return [];
@@ -33,4 +40,7 @@ test('production migrations send separate SQL statements and verify the resultin
   const create = queries.findIndex(query => query.includes('CREATE TABLE IF NOT EXISTS account_deletion_requests'));
   const index = queries.findIndex(query => query.includes('CREATE INDEX IF NOT EXISTS idx_account_deletion_requests_pending'));
   assert.ok(create >= 0 && index > create);
+  assert.ok(queries.some(query => query.includes('ADD COLUMN IF NOT EXISTS platform')));
+  assert.ok(queries.some(query => query.includes('ALTER COLUMN p256dh DROP NOT NULL')));
+  assert.ok(queries.some(query => query.includes('ALTER COLUMN auth DROP NOT NULL')));
 });

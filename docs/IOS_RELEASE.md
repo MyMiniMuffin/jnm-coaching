@@ -23,7 +23,7 @@ Demokonto `apple_review` har fullført første passordbytte og inneholder fiktiv
 
 ## Teknisk løsning og verifisering
 
-Capacitor 8 pakker React-grensesnittet lokalt med Swift Package Manager. Native HTTP bruker eksisterende JWT og produksjons-API `https://jnmcoaching.no/.netlify/functions/*`, med samme brukere og database som nettleseren. Ingen database- eller Cloudinary-hemmeligheter pakkes i appen. Nettleserversjonen beholder same-origin-kall og PWA/web-push. APNs er ikke implementert; web-push og service worker er deaktivert i native runtime.
+Capacitor 8 pakker React-grensesnittet lokalt med Swift Package Manager. Native HTTP bruker eksisterende JWT og produksjons-API `https://jnmcoaching.no/.netlify/functions/*`, med samme brukere og database som nettleseren. Ingen database- eller Cloudinary-hemmeligheter pakkes i appen. Nettleserversjonen beholder same-origin-kall og PWA/web-push. Native iOS bruker APNs via `@capacitor/push-notifications` (service worker/web-push er deaktivert i native runtime); se `PUSH_NOTIFICATIONS_SETUP.md`.
 
 Native plugins håndterer vibrasjon og deling av bilde-/ZIP-eksporter. Appikon, tillatelsestekster og Filesystem privacy manifest er inkludert. `ITSAppUsesNonExemptEncryption=false` er satt etter kontroll av OS-basert kryptering. Automatisk fokus på innloggingsfeltet er deaktivert i native appen for å unngå forstørret førstegangsvisning.
 

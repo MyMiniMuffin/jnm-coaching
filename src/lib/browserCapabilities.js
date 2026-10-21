@@ -30,7 +30,7 @@ export const prefetchViews = (role) => {
     });
 };
 
-export const supportsPushNotifications = () => (
+export const supportsWebPushNotifications = () => (
     !isNativeApp() &&
     typeof window !== 'undefined' &&
     typeof navigator !== 'undefined' &&
@@ -39,9 +39,17 @@ export const supportsPushNotifications = () => (
     'PushManager' in window
 );
 
-export const getNotificationPermission = () => (
-    supportsPushNotifications() ? Notification.permission : 'unsupported'
+export const supportsPushNotifications = () => (
+    isNativeApp() || supportsWebPushNotifications()
 );
+
+export const getNotificationPermission = () => {
+    if (isNativeApp()) {
+        // Native permission is refreshed asynchronously via checkPermissions().
+        return 'default';
+    }
+    return supportsWebPushNotifications() ? Notification.permission : 'unsupported';
+};
 
 export const urlBase64ToUint8Array = (base64String) => {
     const padding = '='.repeat((4 - (base64String.length % 4)) % 4);

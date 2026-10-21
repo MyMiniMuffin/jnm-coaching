@@ -6,8 +6,15 @@ import { saveSession, getSession, getToken, clearSession, hasValidSession } from
 import { api, cache } from './lib/api';
 import { APP_ICON, INITIAL_DATA_STATE, TAB_ORDER } from './lib/config';
 import { clearUiState, isUiStateFresh, readUiState, saveUiState } from './lib/uiState';
-import { getNotificationPermission, prefetchViews, supportsPushNotifications, urlBase64ToUint8Array } from './lib/browserCapabilities';
+import { getNotificationPermission, prefetchViews, supportsPushNotifications, supportsWebPushNotifications, urlBase64ToUint8Array } from './lib/browserCapabilities';
 import { isNativeApp } from './lib/platform';
+import {
+    checkNativeNotificationPermission,
+    registerNativePush,
+    registerNativePushListeners,
+    requestNativeNotificationPermission,
+    toApnsEndpoint
+} from './lib/nativePush';
 import { setAppBadgeCount, unreadCheckinTotal } from './lib/appBadge';
 import { haptic } from './lib/haptic';
 import { todayLocalISODate } from './lib/formatters';
@@ -224,25 +231,34 @@ const App = () => {
         coachUnreadSnapshotRef.current = nextUnreadSnapshot;
     }, [deliverCoachCheckinAlert]);
 
-    const requestCoachNotificationPermission = useCallback(async () => {
-        if (typeof window === 'undefined' || !('Notification' in window)) {
-            toast('Denne enheten støtter ikke systemvarsler', 'error');
-            setNotificationPermission('unsupported');
+    const saveNativePushToken = useCallback(async (deviceToken) => {
+        if (!deviceToken) throw new Error('Mangler enhetstoken for push');
+        const result = await api.savePushSubscription({
+            platform: 'ios',
+            deviceToken,
+            endpoint: toApnsEndpoint(deviceToken)
+        });
+        if (result.authError) {
+            setShowReauthPrompt(true);
+            return false;
+        }
+        return true;
+    }, []);
+
+    const allUsersRef = useRef(allUsers);
+    useEffect(() => {
+        allUsersRef.current = allUsers;
+    }, [allUsers]);
+
+    const handleSelectClientRef = useRef(null);
+
+    const ensureCoachPushSubscription = useCallback(async () => {
+        if (isNativeApp()) {
+            await registerNativePush();
             return;
         }
 
-        const permission = await Notification.requestPermission();
-        setNotificationPermission(permission);
-
-        if (permission === 'granted') {
-            toast('Systemvarsler er slått på');
-        } else if (permission === 'denied') {
-            toast('Systemvarsler er blokkert i nettleseren', 'error');
-        }
-    }, [toast]);
-
-    const ensureCoachPushSubscription = useCallback(async () => {
-        if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+        if (!supportsWebPushNotifications()) {
             throw new Error('Push støttes ikke på denne enheten');
         }
 
@@ -281,19 +297,31 @@ const App = () => {
         }
 
         if (notificationPermission === 'denied') {
-            toast('Systemvarsler er blokkert i nettleseren', 'error');
+            toast(
+                isNativeApp()
+                    ? 'Varsler er blokkert. Åpne iOS-innstillinger for JNM Coaching for å tillate varsler.'
+                    : 'Systemvarsler er blokkert i nettleseren',
+                'error'
+            );
             return;
         }
 
         let permission = notificationPermission;
         if (permission !== 'granted') {
-            permission = await Notification.requestPermission();
+            permission = isNativeApp()
+                ? await requestNativeNotificationPermission()
+                : await Notification.requestPermission();
             setNotificationPermission(permission);
         }
 
         if (permission !== 'granted') {
             if (permission === 'denied') {
-                toast('Systemvarsler er blokkert i nettleseren', 'error');
+                toast(
+                    isNativeApp()
+                        ? 'Varsler er blokkert. Åpne iOS-innstillinger for JNM Coaching for å tillate varsler.'
+                        : 'Systemvarsler er blokkert i nettleseren',
+                    'error'
+                );
             }
             return;
         }
@@ -349,7 +377,21 @@ const App = () => {
     }, []);
 
     useEffect(() => {
-        setNotificationPermission(getNotificationPermission());
+        let cancelled = false;
+
+        const refreshPermission = async () => {
+            if (isNativeApp()) {
+                const permission = await checkNativeNotificationPermission();
+                if (!cancelled) setNotificationPermission(permission);
+                return;
+            }
+            if (!cancelled) setNotificationPermission(getNotificationPermission());
+        };
+
+        refreshPermission();
+        return () => {
+            cancelled = true;
+        };
     }, [currentUser?.role]);
 
     useEffect(() => {
@@ -391,9 +433,13 @@ const App = () => {
 
     // Visibility change handler - sjekk session når app blir synlig
     useEffect(() => {
-        const handleVisibility = () => {
+        const handleVisibility = async () => {
             if (document.visibilityState === 'visible' && currentUser) {
-                setNotificationPermission(getNotificationPermission());
+                if (isNativeApp()) {
+                    setNotificationPermission(await checkNativeNotificationPermission());
+                } else {
+                    setNotificationPermission(getNotificationPermission());
+                }
                 if (!hasValidSession()) {
                     console.warn('[Visibility] Session borte - viser re-auth prompt');
                     setShowReauthPrompt(true);
@@ -844,6 +890,58 @@ const App = () => {
             });
         }
     }, []);
+
+    useEffect(() => {
+        handleSelectClientRef.current = handleSelectClient;
+    }, [handleSelectClient]);
+
+    useEffect(() => {
+        if (!isNativeApp() || currentUser?.role !== 'coach') return undefined;
+
+        let removeListeners = () => {};
+        let cancelled = false;
+
+        registerNativePushListeners({
+            onRegistration: async (deviceToken) => {
+                try {
+                    await saveNativePushToken(deviceToken);
+                } catch (error) {
+                    console.error('[Push] Kunne ikke lagre iOS-token:', error);
+                }
+            },
+            onRegistrationError: (error) => {
+                console.error('[Push] iOS-registrering feilet:', error);
+            },
+            onNotificationReceived: (notification) => {
+                const title = notification?.title || 'Ny rapport mottatt';
+                const body = notification?.body || '';
+                toast(body ? `${title}: ${body}` : title, 'info');
+                const unreadTotal = Number(notification?.data?.unreadTotal);
+                if (Number.isFinite(unreadTotal)) {
+                    setAppBadgeCount(unreadTotal);
+                }
+            },
+            onNotificationAction: (action) => {
+                const clientId = action?.notification?.data?.clientId;
+                if (!clientId) return;
+                const client = allUsersRef.current.find((user) => String(user.id) === String(clientId));
+                if (client && handleSelectClientRef.current) {
+                    handleSelectClientRef.current(client);
+                }
+            }
+        }).then((cleanup) => {
+            if (cancelled) {
+                cleanup();
+                return;
+            }
+            removeListeners = cleanup;
+        });
+
+        return () => {
+            cancelled = true;
+            removeListeners();
+        };
+    }, [currentUser?.role, currentUser?.id, saveNativePushToken, toast]);
 
     useEffect(() => {
         if (!currentUser || hasRestoredUiStateRef.current) return;

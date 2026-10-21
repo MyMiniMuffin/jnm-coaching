@@ -1,29 +1,13 @@
 const { neon } = require('@neondatabase/serverless');
 const { requireAuth } = require('./auth-middleware');
 const { getHeader, parseJsonBody } = require('./http-utils');
+const { normalizeSubscription } = require('./push-delivery');
 
 if (!process.env.NETLIFY_DATABASE_URL) {
   throw new Error('NETLIFY_DATABASE_URL miljøvariabel er ikke satt');
 }
 
 const sql = neon(process.env.NETLIFY_DATABASE_URL);
-
-const normalizeSubscription = (subscription = {}) => {
-  const endpoint = typeof subscription.endpoint === 'string' ? subscription.endpoint.trim() : '';
-  const keys = subscription.keys || {};
-  const p256dh = typeof keys.p256dh === 'string' ? keys.p256dh.trim() : '';
-  const auth = typeof keys.auth === 'string' ? keys.auth.trim() : '';
-
-  if (!endpoint || !p256dh || !auth) {
-    return null;
-  }
-
-  return {
-    endpoint,
-    p256dh,
-    auth
-  };
-};
 
 exports.handler = async (event) => {
   const authResult = requireAuth(event);
@@ -42,18 +26,22 @@ exports.handler = async (event) => {
     if (event.httpMethod === 'POST') {
       const parsedBody = parseJsonBody(event);
       if (!parsedBody.ok) return parsedBody.response;
-      const subscription = normalizeSubscription(parsedBody.data.subscription);
+      const subscription = normalizeSubscription(
+        parsedBody.data.subscription || parsedBody.data,
+        parsedBody.data.platform
+      );
       if (!subscription) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig push-abonnement' }) };
       }
 
       await sql`
-        INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth, user_agent, updated_at)
+        INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth, platform, user_agent, updated_at)
         VALUES (
           ${authResult.userId},
           ${subscription.endpoint},
           ${subscription.p256dh},
           ${subscription.auth},
+          ${subscription.platform},
           ${getHeader(event, 'user-agent') || null},
           NOW()
         )
@@ -62,6 +50,7 @@ exports.handler = async (event) => {
           user_id = EXCLUDED.user_id,
           p256dh = EXCLUDED.p256dh,
           auth = EXCLUDED.auth,
+          platform = EXCLUDED.platform,
           user_agent = EXCLUDED.user_agent,
           updated_at = NOW()
       `;
@@ -69,7 +58,7 @@ exports.handler = async (event) => {
       return {
         statusCode: 200,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ success: true })
+        body: JSON.stringify({ success: true, platform: subscription.platform })
       };
     }
 
