@@ -84,6 +84,17 @@
     opacity: 0.5;
 }
 
+.coaching-header-cta {
+    transition: opacity 180ms ease, transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease, visibility 0s;
+}
+
+.coaching-header-cta[data-hidden] {
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity 180ms ease, transform 180ms ease, visibility 0s 180ms;
+}
+
 .coaching-label {
     margin-bottom: 0.6rem;
     display: block;

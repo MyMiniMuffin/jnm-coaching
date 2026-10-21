@@ -49,6 +49,23 @@ const useReveal = () => {
     return rootRef;
 };
 
+// Følger med på om hero-knappen er synlig, så toppmenyen ikke viser to søk-knapper samtidig.
+const useHeroCtaVisible = () => {
+    const ctaRef = useRef(null);
+    const [visible, setVisible] = useState(true);
+
+    useEffect(() => {
+        const cta = ctaRef.current;
+        if (!cta || !('IntersectionObserver' in window)) return undefined;
+
+        const observer = new IntersectionObserver(([entry]) => setVisible(entry.isIntersecting));
+        observer.observe(cta);
+        return () => observer.disconnect();
+    }, []);
+
+    return [ctaRef, visible];
+};
+
 const encodeForm = (formData) => new URLSearchParams(formData).toString();
 
 const ButtonIcon = () => (
@@ -154,6 +171,7 @@ const ApplicationForm = () => {
 
 const CoachingLandingPage = () => {
     const rootRef = useReveal();
+    const [heroCtaRef, heroCtaVisible] = useHeroCtaVisible();
 
     return (
     <div ref={rootRef} className="coaching-page min-h-screen overflow-hidden bg-white text-ink">
@@ -167,7 +185,15 @@ const CoachingLandingPage = () => {
                     <img src="/jnm-coaching-logo.svg" alt="" className="h-8 w-8 rounded-lg" />
                     <span className="text-sm font-semibold tracking-[-0.02em]">JNM Coaching</span>
                 </a>
-                <a href="#soknad" className="coaching-button"><ButtonIcon /> Søk nå</a>
+                <a
+                        href="#soknad"
+                        className="coaching-button coaching-header-cta"
+                        data-hidden={heroCtaVisible || undefined}
+                        aria-hidden={heroCtaVisible || undefined}
+                        tabIndex={heroCtaVisible ? -1 : undefined}
+                    >
+                        <ButtonIcon /> Søk nå
+                    </a>
             </div>
         </header>
 
@@ -181,7 +207,7 @@ const CoachingLandingPage = () => {
                         <p className="mt-6 max-w-2xl text-lg leading-8 text-black/60 sm:text-xl">
                             Personlig coaching for trening og kosthold, med oppfølging underveis.
                         </p>
-                        <a href="#soknad" className="coaching-button mt-8"><ButtonIcon /> Søk om coaching</a>
+                        <a ref={heroCtaRef} href="#soknad" className="coaching-button mt-8"><ButtonIcon /> Søk om coaching</a>
                     </div>
                 </div>
             </section>
