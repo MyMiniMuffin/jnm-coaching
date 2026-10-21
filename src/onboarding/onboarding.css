@@ -2,9 +2,7 @@
     --coaching-black: #171717;
     --coaching-accent: #246568;
     min-height: 100vh;
-    background:
-        radial-gradient(circle at 8% 0%, rgba(36, 101, 104, 0.1), transparent 30rem),
-        #f7f7f4;
+    background: #f7f7f4;
     padding-bottom: 5.5rem;
     font-family: var(--font-sans);
 }
@@ -45,14 +43,6 @@
     margin-top: 0.75rem;
     color: rgba(23, 23, 23, 0.56);
     line-height: 1.65;
-}
-
-.onboarding-eyebrow {
-    color: var(--coaching-accent);
-    font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0.09em;
-    text-transform: uppercase;
 }
 
 .onboarding-label {

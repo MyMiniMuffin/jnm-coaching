@@ -185,8 +185,7 @@ const OnboardingForm = () => {
         return (
             <div className="onboarding-success" role="status">
                 <div className="onboarding-success-icon"><Check size={28} aria-hidden="true" /></div>
-                <p className="onboarding-eyebrow">Alt er sendt</p>
-                <h1 className="mt-3 text-4xl font-semibold leading-tight tracking-[-0.045em] sm:text-5xl">Takk, {values.name.split(' ')[0]}.</h1>
+                <h1 className="text-4xl font-semibold leading-tight tracking-[-0.045em] sm:text-5xl">Takk, {values.name.split(' ')[0]}.</h1>
                 <p className="mt-5 max-w-xl text-lg leading-8 text-black/60">
                     Jeg har mottatt svarene dine og bruker dem til å forberede oppstarten og planen din.
                 </p>
@@ -348,9 +347,8 @@ const OnboardingPage = () => (
 
         <main className="mx-auto grid max-w-6xl gap-12 px-5 py-8 sm:px-8 sm:py-12 lg:grid-cols-[0.68fr_1.32fr] lg:gap-20 lg:py-20">
             <aside className="hidden lg:sticky lg:top-24 lg:block lg:self-start">
-                <p className="onboarding-eyebrow">Velkommen inn</p>
-                <h1 className="mt-4 max-w-lg text-4xl font-semibold leading-[1.02] tracking-[-0.05em] sm:text-5xl lg:text-6xl">
-                    La oss bygge et godt utgangspunkt<span className="coaching-accent">.</span>
+                <h1 className="max-w-lg text-4xl font-semibold leading-[1.02] tracking-[-0.05em] sm:text-5xl lg:text-6xl">
+                    La oss bygge et godt utgangspunkt
                 </h1>
                 <p className="mt-6 max-w-md text-lg leading-8 text-black/60">
                     Svar så ærlig og konkret du kan. Det finnes ingen riktige svar – informasjonen hjelper meg å lage et opplegg som faktisk passer deg.

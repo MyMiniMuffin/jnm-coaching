@@ -18,12 +18,6 @@ const pillars = [
 
 const encodeForm = (formData) => new URLSearchParams(formData).toString();
 
-const ButtonIcon = () => (
-    <svg viewBox="0 0 512 512" className="coaching-button-icon" aria-hidden="true" focusable="false">
-        <path d="M307 34.8c-11.5 5.1-19 16.6-19 29.2v64H176C78.8 128 0 206.8 0 304C0 417.3 81.5 467.9 100.2 478.1c2.5 1.4 5.3 1.9 8.1 1.9c10.9 0 19.7-8.9 19.7-19.7c0-7.5-4.3-14.4-9.8-19.5C108.8 431.9 96 414.4 96 384c0-53 43-96 96-96h96v64c0 12.6 7.4 24.1 19 29.2s25 3 34.4-5.4l160-144c6.7-6.1 10.6-14.7 10.6-23.8s-3.8-17.7-10.6-23.8l-160-144c-9.4-8.5-22.9-10.6-34.4-5.4z" />
-    </svg>
-);
-
 const ApplicationForm = () => {
     const [status, setStatus] = useState('idle');
     const [error, setError] = useState('');
@@ -55,7 +49,7 @@ const ApplicationForm = () => {
     if (status === 'success') {
         return (
             <div className="flex min-h-[360px] flex-col justify-center border-t border-black/10 py-16" role="status">
-                <h3 className="text-4xl font-semibold tracking-[-0.045em] text-ink sm:text-5xl">Søknaden er sendt.</h3>
+                <h3 className="text-3xl font-semibold tracking-[-0.035em] text-ink sm:text-4xl">Søknaden er sendt</h3>
                 <p className="mt-5 max-w-md text-lg leading-8 text-ink-muted">
                     Takk for at du tok kontakt. Du hører fra JNM Coaching så snart søknaden er lest.
                 </p>
@@ -113,7 +107,7 @@ const ApplicationForm = () => {
             >
                 {status === 'submitting' ? (
                     <><Loader2 className="animate-spin" size={18} aria-hidden="true" /> Sender</>
-                ) : <><ButtonIcon /> Send søknad</>}
+                ) : 'Send søknad'}
             </button>
         </form>
     );
@@ -131,35 +125,35 @@ const CoachingLandingPage = () => (
                     <img src="/jnm-coaching-logo.svg" alt="" className="h-8 w-8 rounded-lg" />
                     <span className="text-sm font-semibold tracking-[-0.02em]">JNM Coaching</span>
                 </a>
-                <a href="#soknad" className="coaching-button"><ButtonIcon /> Søk nå</a>
+                <a href="#soknad" className="coaching-button">Søk nå</a>
             </div>
         </header>
 
         <main>
-            <section className="coaching-hero flex min-h-[calc(100svh-4rem)] items-center">
-                <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 sm:py-28 lg:px-12">
-                    <div className="max-w-6xl">
-                        <h1 className="coaching-title text-[3.65rem] font-semibold leading-[0.92] tracking-[-0.065em] sm:text-[6.4rem] lg:text-[8.25rem]">
-                            En plan du faktisk kan følge<span className="coaching-accent">.</span>
+            <section className="bg-white">
+                <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 sm:py-28 lg:px-12 lg:py-36">
+                    <div className="max-w-4xl">
+                        <h1 className="coaching-title text-5xl font-semibold leading-[1.02] tracking-[-0.04em] sm:text-6xl lg:text-7xl">
+                            En plan du faktisk kan følge
                         </h1>
-                        <p className="mt-8 max-w-2xl text-xl leading-8 text-black/60 sm:mt-10 sm:text-2xl sm:leading-9">
-                            Personlig coaching for trening, kosthold og fremgang som varer.
+                        <p className="mt-6 max-w-2xl text-lg leading-8 text-black/60 sm:text-xl">
+                            Personlig coaching for trening og kosthold, med oppfølging underveis.
                         </p>
-                        <a href="#soknad" className="coaching-button mt-9 sm:mt-11"><ButtonIcon /> Søk om coaching</a>
+                        <a href="#soknad" className="coaching-button mt-8">Søk om coaching</a>
                     </div>
                 </div>
             </section>
 
-            <section id="opplegget" className="scroll-mt-20 bg-surface-50 py-24 sm:py-32 lg:py-40">
+            <section id="opplegget" className="scroll-mt-20 bg-surface-50 py-20 sm:py-28">
                 <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
-                    <h2 className="max-w-5xl text-4xl font-semibold leading-[1.02] tracking-[-0.05em] sm:text-6xl lg:text-7xl">
-                        Tydelig retning. Tilpasset livet ditt.
+                    <h2 className="text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">
+                        Hva du får
                     </h2>
 
-                    <div className="mt-20 grid border-t border-black/15 sm:mt-28 md:grid-cols-3">
+                    <div className="mt-10 grid border-t border-black/15 sm:mt-12 md:grid-cols-3">
                         {pillars.map(({ title, description }) => (
-                            <article key={title} className="coaching-pillar border-b border-black/15 py-8 md:border-b-0 md:border-l md:py-10 md:px-8 md:first:border-l-0 md:first:pl-0 md:last:pr-0">
-                                <h3 className="text-2xl font-semibold tracking-[-0.035em]">{title}</h3>
+                            <article key={title} className="border-b border-black/15 py-8 md:border-b-0 md:border-l md:py-10 md:px-8 md:first:border-l-0 md:first:pl-0 md:last:pr-0">
+                                <h3 className="text-xl font-semibold tracking-[-0.02em]">{title}</h3>
                                 <p className="mt-4 max-w-sm text-base leading-7 text-black/60">{description}</p>
                             </article>
                         ))}
@@ -167,18 +161,10 @@ const CoachingLandingPage = () => (
                 </div>
             </section>
 
-            <section className="coaching-statement py-28 text-white sm:py-36 lg:py-44">
-                <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
-                    <p className="max-w-5xl text-4xl font-semibold leading-[1.02] tracking-[-0.05em] sm:text-6xl lg:text-7xl">
-                        Bygget for deg.<br /><span>Fulgt opp av meg.</span>
-                    </p>
-                </div>
-            </section>
-
-            <section id="soknad" className="scroll-mt-16 bg-white py-24 sm:py-32 lg:py-40">
+            <section id="soknad" className="scroll-mt-16 bg-white py-20 sm:py-28">
                 <div className="mx-auto grid max-w-7xl gap-16 px-5 sm:px-8 lg:grid-cols-[0.8fr_1.2fr] lg:gap-24 lg:px-12">
                     <div>
-                        <h2 className="max-w-lg text-4xl font-semibold leading-[1.02] tracking-[-0.05em] sm:text-6xl">
+                        <h2 className="max-w-lg text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">
                             Klar for å starte?
                         </h2>
                         <p className="mt-6 max-w-md text-lg leading-8 text-black/60">
