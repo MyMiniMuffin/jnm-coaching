@@ -172,7 +172,7 @@ const CoachingLandingPage = () => {
         </header>
 
         <main>
-            <section className="bg-white">
+            <section className="coaching-hero">
                 <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 sm:py-28 lg:px-12 lg:py-36">
                     <div data-reveal className="max-w-4xl">
                         <h1 className="coaching-title text-5xl font-semibold leading-[1.02] tracking-[-0.04em] sm:text-6xl lg:text-7xl">
@@ -194,7 +194,7 @@ const CoachingLandingPage = () => {
 
                     <div className="mt-10 grid border-t border-black/15 sm:mt-12 md:grid-cols-3">
                         {pillars.map(({ title, description }, index) => (
-                            <article key={title} data-reveal style={{ '--reveal-delay': `${index * 80}ms` }} className="border-b border-black/15 py-8 md:border-b-0 md:border-l md:py-10 md:px-8 md:first:border-l-0 md:first:pl-0 md:last:pr-0">
+                            <article key={title} data-reveal style={{ '--reveal-delay': `${index * 80}ms` }} className="coaching-pillar border-b border-black/15 py-8 md:border-b-0 md:border-l md:py-10 md:px-8 md:first:border-l-0 md:first:pl-0 md:last:pr-0">
                                 <h3 className="text-xl font-semibold tracking-[-0.02em]">{title}</h3>
                                 <p className="mt-4 max-w-sm text-base leading-7 text-black/60">{description}</p>
                             </article>

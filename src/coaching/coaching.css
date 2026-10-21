@@ -21,6 +21,21 @@
     text-wrap: balance;
 }
 
+.coaching-hero {
+    background:
+        radial-gradient(circle at 90% 0%, rgba(36, 101, 104, 0.07), transparent 28rem),
+        #fff;
+}
+
+.coaching-pillar::before {
+    content: '';
+    display: block;
+    width: 1.5rem;
+    height: 2px;
+    margin-bottom: 1.25rem;
+    background: var(--coaching-accent);
+}
+
 /* Adapted from SalladShooter's MIT-licensed Uiverse button; see THIRD_PARTY_NOTICES.md. */
 .coaching-button {
     display: inline-flex;
