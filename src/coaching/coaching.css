@@ -113,6 +113,18 @@
     outline-offset: 4px;
 }
 
+.coaching-page[data-reveal-ready] [data-reveal] {
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 600ms ease, transform 600ms ease;
+    transition-delay: var(--reveal-delay, 0ms);
+}
+
+.coaching-page[data-reveal-ready] [data-reveal].is-visible {
+    opacity: 1;
+    transform: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
     .coaching-page *,
     .coaching-page *::before,

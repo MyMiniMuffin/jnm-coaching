@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Instagram, Loader2 } from 'lucide-react';
 
 const pillars = [
@@ -15,6 +15,39 @@ const pillars = [
         description: 'Konkrete tilbakemeldinger og justeringer når livet eller behovene endrer seg.',
     },
 ];
+
+// Fader inn elementer merket med data-reveal når de kommer inn i bildet.
+// Uten JS, IntersectionObserver eller ved redusert bevegelse vises alt med en gang.
+const useReveal = () => {
+    const rootRef = useRef(null);
+
+    useEffect(() => {
+        const root = rootRef.current;
+        if (!root || !('IntersectionObserver' in window)) return undefined;
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
+
+        const elements = [...root.querySelectorAll('[data-reveal]')];
+        const reveal = (element) => {
+            element.classList.add('is-visible');
+            observer.unobserve(element);
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (!entry.isIntersecting) return;
+                // Vis også elementer over, i tilfelle man har hoppet forbi dem (f.eks. via «Søk nå»).
+                elements.slice(0, elements.indexOf(entry.target) + 1).forEach(reveal);
+            });
+        }, { rootMargin: '0px 0px -10% 0px' });
+
+        elements.forEach((element) => observer.observe(element));
+        root.setAttribute('data-reveal-ready', '');
+
+        return () => observer.disconnect();
+    }, []);
+
+    return rootRef;
+};
 
 const encodeForm = (formData) => new URLSearchParams(formData).toString();
 
@@ -58,63 +91,66 @@ const ApplicationForm = () => {
     }
 
     return (
-        <form
-            name="coaching-application"
-            method="POST"
-            data-netlify="true"
-            data-netlify-honeypot="bot-field"
-            onSubmit={handleSubmit}
-            className="border-t border-black/10 pt-10 sm:pt-12"
-        >
-            <input type="hidden" name="form-name" value="coaching-application" />
-            <p className="hidden">
-                <label>Ikke fyll ut dette feltet: <input name="bot-field" /></label>
-            </p>
-
-            <div className="grid gap-x-6 gap-y-7 sm:grid-cols-2">
-                <div>
-                    <label htmlFor="name" className="coaching-label">Navn</label>
-                    <input id="name" name="name" type="text" autoComplete="name" required className="coaching-field" />
-                </div>
-                <div>
-                    <label htmlFor="email" className="coaching-label">E-post</label>
-                    <input id="email" name="email" type="email" autoComplete="email" required className="coaching-field" />
-                </div>
-                <div>
-                    <label htmlFor="phone" className="coaching-label">Telefon <span>valgfritt</span></label>
-                    <input id="phone" name="phone" type="tel" autoComplete="tel" className="coaching-field" />
-                </div>
-                <div>
-                    <label htmlFor="instagram" className="coaching-label">Instagram <span>valgfritt</span></label>
-                    <input id="instagram" name="instagram" type="text" autoComplete="off" className="coaching-field" />
-                </div>
-                <div className="sm:col-span-2">
-                    <label htmlFor="goal" className="coaching-label">Hva ønsker du å oppnå?</label>
-                    <textarea id="goal" name="goal" required rows="3" className="coaching-field resize-y" />
-                </div>
-                <div className="sm:col-span-2">
-                    <label htmlFor="why-now" className="coaching-label">Hvorfor nå?</label>
-                    <textarea id="why-now" name="why-now" required rows="3" className="coaching-field resize-y" />
-                </div>
-            </div>
-
-            {error && <p className="mt-5 text-sm text-error" role="alert">{error}</p>}
-
-            <button
-                type="submit"
-                disabled={status === 'submitting'}
-                className="coaching-button mt-8 w-full sm:w-auto"
+            <form
+                name="coaching-application"
+                method="POST"
+                data-netlify="true"
+                data-netlify-honeypot="bot-field"
+                onSubmit={handleSubmit}
+                className="border-t border-black/10 pt-10 sm:pt-12"
             >
-                {status === 'submitting' ? (
-                    <><Loader2 className="animate-spin" size={18} aria-hidden="true" /> Sender</>
-                ) : 'Send søknad'}
-            </button>
-        </form>
+                <input type="hidden" name="form-name" value="coaching-application" />
+                <p className="hidden">
+                    <label>Ikke fyll ut dette feltet: <input name="bot-field" /></label>
+                </p>
+
+                <div className="grid gap-x-6 gap-y-7 sm:grid-cols-2">
+                    <div>
+                        <label htmlFor="name" className="coaching-label">Navn</label>
+                        <input id="name" name="name" type="text" autoComplete="name" required className="coaching-field" />
+                    </div>
+                    <div>
+                        <label htmlFor="email" className="coaching-label">E-post</label>
+                        <input id="email" name="email" type="email" autoComplete="email" required className="coaching-field" />
+                    </div>
+                    <div>
+                        <label htmlFor="phone" className="coaching-label">Telefon <span>valgfritt</span></label>
+                        <input id="phone" name="phone" type="tel" autoComplete="tel" className="coaching-field" />
+                    </div>
+                    <div>
+                        <label htmlFor="instagram" className="coaching-label">Instagram <span>valgfritt</span></label>
+                        <input id="instagram" name="instagram" type="text" autoComplete="off" className="coaching-field" />
+                    </div>
+                    <div className="sm:col-span-2">
+                        <label htmlFor="goal" className="coaching-label">Hva ønsker du å oppnå?</label>
+                        <textarea id="goal" name="goal" required rows="3" className="coaching-field resize-y" />
+                    </div>
+                    <div className="sm:col-span-2">
+                        <label htmlFor="why-now" className="coaching-label">Hvorfor nå?</label>
+                        <textarea id="why-now" name="why-now" required rows="3" className="coaching-field resize-y" />
+                    </div>
+                </div>
+
+                {error && <p className="mt-5 text-sm text-error" role="alert">{error}</p>}
+
+                <button
+                    type="submit"
+                    disabled={status === 'submitting'}
+                    className="coaching-button mt-8 w-full sm:w-auto"
+                >
+                    {status === 'submitting' ? (
+                        <><Loader2 className="animate-spin" size={18} aria-hidden="true" /> Sender</>
+                    ) : 'Send søknad'}
+                </button>
+            </form>
     );
 };
 
-const CoachingLandingPage = () => (
-    <div className="coaching-page min-h-screen overflow-hidden bg-white text-ink">
+const CoachingLandingPage = () => {
+    const rootRef = useReveal();
+
+    return (
+    <div ref={rootRef} className="coaching-page min-h-screen overflow-hidden bg-white text-ink">
         <header className="coaching-header sticky top-0 z-40">
             <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:px-8 lg:px-12">
                 <a
@@ -132,7 +168,7 @@ const CoachingLandingPage = () => (
         <main>
             <section className="bg-white">
                 <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 sm:py-28 lg:px-12 lg:py-36">
-                    <div className="max-w-4xl">
+                    <div data-reveal className="max-w-4xl">
                         <h1 className="coaching-title text-5xl font-semibold leading-[1.02] tracking-[-0.04em] sm:text-6xl lg:text-7xl">
                             En plan du faktisk kan følge
                         </h1>
@@ -146,13 +182,13 @@ const CoachingLandingPage = () => (
 
             <section id="opplegget" className="scroll-mt-20 bg-surface-50 py-20 sm:py-28">
                 <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
-                    <h2 className="text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">
+                    <h2 data-reveal className="text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">
                         Hva du får
                     </h2>
 
                     <div className="mt-10 grid border-t border-black/15 sm:mt-12 md:grid-cols-3">
-                        {pillars.map(({ title, description }) => (
-                            <article key={title} className="border-b border-black/15 py-8 md:border-b-0 md:border-l md:py-10 md:px-8 md:first:border-l-0 md:first:pl-0 md:last:pr-0">
+                        {pillars.map(({ title, description }, index) => (
+                            <article key={title} data-reveal style={{ '--reveal-delay': `${index * 80}ms` }} className="border-b border-black/15 py-8 md:border-b-0 md:border-l md:py-10 md:px-8 md:first:border-l-0 md:first:pl-0 md:last:pr-0">
                                 <h3 className="text-xl font-semibold tracking-[-0.02em]">{title}</h3>
                                 <p className="mt-4 max-w-sm text-base leading-7 text-black/60">{description}</p>
                             </article>
@@ -163,7 +199,7 @@ const CoachingLandingPage = () => (
 
             <section id="soknad" className="scroll-mt-16 bg-white py-20 sm:py-28">
                 <div className="mx-auto grid max-w-7xl gap-16 px-5 sm:px-8 lg:grid-cols-[0.8fr_1.2fr] lg:gap-24 lg:px-12">
-                    <div>
+                    <div data-reveal>
                         <h2 className="max-w-lg text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">
                             Klar for å starte?
                         </h2>
@@ -171,7 +207,9 @@ const CoachingLandingPage = () => (
                             Send en kort, uforpliktende søknad. Så finner vi ut om dette er riktig for deg.
                         </p>
                     </div>
-                    <ApplicationForm />
+                    <div data-reveal style={{ '--reveal-delay': '80ms' }}>
+                        <ApplicationForm />
+                    </div>
                 </div>
             </section>
         </main>
@@ -196,6 +234,7 @@ const CoachingLandingPage = () => (
             </div>
         </footer>
     </div>
-);
+    );
+};
 
 export default CoachingLandingPage;
