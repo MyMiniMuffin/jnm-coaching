@@ -13,12 +13,23 @@ exports.handler = async (event) => {
 
   try {
     // Bruk tokenets identitet og serverens klokke, aldri en innsendt bruker-ID.
-    await sql`
-      UPDATE users SET last_active_at = NOW()
+    // RETURNING/SELECT i samme runde gir også fersk is_archived, slik at utøvere
+    // får arkivstatus uten å måtte logge inn på nytt.
+    const rows = await sql`
+      WITH bumped AS (
+        UPDATE users SET last_active_at = NOW()
+        WHERE id = ${auth.userId}
+          AND (last_active_at IS NULL OR last_active_at < NOW() - INTERVAL '1 minute')
+        RETURNING id
+      )
+      SELECT COALESCE(is_archived, false) AS is_archived
+      FROM users
       WHERE id = ${auth.userId}
-        AND (last_active_at IS NULL OR last_active_at < NOW() - INTERVAL '1 minute')
     `;
-    return { statusCode: 204, headers: { 'Cache-Control': 'no-store' }, body: '' };
+
+    return jsonResponse(200, {
+      isArchived: Boolean(rows[0]?.is_archived)
+    }, { 'Cache-Control': 'no-store' });
   } catch (error) {
     console.error('Kunne ikke registrere aktivitet:', error);
     return jsonResponse(500, { error: 'Kunne ikke registrere aktivitet' });

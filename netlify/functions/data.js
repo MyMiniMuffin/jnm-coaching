@@ -182,7 +182,7 @@ exports.handler = async (event) => {
         }),
         sql`
           SELECT diet_plan, workout_plan, step_goal, total_weeks, start_date, is_paused, paused_at,
-                 current_period_id, starting_weight
+                 current_period_id, starting_weight, is_archived
           FROM users
           WHERE id = ${userId}
         `,
@@ -222,6 +222,7 @@ exports.handler = async (event) => {
           pausedAt: user.paused_at,
           currentPeriodId: user.current_period_id,
           startingWeight: user.starting_weight,
+          isArchived: Boolean(user.is_archived),
           periods: periods || [],
           checkins: formattedCheckins,
           galleryImages: galleryImages.map(img => {

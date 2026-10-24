@@ -96,7 +96,6 @@ const App = () => {
     const isOnline = useOnlineStatus();
     const isDesktop = useDesktop();
     const [currentUser, setCurrentUser] = useState(readBootUser);
-    useActivity(currentUser?.id);
     const [activeTab, setActiveTab] = useState('dashboard');
     const [allUsers, setAllUsers] = useState(() => {
         const user = readBootUser();
@@ -139,6 +138,49 @@ const App = () => {
     useEffect(() => {
         currentDataRef.current = currentData;
     }, [currentData]);
+
+    // Hold utøverens arkivstatus i sync med serveren uten ny innlogging.
+    const syncAthleteArchiveStatus = useCallback((isArchived) => {
+        const archived = Boolean(isArchived);
+        let nextUser = null;
+
+        setCurrentUser(prev => {
+            if (!prev || prev.role !== 'athlete') return prev;
+            if (Boolean(prev.is_archived) === archived) return prev;
+            nextUser = { ...prev, is_archived: archived };
+            return nextUser;
+        });
+
+        // For utøvere er viewingClient alltid dem selv; activity-callback
+        // sendes kun for athlete-rollen, så dette treffer ikke coach-valg.
+        setViewingClient(prev => {
+            if (!prev) return prev;
+            if (Boolean(prev.is_archived) === archived) return prev;
+            return { ...prev, is_archived: archived };
+        });
+
+        if (nextUser) {
+            const token = getToken();
+            if (token) saveSession({ ...nextUser, token });
+        }
+    }, []);
+
+    const applyAthleteData = useCallback((data) => {
+        if (!data || typeof data !== 'object') return;
+        setCurrentData(prev => mergeUserData(prev, data));
+        if ('isArchived' in data) syncAthleteArchiveStatus(data.isArchived);
+    }, [syncAthleteArchiveStatus]);
+
+    const handleActivityStatus = useCallback((status) => {
+        if (status && 'isArchived' in status) {
+            syncAthleteArchiveStatus(status.isArchived);
+        }
+    }, [syncAthleteArchiveStatus]);
+
+    useActivity(
+        currentUser?.id,
+        currentUser?.role === 'athlete' ? handleActivityStatus : undefined
+    );
 
     const deliverCoachCheckinAlert = useCallback((clientsWithNewCheckins) => {
         if (!clientsWithNewCheckins.length) return;
@@ -358,7 +400,7 @@ const App = () => {
                         if (result.authError) {
                             setShowReauthPrompt(true);
                         } else if (result.data) {
-                            setCurrentData(prev => mergeUserData(prev, result.data));
+                            applyAthleteData(result.data);
                         }
                     }).catch(e => console.error('[Init] Feil ved henting av athlete-data:', e));
                 }
@@ -542,7 +584,7 @@ const App = () => {
                         console.warn('[App] Auth-feil ved henting av klientdata');
                         setShowReauthPrompt(true);
                     } else if (result.data) {
-                        setCurrentData(prev => mergeUserData(prev, result.data));
+                        applyAthleteData(result.data);
                     }
                 })
                 .catch(() => {
@@ -550,7 +592,7 @@ const App = () => {
                 })
                 .finally(() => setIsClientLoading(false));
         }
-    }, [viewingClient, currentUser?.role]);
+    }, [viewingClient, currentUser?.role, applyAthleteData]);
 
     const handleLogin = useCallback((user) => {
         cache.invalidateAll();
@@ -1293,10 +1335,14 @@ const App = () => {
             if (result.authError) {
                 setShowReauthPrompt(true);
             } else if (result.data) {
-                setCurrentData(prev => mergeUserData(prev, result.data));
+                if (currentUser?.role === 'athlete') {
+                    applyAthleteData(result.data);
+                } else {
+                    setCurrentData(prev => mergeUserData(prev, result.data));
+                }
             }
         }
-    }, [viewingClient]);
+    }, [viewingClient, currentUser?.role, applyAthleteData]);
 
     if (isLoading) {
         return (
