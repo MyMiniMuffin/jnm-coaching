@@ -178,6 +178,9 @@ const App = () => {
         };
     }, [toast]);
 
+    const usersFetchGenerationRef = useRef(0);
+    const allUsersRef = useRef(allUsers);
+
     const applyUsersList = useCallback((nextUsers, { notify = false } = {}) => {
         if (!Array.isArray(nextUsers)) return;
         const normalizedUsers = nextUsers.map(user => (
@@ -185,7 +188,9 @@ const App = () => {
                 ? { ...user, is_archived: Boolean(user.is_archived) }
                 : user
         ));
+        allUsersRef.current = normalizedUsers;
         setAllUsers(normalizedUsers);
+        cache.set('users-list', normalizedUsers);
 
         setCurrentUser(prevUser => {
             if (!prevUser) return prevUser;
@@ -245,7 +250,6 @@ const App = () => {
         return true;
     }, []);
 
-    const allUsersRef = useRef(allUsers);
     useEffect(() => {
         allUsersRef.current = allUsers;
     }, [allUsers]);
@@ -469,9 +473,11 @@ const App = () => {
         let isCancelled = false;
 
         const refreshUsers = async (notify = true) => {
+            const generation = usersFetchGenerationRef.current;
             try {
                 const result = await api.getUsers(false);
-                if (isCancelled) return;
+                // Ignorer utdaterte svar — en nyere mutasjon/poll eier listen.
+                if (isCancelled || generation !== usersFetchGenerationRef.current) return;
                 if (result.authError) {
                     setShowReauthPrompt(true);
                     return;
@@ -480,11 +486,13 @@ const App = () => {
                     applyUsersList(result.data, { notify });
                 }
             } catch (error) {
-                if (!isCancelled) {
+                if (!isCancelled && generation === usersFetchGenerationRef.current) {
                     console.error('[Coach Poll] Kunne ikke oppdatere brukerliste:', error);
                 }
             } finally {
-                if (!isCancelled) setIsUsersLoading(false);
+                if (!isCancelled && generation === usersFetchGenerationRef.current) {
+                    setIsUsersLoading(false);
+                }
             }
         };
 
@@ -1067,6 +1075,7 @@ const App = () => {
 
     const handleAddClient = useCallback(async (u) => {
         try {
+            usersFetchGenerationRef.current += 1;
             const result = await api.createUser({...u, role:'athlete'});
             if (result.authError) {
                 setShowReauthPrompt(true);
@@ -1080,6 +1089,7 @@ const App = () => {
 
     const handleDeleteClient = useCallback(async (id) => {
         try {
+            usersFetchGenerationRef.current += 1;
             const result = await api.deleteUser(id);
             if (result.authError) {
                 setShowReauthPrompt(true);
@@ -1106,15 +1116,41 @@ const App = () => {
     }, [toast]);
 
     const handleArchiveClient = useCallback(async (id, archive) => {
+        const previousUsers = allUsersRef.current;
+        const sameId = (user) => String(user?.id) === String(id);
+        const optimisticUsers = previousUsers.map(user => (
+            sameId(user) ? { ...user, is_archived: archive } : user
+        ));
+
+        // Oppdater listen med én gang, og avvis samtidige poll-svar som fortsatt
+        // har gammel arkivstatus.
+        usersFetchGenerationRef.current += 1;
+        applyUsersList(optimisticUsers);
+
         try {
             const result = await api.archiveUser(id, archive);
             if (result.authError) {
+                applyUsersList(previousUsers);
                 setShowReauthPrompt(true);
                 return;
             }
-            if (result.data) applyUsersList(result.data);
+
+            if (Array.isArray(result.data)) {
+                applyUsersList(result.data);
+            } else if (result.data && typeof result.data === 'object' && result.data.id != null) {
+                const confirmed = Boolean(result.data.is_archived);
+                applyUsersList(
+                    allUsersRef.current.map(user => (
+                        String(user?.id) === String(result.data.id)
+                            ? { ...user, is_archived: confirmed }
+                            : user
+                    ))
+                );
+            }
+
             toast(archive ? 'Utøver arkivert' : 'Utøver gjenopprettet');
         } catch (e) {
+            applyUsersList(previousUsers);
             toast(e.message || 'Feil ved arkivering', 'error');
         }
     }, [toast, applyUsersList]);

@@ -154,6 +154,7 @@ exports.handler = async (event) => {
       if (!parsedBody.ok) return parsedBody.response;
       const { id, is_archived, new_password } = parsedBody.data;
       const userId = parseInt(id, 10);
+      const archiveOnly = typeof is_archived === 'boolean' && typeof new_password !== 'string';
 
       if (!id || isNaN(userId) || userId <= 0) {
         return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig bruker-ID' }) };
@@ -181,8 +182,28 @@ exports.handler = async (event) => {
         await sql`UPDATE users SET password = ${hashedPassword}, must_change_password = true WHERE id = ${userId}`;
       }
 
+      // Arkiver/gjenopprett trenger ikke hele coach-listen (unread + siste rapport).
+      // Returner kun endringen slik at UI kan oppdatere umiddelbart.
+      if (archiveOnly) {
+        return {
+          statusCode: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-store'
+          },
+          body: JSON.stringify({ id: userId, is_archived })
+        };
+      }
+
       const allUsers = await getFormattedUsersList();
-      return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(allUsers) };
+      return {
+        statusCode: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store'
+        },
+        body: JSON.stringify(allUsers)
+      };
     }
 
     // SLETTE BRUKER (DELETE)
