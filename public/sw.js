@@ -34,6 +34,20 @@ self.addEventListener('push', (event) => {
     };
   }
 
+  // Silent badge sync after coach has read reports — no banner.
+  if (data.type === 'badge-sync') {
+    const unreadTotal = Number(data.unreadTotal);
+    const badgeCount = Number.isFinite(unreadTotal) ? Math.max(0, unreadTotal) : 0;
+    event.waitUntil((async () => {
+      await applyAppBadge(badgeCount);
+      if (badgeCount === 0 && typeof self.registration.getNotifications === 'function') {
+        const notifications = await self.registration.getNotifications();
+        notifications.forEach((notification) => notification.close());
+      }
+    })());
+    return;
+  }
+
   const title = data.title || 'Ny rapport mottatt';
   const options = {
     body: data.body || 'En utøver har sendt inn en ny rapport.',

@@ -10,8 +10,10 @@ import { getNotificationPermission, prefetchViews, supportsPushNotifications, su
 import { isNativeApp } from './lib/platform';
 import {
     checkNativeNotificationPermission,
+    clearNativeDeliveredNotifications,
     registerNativePush,
     registerNativePushListeners,
+    removeNativeNotificationsForClient,
     requestNativeNotificationPermission,
     toApnsEndpoint
 } from './lib/nativePush';
@@ -916,29 +918,40 @@ const App = () => {
 
         setIsClientLoading(false);
 
-        if (client.unreadCheckins > 0) {
-            const previousUnread = client.unreadCheckins;
-            setAllUsers(prev => prev.map(u =>
-                u.id === client.id ? { ...u, unreadCheckins: 0 } : u
-            ));
-            // Hold poll-snapshot i sync, ellers mistes varsel hvis N nye rapporter kommer før neste poll.
-            coachUnreadSnapshotRef.current.set(client.id, 0);
-            api.markCheckinsRead(client.id).then(result => {
-                if (result.authError) {
-                    setShowReauthPrompt(true);
-                    setAllUsers(prev => prev.map(u =>
-                        u.id === client.id ? { ...u, unreadCheckins: previousUnread } : u
-                    ));
-                    coachUnreadSnapshotRef.current.set(client.id, previousUnread);
-                }
-            }).catch(e => {
-                console.error('Kunne ikke markere innsjekk som lest:', e);
+        const previousUnread = Number(client.unreadCheckins) || 0;
+        if (previousUnread <= 0) return;
+
+        setAllUsers(prev => prev.map(u =>
+            u.id === client.id ? { ...u, unreadCheckins: 0 } : u
+        ));
+        // Hold poll-snapshot i sync, ellers mistes varsel hvis N nye rapporter kommer før neste poll.
+        coachUnreadSnapshotRef.current.set(client.id, 0);
+        removeNativeNotificationsForClient(client.id);
+
+        api.markCheckinsRead(client.id).then(result => {
+            if (result.authError) {
+                setShowReauthPrompt(true);
                 setAllUsers(prev => prev.map(u =>
                     u.id === client.id ? { ...u, unreadCheckins: previousUnread } : u
                 ));
                 coachUnreadSnapshotRef.current.set(client.id, previousUnread);
-            });
-        }
+                return;
+            }
+
+            const syncedTotal = Number(result.data?.unreadTotal);
+            if (Number.isFinite(syncedTotal)) {
+                setAppBadgeCount(syncedTotal);
+                if (syncedTotal === 0) {
+                    clearNativeDeliveredNotifications();
+                }
+            }
+        }).catch(e => {
+            console.error('Kunne ikke markere innsjekk som lest:', e);
+            setAllUsers(prev => prev.map(u =>
+                u.id === client.id ? { ...u, unreadCheckins: previousUnread } : u
+            ));
+            coachUnreadSnapshotRef.current.set(client.id, previousUnread);
+        });
     }, []);
 
     useEffect(() => {
@@ -976,7 +989,12 @@ const App = () => {
                 if (!clientId) return;
                 const client = allUsersRef.current.find((user) => String(user.id) === String(clientId));
                 if (client && handleSelectClientRef.current) {
-                    handleSelectClientRef.current(client);
+                    // Sørg for at mark-as-read kjører selv om poll ikke har oppdatert unread ennå.
+                    const clientWithUnread = {
+                        ...client,
+                        unreadCheckins: Math.max(1, Number(client.unreadCheckins) || 0)
+                    };
+                    handleSelectClientRef.current(clientWithUnread);
                 }
             }
         }).then((cleanup) => {

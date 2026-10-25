@@ -1,7 +1,10 @@
 const { neon } = require('@neondatabase/serverless');
 const { requireOwnership } = require('./auth-middleware');
 const { parseJsonBody } = require('./http-utils');
-const { sendCoachPushNotifications: deliverCoachPushNotifications } = require('./push-delivery');
+const {
+  sendCoachPushNotifications: deliverCoachPushNotifications,
+  syncCoachAppBadge: deliverCoachBadgeSync
+} = require('./push-delivery');
 
 // Sjekk at database-URL er satt
 if (!process.env.NETLIFY_DATABASE_URL) {
@@ -12,6 +15,19 @@ if (!process.env.NETLIFY_DATABASE_URL) {
 const sql = neon(process.env.NETLIFY_DATABASE_URL);
 
 const sendCoachPushNotifications = (args) => deliverCoachPushNotifications(sql, args);
+const syncCoachAppBadge = (unreadTotal) => deliverCoachBadgeSync(sql, unreadTotal);
+
+const countUnreadCheckinsTotal = async () => {
+  const unreadResult = await sql`
+    SELECT COUNT(*)::integer AS total
+    FROM checkins c
+    INNER JOIN users u ON u.id = c.user_id
+    WHERE c.is_read = false
+      AND u.role = 'athlete'
+      AND COALESCE(u.is_archived, false) = false
+  `;
+  return unreadResult[0]?.total ?? 0;
+};
 
 /** Avvis datoer som JS Date ruller framover (f.eks. 2023-02-29 → 2023-03-01). */
 const isValidCalendarDate = (dateStr) => {
@@ -582,6 +598,14 @@ exports.handler = async (event) => {
       else if (type === 'mark_checkins_read') {
         // Coach-only sjekkes via COACH_ONLY_TYPES, target.role === 'athlete' sjekkes generelt
         await sql`UPDATE checkins SET is_read = true WHERE user_id = ${userId} AND is_read = false`;
+        const unreadTotal = await countUnreadCheckinsTotal();
+        // Synk iOS/web badge etter lesing — ellers blir den røde prikken hengende.
+        await syncCoachAppBadge(unreadTotal);
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ success: true, unreadTotal })
+        };
       }
       
       else if (type === 'create_period') {

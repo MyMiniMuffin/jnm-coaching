@@ -78,3 +78,28 @@ export const registerNativePush = async () => {
     }
     await PushNotifications.register();
 };
+
+/** Tøm Notification Center og sett iOS-badge til 0. */
+export const clearNativeDeliveredNotifications = async () => {
+    if (!isNativeApp()) return;
+    try {
+        await PushNotifications.removeAllDeliveredNotifications();
+    } catch (error) {
+        console.warn('[Push] Kunne ikke tømme leverte varsler:', error);
+    }
+};
+
+/** Fjern leverte varsler for én utøver (uten å nullstille hele badge-tallet). */
+export const removeNativeNotificationsForClient = async (clientId) => {
+    if (!isNativeApp() || clientId == null) return;
+    try {
+        const delivered = await PushNotifications.getDeliveredNotifications();
+        const matching = (delivered?.notifications || []).filter(
+            (notification) => String(notification?.data?.clientId) === String(clientId)
+        );
+        if (!matching.length) return;
+        await PushNotifications.removeDeliveredNotifications({ notifications: matching });
+    } catch (error) {
+        console.warn('[Push] Kunne ikke fjerne varsler for utøver:', error);
+    }
+};

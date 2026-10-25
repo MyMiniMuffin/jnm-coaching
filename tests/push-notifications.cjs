@@ -4,6 +4,7 @@ const path = require('node:path');
 
 const {
   APNS_ENDPOINT_PREFIX,
+  buildCoachBadgeSyncPayload,
   buildCoachPushPayload,
   extractApnsDeviceToken,
   normalizeSubscription
@@ -48,6 +49,24 @@ test('buildCoachPushPayload keeps coach check-in copy and badge count', () => {
   assert.equal(payload.clientId, 42);
   assert.equal(payload.unreadTotal, 5);
   assert.equal(payload.tag, 'coach-checkin-42');
+});
+
+test('buildCoachBadgeSyncPayload syncs badge without alert copy', () => {
+  assert.deepEqual(buildCoachBadgeSyncPayload(3), {
+    type: 'badge-sync',
+    unreadTotal: 3,
+    tag: 'coach-badge-sync'
+  });
+  assert.deepEqual(buildCoachBadgeSyncPayload(0), {
+    type: 'badge-sync',
+    unreadTotal: 0,
+    tag: 'coach-badge-sync'
+  });
+  assert.deepEqual(buildCoachBadgeSyncPayload(-2), {
+    type: 'badge-sync',
+    unreadTotal: 0,
+    tag: 'coach-badge-sync'
+  });
 });
 
 test('extractApnsDeviceToken reads endpoint or explicit token', () => {

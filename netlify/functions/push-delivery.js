@@ -232,10 +232,106 @@ const sendCoachPushNotifications = async (sql, { athleteId, athleteName, unreadC
   }
 };
 
+const buildCoachBadgeSyncPayload = (unreadTotal) => ({
+  type: 'badge-sync',
+  unreadTotal: Math.max(0, Number(unreadTotal) || 0),
+  tag: 'coach-badge-sync'
+});
+
+const sendWebBadgeSync = async (sql, subscriptions, unreadTotal) => {
+  const webpush = getWebPushClient();
+  if (!webpush || !subscriptions.length) return;
+
+  const payload = buildCoachBadgeSyncPayload(unreadTotal);
+  const body = JSON.stringify(payload);
+
+  await Promise.allSettled(subscriptions.map(async (subscription) => {
+    try {
+      await webpush.sendNotification({
+        endpoint: subscription.endpoint,
+        keys: {
+          p256dh: subscription.p256dh,
+          auth: subscription.auth
+        }
+      }, body);
+    } catch (error) {
+      const statusCode = error?.statusCode;
+      console.error('Web badge-sync feilet:', statusCode || error?.message || error);
+      if (statusCode === 404 || statusCode === 410) {
+        await sql`DELETE FROM push_subscriptions WHERE endpoint = ${subscription.endpoint}`;
+      }
+    }
+  }));
+};
+
+const sendApnsBadgeSync = async (sql, subscriptions, unreadTotal) => {
+  const provider = getApnProvider();
+  if (!provider || !subscriptions.length) return;
+
+  const apn = require('@parse/node-apn');
+  const topic = process.env.APNS_BUNDLE_ID || 'no.jnmcoaching.app';
+  const badge = Math.max(0, Number(unreadTotal) || 0);
+
+  await Promise.allSettled(subscriptions.map(async (subscription) => {
+    const deviceToken = extractApnsDeviceToken(subscription);
+    if (!deviceToken) return;
+
+    // Badge-only: oppdater app-ikonet uten banner/lyd etter at coach har lest.
+    const note = new apn.Notification();
+    note.topic = topic;
+    note.pushType = 'alert';
+    note.priority = 5;
+    note.expiry = Math.floor(Date.now() / 1000) + 3600;
+    note.badge = badge;
+    note.payload = buildCoachBadgeSyncPayload(badge);
+    note.contentAvailable = 1;
+
+    try {
+      const result = await provider.send(note, deviceToken);
+      const failed = result?.failed || [];
+      for (const failure of failed) {
+        const status = failure?.status;
+        const reason = failure?.response?.reason || failure?.error?.message || 'unknown';
+        console.error('APNs badge-sync feilet:', status || reason);
+        if (status === 410 || reason === 'BadDeviceToken' || reason === 'Unregistered') {
+          await sql`DELETE FROM push_subscriptions WHERE endpoint = ${subscription.endpoint}`;
+        }
+      }
+    } catch (error) {
+      console.error('APNs badge-sync feilet:', error?.message || error);
+    }
+  }));
+};
+
+const syncCoachAppBadge = async (sql, unreadTotal) => {
+  try {
+    const subscriptions = await sql`
+      SELECT ps.endpoint, ps.p256dh, ps.auth, ps.platform
+      FROM push_subscriptions ps
+      INNER JOIN users u ON u.id = ps.user_id
+      WHERE u.role = 'coach' AND COALESCE(u.is_archived, false) = false
+    `;
+
+    if (!subscriptions.length) return;
+
+    const webSubscriptions = subscriptions.filter((row) => (row.platform || 'web') !== 'ios');
+    const iosSubscriptions = subscriptions.filter((row) => row.platform === 'ios');
+
+    await Promise.all([
+      sendWebBadgeSync(sql, webSubscriptions, unreadTotal),
+      sendApnsBadgeSync(sql, iosSubscriptions, unreadTotal)
+    ]);
+  } catch (error) {
+    console.error('Kunne ikke synke coach-app-badge:', error);
+  }
+};
+
 module.exports = {
   APNS_ENDPOINT_PREFIX,
   normalizeSubscription,
   buildCoachPushPayload,
+  buildCoachBadgeSyncPayload,
   extractApnsDeviceToken,
-  sendCoachPushNotifications
+  sendCoachPushNotifications,
+  syncCoachAppBadge
 };
