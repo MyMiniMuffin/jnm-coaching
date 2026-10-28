@@ -175,7 +175,7 @@ const CheckinFields = ({
             />
         </div>
 
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-colors ${values.stepsReached ? 'bg-accent/10 border-accent/20' : 'bg-surface-50 border-surface-200'}`}>
                 <input type="checkbox" checked={values.stepsReached} onChange={(event) => { haptic('toggle'); onField('stepsReached', event.target.checked); }} className="sr-only" />
                 <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${values.stepsReached ? 'bg-accent text-white border-2 border-accent' : 'border-2 border-surface-300 bg-white text-transparent'}`}>
@@ -608,7 +608,7 @@ const CheckInView = React.memo(({
     );
 
     return (
-        <div className={`space-y-5 animate-slide-up ${showForm ? 'pb-52 lg:pb-24' : 'pb-32 lg:pb-8'}`}>
+        <div className={`space-y-5 animate-slide-up ${showForm ? 'pb-52 duo:pb-24' : 'pb-32 duo:pb-8'}`}>
             {lightbox.isOpen && (
                 <React.Suspense fallback={<ImageViewerLoading onClose={closeLightbox} />}>
                     <ImageModal canDownload={canDownloadImages} images={lightbox.images} initialIndex={lightbox.index} onClose={closeLightbox} />
@@ -733,7 +733,7 @@ const CheckInView = React.memo(({
                     )}
 
                     {thisWeekReport && (
-                        <Button type="button" variant="ghost" className="w-full lg:hidden" onClick={cancelCompose}>
+                        <Button type="button" variant="ghost" className="w-full duo:hidden" onClick={cancelCompose}>
                             Avbryt
                         </Button>
                     )}
@@ -746,9 +746,9 @@ const CheckInView = React.memo(({
                     className="plan-save-bar fixed inset-x-0 z-40 border-t border-surface-200/80 bg-surface-50/94 backdrop-blur-xl"
                     style={{ bottom: 'calc(4.35rem + env(safe-area-inset-bottom, 0px))' }}
                 >
-                    <div className="header-inner mx-auto flex items-center gap-2 px-4 py-2.5 lg:px-8">
+                    <div className="header-inner mx-auto flex items-center gap-2 px-4 py-2.5 duo:px-6 lg:px-8">
                         {thisWeekReport ? (
-                            <Button type="button" variant="ghost" onClick={cancelCompose} disabled={isSubmitting} className="hidden lg:inline-flex">
+                            <Button type="button" variant="ghost" onClick={cancelCompose} disabled={isSubmitting} className="hidden duo:inline-flex">
                                 Avbryt
                             </Button>
                         ) : (
@@ -757,7 +757,7 @@ const CheckInView = React.memo(({
                         <Button
                             type="submit"
                             form="weekly-checkin-form"
-                            className="flex-1 lg:flex-none"
+                            className="flex-1 duo:flex-none"
                             disabled={isPreview || isSubmitting || isCompressing}
                         >
                             {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}

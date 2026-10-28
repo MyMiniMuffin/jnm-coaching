@@ -9,7 +9,7 @@ export const SegmentedControl = React.memo(({ label, hint, value, onChange, opti
             <label className="block text-sm font-medium text-ink-muted mb-2">{label}</label>
             {hint && <p className="text-xs text-ink-muted -mt-1 mb-2">{hint}</p>}
             <div className={wrap
-                ? 'grid grid-cols-5 gap-1 rounded-xl bg-surface-100 p-1'
+                ? 'grid grid-cols-5 sm:grid-cols-10 gap-1 rounded-xl bg-surface-100 p-1'
                 : 'flex gap-1 rounded-xl bg-surface-100 p-1'
             }>
                 {options.map(opt => {

@@ -725,7 +725,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
     }, [onUpdateData, toast]);
 
     return (
-        <div className="space-y-5 pb-32 lg:pb-8 animate-slide-up">
+        <div className="space-y-5 pb-32 duo:pb-8 animate-slide-up">
             {/* Period Management Modal */}
             {showPeriodModal && (
                 <PeriodManagementModal
@@ -868,7 +868,8 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                 </Card>
             </div>
 
-            {/* Totaloversikt - kun hvis det finnes data */}
+            {/* Totaloversikt + ukestatus — side-by-side on unfolded iPhone Duo */}
+            <div className={stats ? 'grid grid-cols-1 duo:grid-cols-2 gap-5 items-start' : ''}>
             {stats && (
                 <div>
                     <p className="section-label mx-1 mb-3">Din reise så langt</p>
@@ -942,6 +943,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                     </div>
                 )}
             </Card>
+            </div>
         </div>
     );
 });

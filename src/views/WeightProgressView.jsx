@@ -75,7 +75,7 @@ const WeightProgressView = React.memo(({ checkins = EMPTY_LIST, periods = EMPTY_
             ? (chartLeft + chartRight) / 2
             : chartLeft + ((timestamp - minT) / (maxT - minT)) * (chartRight - chartLeft);
         const pts = validCheckins.map(c => ({ x: xFor(c.timestamp), y: yFor(parseFloat(c.weight)) }));
-        const dateTickCount = minT === maxT ? 1 : width < 480 ? 2 : 4;
+        const dateTickCount = minT === maxT ? 1 : width < 480 ? 2 : width < 680 ? 4 : 6;
         const dateTicks = Array.from({ length: dateTickCount }, (_, i) => {
             const timestamp = minT + (maxT - minT) * (dateTickCount === 1 ? 0 : i / (dateTickCount - 1));
             return { timestamp, x: xFor(timestamp) };
@@ -155,7 +155,7 @@ const WeightProgressView = React.memo(({ checkins = EMPTY_LIST, periods = EMPTY_
     const activePoint = chartPoints[activeIndex];
 
     return (
-        <div className="space-y-6 animate-slide-up pb-32 lg:pb-8">
+        <div className="space-y-6 animate-slide-up pb-32 duo:pb-8">
             <div className="flex items-center gap-2">
                 <IconButton onClick={onBack} aria-label="Tilbake til hjem" className="-ml-2">
                     <ChevronLeft size={22} />

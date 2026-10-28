@@ -444,7 +444,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
     const displayPlan = isEditing ? draft : parsedPlan;
 
     return (
-        <div className={`space-y-5 animate-slide-up ${isEditing && !isReadOnly ? 'pb-52 lg:pb-24' : 'pb-32 lg:pb-8'}`}>
+        <div className={`space-y-5 animate-slide-up ${isEditing && !isReadOnly ? 'pb-52 duo:pb-24' : 'pb-32 duo:pb-8'}`}>
             {isArchived && (
                 <p role="status" className="rounded-xl border border-surface-200 bg-surface-100 px-4 py-3 text-sm text-ink-muted">
                     Utøveren er arkivert. Gjenopprett utøveren fra utøverlisten før du endrer planen.
@@ -736,7 +736,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                             </Button>
                         </div>
                     ) : (
-                        <div className="space-y-4">
+                        <div className={displayPlan.sections.length > 1 ? 'space-y-4 duo:grid duo:grid-cols-2 duo:gap-6 duo:space-y-0 items-start' : 'space-y-4'}>
                             {displayPlan.sections.map(section => (
                                 <section key={section.key}>
                                     {section.title && (
@@ -792,7 +792,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                     className="plan-save-bar fixed inset-x-0 z-40 border-t border-surface-200/80 bg-surface-50/94 backdrop-blur-xl"
                     style={{ bottom: 'calc(4.35rem + env(safe-area-inset-bottom, 0px))' }}
                 >
-                    <div className="header-inner mx-auto flex items-center gap-2 px-4 py-2.5 lg:px-8">
+                    <div className="header-inner mx-auto flex items-center gap-2 px-4 py-2.5 duo:px-6 lg:px-8">
                         <p className="min-w-0 flex-1 truncate text-sm text-ink-muted">
                             {saveState === 'saving' ? 'Lagrer endringer…' : saveState === 'dirty' ? 'Ulagrede endringer' : saveState === 'saved' ? 'Lagret' : 'Redigerer'}
                         </p>

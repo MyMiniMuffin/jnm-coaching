@@ -161,7 +161,7 @@ export const useOnlineStatus = () => {
     return isOnline;
 };
 
-export const DESKTOP_QUERY = '(min-width: 1024px)';
+export const DESKTOP_QUERY = '(min-width: 700px), (horizontal-viewport-segments: 2)';
 
 export const useDesktop = () => {
     const [isDesktop, setIsDesktop] = useState(() => (

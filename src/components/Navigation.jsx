@@ -48,7 +48,7 @@ const Navigation = React.memo(({ activeTab, setActiveTab }) => {
 
     return (
         <>
-            <aside className="app-sidebar hidden lg:flex" aria-label="Hovednavigasjon">
+            <aside className="app-sidebar hidden duo:flex" aria-label="Hovednavigasjon">
                 <div className="flex items-center gap-3 px-5 pt-6 pb-5">
                     <img src={APP_ICON} alt="" className="h-10 w-10 rounded-lg" />
                     <div>
@@ -69,7 +69,7 @@ const Navigation = React.memo(({ activeTab, setActiveTab }) => {
                 </nav>
             </aside>
 
-            <nav className="mobile-bottom-nav fixed bottom-0 left-0 right-0 z-50 border-t border-surface-200/80 lg:hidden" aria-label="Hovednavigasjon">
+            <nav className="mobile-bottom-nav fixed bottom-0 left-0 right-0 z-50 border-t border-surface-200/80 duo:hidden" aria-label="Hovednavigasjon">
                 <div className="relative grid grid-cols-5 h-[4.35rem] max-w-md sm:max-w-3xl mx-auto px-1.5">
                     <div className="absolute inset-x-1.5 top-2.5 bottom-2.5 pointer-events-none">
                         <div className="h-full w-1/5 rounded-xl nav-pill" style={pillStyle} />

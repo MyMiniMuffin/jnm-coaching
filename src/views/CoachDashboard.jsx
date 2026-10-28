@@ -297,7 +297,7 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
 
             {/* Hero Stats Card */}
             <div className="px-5 py-4 lg:px-7 lg:py-6 hero-tint text-white rounded-xl relative overflow-hidden ring-1 ring-white/10">
-                <div className="relative z-10 space-y-4">
+                <div className="relative z-10 space-y-4 duo:flex duo:items-center duo:justify-between duo:gap-6 duo:space-y-0">
                     <div className="min-w-0">
                         <p className="text-white/70 text-xs">Oversikt</p>
                         <h2 className="text-2xl font-display leading-tight">Utøvere</h2>
@@ -384,9 +384,9 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
             )}
 
             {/* Client List */}
-            <div className="space-y-2 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
+            <div className="space-y-2 duo:grid duo:grid-cols-2 duo:gap-3 duo:space-y-0">
                 {displayedClients.length === 0 && isLoading ? (
-                    <div className="space-y-2 animate-pulse lg:col-span-2 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0" aria-label="Laster utøvere" role="status">
+                    <div className="space-y-2 animate-pulse duo:col-span-2 duo:grid duo:grid-cols-2 duo:gap-3 duo:space-y-0" aria-label="Laster utøvere" role="status">
                         {[1, 2, 3, 4].map(i => (
                             <div key={i} className="p-4 flex items-center justify-between bg-white rounded-xl border border-surface-200">
                                 <div className="flex items-center gap-4">
@@ -401,7 +401,7 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
                         ))}
                     </div>
                 ) : displayedClients.length === 0 ? (
-                    <div className="lg:col-span-2">
+                    <div className="duo:col-span-2">
                     <EmptyState
                         icon={User}
                         title={searchTerm ? 'Ingen treff' : (showArchived ? 'Ingen arkiverte utøvere' : 'Ingen utøvere enda')}

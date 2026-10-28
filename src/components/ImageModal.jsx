@@ -191,8 +191,11 @@ const ImageModal = React.memo(({ images, initialIndex, onClose, canDownload = fa
             <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
 
             <div
-                className="absolute right-4 z-[120] flex items-center gap-2"
-                style={{ top: 'calc(env(safe-area-inset-top, 20px) + 12px)' }}
+                className="absolute z-[120] flex items-center gap-2"
+                style={{
+                    top: 'calc(env(safe-area-inset-top, 20px) + 12px)',
+                    right: 'calc(env(safe-area-inset-right, 0px) + 1rem)',
+                }}
             >
                 {canDownload && <button
                     type="button"
@@ -215,8 +218,11 @@ const ImageModal = React.memo(({ images, initialIndex, onClose, canDownload = fa
 
             {images.length > 1 && (
                 <div
-                    className="absolute left-4 text-white/75 font-medium bg-white/10 px-3 py-2 rounded-full text-sm z-[120] backdrop-blur-md ring-1 ring-white/10"
-                    style={{ top: 'calc(env(safe-area-inset-top, 20px) + 14px)' }}
+                    className="absolute text-white/75 font-medium bg-white/10 px-3 py-2 rounded-full text-sm z-[120] backdrop-blur-md ring-1 ring-white/10"
+                    style={{
+                        top: 'calc(env(safe-area-inset-top, 20px) + 14px)',
+                        left: 'calc(env(safe-area-inset-left, 0px) + 1rem)',
+                    }}
                     aria-label={`Bilde ${index + 1} av ${images.length}`}
                 >
                     {index + 1} / {images.length}
@@ -300,7 +306,8 @@ const ImageModal = React.memo(({ images, initialIndex, onClose, canDownload = fa
                         type="button"
                         onClick={handlePrev}
                         aria-label="Vis forrige bilde"
-                        className="absolute left-3 top-1/2 -translate-y-1/2 sm:left-5 min-h-[48px] min-w-[48px] p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md ring-1 ring-white/10 transition-all active:scale-[0.98] z-[110]"
+                        className="absolute top-1/2 -translate-y-1/2 min-h-[48px] min-w-[48px] p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md ring-1 ring-white/10 transition-all active:scale-[0.98] z-[110]"
+                        style={{ left: 'calc(env(safe-area-inset-left, 0px) + 0.75rem)' }}
                     >
                         <ChevronLeft size={26} />
                     </button>
@@ -310,12 +317,20 @@ const ImageModal = React.memo(({ images, initialIndex, onClose, canDownload = fa
                         type="button"
                         onClick={handleNext}
                         aria-label="Vis neste bilde"
-                        className="absolute right-3 top-1/2 -translate-y-1/2 sm:right-5 min-h-[48px] min-w-[48px] p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md ring-1 ring-white/10 transition-all active:scale-[0.98] z-[110]"
+                        className="absolute top-1/2 -translate-y-1/2 min-h-[48px] min-w-[48px] p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md ring-1 ring-white/10 transition-all active:scale-[0.98] z-[110]"
+                        style={{ right: 'calc(env(safe-area-inset-right, 0px) + 0.75rem)' }}
                     >
                         <ChevronRight size={26} />
                     </button>
                 )}
-                <div className="absolute inset-x-3 bottom-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] z-[110] flex justify-center">
+                <div
+                    className="absolute z-[110] flex justify-center"
+                    style={{
+                        left: 'calc(env(safe-area-inset-left, 0px) + 0.75rem)',
+                        right: 'calc(env(safe-area-inset-right, 0px) + 0.75rem)',
+                        bottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)',
+                    }}
+                >
                     <div className="flex max-w-full items-center gap-2 rounded-xl bg-black/50 p-2 text-white backdrop-blur-md ring-1 ring-white/10">
                         <div className="min-w-0 px-2 text-center" aria-live="polite">
                             <p className="truncate text-sm font-medium">{imageTitle}</p>
