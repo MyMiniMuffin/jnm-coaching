@@ -677,7 +677,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                             <p className="section-label text-center">Før</p>
                             <button
                                 type="button"
-                                className={`relative block w-full max-w-[33.6vh] sm:max-w-xs duo:max-w-sm mx-auto aspect-[4/5] rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${selectingFor === 'before' ? 'border-ink ring-2 ring-ink/20' : 'border-surface-200'}`}
+                                className={`relative block w-full max-w-[33.6vh] duo:max-w-[min(42vh,22rem)] mx-auto aspect-[4/5] rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${selectingFor === 'before' ? 'border-ink ring-2 ring-ink/20' : 'border-surface-200'}`}
                                 onClick={() => setSelectingFor(selectingFor === 'before' ? null : 'before')}
                                 aria-pressed={selectingFor === 'before'}
                                 aria-label={compareImages.before ? `Bytt før-bilde, valgt ${formatDateNO(compareImages.before.date)}` : 'Velg før-bilde'}
@@ -717,7 +717,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                             <p className="section-label text-center">Etter</p>
                             <button
                                 type="button"
-                                className={`relative block w-full max-w-[33.6vh] sm:max-w-xs duo:max-w-sm mx-auto aspect-[4/5] rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${selectingFor === 'after' ? 'border-ink ring-2 ring-ink/20' : 'border-surface-200'}`}
+                                className={`relative block w-full max-w-[33.6vh] duo:max-w-[min(42vh,22rem)] mx-auto aspect-[4/5] rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${selectingFor === 'after' ? 'border-ink ring-2 ring-ink/20' : 'border-surface-200'}`}
                                 onClick={() => setSelectingFor(selectingFor === 'after' ? null : 'after')}
                                 aria-pressed={selectingFor === 'after'}
                                 aria-label={compareImages.after ? `Bytt etter-bilde, valgt ${formatDateNO(compareImages.after.date)}` : 'Velg etter-bilde'}

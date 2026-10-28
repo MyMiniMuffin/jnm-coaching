@@ -736,7 +736,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                             </Button>
                         </div>
                     ) : (
-                        <div className={displayPlan.sections.length > 1 ? 'space-y-4 duo:grid duo:grid-cols-2 duo:gap-6 duo:space-y-0 items-start' : 'space-y-4'}>
+                        <div className={displayPlan.sections.length > 1 ? 'space-y-4 duo:grid duo:grid-cols-2 duo:gap-6 duo:space-y-0 duo-split-grid items-start' : 'space-y-4'}>
                             {displayPlan.sections.map(section => (
                                 <section key={section.key}>
                                     {section.title && (

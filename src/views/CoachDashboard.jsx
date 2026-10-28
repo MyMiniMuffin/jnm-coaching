@@ -384,9 +384,9 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
             )}
 
             {/* Client List */}
-            <div className="space-y-2 duo:grid duo:grid-cols-2 duo:gap-3 duo:space-y-0">
+            <div className="space-y-2 duo:grid duo:grid-cols-2 duo:gap-3 duo:space-y-0 duo-split-grid">
                 {displayedClients.length === 0 && isLoading ? (
-                    <div className="space-y-2 animate-pulse duo:col-span-2 duo:grid duo:grid-cols-2 duo:gap-3 duo:space-y-0" aria-label="Laster utøvere" role="status">
+                    <div className="space-y-2 animate-pulse duo:col-span-2 duo:grid duo:grid-cols-2 duo:gap-3 duo:space-y-0 duo-split-grid" aria-label="Laster utøvere" role="status">
                         {[1, 2, 3, 4].map(i => (
                             <div key={i} className="p-4 flex items-center justify-between bg-white rounded-xl border border-surface-200">
                                 <div className="flex items-center gap-4">
