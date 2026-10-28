@@ -25,7 +25,7 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
             </div>
         )}
         {viewingClient ? (
-            <div className="header-inner flex items-center px-3 py-3 gap-1 lg:gap-2 lg:px-8 lg:py-4">
+            <div className="header-inner flex items-center px-3 py-3 gap-1 lg:gap-2 duo:px-6 lg:px-8 duo:py-3.5 lg:py-4">
                 <button
                     type="button"
                     onClick={onClearClient}
@@ -35,14 +35,14 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
                     <ChevronLeft size={20} strokeWidth={2.5} />
                     <span className="text-sm font-medium">Utøvere</span>
                 </button>
-                <div className="flex-1 text-center min-w-0 lg:text-left">
+                <div className="flex-1 text-center min-w-0 duo:text-left">
                     <p className="font-semibold text-ink truncate leading-6">{viewingClient.name}</p>
                     <p className="truncate text-[11px] leading-4 text-ink-muted">@{viewingClient.username}</p>
                 </div>
                 {onToggleClientPreview && (
                     <IconButton onClick={onToggleClientPreview} disabled={previewDisabled} aria-label="Vis som utøver" title="Vis som utøver" className="shrink-0 gap-1.5 disabled:opacity-50 lg:px-3">
                         <Eye size={20} />
-                        <span className="hidden text-sm font-medium lg:inline">Vis som utøver</span>
+                        <span className="hidden text-sm font-medium duo:inline">Vis som utøver</span>
                     </IconButton>
                 )}
                 <AccountMenu user={isClientPreview ? null : user} />
@@ -51,7 +51,7 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
                 </IconButton>
             </div>
         ) : (
-            <div className="header-inner flex justify-between items-center px-5 py-3 lg:px-8 lg:py-4">
+            <div className="header-inner flex justify-between items-center px-5 py-3 duo:px-6 lg:px-8 duo:py-3.5 lg:py-4">
                 <p className="font-semibold text-ink truncate min-w-0">{user.name}</p>
                 <div className="flex items-center gap-1">
                     <AccountMenu user={isClientPreview ? null : user} />

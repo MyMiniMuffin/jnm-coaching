@@ -6,6 +6,9 @@ module.exports = {
   ],
   theme: {
     extend: {
+      screens: {
+        duo: '700px',
+      },
       fontFamily: {
         sans: ['Outfit', 'system-ui', 'sans-serif'],
         display: ['Instrument Serif', 'Georgia', 'serif'],

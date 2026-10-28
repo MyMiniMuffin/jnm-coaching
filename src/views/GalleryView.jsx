@@ -93,7 +93,7 @@ const FullscreenCompareModal = React.memo(({ before, after, daysDiff, weightDiff
             <div className="absolute inset-x-0 top-0 z-[105] h-28 bg-gradient-to-b from-black/60 to-transparent pointer-events-none" />
             <div className="absolute inset-x-0 bottom-0 z-[105] h-32 bg-gradient-to-t from-black/65 to-transparent pointer-events-none" />
 
-            <header className="absolute inset-x-0 top-0 z-[120] safe-area-pt">
+            <header className="absolute inset-x-0 top-0 z-[120] safe-area-pt pl-[env(safe-area-inset-left,0px)] pr-[env(safe-area-inset-right,0px)]">
                 <div className="flex items-center justify-between gap-3 p-3 sm:p-4">
                     <div className="min-w-0 text-white">
                         <p className="text-xs sm:text-sm text-white/60">Sammenligning</p>
@@ -110,7 +110,7 @@ const FullscreenCompareModal = React.memo(({ before, after, daysDiff, weightDiff
                 </div>
             </header>
 
-            <main className="relative z-10 h-full w-full pt-[calc(env(safe-area-inset-top,0px)+4.75rem)] pb-[calc(env(safe-area-inset-bottom,0px)+4.75rem)]">
+            <main className="relative z-10 h-full w-full pt-[calc(env(safe-area-inset-top,0px)+4.75rem)] pb-[calc(env(safe-area-inset-bottom,0px)+4.75rem)] pl-[env(safe-area-inset-left,0px)] pr-[env(safe-area-inset-right,0px)]">
                 <div className="flex h-full min-h-0 w-full flex-col sm:flex-row">
                     <ComparePanel image={before} label="Før" />
                     <div className="h-px w-full shrink-0 bg-white/20 sm:h-full sm:w-px" />
@@ -118,7 +118,7 @@ const FullscreenCompareModal = React.memo(({ before, after, daysDiff, weightDiff
                 </div>
             </main>
 
-            <footer className="absolute inset-x-0 bottom-0 z-[120] safe-area-pb">
+            <footer className="absolute inset-x-0 bottom-0 z-[120] safe-area-pb pl-[env(safe-area-inset-left,0px)] pr-[env(safe-area-inset-right,0px)]">
                 <div className="flex items-center justify-center gap-2 sm:gap-4 p-3 sm:p-4">
                     {weightDiff && (
                         <div className="flex items-center gap-2 py-2 px-3 sm:px-4 rounded-full backdrop-blur-md ring-1 ring-white/10 bg-white/10 text-white">
@@ -586,7 +586,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
     }
 
     return (
-        <div className={`space-y-5 pb-32 lg:pb-8 animate-slide-up ${viewMode === 'compare' ? 'w-full lg:max-w-2xl lg:mx-auto' : ''}`}>
+        <div className={`space-y-5 pb-32 duo:pb-8 animate-slide-up ${viewMode === 'compare' ? 'w-full duo:max-w-3xl duo:mx-auto' : ''}`}>
             {uploadModal}
 
             {lightbox.isOpen && (
@@ -677,7 +677,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                             <p className="section-label text-center">Før</p>
                             <button
                                 type="button"
-                                className={`relative block w-full max-w-[33.6vh] mx-auto aspect-[4/5] rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${selectingFor === 'before' ? 'border-ink ring-2 ring-ink/20' : 'border-surface-200'}`}
+                                className={`relative block w-full max-w-[33.6vh] sm:max-w-xs duo:max-w-sm mx-auto aspect-[4/5] rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${selectingFor === 'before' ? 'border-ink ring-2 ring-ink/20' : 'border-surface-200'}`}
                                 onClick={() => setSelectingFor(selectingFor === 'before' ? null : 'before')}
                                 aria-pressed={selectingFor === 'before'}
                                 aria-label={compareImages.before ? `Bytt før-bilde, valgt ${formatDateNO(compareImages.before.date)}` : 'Velg før-bilde'}
@@ -717,7 +717,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                             <p className="section-label text-center">Etter</p>
                             <button
                                 type="button"
-                                className={`relative block w-full max-w-[33.6vh] mx-auto aspect-[4/5] rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${selectingFor === 'after' ? 'border-ink ring-2 ring-ink/20' : 'border-surface-200'}`}
+                                className={`relative block w-full max-w-[33.6vh] sm:max-w-xs duo:max-w-sm mx-auto aspect-[4/5] rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${selectingFor === 'after' ? 'border-ink ring-2 ring-ink/20' : 'border-surface-200'}`}
                                 onClick={() => setSelectingFor(selectingFor === 'after' ? null : 'after')}
                                 aria-pressed={selectingFor === 'after'}
                                 aria-label={compareImages.after ? `Bytt etter-bilde, valgt ${formatDateNO(compareImages.after.date)}` : 'Velg etter-bilde'}
@@ -808,7 +808,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                     {/* Bilderutenett for valg */}
                     <div>
                         <p className="section-label mb-3">Velg bilder</p>
-                        <div className="grid grid-cols-4 gap-1.5">
+                        <div className="grid grid-cols-4 sm:grid-cols-5 duo:grid-cols-6 gap-1.5">
                             {visibleImages.map((img, idx) => {
                                 const isSelected = compareImages.before?.url === img.url || compareImages.after?.url === img.url;
                                 const isBefore = compareImages.before?.url === img.url;
@@ -849,7 +849,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
             {viewMode === 'grid' && (
                 /* Grid-visning - kompakt oversikt */
                 <>
-                    <div className="grid grid-cols-3 gap-1.5 lg:grid-cols-5 lg:gap-2">
+                    <div className="grid grid-cols-3 sm:grid-cols-4 duo:grid-cols-5 gap-1.5 duo:gap-2">
                         {visibleImages.map((img, idx) => (
                             <div 
                                 key={getImageKey(img, idx)}
