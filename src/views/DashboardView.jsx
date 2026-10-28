@@ -868,8 +868,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                 </Card>
             </div>
 
-            {/* Totaloversikt + ukestatus — side-by-side on unfolded iPhone Duo */}
-            <div className={stats ? 'grid grid-cols-1 duo:grid-cols-2 gap-5 items-start' : ''}>
+            {/* Totaloversikt - kun hvis det finnes data */}
             {stats && (
                 <div>
                     <p className="section-label mx-1 mb-3">Din reise så langt</p>
@@ -943,7 +942,6 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                     </div>
                 )}
             </Card>
-            </div>
         </div>
     );
 });

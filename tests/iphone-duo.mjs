@@ -7,9 +7,13 @@ import { dirname, join } from 'node:path';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (relativePath) => readFileSync(join(root, relativePath), 'utf8');
 
-test('tailwind exposes duo breakpoint at 700px', () => {
+test('tailwind places duo in ascending theme.screens order before md/lg', () => {
     const config = read('tailwind.config.js');
-    assert.match(config, /duo:\s*'700px'/);
+    assert.match(
+        config,
+        /screens:\s*\{\s*sm:\s*'640px',\s*duo:\s*'700px',\s*md:\s*'768px',\s*lg:\s*'1024px',\s*xl:\s*'1280px',\s*'2xl':\s*'1536px',\s*\}/
+    );
+    assert.doesNotMatch(config, /extend:\s*\{[\s\S]*?screens:\s*\{[\s\S]*?duo:/);
 });
 
 test('DESKTOP_QUERY treats unfolded Duo and dual segments as desktop', () => {
@@ -27,21 +31,38 @@ test('index.css activates wide shell at 700px with compact Duo sidebar', () => {
     assert.match(css, /\.app-frame-nav \.plan-save-bar \{[\s\S]*?left:\s*12\.5rem/);
     assert.match(css, /@media \(min-width: 1024px\)[\s\S]*?width:\s*15\.5rem/);
     assert.match(css, /@media \(min-width: 640px\) and \(max-width: 699px\)/);
+    assert.match(
+        css,
+        /@media \(min-width: 640px\) and \(max-width: 699px\) \{[\s\S]*?box-shadow:\s*0 28px 90px/
+    );
     assert.doesNotMatch(css, /@media \(min-width: 640px\) and \(max-width: 1023px\)/);
     assert.match(css, /@media \(max-width: 699px\)/);
     assert.doesNotMatch(
         css,
         /@media \(display-mode: standalone\) and \(max-width: 1023px\)/
     );
+    assert.doesNotMatch(
+        css,
+        /\.app-sidebar \{[\s\S]*?padding:\s*1\.25rem 0\.75rem/
+    );
+    assert.doesNotMatch(
+        css,
+        /@media \(min-width: 1024px\) \{[\s\S]*?\.app-sidebar \{[\s\S]*?padding:\s*1\.5rem 1rem/
+    );
 });
 
 test('index.css defines fold-gap and duo-split-grid for hinge-aware layouts', () => {
     const css = read('src/index.css');
-    assert.match(css, /--fold-gap:\s*0px/);
+    assert.match(css, /--fold-gap:\s*1\.25rem/);
+    assert.match(
+        css,
+        /--fold-gap:\s*max\(1\.25rem, calc\(env\(viewport-segment-left 1 0, 0px\) - env\(viewport-segment-right 0 0, 0px\)\)\)/
+    );
     assert.match(css, /@media \(horizontal-viewport-segments: 2\)/);
     assert.match(css, /\.duo-split-grid/);
     assert.match(css, /column-gap:\s*var\(--fold-gap/);
-    assert.match(css, /\.app-shell,\s*\.app-header,\s*\.mobile-bottom-nav \{[\s\S]*?safe-area-inset-left/);
+    assert.match(css, /\.app-frame,\s*\.mobile-bottom-nav \{[\s\S]*?safe-area-inset-left/);
+    assert.doesNotMatch(css, /\.app-shell,\s*\.app-header,\s*\.mobile-bottom-nav \{/);
 });
 
 test('iOS launch screen autoresizes for Duo window scenes', () => {
@@ -91,16 +112,19 @@ test('views use duo layout classes for unfolded dual-screen density', () => {
     const boundary = read('src/components/ViewBoundary.jsx');
 
     assert.match(coach, /duo:grid duo:grid-cols-2/);
+    assert.match(coach, /duo-split-grid/);
     assert.match(coach, /duo:flex duo:items-center duo:justify-between/);
     assert.match(dashboard, /pb-32 duo:pb-8/);
-    assert.match(dashboard, /duo:grid-cols-2 gap-5 items-start/);
+    assert.doesNotMatch(dashboard, /duo:grid-cols-2 gap-5 items-start/);
     assert.match(plan, /duo:grid duo:grid-cols-2 duo:gap-6/);
+    assert.match(plan, /duo-split-grid/);
     assert.match(plan, /duo:px-6 lg:px-8/);
     assert.match(checkin, /sm:grid-cols-2 gap-3/);
     assert.match(checkin, /hidden duo:inline-flex/);
     assert.match(checkin, /duo:flex-none/);
     assert.match(gallery, /duo:max-w-3xl duo:mx-auto/);
-    assert.match(gallery, /sm:max-w-xs duo:max-w-sm/);
+    assert.match(gallery, /max-w-\[33\.6vh\] duo:max-w-\[min\(42vh,22rem\)\]/);
+    assert.doesNotMatch(gallery, /sm:max-w-xs duo:max-w-sm/);
     assert.match(gallery, /duo:grid-cols-6/);
     assert.match(gallery, /duo:grid-cols-5 gap-1\.5 duo:gap-2/);
     assert.match(gallery, /pl-\[env\(safe-area-inset-left,0px\)\]/);

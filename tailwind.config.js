@@ -5,10 +5,15 @@ module.exports = {
     './src/**/*.{js,jsx}',
   ],
   theme: {
+    screens: {
+      sm: '640px',
+      duo: '700px',
+      md: '768px',
+      lg: '1024px',
+      xl: '1280px',
+      '2xl': '1536px',
+    },
     extend: {
-      screens: {
-        duo: '700px',
-      },
       fontFamily: {
         sans: ['Outfit', 'system-ui', 'sans-serif'],
         display: ['Instrument Serif', 'Georgia', 'serif'],
