@@ -1312,6 +1312,27 @@ const App = () => {
         return false;
     }, [currentTabIndex, showWeightHistory]);
 
+    const goHistoryDashboard = useCallback(() => setActiveTab('dashboard'), []);
+
+    /** Single back action for header, edge-swipe, and Duo rail pill. */
+    const getBackAction = useCallback(() => {
+        if (registeredRailBack?.onBack) return registeredRailBack.onBack;
+        if (showWeightHistory) return handleCloseWeightHistory;
+        if (currentUser?.role === 'coach' && viewingClient && !isClientPreview) return handleClearClient;
+        if (activeTab === 'history') return goHistoryDashboard;
+        return null;
+    }, [
+        registeredRailBack,
+        showWeightHistory,
+        handleCloseWeightHistory,
+        currentUser?.role,
+        viewingClient,
+        isClientPreview,
+        handleClearClient,
+        activeTab,
+        goHistoryDashboard,
+    ]);
+
     const handleSwipeRight = useCallback(() => {
         if (currentTabIndex > 0 && !showWeightHistory) {
             haptic('tap');
@@ -1320,12 +1341,17 @@ const App = () => {
             setActiveTab(TAB_ORDER[currentTabIndex - 1]);
             window.scrollTo({ top: 0, behavior: 'auto' });
             return true;
-        } else if (currentTabIndex === 0 && currentUser?.role === 'coach' && viewingClient && !isClientPreview) {
-            handleClearClient();
-            return true;
+        }
+        if (currentTabIndex === 0 || showWeightHistory) {
+            const back = getBackAction();
+            if (typeof back === 'function') {
+                haptic('tap');
+                back();
+                return true;
+            }
         }
         return false;
-    }, [currentTabIndex, showWeightHistory, currentUser?.role, viewingClient, handleClearClient, isClientPreview]);
+    }, [currentTabIndex, showWeightHistory, getBackAction]);
 
     const handleEdgeSwipe = useCallback((direction) => {
         if (swipeEdgeTimeoutRef.current) {
@@ -1345,13 +1371,15 @@ const App = () => {
     }, []);
 
     // Swipe stays on phone + Duo rail (closed/unfolded). Off for desktop left-sidebar.
-    // Rail sits on the right edge and does not collide with edge-swipe from the left.
+    // Rail sits on the right edge and does not collide with edge-swipe from the left;
+    // .app-rail-inner also stopPropagates + data-swipe-ignore.
     const swipeHandlers = useSwipe(handleSwipeLeft, handleSwipeRight, {
         threshold: 88,
         velocityThreshold: 0.52,
         verticalTolerance: 34,
         onEdgeSwipe: handleEdgeSwipe,
-        enabled: !isWide && !isClientLoading && !showWeightHistory && (activeTab === 'dashboard' || activeTab === 'checkin')
+        ignoreSelector: 'input, textarea, select, button, a, [role="dialog"], .hide-scrollbar, [data-swipe-ignore="true"], .app-rail-inner',
+        enabled: !isWide && !isClientLoading && (activeTab === 'dashboard' || activeTab === 'checkin' || showWeightHistory)
     });
 
     const handleRefresh = useCallback(async () => {
@@ -1493,15 +1521,9 @@ const App = () => {
 
     const contentWide = activeTab === 'gallery';
 
-    // Duo rail back: innermost registered view first, then shell-level drill-downs.
-    const railBackHandler = (() => {
-        if (!isRail) return null;
-        if (registeredRailBack?.onBack) return registeredRailBack.onBack;
-        if (showWeightHistory) return handleCloseWeightHistory;
-        if (isCoach && viewingClient && !isClientPreview) return handleClearClient;
-        if (activeTab === 'history') return () => setActiveTab('dashboard');
-        return null;
-    })();
+    // Duo rail back: shared getBackAction() (same as header / edge-swipe).
+    const backAction = getBackAction();
+    const railBackHandler = isRail && typeof backAction === 'function' ? backAction : null;
 
     return (
         <RefreshFrame
@@ -1515,7 +1537,7 @@ const App = () => {
                 shell={shell}
                 onBack={railBackHandler}
             />
-            <div className={`app-stage ${contentWide ? 'app-stage-wide' : ''}`}>
+            <div className={`app-stage ${contentWide ? 'app-stage-wide' : ''}`} data-testid="app-stage">
             {showReauthPrompt && <ReauthPrompt onReauth={handleReauth} />}
             <Header
                 user={displayUser}
@@ -1525,6 +1547,7 @@ const App = () => {
                 viewingClient={isCoach ? viewingClient : null}
                 onLogout={handleLogout}
                 onClearClient={handleClearClient}
+                hideClientBack={isRail}
                 isOffline={!isOnline}
             />
             <main className={`app-content ${contentWide ? 'app-content-wide' : ''}`}>

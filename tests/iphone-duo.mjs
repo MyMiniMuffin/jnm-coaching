@@ -127,12 +127,12 @@ test('duoBreakpoint is the single source for Duo media query', () => {
     assert.equal(existsSync(join(root, 'src/lib/shellMode.js')), true);
 });
 
-test('tailwind duo is attribute variant on wide and rail shells', () => {
+test('tailwind duo is wide always, rail only at min-width 700', () => {
     const config = read('tailwind.config.mjs');
-    assert.match(
-        config,
-        /addVariant\(\s*['"]duo['"]\s*,\s*['"]:is\(html\[data-shell="wide"\], html\[data-shell="rail"\]\) &['"]/
-    );
+    assert.match(config, /DUO_MIN_WIDTH_PX/);
+    assert.match(config, /html\[data-shell="wide"\] &/);
+    assert.match(config, /html\[data-shell="rail"\] &/);
+    assert.match(config, /min-width: \$\{DUO_MIN_WIDTH_PX\}px/);
     assert.match(config, /addVariant\(\s*['"]duo-lg['"]/);
     assert.doesNotMatch(config, /screens:\s*\{[^}]*duo:/s);
     assert.doesNotMatch(config, /raw:\s*DUO_MEDIA_QUERY/);
@@ -195,6 +195,7 @@ test('shellMode sticky uses duoBreakpoint thresholds', () => {
     assert.match(shell, /const changed = nextSticky !== wideSticky \|\| nextShell !== shell/);
     assert.match(shell, /import\.meta\.hot\?\.dispose/);
     assert.match(shell, /SHELL_RAIL/);
+    assert.match(shell, /getShellWide = \(\) => shell === SHELL_WIDE/);
     assert.equal(DUO_MIN_WIDTH_PX, 700);
     assert.equal(DUO_MIN_HEIGHT_PX, 600);
     assert.equal(DESKTOP_MIN_WIDTH_PX, 1024);
@@ -224,6 +225,7 @@ test('SceneDelegate relayouts CAPBridgeViewController on window scene updates', 
     assert.match(scene, /func windowScene\(_ windowScene: UIWindowScene/);
     assert.match(scene, /didUpdate previousCoordinateSpace/);
     assert.match(scene, /CAPBridgeViewController/);
+    assert.match(scene, /DuoBridgeViewController/);
     assert.match(scene, /bridgeVC\.webView\?\.layoutIfNeeded\(\)/);
 });
 
@@ -240,16 +242,29 @@ test('navigation supports wide sidebar, Duo rail, and phone bottom nav', () => {
     const navigation = read('src/components/Navigation.jsx');
     const header = read('src/components/Header.jsx');
     const app = read('src/App.jsx');
+    const css = read('src/index.css');
     assert.match(navigation, /shell === 'wide'|isWide/);
     assert.match(navigation, /shell === 'rail'|isRail/);
     assert.match(navigation, /data-testid="app-sidebar"/);
     assert.match(navigation, /data-testid="app-rail"/);
     assert.match(navigation, /data-testid="app-rail-back"/);
     assert.match(navigation, /data-testid="mobile-bottom-nav"/);
+    assert.match(navigation, /role="navigation"/);
+    assert.match(navigation, /data-swipe-ignore="true"/);
     assert.match(navigation, /min-h-11 w-full items-center gap-3/);
     assert.match(app, /shell=\{shell\}/);
     assert.match(app, /useShellMode\(\)/);
+    assert.match(app, /getBackAction/);
+    assert.match(app, /hideClientBack=\{isRail\}/);
     assert.match(header, /duo:px-6 duo-lg:px-8 duo:py-3\.5 duo-lg:py-4/);
+    assert.match(header, /hideClientBack/);
+    assert.match(css, /html\[data-shell="rail"\] \.app-stage \{/);
+    assert.match(css, /--app-rail-reserve/);
+    assert.match(css, /z-index:\s*45/);
+    assert.doesNotMatch(
+        css,
+        /html\[data-shell="rail"\] \.app-frame,\s*\n\s*html\[data-shell="rail"\] \.app-stage/
+    );
 });
 
 test('PlanSection stacks sections and keeps break-words + whitespace-pre-wrap', () => {
@@ -316,6 +331,11 @@ test('docs plan records WebKit segment preview status and Duo rail', () => {
     assert.match(plan, /rail/i);
     assert.match(plan, /iPhone19,4/);
     assert.match(plan, /data-device="duo"/);
+    assert.match(plan, /sessionStorage/);
+    assert.match(plan, /Spesifisitet/);
+    assert.match(plan, /Path-avhengighet/);
+    assert.match(plan, /Usikkerhet/);
+    assert.match(plan, /appledb\.dev/);
 });
 
 test('src does not use max-sm/max-md/max-lg or arbitrary min-[ screens', () => {

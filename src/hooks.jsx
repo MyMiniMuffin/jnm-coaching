@@ -166,7 +166,10 @@ export const useOnlineStatus = () => {
 /** Entry media for wide shell (see shellMode sticky rules). */
 export const DESKTOP_QUERY = DUO_MEDIA_QUERY;
 
-/** True for wide sidebar or Duo rail — density / non-phone chrome consumers. */
+/**
+ * True for left-sidebar wide shell only.
+ * Duo rail (including 390 closed) is NOT desktop — use useShellRail / useShellMode.
+ */
 export const useDesktop = () => useShellWide();
 
 export { useShellMode, useShellWide, useShellRail };

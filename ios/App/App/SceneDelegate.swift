@@ -8,12 +8,12 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         guard let windowScene = scene as? UIWindowScene else { return }
 
-        let bridgeVC = CAPBridgeViewController()
+        // DuoBridgeViewController injects the Duo marker via webViewConfiguration(for:)
+        // before the first load — do not add WKUserScript after makeKeyAndVisible.
+        let bridgeVC = DuoBridgeViewController()
         window = UIWindow(windowScene: windowScene)
         window?.rootViewController = bridgeVC
         window?.makeKeyAndVisible()
-
-        injectDuoDeviceMarker(into: bridgeVC)
 
         SceneDelegateProxy.shared.scene(scene, willConnectTo: session, options: connectionOptions)
     }
@@ -35,25 +35,5 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         bridgeVC.view.layoutIfNeeded()
         bridgeVC.webView?.setNeedsLayout()
         bridgeVC.webView?.layoutIfNeeded()
-    }
-
-    /// Sets `html[data-device="duo"]` at document-start on known Duo hardware.
-    private func injectDuoDeviceMarker(into bridgeVC: CAPBridgeViewController) {
-        let script = WKUserScript(
-            source: DuoDevice.userScriptSource,
-            injectionTime: .atDocumentStart,
-            forMainFrameOnly: true
-        )
-
-        if let webView = bridgeVC.webView {
-            webView.configuration.userContentController.addUserScript(script)
-            return
-        }
-
-        // webView may not exist yet — attach once the bridge finishes loading.
-        DispatchQueue.main.async { [weak bridgeVC] in
-            guard let webView = bridgeVC?.webView else { return }
-            webView.configuration.userContentController.addUserScript(script)
-        }
     }
 }

@@ -18,6 +18,13 @@ test('Duo machine id list includes known iPhone19,4 and rejects others', () => {
     assert.equal(isDuoMachineId(undefined), false);
 });
 
+test('duoDeviceModels documents verification uncertainty for iPhone19,4', () => {
+    const models = read('src/lib/duoDeviceModels.js');
+    assert.match(models, /not.*confirmed|ikke.*bekreftet|Verification/i);
+    assert.match(models, /appledb\.dev\/device\/identifier\/iPhone19,4/);
+    assert.match(models, /ipsw\.dev\/iPhone19,4/);
+});
+
 test('Swift DuoDevice list stays in sync with duoDeviceModels.js', () => {
     const swift = read('ios/App/App/DuoDevice.swift');
     assert.match(swift, /knownMachineIds/);
@@ -25,24 +32,44 @@ test('Swift DuoDevice list stays in sync with duoDeviceModels.js', () => {
     assert.match(swift, /utsname/);
     assert.match(swift, /userScriptSource/);
     assert.match(swift, /data-device['"],['"]duo/);
+    assert.match(swift, /logMachineIdentifierIfNeeded/);
+    assert.match(swift, /#if DEBUG/);
     for (const id of DUO_MACHINE_IDS) {
         assert.match(swift, new RegExp(id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
     }
 });
 
-test('SceneDelegate injects Duo marker at document start', () => {
+test('DuoBridgeViewController injects WKUserScript before first load', () => {
+    const bridge = read('ios/App/App/DuoBridgeViewController.swift');
     const scene = read('ios/App/App/SceneDelegate.swift');
-    assert.match(scene, /injectDuoDeviceMarker/);
-    assert.match(scene, /WKUserScript/);
-    assert.match(scene, /\.atDocumentStart/);
-    assert.match(scene, /DuoDevice\.userScriptSource/);
+    assert.match(bridge, /class DuoBridgeViewController:\s*CAPBridgeViewController/);
+    assert.match(bridge, /webViewConfiguration\(for/);
+    assert.match(bridge, /WKUserScript/);
+    assert.match(bridge, /\.atDocumentStart/);
+    assert.match(bridge, /DuoDevice\.userScriptSource/);
+    assert.match(scene, /DuoBridgeViewController\(\)/);
+    assert.doesNotMatch(scene, /injectDuoDeviceMarker/);
+    assert.doesNotMatch(scene, /addUserScript/);
 });
 
-test('shellMode treats data-device=duo / override as rail', () => {
+test('shellMode uses sessionStorage override and clears phone data-device', () => {
     const shell = read('src/lib/shellMode.js');
     assert.match(shell, /SHELL_RAIL/);
     assert.match(shell, /isDuoDevice/);
+    assert.match(shell, /sessionStorage/);
     assert.match(shell, /jnm_device_override/);
     assert.match(shell, /device=duo/);
     assert.match(shell, /computeShell/);
+    assert.match(shell, /removeAttribute\(DEVICE_ATTR\)/);
+    assert.match(shell, /MutationObserver/);
+    assert.match(shell, /localStorage\.removeItem\(DEVICE_STORAGE_KEY\)/);
+    assert.doesNotMatch(shell, /localStorage\.setItem\(DEVICE_STORAGE_KEY/);
+});
+
+test('railBack stores onBack in a ref (no register loop on unstable callbacks)', () => {
+    const rail = read('src/lib/railBack.jsx');
+    assert.match(rail, /onBackRef/);
+    assert.match(rail, /useLayoutEffect/);
+    assert.match(rail, /handlersRef/);
+    assert.match(rail, /useRegisterRailBack/);
 });

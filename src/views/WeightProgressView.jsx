@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeft, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { Card, Badge, Button, EmptyState, IconButton, PageTitle } from '../components/ui';
 import { formatWeight, formatDateNO } from '../lib/formatters';
+import { useShellRail } from '../hooks';
 
 const EMPTY_LIST = [];
 const EMPTY_CHART = {
@@ -14,6 +15,7 @@ const EMPTY_CHART = {
 };
 
 const WeightProgressView = React.memo(({ checkins = EMPTY_LIST, periods = EMPTY_LIST, onBack }) => {
+    const isRail = useShellRail();
     const [selectedIndex, setSelectedIndex] = useState(null);
     const chartRef = useRef(null);
     const [width, setWidth] = useState(360);
@@ -135,11 +137,11 @@ const WeightProgressView = React.memo(({ checkins = EMPTY_LIST, periods = EMPTY_
     }, [validCheckins, periodList, reversedCheckins, width, chartLeft, chartRight, chartBottom, chartTop]);
 
     if (validCheckins.length === 0) return (
-        <div className="flex flex-col items-center justify-center h-[60vh] animate-fade-in">
+        <div className="flex flex-col items-center justify-center h-[60vh] animate-fade-in" data-testid="weight-progress-view">
             <EmptyState
                 title="Ingen vektdata enda"
                 description="Når en rapport med vekt sendes inn, vises utviklingen her."
-                action={<Button variant="secondary" onClick={onBack}>Tilbake</Button>}
+                action={!isRail ? <Button variant="secondary" onClick={onBack}>Tilbake</Button> : null}
             />
         </div>
     );
@@ -155,11 +157,13 @@ const WeightProgressView = React.memo(({ checkins = EMPTY_LIST, periods = EMPTY_
     const activePoint = chartPoints[activeIndex];
 
     return (
-        <div className="space-y-6 animate-slide-up pb-32 duo:pb-8">
+        <div className="space-y-6 animate-slide-up pb-32 duo:pb-8" data-testid="weight-progress-view">
             <div className="flex items-center gap-2">
-                <IconButton onClick={onBack} aria-label="Tilbake til hjem" className="-ml-2">
-                    <ChevronLeft size={22} />
-                </IconButton>
+                {!isRail && (
+                    <IconButton onClick={onBack} aria-label="Tilbake til hjem" className="-ml-2" data-testid="weight-progress-back">
+                        <ChevronLeft size={22} />
+                    </IconButton>
+                )}
                 <PageTitle>Vektutvikling</PageTitle>
             </div>
 

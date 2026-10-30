@@ -1,5 +1,6 @@
 import typography from '@tailwindcss/typography';
 import plugin from 'tailwindcss/plugin';
+import { DUO_MIN_WIDTH_PX } from './src/lib/duoBreakpoint.js';
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -84,12 +85,16 @@ export default {
   },
   plugins: [
     typography,
-    // Density utilities for wide sidebar AND Duo rail (same sticky/media entry).
-    // Specificity beats sm:/md: when both match. Use `duo-lg:` for ≥1024 overrides
+    // Density utilities for wide sidebar, and for Duo rail only when width ≥ 700.
+    // Closed Duo (390) stays phone density so cards are not squeezed. Specificity
+    // beats sm:/md: when both match. Use `duo-lg:` for ≥1024 overrides
     // (stacked `lg:duo:` does not wrap in the lg media with this parent variant).
     plugin(({ addVariant }) => {
-      addVariant('duo', ':is(html[data-shell="wide"], html[data-shell="rail"]) &');
-      addVariant('duo-lg', '@media (min-width: 1024px) { :is(html[data-shell="wide"], html[data-shell="rail"]) & }');
+      addVariant('duo', [
+        'html[data-shell="wide"] &',
+        `@media (min-width: ${DUO_MIN_WIDTH_PX}px) { html[data-shell="rail"] & }`,
+      ]);
+      addVariant('duo-lg', `@media (min-width: 1024px) { :is(html[data-shell="wide"], html[data-shell="rail"]) & }`);
     }),
   ],
 };

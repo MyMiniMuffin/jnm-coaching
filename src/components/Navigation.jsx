@@ -3,6 +3,10 @@ import { ChevronLeft } from 'lucide-react';
 import { NAV_ITEMS, APP_ICON } from '../lib/config';
 import { haptic } from '../lib/haptic';
 
+const stopTouchBubble = (event) => {
+    event.stopPropagation();
+};
+
 const NavButton = React.memo(({ item, isActive, onClick, variant }) => {
     const Icon = item.icon;
     if (variant === 'sidebar') {
@@ -111,9 +115,18 @@ const Navigation = React.memo(({ activeTab, setActiveTab, shell = 'narrow', onBa
             <div
                 className={`app-rail ${isRail ? 'flex' : 'hidden'}`}
                 data-testid="app-rail"
+                role="navigation"
                 aria-label="Duo-navigasjon"
             >
-                <div className="app-rail-inner">
+                <div
+                    className="app-rail-inner"
+                    data-swipe-ignore="true"
+                    data-testid="app-rail-inner"
+                    onTouchStart={stopTouchBubble}
+                    onTouchMove={stopTouchBubble}
+                    onTouchEnd={stopTouchBubble}
+                    onTouchCancel={stopTouchBubble}
+                >
                     {showBack && (
                         <div className="app-rail-pill" data-testid="app-rail-back-pill">
                             <button

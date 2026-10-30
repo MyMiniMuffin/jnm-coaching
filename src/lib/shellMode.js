@@ -1,12 +1,15 @@
 /**
  * Single shell-mode store: narrow | wide | rail.
  *
- * - Duo device (`html[data-device="duo"]`, `?device=duo`, or localStorage): always `rail`
+ * - Duo device (`html[data-device="duo"]`, `?device=duo`, or session override): always `rail`
  * - Else enter `wide` when DUO_MEDIA_QUERY matches; stay wide while width ≥ 700
  *   (keyboard shrink); exit when width < 700; cold start without match = `narrow`
  *
  * Sets html[data-shell] synchronously at module load so first paint, Tailwind
- * `duo:` (wide|rail), and React hooks agree.
+ * `duo:` (wide | rail≥700), and React hooks agree.
+ *
+ * Device override uses sessionStorage only (never localStorage) so a shared
+ * `?device=duo` link cannot permanently lock production users into rail.
  */
 import { useSyncExternalStore } from 'react';
 import { DUO_MEDIA_QUERY, DUO_MIN_WIDTH_PX } from './duoBreakpoint';
@@ -27,16 +30,22 @@ const mediaMatches = () => (
     typeof window !== 'undefined' && window.matchMedia(DUO_MEDIA_QUERY).matches
 );
 
-/** Dev/test override: ?device=duo|phone  or localStorage jnm_device_override. */
+/**
+ * Dev/test override: `?device=duo|phone` writes sessionStorage for the tab only.
+ * Never persists to localStorage. Reading sessionStorage lets SPA navigations
+ * keep the override without locking other visits after the tab closes.
+ */
 export const readDeviceOverride = () => {
     if (typeof window === 'undefined') return null;
     try {
         const param = new URLSearchParams(window.location.search).get('device');
         if (param === 'duo' || param === 'phone') {
-            try { window.localStorage.setItem(DEVICE_STORAGE_KEY, param); } catch { /* private */ }
+            try { window.sessionStorage.setItem(DEVICE_STORAGE_KEY, param); } catch { /* private */ }
+            // Migrate away from any legacy localStorage lock.
+            try { window.localStorage.removeItem(DEVICE_STORAGE_KEY); } catch { /* private */ }
             return param;
         }
-        const stored = window.localStorage.getItem(DEVICE_STORAGE_KEY);
+        const stored = window.sessionStorage.getItem(DEVICE_STORAGE_KEY);
         if (stored === 'duo' || stored === 'phone') return stored;
     } catch { /* ignore */ }
     return null;
@@ -65,7 +74,10 @@ const computeShell = (sticky) => {
 const syncDom = (nextShell) => {
     if (typeof document === 'undefined') return;
     document.documentElement.setAttribute(ATTR, nextShell);
-    if (isDuoDevice()) {
+    const override = readDeviceOverride();
+    if (override === 'phone') {
+        document.documentElement.removeAttribute(DEVICE_ATTR);
+    } else if (isDuoDevice()) {
         document.documentElement.setAttribute(DEVICE_ATTR, 'duo');
     }
 };
@@ -88,7 +100,8 @@ const recompute = () => {
 };
 
 export const getShellMode = () => shell;
-export const getShellWide = () => shell === SHELL_WIDE || shell === SHELL_RAIL;
+/** True only for left-sidebar wide — not Duo rail (390 closed must not look like desktop). */
+export const getShellWide = () => shell === SHELL_WIDE;
 export const getShellRail = () => shell === SHELL_RAIL;
 
 export const subscribeShellWide = (listener) => {
@@ -102,7 +115,7 @@ export const useShellMode = () => useSyncExternalStore(
     () => SHELL_NARROW
 );
 
-/** True for left-sidebar wide OR Duo rail — drives Tailwind duo: density consumers. */
+/** True for left-sidebar wide shell only. */
 export const useShellWide = () => useSyncExternalStore(
     subscribeShellWide,
     getShellWide,
@@ -117,6 +130,7 @@ export const useShellRail = () => useSyncExternalStore(
 
 // Synchronous init before first React render (import from main.jsx).
 if (typeof window !== 'undefined') {
+    try { window.localStorage.removeItem(DEVICE_STORAGE_KEY); } catch { /* private */ }
     readDeviceOverride();
     wideSticky = mediaMatches();
     shell = computeShell(wideSticky);
@@ -127,9 +141,21 @@ if (typeof window !== 'undefined') {
     media.addEventListener('change', onChange);
     window.addEventListener('resize', onChange);
 
+    // Native WKUserScript (or late injection) may set data-device after module load.
+    const mo = new MutationObserver((mutations) => {
+        for (const mutation of mutations) {
+            if (mutation.type === 'attributes' && mutation.attributeName === DEVICE_ATTR) {
+                recompute();
+                break;
+            }
+        }
+    });
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: [DEVICE_ATTR] });
+
     import.meta.hot?.dispose(() => {
         media.removeEventListener('change', onChange);
         window.removeEventListener('resize', onChange);
+        mo.disconnect();
         listeners.clear();
     });
 }
