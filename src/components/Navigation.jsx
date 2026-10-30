@@ -10,7 +10,7 @@ const NavButton = React.memo(({ item, isActive, onClick, variant }) => {
                 type="button"
                 onClick={() => onClick(item.id)}
                 aria-current={isActive ? 'page' : undefined}
-                className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                className={`flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                     isActive
                         ? 'bg-white text-accent-hover font-semibold shadow-sm ring-1 ring-surface-200'
                         : 'text-ink-muted font-medium hover:bg-white/70 hover:text-ink'

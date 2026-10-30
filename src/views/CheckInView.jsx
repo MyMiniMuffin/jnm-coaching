@@ -805,7 +805,7 @@ const CheckInView = React.memo(({
                                     <div className="flex items-center gap-2 px-4 py-3">
                                         <button
                                             type="button"
-                                            className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                                            className="flex min-h-0 min-w-0 flex-1 items-center gap-3 text-left duo:min-h-11"
                                             onClick={() => toggleExpanded(entry.id)}
                                             aria-expanded={isExpanded}
                                         >

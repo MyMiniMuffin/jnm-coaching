@@ -1430,7 +1430,7 @@ const App = () => {
                         <div className="fixed inset-0 bg-surface-50 z-50 overflow-auto">
                             <div className="sticky top-0 z-10 border-b border-surface-200 bg-surface-50/95 backdrop-blur-md">
                                 <div className="app-header-top-inset" aria-hidden="true" />
-                                <div className="header-inner flex items-center gap-3 px-4 py-3 lg:px-8 lg:py-4">
+                                <div className="header-inner flex items-center gap-3 px-4 py-3 duo:px-6 lg:px-8 duo:py-3.5 lg:py-4">
                                     <IconButton onClick={() => setActiveTab('dashboard')} aria-label="Tilbake til dashboard" className="-ml-2">
                                         <ChevronLeft size={22} />
                                     </IconButton>

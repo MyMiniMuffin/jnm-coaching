@@ -10,7 +10,9 @@
     "generate-vapid": "web-push generate-vapid-keys",
     "ios:sync": "npm run build && cap sync ios",
     "ios:open": "cap open ios",
-    "test": "node --test tests/*.cjs tests/*.mjs"
+    "test": "node --test tests/*.cjs tests/*.mjs",
+    "test:unit": "node --test tests/*.cjs tests/iphone-duo.mjs",
+    "test:duo-layout": "node --test tests/iphone-duo-layout.mjs"
   },
   "dependencies": {
     "@capacitor/core": "^8.5.3",
@@ -37,6 +39,7 @@
     "@tailwindcss/typography": "^0.5.19",
     "@vitejs/plugin-react": "^6.0.1",
     "autoprefixer": "^10.4.27",
+    "playwright": "^1.58.2",
     "postcss": "^8.5.14",
     "tailwindcss": "^3.4.19",
     "vite": "^8.0.11"

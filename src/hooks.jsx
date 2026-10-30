@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Loader2 } from 'lucide-react';
+import { DUO_MEDIA_QUERY } from './lib/duoBreakpoint';
 
 // --- SWIPE HOOK ---
 export const useSwipe = (onSwipeLeft, onSwipeRight, options = {}) => {
@@ -161,7 +162,8 @@ export const useOnlineStatus = () => {
     return isOnline;
 };
 
-export const DESKTOP_QUERY = '(min-width: 700px), (horizontal-viewport-segments: 2)';
+/** Wide+tall shell (sidebar). Same query as Tailwind `duo:` / index.css duo shell. */
+export const DESKTOP_QUERY = DUO_MEDIA_QUERY;
 
 export const useDesktop = () => {
     const [isDesktop, setIsDesktop] = useState(() => (

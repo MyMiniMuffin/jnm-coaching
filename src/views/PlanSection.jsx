@@ -736,26 +736,26 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                             </Button>
                         </div>
                     ) : (
-                        <div className={displayPlan.sections.length > 1 ? 'space-y-4 duo:grid duo:grid-cols-2 duo:gap-6 duo:space-y-0 duo-split-grid items-start' : 'space-y-4'}>
+                        <div className="space-y-4">
                             {displayPlan.sections.map(section => (
-                                <section key={section.key}>
+                                <section key={section.key} className="min-w-0">
                                     {section.title && (
-                                        <h3 className="break-words text-[1.08rem] font-semibold leading-tight text-ink">{section.title}</h3>
+                                        <h3 className="min-w-0 text-[1.08rem] font-semibold leading-tight text-ink break-normal">{section.title}</h3>
                                     )}
                                     {section.items.length > 0 && (
                                         type === 'workout' && section.items.some(item => item.sets || item.reps) ? (
-                                            <div className={`${section.title ? 'mt-2' : ''} overflow-hidden`}>
-                                                <div className="grid grid-cols-[minmax(0,1fr)_3.75rem_5rem] gap-2 bg-surface-50 px-3 py-2 sm:grid-cols-[minmax(0,1fr)_4.5rem_6.5rem]">
-                                                    <span className="section-label">Øvelse</span>
+                                            <div className={`${section.title ? 'mt-2' : ''} min-w-0 overflow-x-auto`}>
+                                                <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_3.75rem_5rem] gap-2 bg-surface-50 px-3 py-2 sm:grid-cols-[minmax(0,1fr)_4.5rem_6.5rem]">
+                                                    <span className="section-label min-w-0">Øvelse</span>
                                                     <span className="section-label text-center">Sett</span>
                                                     <span className="section-label text-center">Reps</span>
                                                 </div>
                                                 <ul className="divide-y divide-surface-100">
                                                     {section.items.map(item => (
-                                                        <li key={item.key} className="grid grid-cols-[minmax(0,1fr)_3.75rem_5rem] items-center gap-2 px-3 py-2 text-sm leading-5 text-ink/85 sm:grid-cols-[minmax(0,1fr)_4.5rem_6.5rem]">
-                                                            <span className="min-w-0 break-words whitespace-pre-wrap font-medium">{item.text}</span>
+                                                        <li key={item.key} className="grid min-w-0 grid-cols-[minmax(0,1fr)_3.75rem_5rem] items-center gap-2 px-3 py-2 text-sm leading-5 text-ink/85 sm:grid-cols-[minmax(0,1fr)_4.5rem_6.5rem]">
+                                                            <span className="min-w-0 break-normal whitespace-normal font-medium">{item.text}</span>
                                                             <span className="text-center font-semibold tabular-nums text-ink">{item.sets || '—'}</span>
-                                                            <span className="break-words text-center font-semibold tabular-nums leading-5 text-ink">{item.reps || '—'}</span>
+                                                            <span className="min-w-0 break-normal text-center font-semibold tabular-nums leading-5 text-ink">{item.reps || '—'}</span>
                                                         </li>
                                                     ))}
                                                 </ul>
@@ -764,13 +764,13 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                                             <ul className={`${section.title ? 'mt-1.5' : ''} space-y-0`}>
                                                 {section.items.map(item => (
                                                     <li key={item.key} className="px-1 py-0.5 text-sm leading-5 text-ink/80">
-                                                        <div className="break-words whitespace-pre-wrap">{item.text}</div>
+                                                        <div className="min-w-0 break-normal whitespace-pre-wrap">{item.text}</div>
                                                         {(item.subItems || []).length > 0 && (
                                                             <ul className="ml-4 mt-0.5 space-y-0 border-l border-surface-200 pl-2.5">
                                                                 {item.subItems.map(subItem => (
-                                                                    <li key={subItem.key} className="flex items-start gap-1.5 py-0 text-[0.82rem] leading-5 text-ink-muted">
+                                                                    <li key={subItem.key} className="flex min-w-0 items-start gap-1.5 py-0 text-[0.82rem] leading-5 text-ink-muted">
                                                                         <span className="text-ink-faint">–</span>
-                                                                        <span className="break-words whitespace-pre-wrap">{subItem.text}</span>
+                                                                        <span className="min-w-0 break-normal whitespace-pre-wrap">{subItem.text}</span>
                                                                     </li>
                                                                 ))}
                                                             </ul>

@@ -1,4 +1,6 @@
 /** @type {import('tailwindcss').Config} */
+const { DUO_MEDIA_QUERY } = require('./src/lib/duoBreakpoint.cjs');
+
 module.exports = {
   content: [
     './index.html',
@@ -7,7 +9,8 @@ module.exports = {
   theme: {
     screens: {
       sm: '640px',
-      duo: '700px',
+      // Width+height: exclude closed-phone landscape (~932×430); keep iPad portrait.
+      duo: { raw: DUO_MEDIA_QUERY },
       md: '768px',
       lg: '1024px',
       xl: '1280px',
