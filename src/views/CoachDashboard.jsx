@@ -296,7 +296,7 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
             )}
 
             {/* Hero Stats Card */}
-            <div className="px-5 py-4 duo:px-6 lg:px-7 duo:py-5 lg:py-6 hero-tint text-white rounded-xl relative overflow-hidden ring-1 ring-white/10">
+            <div className="px-5 py-4 duo:px-6 duo-lg:px-7 duo:py-5 duo-lg:py-6 hero-tint text-white rounded-xl relative overflow-hidden ring-1 ring-white/10">
                 <div className="relative z-10 space-y-4 duo:flex duo:items-center duo:justify-between duo:gap-6 duo:space-y-0">
                     <div className="min-w-0">
                         <p className="text-white/70 text-xs">Oversikt</p>

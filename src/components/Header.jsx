@@ -25,7 +25,7 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
             </div>
         )}
         {viewingClient ? (
-            <div className="header-inner flex items-center px-3 py-3 gap-1 lg:gap-2 duo:px-6 lg:px-8 duo:py-3.5 lg:py-4">
+            <div className="header-inner flex items-center px-3 py-3 gap-1 lg:gap-2 duo:px-6 duo-lg:px-8 duo:py-3.5 duo-lg:py-4">
                 <button
                     type="button"
                     onClick={onClearClient}
@@ -51,7 +51,7 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
                 </IconButton>
             </div>
         ) : (
-            <div className="header-inner flex justify-between items-center px-5 py-3 duo:px-6 lg:px-8 duo:py-3.5 lg:py-4">
+            <div className="header-inner flex justify-between items-center px-5 py-3 duo:px-6 duo-lg:px-8 duo:py-3.5 duo-lg:py-4">
                 <p className="font-semibold text-ink truncate min-w-0">{user.name}</p>
                 <div className="flex items-center gap-1">
                     <AccountMenu user={isClientPreview ? null : user} />

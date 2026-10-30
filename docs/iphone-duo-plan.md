@@ -27,7 +27,19 @@
 
 ## Duo-scope (bredde + høyde)
 
-Én kilde: `src/lib/duoBreakpoint.js` (importert av `tailwind.config.mjs` og `hooks.jsx`). CSS speiler samme tall (parity-testet).
+Én tilstand eier alt: `src/lib/shellMode.js` (modul-singleton + `useSyncExternalStore`).
+
+- **Inn i wide:** `DUO_MEDIA_QUERY` matcher (`src/lib/duoBreakpoint.js`).
+- **Ut av wide:** bredde &lt; 700, eller kald start uten media-match.
+- **Sticky:** allerede wide + høyde krymper (tastatur) mens bredde ≥ 700 → forblir wide.
+
+Ved modul-load (før første React-render) settes `html[data-shell="wide"|"narrow"]`. Samme attributt driver:
+
+| Forbruker | Kilde |
+|---|---|
+| Shell-CSS | `html[data-shell="wide"] …` i `index.css` (én kopi) |
+| Tailwind `duo:` | `addVariant('duo', 'html[data-shell="wide"] &')` |
+| `useDesktop` | `useShellWide()` (alle instanser samme store) |
 
 ```text
 DUO_MEDIA_QUERY =
@@ -35,20 +47,22 @@ DUO_MEDIA_QUERY =
   (min-width: 1024px)
 ```
 
-`useDesktop` setter `html[data-duo-shell]` og er **sticky**: når shell allerede er aktiv og bare høyden krymper (tastatur) mens bredden forblir ≥700, forblir sidebaren. Bredde &lt; 700 avslutter shell.
+**Path-avhengighet (viktig):** sticky husker forrige wide-tilstand innen sesjonen, men kald start har ingen minne.
 
-**Atferd:**
-
-| Viewport | Shell |
+| Viewport / path | Shell |
 |---|---|
 | 390×844 (lukket portrett) | Bottom nav |
 | 932×430 (lukket telefon landskap) | Bottom nav |
 | 700×599 (kald start) | Bottom nav |
+| 900×550 (kald start) | Bottom nav (media matcher ikke; ingen sticky) |
 | 700×600 / iPad-portrett / Duo unfolded | Sidebar |
-| 900×760 → 900×400 (tastatur) | Sidebar beholdes (sticky) |
+| 900×760 → 900×400 (tastatur) | Sidebar beholdes (sticky / `data-shell="wide"`) |
+| 900×400 → 650×400 | Bottom nav (exit under 700) |
 | 1280×550 (kort desktop) | Sidebar (`min-width: 1024px`) |
 
 `max-width` ved ≥1024 er **uendret**.
+
+**Spesifisitet:** `duo:` er attributt-variant og slår `sm:` når begge matcher (f.eks. sticky 900×400 → rating forblir 2×5). Stablet `lg:duo:` får ikke lg-media med denne parent-varianten — bruk `duo-lg:` (wide + ≥1024) der lg skal overstyre, f.eks. `duo:grid-cols-5 duo-lg:grid-cols-10`.
 
 ---
 
@@ -57,8 +71,8 @@ DUO_MEDIA_QUERY =
 1. Plattform-verifikasjon + fjern død segment-CSS; behold `--fold-gap`.
 2. Duo-scope med min-høyde ~600px.
 3. `PlanSection`: fjern `duo:grid-cols-2` (stable seksjoner); `min-w-0` + `break-normal` i sett/reps-tabell.
-4. Tap targets under duo: sidebar `min-h-11`; historikk `duo:min-h-11`; rating 2×5 under duo (`duo:grid-cols-5`, `lg:grid-cols-10`).
-5. Padding: `duo:px-6` / `duo:py-*` der bare `lg:` fantes (arkiv-header, Dashboard/Coach hero).
+4. Tap targets under duo: sidebar `min-h-11`; historikk `duo:min-h-11`; rating 2×5 under duo (`duo:grid-cols-5`, `duo-lg:grid-cols-10`).
+5. Padding: `duo:px-6` / `duo:py-*` der bare `lg:` fantes (arkiv-header, Dashboard/Coach hero); `duo-lg:` der ≥1024 skal vinne.
 6. Login: ingen ny layout — `.login-card` forblir `max-w-sm` sentrert.
 
 ---
@@ -71,13 +85,15 @@ DUO_MEDIA_QUERY =
 
 ---
 
-## Eksisterende infrastruktur (gjenbruk)
+## Infrastruktur (én shell-tilstand)
 
 | Del | Fil |
 |---|---|
-| `duo` screen (raw media) | `tailwind.config.js` ← `duoBreakpoint.cjs` |
-| `DUO_MEDIA_QUERY` | `src/lib/duoBreakpoint.js` |
+| Sticky store + `data-shell` | `src/lib/shellMode.js` |
+| `DUO_MEDIA_QUERY` (entry) | `src/lib/duoBreakpoint.js` |
+| `duo:` / `duo-lg:` attribute variants | `tailwind.config.mjs` (`addVariant`) |
+| `useDesktop` → `useShellWide` | `src/hooks.jsx` |
+| Wide shell CSS (én kopi) | `src/index.css` (`html[data-shell="wide"]`) |
 | `--fold-gap` + `.duo-split-grid` | `src/index.css` |
-| Shell @ duo / @1024+høyde | `src/index.css` |
 | Nav/header | `Navigation.jsx`, `Header.jsx` |
 | Tester | `tests/iphone-duo.mjs`, `tests/iphone-duo-layout.mjs` |

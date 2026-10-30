@@ -8,7 +8,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { access } from 'node:fs/promises';
+import { access, readdir, stat } from 'node:fs/promises';
 import { createServer } from 'node:net';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -22,6 +22,41 @@ import {
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const EXTERNAL_BASE = process.env.AUDIT_BASE || '';
+
+async function newestMtime(dir) {
+    let newest = 0;
+    const entries = await readdir(dir, { withFileTypes: true });
+    for (const entry of entries) {
+        const full = join(dir, entry.name);
+        if (entry.isDirectory()) {
+            newest = Math.max(newest, await newestMtime(full));
+        } else {
+            newest = Math.max(newest, (await stat(full)).mtimeMs);
+        }
+    }
+    return newest;
+}
+
+async function needsRebuild() {
+    try {
+        const distIndex = join(ROOT, 'dist/index.html');
+        await access(distIndex);
+        const distTime = (await stat(distIndex)).mtimeMs;
+        const srcTime = await newestMtime(join(ROOT, 'src'));
+        const configFiles = ['tailwind.config.mjs', 'vite.config.js', 'vite.config.mjs', 'index.html'];
+        let configTime = 0;
+        for (const file of configFiles) {
+            try {
+                configTime = Math.max(configTime, (await stat(join(ROOT, file))).mtimeMs);
+            } catch {
+                /* optional */
+            }
+        }
+        return srcTime > distTime || configTime > distTime;
+    } catch {
+        return true;
+    }
+}
 
 const ATHLETE = {
     id: 'athlete-1',
@@ -157,13 +192,11 @@ async function ensurePreview() {
         return { base: EXTERNAL_BASE, stop: async () => {} };
     }
 
-    try {
-        await access(join(ROOT, 'dist/index.html'));
-    } catch {
+    if (await needsRebuild()) {
         await new Promise((resolve, reject) => {
             const child = spawn('npm', ['run', 'build'], {
                 cwd: ROOT,
-                stdio: ['ignore', 'pipe', 'pipe'],
+                stdio: ['ignore', 'ignore', 'pipe'],
             });
             let stderr = '';
             child.stderr.on('data', (chunk) => { stderr += chunk; });
@@ -179,7 +212,7 @@ async function ensurePreview() {
     const child = spawn(
         'npx',
         ['vite', 'preview', '--host', '127.0.0.1', '--port', String(port), '--strictPort'],
-        { cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'], detached: true }
+        { cwd: ROOT, stdio: ['ignore', 'ignore', 'pipe'], detached: true }
     );
 
     let stderr = '';
@@ -285,7 +318,7 @@ async function shellState(page) {
             sidebarVisible,
             bottomVisible,
             overflowX,
-            duoShellAttr: document.documentElement.hasAttribute('data-duo-shell'),
+            shell: document.documentElement.getAttribute('data-shell'),
         };
     });
 }
@@ -463,13 +496,91 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
 
                 const before = await shellState(page);
                 assert.equal(before.sidebarVisible, true);
+                assert.equal(before.shell, 'wide');
 
                 await page.setViewportSize({ width: 900, height: 400 });
-                await page.waitForFunction(() => document.documentElement.hasAttribute('data-duo-shell'));
+                await page.waitForFunction(() => document.documentElement.getAttribute('data-shell') === 'wide');
                 const after = await shellState(page);
                 assert.equal(after.sidebarVisible, true, 'sidebar stays during keyboard shrink');
                 assert.equal(after.bottomVisible, false, 'bottom nav stays hidden');
+                assert.equal(after.shell, 'wide');
                 assert.equal(await weight.inputValue(), '74.5', 'form input preserved');
+
+                // Regression: duo: utilities stay on while sticky (not media-only).
+                const ratings = page.getByTestId('rating-option');
+                await ratings.first().waitFor();
+                const first = await ratings.nth(0).boundingBox();
+                const sixth = await ratings.nth(5).boundingBox();
+                assert.ok(first && sixth, 'rating row boxes at sticky 900×400');
+                assert.ok(sixth.y > first.y + 20, 'sticky rating stays 2×5 (duo:grid-cols-5)');
+
+                const duoChrome = await page.evaluate(() => {
+                    const probeInline = document.createElement('span');
+                    probeInline.className = 'hidden duo:inline';
+                    probeInline.textContent = 'duo-inline';
+                    document.body.appendChild(probeInline);
+                    const inlineDisplay = getComputedStyle(probeInline).display;
+                    probeInline.remove();
+
+                    const probeFlex = document.createElement('button');
+                    probeFlex.className = 'hidden duo:inline-flex';
+                    probeFlex.textContent = 'duo-flex';
+                    document.body.appendChild(probeFlex);
+                    const flexDisplay = getComputedStyle(probeFlex).display;
+                    probeFlex.remove();
+
+                    const save = document.querySelector('button[form="weekly-checkin-form"]');
+                    const saveFlex = save ? getComputedStyle(save).flexGrow : null;
+
+                    return {
+                        duoInline: inlineDisplay === 'inline',
+                        duoInlineFlex: flexDisplay === 'inline-flex',
+                        saveFlexGrow: saveFlex,
+                    };
+                });
+                assert.equal(duoChrome.duoInline, true, 'Header-style hidden duo:inline active while sticky');
+                assert.equal(duoChrome.duoInlineFlex, true, 'CheckIn-style hidden duo:inline-flex active while sticky');
+                assert.equal(duoChrome.saveFlexGrow, '0', 'CheckIn duo:flex-none active while sticky');
+            } finally {
+                await context.close();
+            }
+        });
+
+        await t.test('sticky exit: 900×400 → 650×400 shows bottom nav', async () => {
+            const context = await browser.newContext({
+                viewport: { width: 900, height: 760 },
+                deviceScaleFactor: 1,
+            });
+            const page = await context.newPage();
+            try {
+                await openAthlete(page, base);
+                await page.setViewportSize({ width: 900, height: 400 });
+                await page.waitForFunction(() => document.documentElement.getAttribute('data-shell') === 'wide');
+                assert.equal((await shellState(page)).sidebarVisible, true);
+
+                await page.setViewportSize({ width: 650, height: 400 });
+                await page.waitForFunction(() => document.documentElement.getAttribute('data-shell') === 'narrow');
+                const after = await shellState(page);
+                assert.equal(after.sidebarVisible, false, 'sidebar exits below 700');
+                assert.equal(after.bottomVisible, true, 'bottom nav after sticky exit');
+                assert.equal(after.shell, 'narrow');
+            } finally {
+                await context.close();
+            }
+        });
+
+        await t.test('cold start 900×400 is narrow (no sticky memory)', async () => {
+            const context = await browser.newContext({
+                viewport: { width: 900, height: 400 },
+                deviceScaleFactor: 1,
+            });
+            const page = await context.newPage();
+            try {
+                await openAthlete(page, base);
+                const shell = await shellState(page);
+                assert.equal(shell.shell, 'narrow');
+                assert.equal(shell.sidebarVisible, false);
+                assert.equal(shell.bottomVisible, true, 'cold short viewport uses bottom nav');
             } finally {
                 await context.close();
             }
@@ -486,6 +597,7 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
                 const shell = await shellState(page);
                 assert.equal(shell.sidebarVisible, true);
                 assert.equal(shell.bottomVisible, false);
+                assert.equal(shell.shell, 'wide');
             } finally {
                 await context.close();
             }

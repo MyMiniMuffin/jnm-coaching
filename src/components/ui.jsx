@@ -12,7 +12,7 @@ export const SegmentedControl = React.memo(({ label, hint, value, onChange, opti
             <div
                 data-testid={wrap ? 'rating-scale' : undefined}
                 className={wrap
-                    ? 'grid grid-cols-5 sm:grid-cols-10 duo:grid-cols-5 lg:grid-cols-10 gap-1 rounded-xl bg-surface-100 p-1'
+                    ? 'grid grid-cols-5 sm:grid-cols-10 duo:grid-cols-5 duo-lg:grid-cols-10 gap-1 rounded-xl bg-surface-100 p-1'
                     : 'flex gap-1 rounded-xl bg-surface-100 p-1'
                 }
             >

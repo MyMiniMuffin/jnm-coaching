@@ -1,5 +1,5 @@
 import typography from '@tailwindcss/typography';
-import { DUO_MEDIA_QUERY } from './src/lib/duoBreakpoint.js';
+import plugin from 'tailwindcss/plugin';
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -10,9 +10,6 @@ export default {
   theme: {
     screens: {
       sm: '640px',
-      // Raw query from duoBreakpoint.js — excludes closed-phone landscape;
-      // includes ≥1024 regardless of height. Sticky keyboard shell is JS-driven.
-      duo: { raw: DUO_MEDIA_QUERY },
       md: '768px',
       lg: '1024px',
       xl: '1280px',
@@ -87,5 +84,13 @@ export default {
   },
   plugins: [
     typography,
+    // Same source as shellMode / useDesktop: html[data-shell="wide"].
+    // Specificity beats sm:/md: media utilities when both match (e.g. sticky keyboard).
+    // Note: stacked `lg:duo:` does not wrap in the lg media with this parent variant —
+    // use `duo-lg:` when wide+≥1024 must override `duo:`.
+    plugin(({ addVariant }) => {
+      addVariant('duo', 'html[data-shell="wide"] &');
+      addVariant('duo-lg', '@media (min-width: 1024px) { html[data-shell="wide"] & }');
+    }),
   ],
 };

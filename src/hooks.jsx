@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Loader2 } from 'lucide-react';
 import { DUO_MEDIA_QUERY } from './lib/duoBreakpoint';
+import { useShellWide } from './lib/shellMode';
 
 // --- SWIPE HOOK ---
 export const useSwipe = (onSwipeLeft, onSwipeRight, options = {}) => {
@@ -162,59 +163,11 @@ export const useOnlineStatus = () => {
     return isOnline;
 };
 
-/** Wide shell media. Same query as Tailwind `duo:` / index.css duo shell. */
+/** Entry media for wide shell (see shellMode sticky rules). */
 export const DESKTOP_QUERY = DUO_MEDIA_QUERY;
 
-const syncDuoShellAttr = (active) => {
-    if (typeof document === 'undefined') return;
-    document.documentElement.toggleAttribute('data-duo-shell', Boolean(active));
-};
-
-/**
- * Sidebar shell when the Duo media query matches, or when width stays ≥700 after
- * we already entered duo (keyboard shrinking height must not flip the shell).
- * Width &lt; 700 always exits. Width ≥1024 always enters via DESKTOP_QUERY.
- */
-export const useDesktop = () => {
-    const [isDesktop, setIsDesktop] = useState(() => {
-        if (typeof window === 'undefined') return false;
-        return window.matchMedia(DESKTOP_QUERY).matches;
-    });
-
-    useEffect(() => {
-        const media = window.matchMedia(DESKTOP_QUERY);
-
-        const compute = (previous) => {
-            const width = window.innerWidth;
-            if (media.matches) return true;
-            if (width < 700) return false;
-            // 700–1023 with short height: keep prior duo shell (e.g. on-screen keyboard).
-            return Boolean(previous);
-        };
-
-        const apply = () => {
-            setIsDesktop((previous) => {
-                const next = compute(previous);
-                syncDuoShellAttr(next);
-                return next;
-            });
-        };
-
-        apply();
-        media.addEventListener('change', apply);
-        window.addEventListener('resize', apply);
-        return () => {
-            media.removeEventListener('change', apply);
-            window.removeEventListener('resize', apply);
-        };
-    }, []);
-
-    useEffect(() => {
-        syncDuoShellAttr(isDesktop);
-    }, [isDesktop]);
-
-    return isDesktop;
-};
+/** Shared wide/narrow shell — same store as html[data-shell] and Tailwind `duo:`. */
+export const useDesktop = () => useShellWide();
 
 // --- Fokus-trapping hook for modaler ---
 export const useFocusTrap = (active = true) => {

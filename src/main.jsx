@@ -1,4 +1,6 @@
 import './index.css';
+// Sync html[data-shell] before React mounts (Tailwind duo: + shell CSS).
+import './lib/shellMode';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { ToastProvider } from './components/Toast';

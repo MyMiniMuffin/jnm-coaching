@@ -24,41 +24,53 @@ test('duoBreakpoint is the single source for Duo media query', () => {
     assert.equal(existsSync(join(root, 'src/lib/duoBreakpoint.cjs')), false);
     assert.equal(existsSync(join(root, 'tailwind.config.js')), false);
     assert.equal(existsSync(join(root, 'tailwind.config.mjs')), true);
+    assert.equal(existsSync(join(root, 'src/lib/shellMode.js')), true);
 });
 
-test('tailwind duo screen imports DUO_MEDIA_QUERY from duoBreakpoint.js', () => {
+test('tailwind duo is attribute variant on html[data-shell=wide]', () => {
     const config = read('tailwind.config.mjs');
-    assert.match(config, /from '\.\/src\/lib\/duoBreakpoint\.js'/);
-    assert.match(config, /duo:\s*\{\s*raw:\s*DUO_MEDIA_QUERY\s*\}/);
+    assert.match(config, /addVariant\(\s*['"]duo['"]\s*,\s*['"]html\[data-shell="wide"\] &['"]/);
+    assert.match(config, /addVariant\(\s*['"]duo-lg['"]/);
+    assert.doesNotMatch(config, /screens:\s*\{[^}]*duo:/s);
+    assert.doesNotMatch(config, /raw:\s*DUO_MEDIA_QUERY/);
     assert.doesNotMatch(config, /PHONE_CHROME/);
 });
 
-test('DESKTOP_QUERY uses DUO_MEDIA_QUERY with sticky shell helpers', () => {
+test('useDesktop reads shared shellMode store (no per-instance sticky)', () => {
     const hooks = read('src/hooks.jsx');
+    const shell = read('src/lib/shellMode.js');
     assert.match(hooks, /from '\.\/lib\/duoBreakpoint'/);
+    assert.match(hooks, /from '\.\/lib\/shellMode'/);
     assert.match(hooks, /export const DESKTOP_QUERY = DUO_MEDIA_QUERY/);
-    assert.match(hooks, /data-duo-shell/);
-    assert.match(hooks, /innerWidth/);
+    assert.match(hooks, /export const useDesktop = \(\) => useShellWide\(\)/);
+    assert.doesNotMatch(hooks, /data-duo-shell/);
+    assert.doesNotMatch(hooks, /previousWide|setIsDesktop|matchMedia/);
     assert.doesNotMatch(hooks, /horizontal-viewport-segments/);
     assert.doesNotMatch(hooks, /PHONE_CHROME/);
+    assert.match(shell, /useSyncExternalStore/);
+    assert.match(shell, /data-shell/);
+    assert.match(shell, /DUO_MIN_WIDTH_PX/);
+    assert.match(shell, /computeWide/);
 });
 
-test('index.css duo shell media matches duoBreakpoint numbers and keeps fold-gap only', () => {
+test('index.css wide shell is attribute-only (no mirrored media / data-duo-shell)', () => {
     const css = read('src/index.css');
-    assert.match(
+    assert.doesNotMatch(
         css,
         /@media \(min-width: 700px\) and \(min-height: 600px\), \(min-width: 1024px\)/
     );
-    assert.match(css, /html\[data-duo-shell\]/);
+    assert.doesNotMatch(css, /data-duo-shell/);
+    assert.doesNotMatch(css, /:not\(\[data-duo-shell\]\)/);
+    assert.match(css, /html\[data-shell="wide"\] \.app-sidebar/);
+    assert.match(css, /html\[data-shell="narrow"\]/);
     assert.match(css, /--fold-gap:\s*1\.25rem/);
     assert.match(css, /\.duo-split-grid/);
     assert.doesNotMatch(css, /horizontal-viewport-segments/);
     assert.doesNotMatch(css, /viewport-segment-left/);
-    assert.match(css, /width:\s*12\.5rem/);
-    assert.match(css, /\.app-frame-nav \.plan-save-bar \{[\s\S]*?left:\s*12\.5rem/);
-    assert.match(css, /@media \(min-width: 1024px\)[\s\S]*?width:\s*15\.5rem/);
+    assert.match(css, /html\[data-shell="wide"\] \.app-sidebar \{[\s\S]*?width:\s*12\.5rem/);
+    assert.match(css, /html\[data-shell="wide"\] \.app-frame-nav \.plan-save-bar \{[\s\S]*?left:\s*12\.5rem/);
+    assert.match(css, /@media \(min-width: 1024px\)[\s\S]*?html\[data-shell="wide"\] \.app-sidebar \{[\s\S]*?width:\s*15\.5rem/);
     assert.match(css, /@media \(min-width: 640px\) and \(max-width: 699px\)/);
-    assert.match(css, /@media \(max-width: 699px\), \(max-width: 1023px\) and \(max-height: 599px\)/);
 });
 
 test('index.css and gallery keep horizontal safe-area insets', () => {
@@ -72,18 +84,14 @@ test('index.css and gallery keep horizontal safe-area insets', () => {
     assert.match(gallery, /pr-\[env\(safe-area-inset-right,0px\)\]/);
 });
 
-test('duoBreakpoint values are mirrored exactly in index.css media queries', () => {
-    const css = read('src/index.css');
-    const expectedShell =
-        `@media (min-width: ${DUO_MIN_WIDTH_PX}px) and (min-height: ${DUO_MIN_HEIGHT_PX}px), ` +
-        `(min-width: ${DESKTOP_MIN_WIDTH_PX}px)`;
-    assert.match(css, new RegExp(expectedShell.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
-    assert.match(
-        css,
-        new RegExp(
-            `@media \\(max-width: ${DUO_MIN_WIDTH_PX - 1}px\\), \\(max-width: ${DESKTOP_MIN_WIDTH_PX - 1}px\\) and \\(max-height: ${DUO_MIN_HEIGHT_PX - 1}px\\)`
-        )
-    );
+test('shellMode sticky uses duoBreakpoint thresholds', () => {
+    const shell = read('src/lib/shellMode.js');
+    assert.match(shell, new RegExp(`DUO_MIN_WIDTH_PX`));
+    assert.match(shell, /mediaMatches\(\)/);
+    assert.match(shell, /innerWidth < DUO_MIN_WIDTH_PX/);
+    assert.equal(DUO_MIN_WIDTH_PX, 700);
+    assert.equal(DUO_MIN_HEIGHT_PX, 600);
+    assert.equal(DESKTOP_MIN_WIDTH_PX, 1024);
 });
 
 test('iOS launch screen autoresizes for Duo window scenes', () => {
@@ -120,18 +128,24 @@ test('navigation shell chrome is driven by isDesktop (sticky-safe)', () => {
     assert.match(navigation, /data-testid="mobile-bottom-nav"/);
     assert.match(navigation, /min-h-11 w-full items-center gap-3/);
     assert.match(app, /isDesktop=\{isDesktop\}/);
-    assert.match(header, /duo:px-6 lg:px-8 duo:py-3\.5 lg:py-4/);
+    assert.match(app, /useDesktop\(\)/);
+    assert.match(header, /duo:px-6 duo-lg:px-8 duo:py-3\.5 duo-lg:py-4/);
 });
 
-test('PlanSection stacks sections and keeps break-words for narrow viewports', () => {
+test('PlanSection stacks sections and keeps break-words + whitespace-pre-wrap', () => {
     const plan = read('src/views/PlanSection.jsx');
     assert.doesNotMatch(plan, /duo:grid-cols-2/);
     assert.match(plan, /data-testid="plan-sections"/);
     assert.match(plan, /data-testid="plan-section"/);
     assert.match(plan, /min-w-0 break-words/);
+    assert.match(plan, /data-testid="plan-exercise-name"[^>]*>/);
+    assert.match(
+        plan,
+        /break-words whitespace-pre-wrap font-medium" data-testid="plan-exercise-name"/
+    );
     assert.doesNotMatch(plan, /break-normal/);
     assert.doesNotMatch(plan, /overflow-x-auto/);
-    assert.match(plan, /duo:px-6 lg:px-8/);
+    assert.match(plan, /duo:px-6 duo-lg:px-8/);
 });
 
 test('views keep duo density classes without dead segment coupling', () => {
@@ -146,9 +160,9 @@ test('views keep duo density classes without dead segment coupling', () => {
 
     assert.match(coach, /duo:grid duo:grid-cols-2/);
     assert.match(coach, /duo-split-grid/);
-    assert.match(coach, /duo:px-6 lg:px-7/);
+    assert.match(coach, /duo:px-6 duo-lg:px-7/);
     assert.match(dashboard, /pb-32 duo:pb-8/);
-    assert.match(dashboard, /duo:px-6 lg:px-7/);
+    assert.match(dashboard, /duo:px-6 duo-lg:px-7/);
     assert.doesNotMatch(dashboard, /duo:grid-cols-2 gap-5 items-start/);
     assert.match(checkin, /hidden duo:inline-flex/);
     assert.match(checkin, /duo:flex-none/);
@@ -158,11 +172,12 @@ test('views keep duo density classes without dead segment coupling', () => {
     assert.match(gallery, /max-w-\[33\.6vh\] duo:max-w-\[min\(42vh,22rem\)\]/);
     assert.match(gallery, /duo:grid-cols-6/);
     assert.match(weight, /pb-32 duo:pb-8/);
-    assert.match(ui, /duo:grid-cols-5 lg:grid-cols-10/);
+    assert.match(weight, /width < 680 \? 4 : 6/);
+    assert.match(ui, /duo:grid-cols-5 duo-lg:grid-cols-10/);
     assert.match(ui, /data-testid=\{wrap \? 'rating-scale'/);
     assert.doesNotMatch(ui, /duo:min-h-11/);
     assert.match(boundary, /sm:grid-cols-4 duo:grid-cols-5/);
-    assert.match(app, /duo:px-6 lg:px-8 duo:py-3\.5 lg:py-4/);
+    assert.match(app, /duo:px-6 duo-lg:px-8 duo:py-3\.5 duo-lg:py-4/);
 });
 
 test('login card stays max-w-sm without unfolded split layout', () => {
@@ -171,12 +186,15 @@ test('login card stays max-w-sm without unfolded split layout', () => {
     assert.doesNotMatch(login, /duo:grid|duo-split/);
 });
 
-test('docs plan records WebKit segment preview status and revised duo query', () => {
+test('docs plan records WebKit segment preview status and path-dependent sticky', () => {
     const plan = read('docs/iphone-duo-plan.md');
     assert.match(plan, /feature flag/i);
     assert.match(plan, /DUO_MEDIA_QUERY/);
     assert.match(plan, /min-height: 600px/);
     assert.match(plan, /P1/);
+    assert.match(plan, /data-shell/);
+    assert.match(plan, /900\s*[×x]\s*550/);
+    assert.match(plan, /path-avhengig|path-dependent|kald start/i);
 });
 
 test('src does not use max-sm/max-md/max-lg or arbitrary min-[ screens', () => {
