@@ -8,23 +8,27 @@ export const SegmentedControl = React.memo(({ label, hint, value, onChange, opti
         <div>
             <label className="block text-sm font-medium text-ink-muted mb-2">{label}</label>
             {hint && <p className="text-xs text-ink-muted -mt-1 mb-2">{hint}</p>}
-            <div className={wrap
-                ? // 2×5 under duo (sidebar stage ~470–560px); 10-col only from lg where stage is wide enough
-                  'grid grid-cols-5 sm:grid-cols-10 duo:grid-cols-5 lg:grid-cols-10 gap-1 rounded-xl bg-surface-100 p-1'
-                : 'flex gap-1 rounded-xl bg-surface-100 p-1'
-            }>
+            {/* 2×5 under duo (narrow stage); 10-col from lg where stage is wide enough */}
+            <div
+                data-testid={wrap ? 'rating-scale' : undefined}
+                className={wrap
+                    ? 'grid grid-cols-5 sm:grid-cols-10 duo:grid-cols-5 lg:grid-cols-10 gap-1 rounded-xl bg-surface-100 p-1'
+                    : 'flex gap-1 rounded-xl bg-surface-100 p-1'
+                }
+            >
                 {options.map(opt => {
                     const isSelected = Number(value) === Number(opt);
                     return (
                         <button
                             key={opt}
                             type="button"
+                            data-testid={wrap ? 'rating-option' : undefined}
                             onClick={() => {
                                 if (isSelected) return;
                                 haptic('toggle');
                                 onChange(opt);
                             }}
-                            className={`${wrap ? 'min-w-0 duo:min-h-11' : 'flex-1'} min-h-[44px] py-2 rounded-lg text-sm font-semibold transition-all duration-150 active:scale-[0.98] tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 ${
+                            className={`${wrap ? 'min-w-0' : 'flex-1'} min-h-[44px] py-2 rounded-lg text-sm font-semibold transition-all duration-150 active:scale-[0.98] tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 ${
                                 isSelected
                                     ? 'bg-ink text-white shadow-sm'
                                     : 'text-ink-muted hover:bg-white/70'

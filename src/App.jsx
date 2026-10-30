@@ -1492,7 +1492,7 @@ const App = () => {
             enabled={!isDesktop && !isClientLoading && !!viewingClient}
             swipeHandlers={swipeHandlers}
         >
-            <Navigation activeTab={activeTab} setActiveTab={handleTabChange} />
+            <Navigation activeTab={activeTab} setActiveTab={handleTabChange} isDesktop={isDesktop} />
             <div className={`app-stage ${contentWide ? 'app-stage-wide' : ''}`}>
             {showReauthPrompt && <ReauthPrompt onReauth={handleReauth} />}
             <Header

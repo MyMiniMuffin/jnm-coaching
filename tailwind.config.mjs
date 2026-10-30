@@ -1,7 +1,8 @@
-/** @type {import('tailwindcss').Config} */
-const { DUO_MEDIA_QUERY } = require('./src/lib/duoBreakpoint.cjs');
+import typography from '@tailwindcss/typography';
+import { DUO_MEDIA_QUERY } from './src/lib/duoBreakpoint.js';
 
-module.exports = {
+/** @type {import('tailwindcss').Config} */
+export default {
   content: [
     './index.html',
     './src/**/*.{js,jsx}',
@@ -9,7 +10,8 @@ module.exports = {
   theme: {
     screens: {
       sm: '640px',
-      // Width+height: exclude closed-phone landscape (~932×430); keep iPad portrait.
+      // Raw query from duoBreakpoint.js — excludes closed-phone landscape;
+      // includes ≥1024 regardless of height. Sticky keyboard shell is JS-driven.
       duo: { raw: DUO_MEDIA_QUERY },
       md: '768px',
       lg: '1024px',
@@ -84,6 +86,6 @@ module.exports = {
     },
   },
   plugins: [
-    require('@tailwindcss/typography'),
+    typography,
   ],
 };

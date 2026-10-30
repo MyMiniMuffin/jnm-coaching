@@ -1,21 +1,24 @@
 /**
  * Single source for the Duo / wide-shell breakpoint.
  *
- * Mirrored in:
- * - tailwind.config.js → screens.duo.raw
- * - src/index.css → @media (min-width: 700px) and (min-height: 600px)
- * - DESKTOP_QUERY / useDesktop (this module)
+ * Imported by:
+ * - tailwind.config.mjs → screens.duo.raw
+ * - DESKTOP_QUERY / useDesktop (hooks.jsx)
  *
- * Both min-width and min-height are required so closed-phone landscape
- * (e.g. 932×430) keeps bottom nav instead of the sidebar shell.
- * iPad portrait (≥700×≥600) still matches — not a regression vs width-only duo.
+ * CSS in src/index.css must mirror DUO_MEDIA_QUERY (parity-tested).
+ *
+ * Match when:
+ * - wide AND tall enough (unfolded Duo / tablet), OR
+ * - desktop width ≥1024 (sidebar stays even if the window is short)
+ *
+ * Closed-phone landscape (e.g. 932×430) does not match.
+ * Keyboard height shrink on 700–1023 is handled in useDesktop (sticky),
+ * which sets html[data-duo-shell] so the shell does not flip.
  */
 export const DUO_MIN_WIDTH_PX = 700;
 export const DUO_MIN_HEIGHT_PX = 600;
+export const DESKTOP_MIN_WIDTH_PX = 1024;
 
 export const DUO_MEDIA_QUERY =
-    `(min-width: ${DUO_MIN_WIDTH_PX}px) and (min-height: ${DUO_MIN_HEIGHT_PX}px)`;
-
-/** Inverse of duo shell: phone widths or short viewports (phone landscape). */
-export const PHONE_CHROME_MEDIA_QUERY =
-    `(max-width: ${DUO_MIN_WIDTH_PX - 1}px), (max-height: ${DUO_MIN_HEIGHT_PX - 1}px)`;
+    `(min-width: ${DUO_MIN_WIDTH_PX}px) and (min-height: ${DUO_MIN_HEIGHT_PX}px), ` +
+    `(min-width: ${DESKTOP_MIN_WIDTH_PX}px)`;

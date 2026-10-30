@@ -103,10 +103,10 @@ select {
 /* Leave extra clearance for the top-edge fade reported on iPhone.
    Keep it inside the opaque sticky header so it remains during scrolling.
    Scope to the app header; image viewers have their own safe-area layout. */
-/* Phone chrome = inverse of duo shell (src/lib/duoBreakpoint.js). */
+/* Phone chrome: narrow, or short-and-not-desktop. Skip when sticky duo shell is on. */
 @supports (-webkit-touch-callout: none) {
-    @media (max-width: 699px), (max-height: 599px) {
-        .app-header > .app-header-top-inset {
+    @media (max-width: 699px), (max-width: 1023px) and (max-height: 599px) {
+        html:not([data-duo-shell]) .app-header > .app-header-top-inset {
             padding-top: calc(env(safe-area-inset-top, 0px) + 1rem);
         }
     }
@@ -142,29 +142,29 @@ input[type="checkbox"]:checked {
    The class also covers iOS installs whose display-mode query reports browser. */
 @supports (-webkit-touch-callout: none) {
     @media (display-mode: standalone) and (max-width: 699px),
-           (display-mode: standalone) and (max-height: 599px) {
-        .mobile-bottom-nav {
+           (display-mode: standalone) and (max-width: 1023px) and (max-height: 599px) {
+        html:not([data-duo-shell]) .mobile-bottom-nav {
             top: 100vh;
             top: 100dvh;
             bottom: auto;
             transform: translateY(-100%);
         }
 
-        .app-frame {
+        html:not([data-duo-shell]) .app-frame {
             min-height: 100vh;
             min-height: 100dvh;
         }
     }
 
-    @media (max-width: 699px), (max-height: 599px) {
-        html.ios-standalone .mobile-bottom-nav {
+    @media (max-width: 699px), (max-width: 1023px) and (max-height: 599px) {
+        html.ios-standalone:not([data-duo-shell]) .mobile-bottom-nav {
             top: 100vh;
             top: 100dvh;
             bottom: auto;
             transform: translateY(-100%);
         }
 
-        html.ios-standalone .app-frame {
+        html.ios-standalone:not([data-duo-shell]) .app-frame {
             min-height: 100vh;
             min-height: 100dvh;
         }
@@ -599,8 +599,11 @@ input:focus, textarea:focus, select:focus, button:focus-visible {
     }
 }
 
-/* Duo shell — keep in sync with src/lib/duoBreakpoint.js (DUO_MEDIA_QUERY). */
-@media (min-width: 700px) and (min-height: 600px) {
+/*
+ * Duo shell — keep media in sync with DUO_MEDIA_QUERY in src/lib/duoBreakpoint.js.
+ * html[data-duo-shell] covers sticky keyboard shrink (700–1023 × short height).
+ */
+@media (min-width: 700px) and (min-height: 600px), (min-width: 1024px) {
     .app-frame {
         background: #F1F0EC;
     }
@@ -673,6 +676,43 @@ input:focus, textarea:focus, select:focus, button:focus-visible {
     }
 }
 
+html[data-duo-shell] .app-frame {
+    background: #F1F0EC;
+}
+
+html[data-duo-shell] .app-frame-nav {
+    display: flex;
+    align-items: stretch;
+    background: #F1F0EC;
+}
+
+html[data-duo-shell] .app-sidebar {
+    width: 12.5rem;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    flex-direction: column;
+    background: #F7F7F4;
+    border-right: 1px solid rgba(23, 23, 23, 0.08);
+}
+
+html[data-duo-shell] .app-stage {
+    flex: 1;
+    min-width: 0;
+    background: #F7F7F4;
+    min-height: 100dvh;
+}
+
+html[data-duo-shell] .app-frame-nav .plan-save-bar {
+    left: 12.5rem;
+    bottom: 0 !important;
+}
+
+html[data-duo-shell] .toast-stack {
+    bottom: 2rem;
+}
+
 @media (min-width: 1024px) {
     .header-inner {
         padding-left: 2rem;
@@ -683,14 +723,14 @@ input:focus, textarea:focus, select:focus, button:focus-visible {
         max-width: 56rem;
         padding: 1.75rem 2rem 2.75rem;
     }
-}
 
-@media (min-width: 1024px) and (min-height: 600px) {
-    .app-sidebar {
+    .app-sidebar,
+    html[data-duo-shell] .app-sidebar {
         width: 15.5rem;
     }
 
-    .app-frame-nav .plan-save-bar {
+    .app-frame-nav .plan-save-bar,
+    html[data-duo-shell] .app-frame-nav .plan-save-bar {
         left: 15.5rem;
     }
 }

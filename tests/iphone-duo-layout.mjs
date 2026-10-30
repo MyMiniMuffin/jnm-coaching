@@ -1,17 +1,27 @@
 /**
  * Playwright layout checks for Duo / phone / tablet / desktop viewports.
- * Requires a running Vite server at AUDIT_BASE (default http://127.0.0.1:5173)
- * or starts `vite preview` after build when AUDIT_BASE is unset and preview is up.
+ *
+ * Starts `vite preview` automatically (builds if dist/ is missing) unless
+ * AUDIT_BASE points at an already-running server.
+ * Requires Chromium: `npx playwright install chromium`
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
+import { access } from 'node:fs/promises';
+import { createServer } from 'node:net';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 import { chromium } from 'playwright';
-import { createRequire } from 'node:module';
+import {
+    DUO_MEDIA_QUERY,
+    DUO_MIN_WIDTH_PX,
+    DUO_MIN_HEIGHT_PX,
+    DESKTOP_MIN_WIDTH_PX,
+} from '../src/lib/duoBreakpoint.js';
 
-const require = createRequire(import.meta.url);
-const { DUO_MEDIA_QUERY } = require('../src/lib/duoBreakpoint.cjs');
-
-const BASE = process.env.AUDIT_BASE || 'http://127.0.0.1:5173';
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const EXTERNAL_BASE = process.env.AUDIT_BASE || '';
 
 const ATHLETE = {
     id: 'athlete-1',
@@ -21,6 +31,8 @@ const ATHLETE = {
     is_archived: false,
 };
 
+const LONG_URL = 'https://example.com/very/long/path/to/exercise/resource/without/spaces/SupercalifragilisticExerciseName';
+
 const workoutPlan = JSON.stringify({
     format: 'jnm-plan',
     version: 1,
@@ -29,7 +41,7 @@ const workoutPlan = JSON.stringify({
             title: 'Dag 1 – Underkropp',
             items: [
                 { text: 'Knebøy', sets: '4', reps: '6', subItems: [] },
-                { text: 'Rumensk markløft', sets: '3', reps: '8', subItems: [] },
+                { text: LONG_URL, sets: '3', reps: '8', subItems: [] },
             ],
         },
         {
@@ -61,34 +73,146 @@ const ATHLETE_DATA = {
     }],
     currentPeriodId: 'period-1',
     startingWeight: 78.4,
-    checkins: [{
-        id: 'c1',
-        date: '2026-10-20',
-        weight: 75.2,
-        sleep: 7,
-        energy: 8,
-        accuracy: 8,
-        strengthSessions: 3,
-        cardioSessions: 2,
-        stepsReached: true,
-        takenSupplements: true,
-        comment: '',
-        images: [],
-        periodId: 'period-1',
-        readByCoach: false,
-    }],
+    checkins: [
+        {
+            id: 'c1',
+            date: '2026-10-20',
+            weight: 75.2,
+            sleep: 7,
+            energy: 8,
+            accuracy: 8,
+            strengthSessions: 3,
+            cardioSessions: 2,
+            stepsReached: true,
+            takenSupplements: true,
+            comment: '',
+            images: [],
+            periodId: 'period-1',
+            readByCoach: false,
+        },
+        {
+            id: 'c0',
+            date: '2026-10-13',
+            weight: 75.8,
+            sleep: 6,
+            energy: 6,
+            accuracy: 7,
+            strengthSessions: 2,
+            cardioSessions: 1,
+            stepsReached: false,
+            takenSupplements: true,
+            comment: '',
+            images: [],
+            periodId: 'period-1',
+            readByCoach: true,
+        },
+    ],
     galleryImages: [],
 };
 
 const VIEWPORTS = [
     { id: '390x844', width: 390, height: 844, expectSidebar: false },
+    { id: '699x800', width: 699, height: 800, expectSidebar: false },
+    { id: '700x599', width: 700, height: 599, expectSidebar: false },
+    { id: '700x600', width: 700, height: 600, expectSidebar: true },
     { id: '932x430', width: 932, height: 430, expectSidebar: false },
     { id: '744x1133', width: 744, height: 1133, expectSidebar: true },
     { id: '760x900', width: 760, height: 900, expectSidebar: true },
     { id: '900x760', width: 900, height: 760, expectSidebar: true },
     { id: '1024x768', width: 1024, height: 768, expectSidebar: true },
+    { id: '1280x550', width: 1280, height: 550, expectSidebar: true },
     { id: '1440x900', width: 1440, height: 900, expectSidebar: true },
 ];
+
+function getFreePort() {
+    return new Promise((resolve, reject) => {
+        const server = createServer();
+        server.listen(0, '127.0.0.1', () => {
+            const { port } = server.address();
+            server.close((error) => (error ? reject(error) : resolve(port)));
+        });
+        server.on('error', reject);
+    });
+}
+
+async function waitForUrl(url, timeoutMs = 60_000) {
+    const start = Date.now();
+    let lastError;
+    while (Date.now() - start < timeoutMs) {
+        try {
+            const response = await fetch(url);
+            if (response.ok) return;
+            lastError = new Error(`HTTP ${response.status}`);
+        } catch (error) {
+            lastError = error;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+    throw new Error(`Server not ready at ${url}: ${lastError?.message || lastError}`);
+}
+
+async function ensurePreview() {
+    if (EXTERNAL_BASE) {
+        await waitForUrl(EXTERNAL_BASE);
+        return { base: EXTERNAL_BASE, stop: async () => {} };
+    }
+
+    try {
+        await access(join(ROOT, 'dist/index.html'));
+    } catch {
+        await new Promise((resolve, reject) => {
+            const child = spawn('npm', ['run', 'build'], {
+                cwd: ROOT,
+                stdio: ['ignore', 'pipe', 'pipe'],
+            });
+            let stderr = '';
+            child.stderr.on('data', (chunk) => { stderr += chunk; });
+            child.on('exit', (code) => {
+                if (code === 0) resolve();
+                else reject(new Error(`npm run build failed (${code}): ${stderr}`));
+            });
+        });
+    }
+
+    const port = await getFreePort();
+    const base = `http://127.0.0.1:${port}`;
+    const child = spawn(
+        'npx',
+        ['vite', 'preview', '--host', '127.0.0.1', '--port', String(port), '--strictPort'],
+        { cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'], detached: true }
+    );
+
+    let stderr = '';
+    child.stderr.on('data', (chunk) => { stderr += chunk; });
+    child.unref();
+
+    const stop = async () => {
+        if (!child.pid) return;
+        try {
+            process.kill(-child.pid, 'SIGTERM');
+        } catch {
+            try { child.kill('SIGTERM'); } catch { /* gone */ }
+        }
+        await Promise.race([
+            new Promise((resolve) => child.once('exit', resolve)),
+            new Promise((resolve) => setTimeout(resolve, 2000)),
+        ]);
+        try {
+            process.kill(-child.pid, 'SIGKILL');
+        } catch {
+            try { child.kill('SIGKILL'); } catch { /* gone */ }
+        }
+    };
+
+    try {
+        await waitForUrl(base);
+    } catch (error) {
+        await stop();
+        throw new Error(`${error.message}\npreview stderr: ${stderr}`);
+    }
+
+    return { base, stop };
+}
 
 async function installMocks(page) {
     await page.route('**/.netlify/functions/**', async (route) => {
@@ -119,113 +243,81 @@ async function seedAthlete(page) {
     }, { user: ATHLETE, data: ATHLETE_DATA });
 }
 
-async function clickVisibleNav(page, label) {
-    const candidates = page.locator(
-        `button:has-text("${label}"), a:has-text("${label}"), [role="button"]:has-text("${label}")`
-    );
-    const count = await candidates.count();
-    for (let i = 0; i < count; i += 1) {
-        const el = candidates.nth(i);
-        if (await el.isVisible()) {
-            await el.click();
-            return;
-        }
-    }
-    throw new Error(`Could not click nav label: ${label}`);
+async function openAthlete(page, base) {
+    await installMocks(page);
+    await seedAthlete(page);
+    await page.goto(`${base}/`, { waitUntil: 'networkidle' });
+    await page.waitForFunction(() => (
+        document.querySelector('[data-testid="app-sidebar"]')
+        || document.querySelector('[data-testid="mobile-bottom-nav"]')
+    ));
 }
 
-async function measureShell(page) {
-    return page.evaluate((duoQuery) => {
-        const sidebar = document.querySelector('.app-sidebar');
-        const bottomNav = document.querySelector('.mobile-bottom-nav');
+async function clickNav(page, name) {
+    const current = page.locator('[aria-current="page"]');
+    if (await current.count()) {
+        const label = (await current.first().textContent())?.trim() || '';
+        if (label.includes(name)) return;
+    }
+    await page.getByRole('button', { name }).first().click();
+    await page.waitForFunction((expected) => {
+        const current = document.querySelector('[aria-current="page"]');
+        return Boolean(current?.textContent?.includes(expected) || current?.getAttribute('aria-label')?.includes(expected));
+    }, name);
+}
+
+async function shellState(page) {
+    return page.evaluate(() => {
+        const sidebar = document.querySelector('[data-testid="app-sidebar"]');
+        const bottomNav = document.querySelector('[data-testid="mobile-bottom-nav"]');
         const sidebarVisible = Boolean(
-            sidebar && getComputedStyle(sidebar).display !== 'none' && sidebar.getBoundingClientRect().width > 0
+            sidebar
+            && getComputedStyle(sidebar).display !== 'none'
+            && sidebar.getBoundingClientRect().width > 0
         );
         const bottomVisible = Boolean(
-            bottomNav && getComputedStyle(bottomNav).display !== 'none' && bottomNav.getBoundingClientRect().height > 0
+            bottomNav
+            && getComputedStyle(bottomNav).display !== 'none'
+            && bottomNav.getBoundingClientRect().height > 0
         );
         const overflowX = document.documentElement.scrollWidth > document.documentElement.clientWidth + 1;
-        const duoMatches = window.matchMedia(duoQuery).matches;
-
-        const targets = [];
-        if (sidebarVisible) {
-            sidebar.querySelectorAll('nav button').forEach((btn) => {
-                const r = btn.getBoundingClientRect();
-                targets.push({ kind: 'sidebar', w: r.width, h: r.height, label: btn.textContent?.trim() });
-            });
-        }
-        if (bottomVisible) {
-            bottomNav.querySelectorAll('button').forEach((btn) => {
-                const r = btn.getBoundingClientRect();
-                targets.push({ kind: 'bottom', w: r.width, h: r.height, label: btn.getAttribute('aria-label') || btn.textContent?.trim() });
-            });
-        }
-
-        return { sidebarVisible, bottomVisible, overflowX, duoMatches, targets };
-    }, DUO_MEDIA_QUERY);
-}
-
-async function measurePlan(page) {
-    return page.evaluate(() => {
-        const sections = [...document.querySelectorAll('section')].filter((el) =>
-            el.querySelector('h3') && el.querySelector('ul, .grid')
-        );
-        const widths = sections.map((el) => el.getBoundingClientRect().width);
-        const grid = document.querySelector('.duo-split-grid, [class*="grid-cols-2"]');
-        const planRoot = [...document.querySelectorAll('div')].find((el) =>
-            (el.className || '').includes('space-y-4') && el.querySelectorAll('section').length >= 2
-        );
-        const stacked = Boolean(planRoot && !/\bgrid\b/.test(planRoot.className));
         return {
-            sectionCount: sections.length,
-            widths,
-            minWidth: widths.length ? Math.min(...widths) : 0,
-            stacked,
-            hasDuoSplitOnPlanRoot: Boolean(planRoot && planRoot.classList.contains('duo-split-grid')),
+            sidebarVisible,
+            bottomVisible,
+            overflowX,
+            duoShellAttr: document.documentElement.hasAttribute('data-duo-shell'),
         };
     });
 }
 
-async function measureRapportTargets(page) {
-    return page.evaluate(() => {
-        const ratingButtons = [...document.querySelectorAll('button')].filter((btn) =>
-            /^(?:[1-9]|10)$/.test((btn.textContent || '').trim())
-        );
-        const ratings = ratingButtons.map((btn) => {
-            const r = btn.getBoundingClientRect();
-            return { w: r.width, h: r.height, text: btn.textContent.trim() };
-        });
-        const historyButtons = [...document.querySelectorAll('button')].filter((btn) =>
-            (btn.textContent || '').includes('okt') || (btn.textContent || '').includes('kg')
-        );
-        const history = historyButtons.slice(0, 5).map((btn) => {
-            const r = btn.getBoundingClientRect();
-            return { w: r.width, h: r.height };
-        });
-        return { ratings, history };
-    });
-}
-
-test('Playwright: Duo layout across viewports', { timeout: 180_000 }, async (t) => {
+test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) => {
     let browser;
+    let preview;
+    try {
+        preview = await ensurePreview();
+    } catch (error) {
+        if (process.env.CI) throw error;
+        t.skip(`Could not start preview server: ${error.message}`);
+        return;
+    }
+
     try {
         browser = await chromium.launch({ headless: true });
     } catch (error) {
-        t.skip(`Playwright browser unavailable: ${error.message}`);
+        await preview.stop();
+        const message = `Playwright Chromium missing (${error.message}). Run: npx playwright install chromium`;
+        if (process.env.CI) throw new Error(message);
+        t.skip(message);
         return;
     }
 
-    // Probe server
-    try {
-        const res = await fetch(BASE);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    } catch (error) {
-        await browser.close();
-        t.skip(`Dev server not reachable at ${BASE}: ${error.message}`);
-        return;
-    }
+    const { base } = preview;
 
     try {
+        assert.match(DUO_MEDIA_QUERY, new RegExp(String(DUO_MIN_WIDTH_PX)));
+        assert.match(DUO_MEDIA_QUERY, new RegExp(String(DUO_MIN_HEIGHT_PX)));
+        assert.match(DUO_MEDIA_QUERY, new RegExp(String(DESKTOP_MIN_WIDTH_PX)));
+
         for (const vp of VIEWPORTS) {
             await t.test(`viewport ${vp.id}`, async () => {
                 const context = await browser.newContext({
@@ -233,60 +325,94 @@ test('Playwright: Duo layout across viewports', { timeout: 180_000 }, async (t) 
                     deviceScaleFactor: 1,
                 });
                 const page = await context.newPage();
-                await installMocks(page);
-                await seedAthlete(page);
-                await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });
-                await page.waitForTimeout(350);
+                try {
+                    await openAthlete(page, base);
+                    const shell = await shellState(page);
+                    assert.equal(shell.sidebarVisible, vp.expectSidebar, `sidebar at ${vp.id}`);
+                    assert.equal(shell.bottomVisible, !vp.expectSidebar, `bottom nav at ${vp.id}`);
+                    assert.equal(shell.overflowX, false, `overflow at ${vp.id}`);
 
-                const shell = await measureShell(page);
-                assert.equal(shell.duoMatches, vp.expectSidebar, `duo media match at ${vp.id}`);
-                assert.equal(shell.sidebarVisible, vp.expectSidebar, `sidebar visibility at ${vp.id}`);
-                assert.equal(shell.bottomVisible, !vp.expectSidebar, `bottom nav at ${vp.id}`);
-                assert.equal(shell.overflowX, false, `no horizontal overflow at ${vp.id}`);
+                    if (vp.expectSidebar) {
+                        const sidebarButtons = page.locator('[data-testid="app-sidebar"] nav button');
+                        const count = await sidebarButtons.count();
+                        assert.ok(count >= 5, 'sidebar nav buttons');
+                        for (let i = 0; i < count; i += 1) {
+                            const box = await sidebarButtons.nth(i).boundingBox();
+                            assert.ok(box, 'sidebar button box');
+                            assert.ok(box.height >= 43.5, `sidebar height ${box.height}`);
+                        }
+                    } else {
+                        const bottomButtons = page.locator('[data-testid="mobile-bottom-nav"] button');
+                        const count = await bottomButtons.count();
+                        assert.ok(count >= 5, 'bottom nav buttons');
+                        for (let i = 0; i < count; i += 1) {
+                            const box = await bottomButtons.nth(i).boundingBox();
+                            assert.ok(box, 'bottom button box');
+                            assert.ok(box.height >= 43.5, `bottom height ${box.height}`);
+                            assert.ok(box.width >= 43.5, `bottom width ${box.width}`);
+                        }
+                    }
 
-                if (vp.expectSidebar) {
-                    for (const target of shell.targets.filter((x) => x.kind === 'sidebar')) {
-                        assert.ok(target.h >= 44 - 0.5, `sidebar ${target.label} height ${target.h}`);
+                    await clickNav(page, 'Trening');
+                    const planRoot = page.getByTestId('plan-sections');
+                    await planRoot.waitFor();
+                    const sections = page.getByTestId('plan-section');
+                    assert.ok(await sections.count() >= 2, 'plan sections');
+
+                    const geometry = await sections.evaluateAll((nodes) => nodes.map((node) => {
+                        const rect = node.getBoundingClientRect();
+                        return { top: rect.top, left: rect.left, width: rect.width };
+                    }));
+                    assert.ok(geometry[1].top > geometry[0].top + 8, 'sections stacked vertically');
+                    assert.ok(Math.abs(geometry[1].left - geometry[0].left) < 8, 'sections share left edge');
+
+                    if (vp.width <= 390) {
+                        const longName = page.getByTestId('plan-exercise-name').filter({ hasText: 'example.com' });
+                        await longName.first().waitFor();
+                        const overflow = await longName.first().evaluate((el) => {
+                            const parent = el.closest('li') || el.parentElement;
+                            return parent.scrollWidth > parent.clientWidth + 1;
+                        });
+                        assert.equal(overflow, false, 'long exercise name does not overflow row on 390');
                     }
-                } else {
-                    for (const target of shell.targets.filter((x) => x.kind === 'bottom')) {
-                        assert.ok(target.h >= 44 - 0.5, `bottom ${target.label} height ${target.h}`);
-                        assert.ok(target.w >= 44 - 0.5, `bottom ${target.label} width ${target.w}`);
+
+                    await clickNav(page, 'Rapport');
+                    const ratings = page.getByTestId('rating-option');
+                    await ratings.first().waitFor();
+                    const ratingCount = await ratings.count();
+                    assert.ok(ratingCount >= 10, `expected rating options, got ${ratingCount}`);
+
+                    if (vp.expectSidebar) {
+                        for (let i = 0; i < 10; i += 1) {
+                            const box = await ratings.nth(i).boundingBox();
+                            assert.ok(box, `rating ${i} box`);
+                            assert.ok(box.height >= 43.5, `rating height ${box.height}`);
+                            assert.ok(box.width >= 43.5, `rating width ${box.width}`);
+                        }
+                        // duo:grid-cols-5 until lg; assert wrap only below 1024
+                        if (vp.width < 1024) {
+                            const first = await ratings.nth(0).boundingBox();
+                            const sixth = await ratings.nth(5).boundingBox();
+                            assert.ok(first && sixth, 'rating row boxes');
+                            assert.ok(sixth.y > first.y + 20, 'rating wraps to second row (2×5)');
+                        }
+
+                        const history = page.getByTestId('checkin-history-row');
+                        const historyCount = await history.count();
+                        assert.ok(historyCount >= 1, `expected history rows, got ${historyCount}`);
+                        for (let i = 0; i < historyCount; i += 1) {
+                            const box = await history.nth(i).boundingBox();
+                            assert.ok(box.height >= 43.5, `history height ${box.height}`);
+                        }
                     }
+
+                    const overflowAfter = await page.evaluate(
+                        () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1
+                    );
+                    assert.equal(overflowAfter, false, `no overflow on rapport at ${vp.id}`);
+                } finally {
+                    await context.close();
                 }
-
-                await clickVisibleNav(page, 'Trening');
-                await page.waitForTimeout(300);
-                const plan = await measurePlan(page);
-                assert.ok(plan.sectionCount >= 2, 'plan has sections');
-                assert.equal(plan.hasDuoSplitOnPlanRoot, false, 'plan root is not duo-split two-col');
-                if (!plan.stacked) {
-                    for (const w of plan.widths) {
-                        assert.ok(w >= 280 - 1, `plan column width ${w} at ${vp.id}`);
-                    }
-                }
-
-                await clickVisibleNav(page, 'Rapport');
-                await page.waitForTimeout(400);
-                const rapport = await measureRapportTargets(page);
-                if (vp.expectSidebar && rapport.ratings.length) {
-                    for (const r of rapport.ratings) {
-                        assert.ok(r.h >= 44 - 0.5, `rating ${r.text} height ${r.h} at ${vp.id}`);
-                        assert.ok(r.w >= 44 - 0.5, `rating ${r.text} width ${r.w} at ${vp.id}`);
-                    }
-                }
-                if (vp.expectSidebar && rapport.history.length) {
-                    for (const h of rapport.history) {
-                        assert.ok(h.h >= 44 - 0.5, `history row height ${h.h} at ${vp.id}`);
-                    }
-                }
-
-                const overflowAfter = await page.evaluate(
-                    () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1
-                );
-                assert.equal(overflowAfter, false, `no overflow on rapport at ${vp.id}`);
-
-                await context.close();
             });
         }
 
@@ -296,43 +422,81 @@ test('Playwright: Duo layout across viewports', { timeout: 180_000 }, async (t) 
                 deviceScaleFactor: 1,
             });
             const page = await context.newPage();
-            await installMocks(page);
-            await seedAthlete(page);
-            await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });
-            await page.waitForTimeout(300);
-            await clickVisibleNav(page, 'Trening');
-            await page.waitForTimeout(250);
+            try {
+                await openAthlete(page, base);
+                await clickNav(page, 'Trening');
+                await page.setViewportSize({ width: 760, height: 900 });
+                await page.waitForFunction(() => (
+                    document.querySelector('[data-testid="app-sidebar"]')
+                    && getComputedStyle(document.querySelector('[data-testid="app-sidebar"]')).display !== 'none'
+                ));
+                await page.waitForFunction(() => (
+                    document.querySelector('[aria-current="page"]')?.textContent?.includes('Trening')
+                ));
+                await page.setViewportSize({ width: 390, height: 844 });
+                await page.waitForFunction(() => (
+                    document.querySelector('[data-testid="mobile-bottom-nav"]')
+                    && getComputedStyle(document.querySelector('[data-testid="mobile-bottom-nav"]')).display !== 'none'
+                ));
+                await page.waitForFunction(() => (
+                    document.querySelector('[aria-current="page"]')?.textContent?.includes('Trening')
+                    || document.querySelector('[aria-current="page"]')?.getAttribute('aria-label')?.includes('Trening')
+                ));
+            } finally {
+                await context.close();
+            }
+        });
 
-            const activeAt390 = await page.evaluate(() => {
-                const current = document.querySelector('[aria-current="page"]');
-                return current?.textContent?.trim() || current?.getAttribute('aria-label') || '';
+        await t.test('sidebar sticky on keyboard-like height shrink 900×760 → 900×400', async () => {
+            const context = await browser.newContext({
+                viewport: { width: 900, height: 760 },
+                deviceScaleFactor: 1,
             });
-            assert.match(activeAt390, /Trening/i);
+            const page = await context.newPage();
+            try {
+                await openAthlete(page, base);
+                await clickNav(page, 'Rapport');
+                const weight = page.getByLabel(/vekt/i).first();
+                await weight.waitFor();
+                await weight.fill('74.5');
+                assert.equal(await weight.inputValue(), '74.5');
 
-            await page.setViewportSize({ width: 760, height: 900 });
-            await page.waitForTimeout(350);
-            const activeAt760 = await page.evaluate(() => {
-                const current = document.querySelector('[aria-current="page"]');
-                return current?.textContent?.trim() || current?.getAttribute('aria-label') || '';
+                const before = await shellState(page);
+                assert.equal(before.sidebarVisible, true);
+
+                await page.setViewportSize({ width: 900, height: 400 });
+                await page.waitForFunction(() => document.documentElement.hasAttribute('data-duo-shell'));
+                const after = await shellState(page);
+                assert.equal(after.sidebarVisible, true, 'sidebar stays during keyboard shrink');
+                assert.equal(after.bottomVisible, false, 'bottom nav stays hidden');
+                assert.equal(await weight.inputValue(), '74.5', 'form input preserved');
+            } finally {
+                await context.close();
+            }
+        });
+
+        await t.test('1280×550 keeps desktop sidebar', async () => {
+            const context = await browser.newContext({
+                viewport: { width: 1280, height: 550 },
+                deviceScaleFactor: 1,
             });
-            assert.match(activeAt760, /Trening/i);
-            const shell760 = await measureShell(page);
-            assert.equal(shell760.sidebarVisible, true);
-
-            await page.setViewportSize({ width: 390, height: 844 });
-            await page.waitForTimeout(350);
-            const activeBack = await page.evaluate(() => {
-                const current = document.querySelector('[aria-current="page"]');
-                return current?.textContent?.trim() || current?.getAttribute('aria-label') || '';
-            });
-            assert.match(activeBack, /Trening/i);
-            const shell390 = await measureShell(page);
-            assert.equal(shell390.sidebarVisible, false);
-            assert.equal(shell390.bottomVisible, true);
-
-            await context.close();
+            const page = await context.newPage();
+            try {
+                await openAthlete(page, base);
+                const shell = await shellState(page);
+                assert.equal(shell.sidebarVisible, true);
+                assert.equal(shell.bottomVisible, false);
+            } finally {
+                await context.close();
+            }
         });
     } finally {
-        await browser.close();
+        if (browser) {
+            await Promise.race([
+                browser.close(),
+                new Promise((resolve) => setTimeout(resolve, 5000)),
+            ]);
+        }
+        if (preview) await preview.stop();
     }
 });

@@ -27,27 +27,26 @@
 
 ## Duo-scope (bredde + høyde)
 
-Én kilde: `src/lib/duoBreakpoint.js` (+ CJS-speil for Tailwind).
+Én kilde: `src/lib/duoBreakpoint.js` (importert av `tailwind.config.mjs` og `hooks.jsx`). CSS speiler samme tall (parity-testet).
 
 ```text
-DUO_MEDIA_QUERY = (min-width: 700px) and (min-height: 600px)
+DUO_MEDIA_QUERY =
+  (min-width: 700px) and (min-height: 600px),
+  (min-width: 1024px)
 ```
 
-Brukes av:
-
-- Tailwind `duo:` (`tailwind.config.js` → `screens.duo.raw`)
-- `DESKTOP_QUERY` / `useDesktop` (`src/hooks.jsx`)
-- Shell i `src/index.css` (`@media (min-width: 700px) and (min-height: 600px)`)
+`useDesktop` setter `html[data-duo-shell]` og er **sticky**: når shell allerede er aktiv og bare høyden krymper (tastatur) mens bredden forblir ≥700, forblir sidebaren. Bredde &lt; 700 avslutter shell.
 
 **Atferd:**
 
 | Viewport | Shell |
 |---|---|
-| 390×844 (lukket portrett) | Bottom nav (uendret) |
-| 932×430 (lukket telefon landskap) | **Bottom nav** — ikke sidebar (ny avgrensning) |
-| 744×1133 / iPad-portrett | Sidebar — samme som før (≥700 og ≥600) |
-| 760×900 / 900×760 (Duo unfolded) | Sidebar |
-| ≥1024×≥600 | Sidebar (lg-bredde 15.5rem) |
+| 390×844 (lukket portrett) | Bottom nav |
+| 932×430 (lukket telefon landskap) | Bottom nav |
+| 700×599 (kald start) | Bottom nav |
+| 700×600 / iPad-portrett / Duo unfolded | Sidebar |
+| 900×760 → 900×400 (tastatur) | Sidebar beholdes (sticky) |
+| 1280×550 (kort desktop) | Sidebar (`min-width: 1024px`) |
 
 `max-width` ved ≥1024 er **uendret**.
 
