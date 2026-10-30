@@ -10,7 +10,7 @@ const NavButton = React.memo(({ item, isActive, onClick, variant }) => {
                 type="button"
                 onClick={() => onClick(item.id)}
                 aria-current={isActive ? 'page' : undefined}
-                className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                className={`flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                     isActive
                         ? 'bg-white text-accent-hover font-semibold shadow-sm ring-1 ring-surface-200'
                         : 'text-ink-muted font-medium hover:bg-white/70 hover:text-ink'
@@ -36,7 +36,7 @@ const NavButton = React.memo(({ item, isActive, onClick, variant }) => {
     );
 });
 
-const Navigation = React.memo(({ activeTab, setActiveTab }) => {
+const Navigation = React.memo(({ activeTab, setActiveTab, isDesktop = false }) => {
     const handleTabClick = useCallback((id) => {
         if (id !== activeTab) haptic('tap');
         setActiveTab(id);
@@ -48,7 +48,11 @@ const Navigation = React.memo(({ activeTab, setActiveTab }) => {
 
     return (
         <>
-            <aside className="app-sidebar hidden duo:flex" aria-label="Hovednavigasjon">
+            <aside
+                className={`app-sidebar ${isDesktop ? 'flex' : 'hidden'}`}
+                aria-label="Hovednavigasjon"
+                data-testid="app-sidebar"
+            >
                 <div className="flex items-center gap-3 px-5 pt-6 pb-5">
                     <img src={APP_ICON} alt="" className="h-10 w-10 rounded-lg" />
                     <div>
@@ -69,7 +73,11 @@ const Navigation = React.memo(({ activeTab, setActiveTab }) => {
                 </nav>
             </aside>
 
-            <nav className="mobile-bottom-nav fixed bottom-0 left-0 right-0 z-50 border-t border-surface-200/80 duo:hidden" aria-label="Hovednavigasjon">
+            <nav
+                className={`mobile-bottom-nav fixed bottom-0 left-0 right-0 z-50 border-t border-surface-200/80 ${isDesktop ? 'hidden' : ''}`}
+                aria-label="Hovednavigasjon"
+                data-testid="mobile-bottom-nav"
+            >
                 <div className="relative grid grid-cols-5 h-[4.35rem] max-w-md sm:max-w-3xl mx-auto px-1.5">
                     <div className="absolute inset-x-1.5 top-2.5 bottom-2.5 pointer-events-none">
                         <div className="h-full w-1/5 rounded-xl nav-pill" style={pillStyle} />

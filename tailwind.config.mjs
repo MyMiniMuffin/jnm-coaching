@@ -1,5 +1,8 @@
+import typography from '@tailwindcss/typography';
+import plugin from 'tailwindcss/plugin';
+
 /** @type {import('tailwindcss').Config} */
-module.exports = {
+export default {
   content: [
     './index.html',
     './src/**/*.{js,jsx}',
@@ -7,7 +10,6 @@ module.exports = {
   theme: {
     screens: {
       sm: '640px',
-      duo: '700px',
       md: '768px',
       lg: '1024px',
       xl: '1280px',
@@ -81,6 +83,14 @@ module.exports = {
     },
   },
   plugins: [
-    require('@tailwindcss/typography'),
+    typography,
+    // Same source as shellMode / useDesktop: html[data-shell="wide"].
+    // Specificity beats sm:/md: media utilities when both match (e.g. sticky keyboard).
+    // Note: stacked `lg:duo:` does not wrap in the lg media with this parent variant —
+    // use `duo-lg:` when wide+≥1024 must override `duo:`.
+    plugin(({ addVariant }) => {
+      addVariant('duo', 'html[data-shell="wide"] &');
+      addVariant('duo-lg', '@media (min-width: 1024px) { html[data-shell="wide"] & }');
+    }),
   ],
 };

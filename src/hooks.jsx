@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Loader2 } from 'lucide-react';
+import { DUO_MEDIA_QUERY } from './lib/duoBreakpoint';
+import { useShellWide } from './lib/shellMode';
 
 // --- SWIPE HOOK ---
 export const useSwipe = (onSwipeLeft, onSwipeRight, options = {}) => {
@@ -161,23 +163,11 @@ export const useOnlineStatus = () => {
     return isOnline;
 };
 
-export const DESKTOP_QUERY = '(min-width: 700px), (horizontal-viewport-segments: 2)';
+/** Entry media for wide shell (see shellMode sticky rules). */
+export const DESKTOP_QUERY = DUO_MEDIA_QUERY;
 
-export const useDesktop = () => {
-    const [isDesktop, setIsDesktop] = useState(() => (
-        typeof window !== 'undefined' && window.matchMedia(DESKTOP_QUERY).matches
-    ));
-
-    useEffect(() => {
-        const media = window.matchMedia(DESKTOP_QUERY);
-        const onChange = () => setIsDesktop(media.matches);
-        onChange();
-        media.addEventListener('change', onChange);
-        return () => media.removeEventListener('change', onChange);
-    }, []);
-
-    return isDesktop;
-};
+/** Shared wide/narrow shell — same store as html[data-shell] and Tailwind `duo:`. */
+export const useDesktop = () => useShellWide();
 
 // --- Fokus-trapping hook for modaler ---
 export const useFocusTrap = (active = true) => {

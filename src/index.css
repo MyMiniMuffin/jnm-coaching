@@ -78,13 +78,9 @@ select {
     --font-serif: 'Instrument Serif', 'Iowan Old Style', 'Times New Roman', serif;
     --accent-soft: theme('colors.accent.DEFAULT');
     --accent-muted: #83afac;
+    /* Fallback only — WebKit does not expose viewport-segment env vars in production
+       (Safari 27.1 Preview is behind a feature flag; see docs/iphone-duo-plan.md). */
     --fold-gap: 1.25rem;
-}
-
-@media (horizontal-viewport-segments: 2) {
-    :root {
-        --fold-gap: max(1.25rem, calc(env(viewport-segment-left 1 0, 0px) - env(viewport-segment-right 0 0, 0px)));
-    }
 }
 
 .duo-split-grid {
@@ -106,12 +102,11 @@ select {
 
 /* Leave extra clearance for the top-edge fade reported on iPhone.
    Keep it inside the opaque sticky header so it remains during scrolling.
-   Scope to the app header; image viewers have their own safe-area layout. */
+   Scope to the app header; image viewers have their own safe-area layout.
+   Gated by data-shell (same store as Tailwind duo: / useDesktop). */
 @supports (-webkit-touch-callout: none) {
-    @media (max-width: 699px) {
-        .app-header > .app-header-top-inset {
-            padding-top: calc(env(safe-area-inset-top, 0px) + 1rem);
-        }
+    html[data-shell="narrow"] .app-header > .app-header-top-inset {
+        padding-top: calc(env(safe-area-inset-top, 0px) + 1rem);
     }
 }
 
@@ -144,32 +139,30 @@ input[type="checkbox"]:checked {
    vh includes them; keep the navigation's safe-area spacer inside that height.
    The class also covers iOS installs whose display-mode query reports browser. */
 @supports (-webkit-touch-callout: none) {
-    @media (display-mode: standalone) and (max-width: 699px) {
-        .mobile-bottom-nav {
+    @media (display-mode: standalone) {
+        html[data-shell="narrow"] .mobile-bottom-nav {
             top: 100vh;
             top: 100dvh;
             bottom: auto;
             transform: translateY(-100%);
         }
 
-        .app-frame {
+        html[data-shell="narrow"] .app-frame {
             min-height: 100vh;
             min-height: 100dvh;
         }
     }
 
-    @media (max-width: 699px) {
-        html.ios-standalone .mobile-bottom-nav {
-            top: 100vh;
-            top: 100dvh;
-            bottom: auto;
-            transform: translateY(-100%);
-        }
+    html.ios-standalone[data-shell="narrow"] .mobile-bottom-nav {
+        top: 100vh;
+        top: 100dvh;
+        bottom: auto;
+        transform: translateY(-100%);
+    }
 
-        html.ios-standalone .app-frame {
-            min-height: 100vh;
-            min-height: 100dvh;
-        }
+    html.ios-standalone[data-shell="narrow"] .app-frame {
+        min-height: 100vh;
+        min-height: 100dvh;
     }
 }
 
@@ -601,95 +594,97 @@ input:focus, textarea:focus, select:focus, button:focus-visible {
     }
 }
 
-@media (min-width: 700px) {
-    .app-frame {
-        background: #F1F0EC;
-    }
+/*
+ * Wide shell — single source: html[data-shell="wide"] (shellMode.js).
+ * Same attribute drives Tailwind `duo:` and useDesktop sticky state.
+ */
+html[data-shell="wide"] .app-frame {
+    background: #F1F0EC;
+}
 
-    .app-frame-nav {
-        display: flex;
-        align-items: stretch;
-        background: #F1F0EC;
-    }
+html[data-shell="wide"] .app-frame-nav {
+    display: flex;
+    align-items: stretch;
+    background: #F1F0EC;
+}
 
-    .app-sidebar {
-        width: 12.5rem;
-        flex-shrink: 0;
-        position: sticky;
-        top: 0;
-        height: 100dvh;
-        flex-direction: column;
-        background: #F7F7F4;
-        border-right: 1px solid rgba(23, 23, 23, 0.08);
-    }
+html[data-shell="wide"] .app-sidebar {
+    width: 12.5rem;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    flex-direction: column;
+    background: #F7F7F4;
+    border-right: 1px solid rgba(23, 23, 23, 0.08);
+}
 
-    .app-stage {
-        flex: 1;
-        min-width: 0;
-        background: #F7F7F4;
-        min-height: 100dvh;
-    }
+html[data-shell="wide"] .app-stage {
+    flex: 1;
+    min-width: 0;
+    background: #F7F7F4;
+    min-height: 100dvh;
+}
 
-    .app-frame:not(.app-frame-nav) .app-stage {
-        max-width: 68rem;
-        margin: 0 auto;
-        background: transparent;
-    }
+html[data-shell="wide"] .app-frame:not(.app-frame-nav) .app-stage {
+    max-width: 68rem;
+    margin: 0 auto;
+    background: transparent;
+}
 
-    .app-frame:not(.app-frame-nav) header {
-        background: #F1F0EC;
-        border-bottom-color: rgba(23, 23, 23, 0.08);
-    }
+html[data-shell="wide"] .app-frame:not(.app-frame-nav) header {
+    background: #F1F0EC;
+    border-bottom-color: rgba(23, 23, 23, 0.08);
+}
 
-    .header-inner {
-        max-width: none;
-        padding-left: 1.5rem;
-        padding-right: 1.5rem;
-    }
+html[data-shell="wide"] .header-inner {
+    max-width: none;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+}
 
-    .app-frame:not(.app-frame-nav) .header-inner {
-        max-width: 68rem;
-    }
+html[data-shell="wide"] .app-frame:not(.app-frame-nav) .header-inner {
+    max-width: 68rem;
+}
 
-    .app-content {
-        width: 100%;
-        max-width: 68rem;
-        margin-left: 0;
-        margin-right: auto;
-        padding: 1.25rem 1.5rem 2.25rem;
-    }
+html[data-shell="wide"] .app-content {
+    width: 100%;
+    max-width: 68rem;
+    margin-left: 0;
+    margin-right: auto;
+    padding: 1.25rem 1.5rem 2.25rem;
+}
 
-    .app-content-wide,
-    .app-frame:not(.app-frame-nav) .app-content {
-        max-width: 72rem;
-    }
+html[data-shell="wide"] .app-content-wide,
+html[data-shell="wide"] .app-frame:not(.app-frame-nav) .app-content {
+    max-width: 72rem;
+}
 
-    .app-frame-nav .plan-save-bar {
-        left: 12.5rem;
-        bottom: 0 !important;
-    }
+html[data-shell="wide"] .app-frame-nav .plan-save-bar {
+    left: 12.5rem;
+    bottom: 0 !important;
+}
 
-    .toast-stack {
-        bottom: 2rem;
-    }
+html[data-shell="wide"] .toast-stack {
+    bottom: 2rem;
 }
 
 @media (min-width: 1024px) {
-    .app-sidebar {
-        width: 15.5rem;
-    }
-
-    .header-inner {
+    html[data-shell="wide"] .header-inner {
         padding-left: 2rem;
         padding-right: 2rem;
     }
 
-    .app-content {
+    html[data-shell="wide"] .app-content {
         max-width: 56rem;
         padding: 1.75rem 2rem 2.75rem;
     }
 
-    .app-frame-nav .plan-save-bar {
+    html[data-shell="wide"] .app-sidebar {
+        width: 15.5rem;
+    }
+
+    html[data-shell="wide"] .app-frame-nav .plan-save-bar {
         left: 15.5rem;
     }
 }
