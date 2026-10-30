@@ -5,6 +5,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { ToastProvider } from './components/Toast';
 import { ConfirmProvider } from './components/ConfirmDialog';
+import { RailBackProvider } from './lib/railBack';
 import App from './App';
 
 // iOS can report display-mode: browser for an installed Home Screen app.
@@ -12,4 +13,12 @@ import App from './App';
 document.documentElement.classList.toggle('ios-standalone', navigator.standalone === true);
 
 const root = createRoot(document.getElementById('root'));
-root.render(<ToastProvider><ConfirmProvider><App /></ConfirmProvider></ToastProvider>);
+root.render(
+    <ToastProvider>
+        <ConfirmProvider>
+            <RailBackProvider>
+                <App />
+            </RailBackProvider>
+        </ConfirmProvider>
+    </ToastProvider>
+);

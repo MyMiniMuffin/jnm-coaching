@@ -12,6 +12,7 @@ import { formatDateNO, formatWeight, getThumbnail, getFullSizeImage, todayLocalI
 import { IMAGE_ZOOM_PROPS } from '../lib/zoomConfig';
 import { haptic } from '../lib/haptic';
 import { downloadImagesArchive } from '../lib/downloadImage';
+import { useRegisterRailBack } from '../lib/railBack';
 
 const ImageModal = React.lazy(() => import('../components/ImageModal'));
 
@@ -379,6 +380,8 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
         setSelectingFor(null);
         setViewMode('grid');
     }, []);
+
+    useRegisterRailBack('gallery-compare', viewMode === 'compare', clearCompare);
 
     // Håndter bildeopplasting for coach
     const [uploadProgress, setUploadProgress] = useState('');

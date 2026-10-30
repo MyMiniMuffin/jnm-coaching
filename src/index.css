@@ -689,6 +689,91 @@ html[data-shell="wide"] .toast-stack {
     }
 }
 
+/*
+ * iPhone Duo rail — floating right column (Outlook-style pills).
+ * Only when shellMode sets data-shell="rail" (Duo hardware / ?device=duo).
+ *
+ * Content clearance lives on `.app-stage` only (not also `.app-frame`) so Duo
+ * closed (390) does not lose ~65% width from double padding-right.
+ * z-index 45: above sticky header (40), below modals (50+).
+ */
+:root {
+    --app-rail-width: 3.75rem;
+    --app-rail-gap: 0.5rem; /* min 8px gap between content and rail pills */
+    --app-rail-edge: max(var(--app-rail-gap), env(safe-area-inset-right, 0px));
+    --app-rail-reserve: calc(var(--app-rail-width) + var(--app-rail-edge) + var(--app-rail-gap));
+}
+
+.app-rail {
+    display: none;
+}
+
+html[data-shell="rail"] .app-rail {
+    display: flex;
+    position: fixed;
+    inset: 0 0 0 auto;
+    z-index: 45;
+    width: calc(var(--app-rail-width) + var(--app-rail-edge));
+    pointer-events: none;
+    padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
+    padding-right: var(--app-rail-edge);
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+    box-sizing: border-box;
+}
+
+html[data-shell="rail"] .app-rail-inner {
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: stretch;
+    height: 100%;
+    width: var(--app-rail-width);
+    gap: 0.75rem;
+    touch-action: manipulation;
+}
+
+html[data-shell="rail"] .app-rail-pill {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 0.35rem;
+    border-radius: 1.35rem;
+    background: rgba(247, 247, 244, 0.78);
+    -webkit-backdrop-filter: blur(18px) saturate(1.2);
+    backdrop-filter: blur(18px) saturate(1.2);
+    border: 1px solid rgba(23, 23, 23, 0.08);
+    box-shadow: 0 10px 32px rgba(23, 23, 23, 0.12);
+}
+
+html[data-shell="rail"] .app-rail-tabs {
+    margin-top: auto;
+}
+
+/* Clear content under the rail; hide phone bottom nav + desktop sidebar. */
+html[data-shell="rail"] .app-sidebar,
+html[data-shell="rail"] .mobile-bottom-nav {
+    display: none !important;
+}
+
+/* Single padding owner — do not also pad .app-frame. */
+html[data-shell="rail"] .app-stage {
+    padding-right: var(--app-rail-reserve);
+    box-sizing: border-box;
+}
+
+html[data-shell="rail"] .app-frame-nav .plan-save-bar {
+    left: 0 !important;
+    right: var(--app-rail-reserve);
+    bottom: 0 !important;
+}
+
+html[data-shell="rail"] .toast-stack {
+    bottom: 2rem;
+    right: calc(var(--app-rail-width) + 1rem + env(safe-area-inset-right, 0px));
+}
+
 /* Smooth number input */
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {

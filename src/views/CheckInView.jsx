@@ -13,6 +13,8 @@ import { api } from '../lib/api';
 import { formatDateNO, formatWeight, formatWeightDelta, getThumbnail, todayLocalISODate } from '../lib/formatters';
 import { OPTIONS_1_TO_10, INITIAL_FORM_DATA } from '../lib/config';
 import { haptic } from '../lib/haptic';
+import { useRegisterRailBack } from '../lib/railBack';
+import { useShellRail } from '../hooks';
 
 const ImageModal = React.lazy(() => import('../components/ImageModal'));
 
@@ -263,6 +265,7 @@ const CheckInView = React.memo(({
     totalWeeks
 }) => {
     const toast = useToast();
+    const isRail = useShellRail();
     const [composing, setComposing] = useState(false);
     const [lightbox, setLightbox] = useState({ isOpen: false, images: [], index: 0 });
     const [isCompressing, setIsCompressing] = useState(false);
@@ -431,6 +434,9 @@ const CheckInView = React.memo(({
         setRestoredDraft(false);
         try { localStorage.removeItem(storageKey); } catch (e) {}
     }, [storageKey]);
+
+    // Duo rail back when composing over an existing weekly report.
+    useRegisterRailBack('checkin-compose', Boolean(composing && thisWeekReport && !hideForm), cancelCompose);
 
     const handleSubmit = useCallback(async (e) => {
         e.preventDefault();
@@ -732,7 +738,7 @@ const CheckInView = React.memo(({
                         </div>
                     )}
 
-                    {thisWeekReport && (
+                    {thisWeekReport && !isRail && (
                         <Button type="button" variant="ghost" className="w-full duo:hidden" onClick={cancelCompose}>
                             Avbryt
                         </Button>
@@ -748,9 +754,11 @@ const CheckInView = React.memo(({
                 >
                     <div className="header-inner mx-auto flex items-center gap-2 px-4 py-2.5 duo:px-6 duo-lg:px-8">
                         {thisWeekReport ? (
+                            !isRail && (
                             <Button type="button" variant="ghost" onClick={cancelCompose} disabled={isSubmitting} className="hidden duo:inline-flex">
                                 Avbryt
                             </Button>
+                            )
                         ) : (
                             <p className="min-w-0 flex-1 truncate text-sm text-ink-muted">Klar når vekten er fylt ut</p>
                         )}

@@ -1,6 +1,6 @@
 # iPhone Duo — plan (revidert etter plattform-review)
 
-**Oppdatert:** 2026-10-30 (fase 2 / revidert P0)  
+**Oppdatert:** 2026-10-30 (fase 2 / rail-nav + fiksrunde PR #13)  
 **Utgangspunkt:** PR #10 / #11 + fase 1-audit.  
 **Prinsipp:** Modeller domenet først · trekk fra før du legger til · gjenbruk eksisterende duo-infrastruktur.
 
@@ -25,21 +25,32 @@
 
 ---
 
-## Duo-scope (bredde + høyde)
+## Shell-modi (narrow / wide / rail)
 
 Én tilstand eier alt: `src/lib/shellMode.js` (modul-singleton + `useSyncExternalStore`).
 
-- **Inn i wide:** `DUO_MEDIA_QUERY` matcher (`src/lib/duoBreakpoint.js`).
+| Shell | Hvem | Navigasjon |
+|---|---|---|
+| `narrow` | Vanlige iPhoner / smal web | Bunnmeny |
+| `wide` | iPad / desktop (≥1024 eller sticky media) | Venstre sidebar |
+| `rail` | **Kun iPhone Duo** (lukket + utfoldet) | Flytende høyre-piller |
+
+### Duo-deteksjon og `iPhone19,4`
+
+Nativt i `DuoDevice.swift` via `utsname.machine`. Listen speiles i `src/lib/duoDeviceModels.js`.
+
+**Usikkerhet:** `iPhone19,4` er listet som iPhone Duo i community-kilder ([AppleDB](https://appledb.dev/device/identifier/iPhone19,4), [IPSW.dev](https://ipsw.dev/iPhone19,4), board V68AP), men er **ikke** bekreftet via `utsname.machine` på fysisk Duo i dette prosjektet. Simulator returnerer `arm64`/`x86_64` og matcher aldri. DEBUG-bygg logger maskin-id (`[DuoDevice] utsname.machine=…`) så den kan bekreftes på ekte enhet. Ukjente fremtidige Duo-SKU-er må legges til begge steder.
+
+`DuoBridgeViewController` injiserer `html[data-device="duo"]` via `webViewConfiguration(for:)` **før** første last (ikke etter `makeKeyAndVisible`). `shellMode` observerer `data-device` med `MutationObserver` hvis markøren settes etter modul-load.
+
+**Dev/test-override:** `?device=duo|phone` skriver til **sessionStorage** (aldri localStorage), så en delt lenke ikke låser vanlige brukere permanent. `syncDom` fjerner `data-device` ved `phone`-override.
+
+- **Inn i wide (ikke-Duo):** `DUO_MEDIA_QUERY` matcher.
 - **Ut av wide:** bredde &lt; 700, eller kald start uten media-match.
 - **Sticky:** allerede wide + høyde krymper (tastatur) mens bredde ≥ 700 → forblir wide.
+- **Rail:** overstyrer alltid når enheten er Duo (ingen venstre sidebar / bunnmeny), også ≥1024.
 
-Ved modul-load (før første React-render) settes `html[data-shell="wide"|"narrow"]`. Samme attributt driver:
-
-| Forbruker | Kilde |
-|---|---|
-| Shell-CSS | `html[data-shell="wide"] …` i `index.css` (én kopi) |
-| Tailwind `duo:` | `addVariant('duo', 'html[data-shell="wide"] &')` |
-| `useDesktop` | `useShellWide()` (alle instanser samme store) |
+`duo:`-density: `wide` alltid; `rail` kun ved bredde ≥ 700 (lukket Duo 390 beholder telefon-tetthet). Swipe-tilbake beholdes på rail (rail er til høyre; `.app-rail-inner` stopper touch-propagering).
 
 ```text
 DUO_MEDIA_QUERY =
@@ -47,22 +58,34 @@ DUO_MEDIA_QUERY =
   (min-width: 1024px)
 ```
 
+Ved modul-load (før første React-render) settes `html[data-shell]`. Samme attributt driver:
+
+| Forbruker | Kilde |
+|---|---|
+| Shell-CSS | `html[data-shell="…"]` i `index.css` |
+| Tailwind `duo:` | `wide` **eller** (`rail` + min-width 700) |
+| `useDesktop` / `useShellWide` | kun `wide` (rail er ikke desktop) |
+
 **Path-avhengighet (viktig):** sticky husker forrige wide-tilstand innen sesjonen, men kald start har ingen minne.
 
 | Viewport / path | Shell |
 |---|---|
-| 390×844 (lukket portrett) | Bottom nav |
+| 390×844 vanlig iPhone | Bottom nav (`narrow`) |
+| 390×844 Duo (`?device=duo`) | Rail (telefon-tetthet) |
+| 760×900 Duo | Rail + `duo:`-density |
+| 390×844 (lukket portrett, ikke Duo) | Bottom nav |
 | 932×430 (lukket telefon landskap) | Bottom nav |
 | 700×599 (kald start) | Bottom nav |
 | 900×550 (kald start) | Bottom nav (media matcher ikke; ingen sticky) |
-| 700×600 / iPad-portrett / Duo unfolded | Sidebar |
+| 700×600 / iPad-portrett (ikke Duo) | Sidebar (`wide`) |
 | 900×760 → 900×400 (tastatur) | Sidebar beholdes (sticky / `data-shell="wide"`) |
 | 900×400 → 650×400 | Bottom nav (exit under 700) |
 | 1280×550 (kort desktop) | Sidebar (`min-width: 1024px`) |
+| ≥1024 med `?device=duo` | Rail (Duo vinner) |
 
-`max-width` ved ≥1024 er **uendret**.
+`max-width` ved ≥1024 er **uendret** for ikke-Duo.
 
-**Spesifisitet:** `duo:` er attributt-variant og slår `sm:` når begge matcher (f.eks. sticky 900×400 → rating forblir 2×5). Stablet `lg:duo:` får ikke lg-media med denne parent-varianten — bruk `duo-lg:` (wide + ≥1024) der lg skal overstyre, f.eks. `duo:grid-cols-5 duo-lg:grid-cols-10`.
+**Spesifisitet:** `duo:` er attributt-variant og slår `sm:` når begge matcher (f.eks. sticky 900×400 → rating forblir 2×5). Stablet `lg:duo:` får ikke lg-media med denne parent-varianten — bruk `duo-lg:` (wide/rail + ≥1024) der lg skal overstyre, f.eks. `duo:grid-cols-5 duo-lg:grid-cols-10`.
 
 ---
 
@@ -79,9 +102,10 @@ DUO_MEDIA_QUERY =
 
 ## P1 — oppfølging (utenfor denne PR-en)
 
-- Hinge-alignet shell via **native-injisert** `html[data-duo]` / `--fold-left` fra `SceneDelegate` (ikke WebKit segment-env).
+- Hinge-alignet shell via **native-injisert** `html[data-duo]` / `--fold-left` fra native bridge (ikke WebKit segment-env).
 - Master-detail-paneler, typografi-skalering, compare/galleri hinge-gutter.
 - Marketing/onboarding fold-tilpasning.
+- Bekreft `utsname.machine` på fysisk Duo og oppdater listen om nødvendig.
 
 ---
 
@@ -92,8 +116,11 @@ DUO_MEDIA_QUERY =
 | Sticky store + `data-shell` | `src/lib/shellMode.js` |
 | `DUO_MEDIA_QUERY` (entry) | `src/lib/duoBreakpoint.js` |
 | `duo:` / `duo-lg:` attribute variants | `tailwind.config.mjs` (`addVariant`) |
-| `useDesktop` → `useShellWide` | `src/hooks.jsx` |
+| `useDesktop` → `useShellWide` (kun wide) | `src/hooks.jsx` |
 | Wide shell CSS (én kopi) | `src/index.css` (`html[data-shell="wide"]`) |
+| Rail CSS (Outlook-piller) | `src/index.css` (`html[data-shell="rail"]`) |
 | `--fold-gap` + `.duo-split-grid` | `src/index.css` |
+| Native Duo-deteksjon | `DuoDevice.swift`, `DuoBridgeViewController.swift` |
+| Rail back-stack | `src/lib/railBack.jsx` |
 | Nav/header | `Navigation.jsx`, `Header.jsx` |
-| Tester | `tests/iphone-duo.mjs`, `tests/iphone-duo-layout.mjs` |
+| Tester | `tests/iphone-duo.mjs`, `tests/iphone-duo-layout.mjs`, `tests/duo-device.mjs` |

@@ -3,7 +3,7 @@ import AccountMenu from './AccountMenu';
 import { LogOut, ChevronLeft, WifiOff, Eye } from 'lucide-react';
 import { IconButton } from './ui';
 
-const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOffline = false, isClientPreview = false, onToggleClientPreview, previewDisabled = false }) => (
+const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOffline = false, isClientPreview = false, onToggleClientPreview, previewDisabled = false, hideClientBack = false }) => (
     <header className="app-header sticky top-0 z-40 border-b border-surface-200/80 bg-surface-50">
         <div className="app-header-top-inset" aria-hidden="true" />
         {isOffline && (
@@ -26,16 +26,19 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
         )}
         {viewingClient ? (
             <div className="header-inner flex items-center px-3 py-3 gap-1 lg:gap-2 duo:px-6 duo-lg:px-8 duo:py-3.5 duo-lg:py-4">
+                {!hideClientBack && onClearClient && (
                 <button
                     type="button"
                     onClick={onClearClient}
                     aria-label="Tilbake til utøverlisten"
+                    data-testid="header-client-back"
                     className="flex min-h-11 items-center gap-0.5 rounded-lg px-2.5 py-2 text-accent transition-colors hover:bg-surface-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent shrink-0"
                 >
                     <ChevronLeft size={20} strokeWidth={2.5} />
                     <span className="text-sm font-medium">Utøvere</span>
                 </button>
-                <div className="flex-1 text-center min-w-0 duo:text-left">
+                )}
+                <div className={`flex-1 min-w-0 duo:text-left ${hideClientBack ? 'text-left' : 'text-center'}`}>
                     <p className="font-semibold text-ink truncate leading-6">{viewingClient.name}</p>
                     <p className="truncate text-[11px] leading-4 text-ink-muted">@{viewingClient.username}</p>
                 </div>

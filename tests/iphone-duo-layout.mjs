@@ -112,6 +112,7 @@ const ATHLETE_DATA = {
         {
             id: 'c1',
             date: '2026-10-20',
+            timestamp: Date.parse('2026-10-20T12:00:00'),
             weight: 75.2,
             sleep: 7,
             energy: 8,
@@ -128,6 +129,7 @@ const ATHLETE_DATA = {
         {
             id: 'c0',
             date: '2026-10-13',
+            timestamp: Date.parse('2026-10-13T12:00:00'),
             weight: 75.8,
             sleep: 6,
             energy: 6,
@@ -303,22 +305,71 @@ async function shellState(page) {
     return page.evaluate(() => {
         const sidebar = document.querySelector('[data-testid="app-sidebar"]');
         const bottomNav = document.querySelector('[data-testid="mobile-bottom-nav"]');
-        const sidebarVisible = Boolean(
-            sidebar
-            && getComputedStyle(sidebar).display !== 'none'
-            && sidebar.getBoundingClientRect().width > 0
-        );
-        const bottomVisible = Boolean(
-            bottomNav
-            && getComputedStyle(bottomNav).display !== 'none'
-            && bottomNav.getBoundingClientRect().height > 0
+        const rail = document.querySelector('[data-testid="app-rail"]');
+        const visible = (el) => Boolean(
+            el
+            && getComputedStyle(el).display !== 'none'
+            && el.getBoundingClientRect().width > 0
+            && el.getBoundingClientRect().height > 0
         );
         const overflowX = document.documentElement.scrollWidth > document.documentElement.clientWidth + 1;
         return {
-            sidebarVisible,
-            bottomVisible,
+            sidebarVisible: visible(sidebar),
+            bottomVisible: visible(bottomNav),
+            railVisible: visible(rail),
             overflowX,
             shell: document.documentElement.getAttribute('data-shell'),
+            device: document.documentElement.getAttribute('data-device'),
+        };
+    });
+}
+
+async function openAthleteDuo(page, base, viewportPath = '/') {
+    await installMocks(page);
+    await seedAthlete(page);
+    await page.addInitScript(() => {
+        try { localStorage.removeItem('jnm_device_override'); } catch { /* */ }
+        try { sessionStorage.removeItem('jnm_device_override'); } catch { /* */ }
+    });
+    const url = new URL(viewportPath, base);
+    url.searchParams.set('device', 'duo');
+    await page.goto(url.toString(), { waitUntil: 'networkidle' });
+    await page.waitForFunction(() => document.documentElement.getAttribute('data-shell') === 'rail');
+    await page.waitForSelector('[data-testid="app-rail"]');
+}
+
+async function mainContentMetrics(page) {
+    return page.evaluate(() => {
+        const stage = document.querySelector('[data-testid="app-stage"]') || document.querySelector('.app-stage');
+        const frame = document.querySelector('.app-frame');
+        const content = document.querySelector('.app-content') || document.querySelector('main');
+        const rail = document.querySelector('[data-testid="app-rail"]');
+        const stepGoal = Array.from(document.querySelectorAll('p')).find((el) => /10[\s\u00a0]?000/.test(el.textContent || ''));
+        const stageStyle = stage ? getComputedStyle(stage) : null;
+        const frameStyle = frame ? getComputedStyle(frame) : null;
+        const contentRect = content?.getBoundingClientRect();
+        const railRect = rail?.getBoundingClientRect();
+        return {
+            contentTextLen: (content?.innerText || '').trim().length,
+            contentWidth: contentRect?.width || 0,
+            viewportWidth: window.innerWidth,
+            stagePadRight: stageStyle ? parseFloat(stageStyle.paddingRight) || 0 : 0,
+            framePadRight: frameStyle ? parseFloat(frameStyle.paddingRight) || 0 : 0,
+            railWidth: railRect?.width || 0,
+            stepGoalText: stepGoal?.textContent?.trim() || '',
+            stepGoalClipped: stepGoal
+                ? stepGoal.scrollWidth > stepGoal.clientWidth + 1
+                : false,
+            duoProbe: (() => {
+                // Use duo:inline — present in built CSS (Header). duo:block is not emitted.
+                const el = document.createElement('span');
+                el.className = 'hidden duo:inline';
+                el.textContent = 'probe';
+                document.body.appendChild(el);
+                const shown = getComputedStyle(el).display === 'inline';
+                el.remove();
+                return shown;
+            })(),
         };
     });
 }
@@ -603,6 +654,227 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
                 assert.equal(shell.sidebarVisible, true);
                 assert.equal(shell.bottomVisible, false);
                 assert.equal(shell.shell, 'wide');
+            } finally {
+                await context.close();
+            }
+        });
+
+        for (const vp of [
+            { id: '390x844', width: 390, height: 844 },
+            { id: '760x900', width: 760, height: 900 },
+        ]) {
+            await t.test(`Duo rail ?device=duo at ${vp.id}`, async () => {
+                const context = await browser.newContext({
+                    viewport: { width: vp.width, height: vp.height },
+                    deviceScaleFactor: 1,
+                });
+                const page = await context.newPage();
+                const pageErrors = [];
+                page.on('pageerror', (error) => pageErrors.push(String(error?.message || error)));
+                try {
+                    await openAthleteDuo(page, base);
+                    const shell = await shellState(page);
+                    assert.equal(shell.shell, 'rail');
+                    assert.equal(shell.device, 'duo');
+                    assert.equal(shell.railVisible, true, 'rail visible');
+                    assert.equal(shell.sidebarVisible, false, 'sidebar hidden on Duo');
+                    assert.equal(shell.bottomVisible, false, 'bottom nav hidden on Duo');
+
+                    const railBox = await page.getByTestId('app-rail').boundingBox();
+                    assert.ok(railBox, 'rail box');
+                    assert.ok(railBox.x > vp.width / 2, 'rail is on the right half');
+
+                    const tabButtons = page.locator('[data-testid="app-rail"] nav button');
+                    const tabCount = await tabButtons.count();
+                    assert.equal(tabCount, 5);
+                    for (let i = 0; i < tabCount; i += 1) {
+                        const box = await tabButtons.nth(i).boundingBox();
+                        assert.ok(box.height >= 43.5, `rail tab height ${box.height}`);
+                        assert.ok(box.width >= 43.5, `rail tab width ${box.width}`);
+                    }
+
+                    const metrics = await mainContentMetrics(page);
+                    assert.ok(
+                        metrics.contentTextLen > 40,
+                        `main content must not be empty (len=${metrics.contentTextLen}) at ${vp.id}`
+                    );
+                    assert.equal(
+                        pageErrors.some((msg) => /Maximum update depth|Too many re-renders/i.test(msg)),
+                        false,
+                        `render loop: ${pageErrors.join(' | ')}`
+                    );
+
+                    // Single padding owner on .app-stage; content uses available width (not ~65%).
+                    assert.ok(metrics.stagePadRight > 40, `stage padding-right ${metrics.stagePadRight}`);
+                    assert.equal(metrics.framePadRight, 0, 'app-frame must not also pad for rail');
+                    assert.ok(
+                        metrics.stagePadRight >= metrics.railWidth + 7,
+                        `stage pad ${metrics.stagePadRight} should include ≥8px gap beyond rail ${metrics.railWidth}`
+                    );
+                    const widthRatio = metrics.contentWidth / vp.width;
+                    assert.ok(
+                        widthRatio > 0.72,
+                        `content width ratio ${widthRatio.toFixed(3)} (w=${metrics.contentWidth}) — double padding regressed to ~0.65`
+                    );
+                    assert.ok(
+                        Math.abs(metrics.contentWidth - (vp.width - metrics.stagePadRight)) < 3,
+                        `content should span stage inner width (content=${metrics.contentWidth}, expected≈${vp.width - metrics.stagePadRight})`
+                    );
+
+                    // No content under the rail
+                    const overlap = await page.evaluate(() => {
+                        const rail = document.querySelector('[data-testid="app-rail"]');
+                        const railRect = rail.getBoundingClientRect();
+                        const content = document.querySelector('.app-content') || document.querySelector('main');
+                        if (!content) return false;
+                        const contentRect = content.getBoundingClientRect();
+                        return contentRect.right > railRect.left + 2;
+                    });
+                    assert.equal(overlap, false, 'content does not overlap rail');
+
+                    // duo: density only at ≥700
+                    if (vp.width < 700) {
+                        assert.equal(metrics.duoProbe, false, 'duo: density off at closed Duo width');
+                        assert.match(metrics.stepGoalText, /10[\s\u00a0]?000/);
+                        assert.equal(metrics.stepGoalClipped, false, 'step goal must not clip at 390');
+                    } else {
+                        assert.equal(metrics.duoProbe, true, 'duo: density on for unfolded Duo');
+                    }
+
+                    // Override must not leak to localStorage
+                    const stored = await page.evaluate(() => ({
+                        local: localStorage.getItem('jnm_device_override'),
+                        session: sessionStorage.getItem('jnm_device_override'),
+                    }));
+                    assert.equal(stored.local, null, 'device override must not use localStorage');
+                    assert.equal(stored.session, 'duo');
+
+                    // Weight history → rail back → dashboard content restored
+                    await clickNav(page, 'Hjem');
+                    await page.getByText('Se historikk', { exact: true }).click();
+                    await page.waitForSelector('[data-testid="weight-progress-view"]');
+                    await page.waitForSelector('[data-testid="app-rail-back"]');
+                    assert.equal(await page.getByTestId('weight-progress-back').count(), 0, 'no double back in rail');
+                    const back = page.getByTestId('app-rail-back');
+                    const backBox = await back.boundingBox();
+                    assert.ok(backBox.height >= 43.5 && backBox.width >= 43.5, 'rail back ≥44');
+                    await back.click();
+                    await page.waitForFunction(() => !document.querySelector('[data-testid="app-rail-back"]'));
+                    await page.waitForFunction(() => !document.querySelector('[data-testid="weight-progress-view"]'));
+                    const afterBack = await mainContentMetrics(page);
+                    assert.ok(
+                        afterBack.contentTextLen > 40,
+                        `dashboard content empty after rail back (len=${afterBack.contentTextLen})`
+                    );
+                    assert.match(afterBack.stepGoalText, /10[\s\u00a0]?000/);
+                    assert.equal(
+                        pageErrors.some((msg) => /Maximum update depth|Too many re-renders/i.test(msg)),
+                        false,
+                        `render loop after back: ${pageErrors.join(' | ')}`
+                    );
+                } finally {
+                    await context.close();
+                }
+            });
+        }
+
+        await t.test('390×844 without device=duo keeps bottom nav', async () => {
+            const context = await browser.newContext({
+                viewport: { width: 390, height: 844 },
+                deviceScaleFactor: 1,
+            });
+            const page = await context.newPage();
+            try {
+                await page.addInitScript(() => {
+                    try { localStorage.removeItem('jnm_device_override'); } catch { /* */ }
+                    try { sessionStorage.removeItem('jnm_device_override'); } catch { /* */ }
+                });
+                await openAthlete(page, base);
+                const shell = await shellState(page);
+                assert.equal(shell.shell, 'narrow');
+                assert.equal(shell.bottomVisible, true);
+                assert.equal(shell.railVisible, false);
+                assert.equal(shell.sidebarVisible, false);
+            } finally {
+                await context.close();
+            }
+        });
+
+        await t.test('1024×768 without device=duo keeps left sidebar', async () => {
+            const context = await browser.newContext({
+                viewport: { width: 1024, height: 768 },
+                deviceScaleFactor: 1,
+            });
+            const page = await context.newPage();
+            try {
+                await page.addInitScript(() => {
+                    try { localStorage.removeItem('jnm_device_override'); } catch { /* */ }
+                    try { sessionStorage.removeItem('jnm_device_override'); } catch { /* */ }
+                });
+                await openAthlete(page, base);
+                const shell = await shellState(page);
+                assert.equal(shell.shell, 'wide');
+                assert.equal(shell.sidebarVisible, true);
+                assert.equal(shell.railVisible, false);
+                assert.equal(shell.bottomVisible, false);
+            } finally {
+                await context.close();
+            }
+        });
+
+        await t.test('1024×768 with device=duo keeps rail (not sidebar)', async () => {
+            const context = await browser.newContext({
+                viewport: { width: 1024, height: 768 },
+                deviceScaleFactor: 1,
+            });
+            const page = await context.newPage();
+            try {
+                await openAthleteDuo(page, base);
+                const shell = await shellState(page);
+                assert.equal(shell.shell, 'rail');
+                assert.equal(shell.railVisible, true);
+                assert.equal(shell.sidebarVisible, false);
+                assert.equal(shell.bottomVisible, false);
+                const metrics = await mainContentMetrics(page);
+                assert.ok(metrics.contentTextLen > 40, '1024 duo rail content not empty');
+                assert.equal(metrics.duoProbe, true, 'duo density on at 1024 rail');
+            } finally {
+                await context.close();
+            }
+        });
+
+        await t.test('device=phone override clears data-device and does not leak to localStorage', async () => {
+            const context = await browser.newContext({
+                viewport: { width: 760, height: 900 },
+                deviceScaleFactor: 1,
+            });
+            const page = await context.newPage();
+            try {
+                await installMocks(page);
+                await seedAthlete(page);
+                await page.addInitScript(() => {
+                    try {
+                        localStorage.setItem('jnm_device_override', 'duo');
+                        sessionStorage.removeItem('jnm_device_override');
+                    } catch { /* */ }
+                });
+                const url = new URL('/', base);
+                url.searchParams.set('device', 'phone');
+                await page.goto(url.toString(), { waitUntil: 'networkidle' });
+                await page.waitForFunction(() => (
+                    document.querySelector('[data-testid="app-sidebar"]')
+                    || document.querySelector('[data-testid="mobile-bottom-nav"]')
+                ));
+                const state = await page.evaluate(() => ({
+                    shell: document.documentElement.getAttribute('data-shell'),
+                    device: document.documentElement.getAttribute('data-device'),
+                    local: localStorage.getItem('jnm_device_override'),
+                    session: sessionStorage.getItem('jnm_device_override'),
+                }));
+                assert.notEqual(state.shell, 'rail');
+                assert.equal(state.device, null, 'phone override must remove data-device');
+                assert.equal(state.local, null, 'legacy localStorage override cleared');
+                assert.equal(state.session, 'phone');
             } finally {
                 await context.close();
             }
