@@ -11,7 +11,7 @@
     "ios:sync": "npm run build && cap sync ios",
     "ios:open": "cap open ios",
     "test": "node --test tests/*.cjs tests/*.mjs",
-    "test:unit": "node --test tests/*.cjs tests/image-archive.mjs tests/local-date.mjs tests/native-platform.mjs tests/iphone-duo.mjs",
+    "test:unit": "node --test tests/*.cjs tests/image-archive.mjs tests/local-date.mjs tests/native-platform.mjs tests/iphone-duo.mjs tests/duo-device.mjs",
     "test:duo-layout": "node --test tests/iphone-duo-layout.mjs"
   },
   "dependencies": {
