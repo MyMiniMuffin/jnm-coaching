@@ -13,6 +13,7 @@ import { api } from '../lib/api';
 import { formatDateNO, formatWeight, formatWeightDelta, getThumbnail, todayLocalISODate } from '../lib/formatters';
 import { OPTIONS_1_TO_10, INITIAL_FORM_DATA } from '../lib/config';
 import { haptic } from '../lib/haptic';
+import { useRegisterRailBack } from '../lib/railBack';
 
 const ImageModal = React.lazy(() => import('../components/ImageModal'));
 
@@ -431,6 +432,9 @@ const CheckInView = React.memo(({
         setRestoredDraft(false);
         try { localStorage.removeItem(storageKey); } catch (e) {}
     }, [storageKey]);
+
+    // Duo rail back when composing over an existing weekly report.
+    useRegisterRailBack('checkin-compose', Boolean(composing && thisWeekReport && !hideForm), cancelCompose);
 
     const handleSubmit = useCallback(async (e) => {
         e.preventDefault();

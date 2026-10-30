@@ -1,4 +1,5 @@
 import React, { useCallback } from 'react';
+import { ChevronLeft } from 'lucide-react';
 import { NAV_ITEMS, APP_ICON } from '../lib/config';
 import { haptic } from '../lib/haptic';
 
@@ -22,6 +23,24 @@ const NavButton = React.memo(({ item, isActive, onClick, variant }) => {
         );
     }
 
+    if (variant === 'rail') {
+        return (
+            <button
+                type="button"
+                onClick={() => onClick(item.id)}
+                aria-label={item.label}
+                aria-current={isActive ? 'page' : undefined}
+                className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                    isActive
+                        ? 'bg-white text-accent-hover shadow-sm'
+                        : 'text-ink-muted hover:text-ink'
+                }`}
+            >
+                <Icon size={22} strokeWidth={isActive ? 2 : 1.75} />
+            </button>
+        );
+    }
+
     return (
         <button
             type="button"
@@ -36,20 +55,35 @@ const NavButton = React.memo(({ item, isActive, onClick, variant }) => {
     );
 });
 
-const Navigation = React.memo(({ activeTab, setActiveTab, isDesktop = false }) => {
+/**
+ * shell: 'narrow' | 'wide' | 'rail'
+ * onBack: optional handler for Duo rail top pill (drill-downs)
+ */
+const Navigation = React.memo(({ activeTab, setActiveTab, shell = 'narrow', onBack = null }) => {
+    const isWide = shell === 'wide';
+    const isRail = shell === 'rail';
+    const showBack = isRail && typeof onBack === 'function';
+
     const handleTabClick = useCallback((id) => {
         if (id !== activeTab) haptic('tap');
         setActiveTab(id);
         window.scrollTo({ top: 0, behavior: 'auto' });
     }, [activeTab, setActiveTab]);
 
+    const handleBack = useCallback(() => {
+        if (typeof onBack !== 'function') return;
+        haptic('tap');
+        onBack();
+    }, [onBack]);
+
     const activeIndex = NAV_ITEMS.findIndex(item => item.id === activeTab);
     const pillStyle = { transform: `translateX(${activeIndex * 100}%)` };
 
     return (
         <>
+            {/* Desktop / iPad left sidebar — unchanged for non-Duo wide */}
             <aside
-                className={`app-sidebar ${isDesktop ? 'flex' : 'hidden'}`}
+                className={`app-sidebar ${isWide ? 'flex' : 'hidden'}`}
                 aria-label="Hovednavigasjon"
                 data-testid="app-sidebar"
             >
@@ -73,8 +107,43 @@ const Navigation = React.memo(({ activeTab, setActiveTab, isDesktop = false }) =
                 </nav>
             </aside>
 
+            {/* iPhone Duo floating right rail */}
+            <div
+                className={`app-rail ${isRail ? 'flex' : 'hidden'}`}
+                data-testid="app-rail"
+                aria-label="Duo-navigasjon"
+            >
+                <div className="app-rail-inner">
+                    {showBack && (
+                        <div className="app-rail-pill" data-testid="app-rail-back-pill">
+                            <button
+                                type="button"
+                                onClick={handleBack}
+                                aria-label="Tilbake"
+                                data-testid="app-rail-back"
+                                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-ink transition-colors hover:bg-white/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                            >
+                                <ChevronLeft size={22} strokeWidth={2.25} />
+                            </button>
+                        </div>
+                    )}
+                    <nav className="app-rail-pill app-rail-tabs" aria-label="Hovednavigasjon">
+                        {NAV_ITEMS.map((item) => (
+                            <NavButton
+                                key={item.id}
+                                item={item}
+                                isActive={activeTab === item.id}
+                                onClick={handleTabClick}
+                                variant="rail"
+                            />
+                        ))}
+                    </nav>
+                </div>
+            </div>
+
+            {/* Phone bottom nav — all non-Duo phones */}
             <nav
-                className={`mobile-bottom-nav fixed bottom-0 left-0 right-0 z-50 border-t border-surface-200/80 ${isDesktop ? 'hidden' : ''}`}
+                className={`mobile-bottom-nav fixed bottom-0 left-0 right-0 z-50 border-t border-surface-200/80 ${isWide || isRail ? 'hidden' : ''}`}
                 aria-label="Hovednavigasjon"
                 data-testid="mobile-bottom-nav"
             >

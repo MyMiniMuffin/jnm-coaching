@@ -25,21 +25,24 @@
 
 ---
 
-## Duo-scope (bredde + høyde)
+## Shell-modi (narrow / wide / rail)
 
 Én tilstand eier alt: `src/lib/shellMode.js` (modul-singleton + `useSyncExternalStore`).
 
-- **Inn i wide:** `DUO_MEDIA_QUERY` matcher (`src/lib/duoBreakpoint.js`).
+| Shell | Hvem | Navigasjon |
+|---|---|---|
+| `narrow` | Vanlige iPhoner / smal web | Bunnmeny |
+| `wide` | iPad / desktop (≥1024 eller sticky media) | Venstre sidebar |
+| `rail` | **Kun iPhone Duo** (lukket + utfoldet) | Flytende høyre-piller |
+
+**Duo-deteksjon:** Nativt i `DuoDevice.swift` via `utsname.machine`. Kjent id: `iPhone19,4`. Listen er sentral og speiles i `src/lib/duoDeviceModels.js` — ukjente fremtidige Duo-SKU-er må legges til begge steder. `SceneDelegate` injiserer `html[data-device="duo"]` med `WKUserScript` ved document-start. Dev/test: `?device=duo` eller `localStorage.jnm_device_override`.
+
+- **Inn i wide (ikke-Duo):** `DUO_MEDIA_QUERY` matcher.
 - **Ut av wide:** bredde &lt; 700, eller kald start uten media-match.
 - **Sticky:** allerede wide + høyde krymper (tastatur) mens bredde ≥ 700 → forblir wide.
+- **Rail:** overstyrer alltid når enheten er Duo (ingen venstre sidebar / bunnmeny).
 
-Ved modul-load (før første React-render) settes `html[data-shell="wide"|"narrow"]`. Samme attributt driver:
-
-| Forbruker | Kilde |
-|---|---|
-| Shell-CSS | `html[data-shell="wide"] …` i `index.css` (én kopi) |
-| Tailwind `duo:` | `addVariant('duo', 'html[data-shell="wide"] &')` |
-| `useDesktop` | `useShellWide()` (alle instanser samme store) |
+`duo:`-density gjelder både `wide` og `rail`. Swipe-tilbake beholdes på rail (rail er til høyre; kolliderer ikke med venstre edge-swipe).
 
 ```text
 DUO_MEDIA_QUERY =
@@ -47,22 +50,13 @@ DUO_MEDIA_QUERY =
   (min-width: 1024px)
 ```
 
-**Path-avhengighet (viktig):** sticky husker forrige wide-tilstand innen sesjonen, men kald start har ingen minne.
-
 | Viewport / path | Shell |
 |---|---|
-| 390×844 (lukket portrett) | Bottom nav |
-| 932×430 (lukket telefon landskap) | Bottom nav |
-| 700×599 (kald start) | Bottom nav |
-| 900×550 (kald start) | Bottom nav (media matcher ikke; ingen sticky) |
-| 700×600 / iPad-portrett / Duo unfolded | Sidebar |
-| 900×760 → 900×400 (tastatur) | Sidebar beholdes (sticky / `data-shell="wide"`) |
-| 900×400 → 650×400 | Bottom nav (exit under 700) |
-| 1280×550 (kort desktop) | Sidebar (`min-width: 1024px`) |
-
-`max-width` ved ≥1024 er **uendret**.
-
-**Spesifisitet:** `duo:` er attributt-variant og slår `sm:` når begge matcher (f.eks. sticky 900×400 → rating forblir 2×5). Stablet `lg:duo:` får ikke lg-media med denne parent-varianten — bruk `duo-lg:` (wide + ≥1024) der lg skal overstyre, f.eks. `duo:grid-cols-5 duo-lg:grid-cols-10`.
+| 390×844 vanlig iPhone | Bottom nav (`narrow`) |
+| 390×844 Duo (`?device=duo`) | Rail |
+| 760×900 Duo | Rail (ikke venstre sidebar) |
+| 700×600 / iPad (ikke Duo) | Sidebar (`wide`) |
+| 1280×550 desktop | Sidebar (`wide`) |
 
 ---
 

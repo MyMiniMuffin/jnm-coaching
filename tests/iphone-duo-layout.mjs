@@ -303,24 +303,33 @@ async function shellState(page) {
     return page.evaluate(() => {
         const sidebar = document.querySelector('[data-testid="app-sidebar"]');
         const bottomNav = document.querySelector('[data-testid="mobile-bottom-nav"]');
-        const sidebarVisible = Boolean(
-            sidebar
-            && getComputedStyle(sidebar).display !== 'none'
-            && sidebar.getBoundingClientRect().width > 0
-        );
-        const bottomVisible = Boolean(
-            bottomNav
-            && getComputedStyle(bottomNav).display !== 'none'
-            && bottomNav.getBoundingClientRect().height > 0
+        const rail = document.querySelector('[data-testid="app-rail"]');
+        const visible = (el) => Boolean(
+            el
+            && getComputedStyle(el).display !== 'none'
+            && el.getBoundingClientRect().width > 0
+            && el.getBoundingClientRect().height > 0
         );
         const overflowX = document.documentElement.scrollWidth > document.documentElement.clientWidth + 1;
         return {
-            sidebarVisible,
-            bottomVisible,
+            sidebarVisible: visible(sidebar),
+            bottomVisible: visible(bottomNav),
+            railVisible: visible(rail),
             overflowX,
             shell: document.documentElement.getAttribute('data-shell'),
+            device: document.documentElement.getAttribute('data-device'),
         };
     });
+}
+
+async function openAthleteDuo(page, base, viewportPath = '/') {
+    await installMocks(page);
+    await seedAthlete(page);
+    const url = new URL(viewportPath, base);
+    url.searchParams.set('device', 'duo');
+    await page.goto(url.toString(), { waitUntil: 'networkidle' });
+    await page.waitForFunction(() => document.documentElement.getAttribute('data-shell') === 'rail');
+    await page.waitForSelector('[data-testid="app-rail"]');
 }
 
 test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) => {
@@ -603,6 +612,115 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
                 assert.equal(shell.sidebarVisible, true);
                 assert.equal(shell.bottomVisible, false);
                 assert.equal(shell.shell, 'wide');
+            } finally {
+                await context.close();
+            }
+        });
+
+        for (const vp of [
+            { id: '390x844', width: 390, height: 844 },
+            { id: '760x900', width: 760, height: 900 },
+        ]) {
+            await t.test(`Duo rail ?device=duo at ${vp.id}`, async () => {
+                const context = await browser.newContext({
+                    viewport: { width: vp.width, height: vp.height },
+                    deviceScaleFactor: 1,
+                });
+                const page = await context.newPage();
+                try {
+                    await openAthleteDuo(page, base);
+                    const shell = await shellState(page);
+                    assert.equal(shell.shell, 'rail');
+                    assert.equal(shell.device, 'duo');
+                    assert.equal(shell.railVisible, true, 'rail visible');
+                    assert.equal(shell.sidebarVisible, false, 'sidebar hidden on Duo');
+                    assert.equal(shell.bottomVisible, false, 'bottom nav hidden on Duo');
+
+                    const railBox = await page.getByTestId('app-rail').boundingBox();
+                    assert.ok(railBox, 'rail box');
+                    assert.ok(railBox.x > vp.width / 2, 'rail is on the right half');
+
+                    const tabButtons = page.locator('[data-testid="app-rail"] nav button');
+                    const tabCount = await tabButtons.count();
+                    assert.equal(tabCount, 5);
+                    for (let i = 0; i < tabCount; i += 1) {
+                        const box = await tabButtons.nth(i).boundingBox();
+                        assert.ok(box.height >= 43.5, `rail tab height ${box.height}`);
+                        assert.ok(box.width >= 43.5, `rail tab width ${box.width}`);
+                    }
+
+                    // No content under the rail
+                    const overlap = await page.evaluate(() => {
+                        const rail = document.querySelector('[data-testid="app-rail"]');
+                        const railRect = rail.getBoundingClientRect();
+                        const content = document.querySelector('.app-content') || document.querySelector('main');
+                        if (!content) return false;
+                        const contentRect = content.getBoundingClientRect();
+                        return contentRect.right > railRect.left + 2;
+                    });
+                    assert.equal(overlap, false, 'content does not overlap rail');
+
+                    // Undervisning: weight history → rail back
+                    await clickNav(page, 'Hjem');
+                    const historyLink = page.getByRole('button', { name: /historikk/i }).first();
+                    if (await historyLink.count()) {
+                        await historyLink.click();
+                    } else {
+                        await page.getByText(/Se historikk/i).first().click();
+                    }
+                    await page.waitForSelector('[data-testid="app-rail-back"]');
+                    const back = page.getByTestId('app-rail-back');
+                    const backBox = await back.boundingBox();
+                    assert.ok(backBox.height >= 43.5 && backBox.width >= 43.5, 'rail back ≥44');
+                    await back.click();
+                    await page.waitForFunction(() => !document.querySelector('[data-testid="app-rail-back"]'));
+                    assert.match(
+                        await page.locator('h2, [class*="font-display"]').first().textContent() || '',
+                        /./
+                    );
+                } finally {
+                    await context.close();
+                }
+            });
+        }
+
+        await t.test('390×844 without device=duo keeps bottom nav', async () => {
+            const context = await browser.newContext({
+                viewport: { width: 390, height: 844 },
+                deviceScaleFactor: 1,
+            });
+            const page = await context.newPage();
+            try {
+                await page.addInitScript(() => {
+                    try { localStorage.removeItem('jnm_device_override'); } catch { /* */ }
+                });
+                await openAthlete(page, base);
+                const shell = await shellState(page);
+                assert.equal(shell.shell, 'narrow');
+                assert.equal(shell.bottomVisible, true);
+                assert.equal(shell.railVisible, false);
+                assert.equal(shell.sidebarVisible, false);
+            } finally {
+                await context.close();
+            }
+        });
+
+        await t.test('1024×768 without device=duo keeps left sidebar', async () => {
+            const context = await browser.newContext({
+                viewport: { width: 1024, height: 768 },
+                deviceScaleFactor: 1,
+            });
+            const page = await context.newPage();
+            try {
+                await page.addInitScript(() => {
+                    try { localStorage.removeItem('jnm_device_override'); } catch { /* */ }
+                });
+                await openAthlete(page, base);
+                const shell = await shellState(page);
+                assert.equal(shell.shell, 'wide');
+                assert.equal(shell.sidebarVisible, true);
+                assert.equal(shell.railVisible, false);
+                assert.equal(shell.bottomVisible, false);
             } finally {
                 await context.close();
             }

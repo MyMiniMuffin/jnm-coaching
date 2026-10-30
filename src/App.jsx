@@ -22,8 +22,10 @@ import { haptic } from './lib/haptic';
 import { todayLocalISODate } from './lib/formatters';
 
 // Hooks
-import { useSwipe, usePullToRefresh, useOnlineStatus, useDesktop } from './hooks';
+import { useSwipe, usePullToRefresh, useOnlineStatus, useShellMode } from './hooks';
 import { useActivity } from './lib/useActivity';
+import { useRailBackStack } from './lib/railBack';
+import { SHELL_RAIL, SHELL_WIDE } from './lib/shellMode';
 
 // Components (eagerly loaded — small and used everywhere)
 import { Skeleton, Button, IconButton, PageTitle } from './components/ui';
@@ -96,7 +98,10 @@ const RefreshFrame = ({ children, onRefresh, enabled, swipeHandlers }) => {
 const App = () => {
     const toast = useToast();
     const isOnline = useOnlineStatus();
-    const isDesktop = useDesktop();
+    const shell = useShellMode();
+    const isWide = shell === SHELL_WIDE;
+    const isRail = shell === SHELL_RAIL;
+    const { top: registeredRailBack } = useRailBackStack();
     const [currentUser, setCurrentUser] = useState(readBootUser);
     const [activeTab, setActiveTab] = useState('dashboard');
     const [allUsers, setAllUsers] = useState(() => {
@@ -1339,12 +1344,14 @@ const App = () => {
         }
     }, []);
 
+    // Swipe stays on phone + Duo rail (closed/unfolded). Off for desktop left-sidebar.
+    // Rail sits on the right edge and does not collide with edge-swipe from the left.
     const swipeHandlers = useSwipe(handleSwipeLeft, handleSwipeRight, {
         threshold: 88,
         velocityThreshold: 0.52,
         verticalTolerance: 34,
         onEdgeSwipe: handleEdgeSwipe,
-        enabled: !isDesktop && !isClientLoading && !showWeightHistory && (activeTab === 'dashboard' || activeTab === 'checkin')
+        enabled: !isWide && !isClientLoading && !showWeightHistory && (activeTab === 'dashboard' || activeTab === 'checkin')
     });
 
     const handleRefresh = useCallback(async () => {
@@ -1486,13 +1493,28 @@ const App = () => {
 
     const contentWide = activeTab === 'gallery';
 
+    // Duo rail back: innermost registered view first, then shell-level drill-downs.
+    const railBackHandler = (() => {
+        if (!isRail) return null;
+        if (registeredRailBack?.onBack) return registeredRailBack.onBack;
+        if (showWeightHistory) return handleCloseWeightHistory;
+        if (isCoach && viewingClient && !isClientPreview) return handleClearClient;
+        if (activeTab === 'history') return () => setActiveTab('dashboard');
+        return null;
+    })();
+
     return (
         <RefreshFrame
             onRefresh={handleRefresh}
-            enabled={!isDesktop && !isClientLoading && !!viewingClient}
+            enabled={!isWide && !isClientLoading && !!viewingClient}
             swipeHandlers={swipeHandlers}
         >
-            <Navigation activeTab={activeTab} setActiveTab={handleTabChange} isDesktop={isDesktop} />
+            <Navigation
+                activeTab={activeTab}
+                setActiveTab={handleTabChange}
+                shell={shell}
+                onBack={railBackHandler}
+            />
             <div className={`app-stage ${contentWide ? 'app-stage-wide' : ''}`}>
             {showReauthPrompt && <ReauthPrompt onReauth={handleReauth} />}
             <Header
