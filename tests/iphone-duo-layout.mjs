@@ -422,12 +422,17 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
                             assert.ok(box.height >= 43.5, `rating height ${box.height}`);
                             assert.ok(box.width >= 43.5, `rating width ${box.width}`);
                         }
-                        // duo:grid-cols-5 until lg; assert wrap only below 1024
+                        // duo:grid-cols-5 until duo-lg (≥1024); then 1×10
+                        const first = await ratings.nth(0).boundingBox();
+                        const sixth = await ratings.nth(5).boundingBox();
+                        assert.ok(first && sixth, 'rating row boxes');
                         if (vp.width < 1024) {
-                            const first = await ratings.nth(0).boundingBox();
-                            const sixth = await ratings.nth(5).boundingBox();
-                            assert.ok(first && sixth, 'rating row boxes');
                             assert.ok(sixth.y > first.y + 20, 'rating wraps to second row (2×5)');
+                        } else {
+                            assert.ok(
+                                Math.abs(sixth.y - first.y) < 8,
+                                `rating is 1×10 at ≥1024 (sixth.y=${sixth.y}, first.y=${first.y})`
+                            );
                         }
 
                         const history = page.getByTestId('checkin-history-row');

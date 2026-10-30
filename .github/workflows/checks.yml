@@ -28,6 +28,7 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
       - run: npm test
       - run: npm run build
       - name: Validate Xcode Cloud script

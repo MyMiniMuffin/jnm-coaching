@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { dirname, join, relative } from 'node:path';
 import {
     DUO_MIN_WIDTH_PX,
     DUO_MIN_HEIGHT_PX,
@@ -12,6 +12,106 @@ import {
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (relativePath) => readFileSync(join(root, relativePath), 'utf8');
+
+/** Longest-prefix map from utility stem → property family (specificity conflicts). */
+const PROP_PREFIXES = [
+    'grid-cols', 'col-span', 'max-w', 'min-w', 'min-h', 'max-h',
+    'px', 'py', 'pt', 'pb', 'pl', 'pr', 'p',
+    'mx', 'my', 'mt', 'mb', 'ml', 'mr', 'm',
+    'gap-x', 'gap-y', 'gap', 'space-y', 'space-x',
+    'w', 'h', 'bg', 'border', 'rounded', 'opacity',
+    'items', 'justify', 'self', 'leading', 'font', 'tracking',
+    'shadow', 'ring', 'z', 'overflow', 'top', 'bottom', 'left', 'right', 'inset',
+];
+
+const DISPLAY_BASES = new Set(['flex', 'grid', 'hidden', 'block', 'inline', 'inline-flex', 'contents']);
+const RESP_BPS = new Set(['md', 'lg', 'xl', '2xl']);
+const INTERACTIVE = new Set(['hover', 'focus', 'focus-within', 'focus-visible', 'active', 'disabled', 'group-hover']);
+const TOKEN_RE = /(?:[a-z0-9@_-]+:)*[a-z0-9@_./\[\]%-]+/g;
+
+const propFamily = (base) => {
+    if (DISPLAY_BASES.has(base)) return 'display';
+    if (base === 'flex-none' || base === 'flex-1' || base.startsWith('flex-')) return 'flex';
+    // text-* alignment vs text-sm size: only treat text-{left,right,center,justify,start,end} as text-align
+    if (/^text-(left|right|center|justify|start|end)$/.test(base)) return 'text-align';
+    if (base.startsWith('text-')) return 'font-size/color';
+    for (const prefix of PROP_PREFIXES) {
+        if (base === prefix || base.startsWith(`${prefix}-`) || base.startsWith(`${prefix}[`)) {
+            return prefix;
+        }
+    }
+    return null;
+};
+
+const walkSrcFiles = (dir, out = []) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const full = join(dir, entry.name);
+        if (entry.isDirectory()) walkSrcFiles(full, out);
+        else if (/\.(jsx?|tsx?)$/.test(entry.name)) out.push(full);
+    }
+    return out;
+};
+
+const findDuoSpecificityConflicts = () => {
+    const conflicts = [];
+    for (const file of walkSrcFiles(join(root, 'src'))) {
+        const text = readFileSync(file, 'utf8');
+        const rel = relative(root, file);
+        for (const match of text.matchAll(
+            /className\s*=\s*(?:\{`([\s\S]*?)`\}|"([^"]*)"|'([^']*)'|\{"([^"]*)"\})/g
+        )) {
+            const raw = match[1] ?? match[2] ?? match[3] ?? match[4] ?? '';
+            const line = text.slice(0, match.index).split('\n').length;
+            for (const chunk of raw.split(/\$\{[\s\S]*?\}/)) {
+                const byProp = new Map();
+                for (const token of chunk.match(TOKEN_RE) || []) {
+                    const parts = token.split(':');
+                    const base = parts.at(-1);
+                    const variants = new Set(parts.slice(0, -1));
+                    const prop = propFamily(base);
+                    if (!prop) continue;
+                    if (!byProp.has(prop)) byProp.set(prop, []);
+                    byProp.get(prop).push({ token, variants });
+                }
+                for (const [prop, items] of byProp) {
+                    const duo = items.filter((i) => i.variants.has('duo') && !i.variants.has('duo-lg'));
+                    const resp = items.filter((i) => (
+                        [...i.variants].some((v) => RESP_BPS.has(v))
+                        && !i.variants.has('duo')
+                        && !i.variants.has('duo-lg')
+                    ));
+                    const interactive = items.filter((i) => [...i.variants].some((v) => INTERACTIVE.has(v)));
+                    if (duo.length && resp.length) {
+                        conflicts.push({
+                            file: rel,
+                            line,
+                            prop,
+                            kind: 'md/lg/xl',
+                            duo: duo.map((i) => i.token),
+                            other: resp.map((i) => i.token),
+                        });
+                    }
+                    // duo:bg/text vs hover:/focus:/disabled: on same property family
+                    if (duo.length && interactive.length && (prop === 'bg' || prop.startsWith('font') || prop === 'font-size/color')) {
+                        const duoColor = duo.filter((i) => /^(bg|text)-/.test(i.token.split(':').at(-1)));
+                        const interColor = interactive.filter((i) => /^(bg|text)-/.test(i.token.split(':').at(-1)));
+                        if (duoColor.length && interColor.length) {
+                            conflicts.push({
+                                file: rel,
+                                line,
+                                prop,
+                                kind: 'interactive',
+                                duo: duoColor.map((i) => i.token),
+                                other: interColor.map((i) => i.token),
+                            });
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return conflicts;
+};
 
 test('duoBreakpoint is the single source for Duo media query', () => {
     assert.equal(DUO_MIN_WIDTH_PX, 700);
@@ -89,9 +189,22 @@ test('shellMode sticky uses duoBreakpoint thresholds', () => {
     assert.match(shell, new RegExp(`DUO_MIN_WIDTH_PX`));
     assert.match(shell, /mediaMatches\(\)/);
     assert.match(shell, /innerWidth < DUO_MIN_WIDTH_PX/);
+    assert.match(shell, /if \(next === wide\) return/);
+    assert.match(shell, /import\.meta\.hot\?\.dispose/);
     assert.equal(DUO_MIN_WIDTH_PX, 700);
     assert.equal(DUO_MIN_HEIGHT_PX, 600);
     assert.equal(DESKTOP_MIN_WIDTH_PX, 1024);
+});
+
+test('duo: does not fight md/lg/xl or interactive color variants on the same property', () => {
+    const conflicts = findDuoSpecificityConflicts();
+    assert.deepEqual(
+        conflicts,
+        [],
+        conflicts.map((c) => (
+            `${c.file}:${c.line} [${c.kind}] ${c.prop}: ${c.duo.join(' ')} vs ${c.other.join(' ')}`
+        )).join('\n')
+    );
 });
 
 test('iOS launch screen autoresizes for Duo window scenes', () => {

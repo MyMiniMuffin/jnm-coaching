@@ -39,10 +39,10 @@ const emit = () => {
 };
 
 const setWide = (next) => {
-    const changed = next !== wide;
+    if (next === wide) return;
     wide = next;
     syncDom(wide);
-    if (changed) emit();
+    emit();
 };
 
 const recompute = () => {
@@ -72,4 +72,10 @@ if (typeof window !== 'undefined') {
     const onChange = () => recompute();
     media.addEventListener('change', onChange);
     window.addEventListener('resize', onChange);
+
+    import.meta.hot?.dispose(() => {
+        media.removeEventListener('change', onChange);
+        window.removeEventListener('resize', onChange);
+        listeners.clear();
+    });
 }
