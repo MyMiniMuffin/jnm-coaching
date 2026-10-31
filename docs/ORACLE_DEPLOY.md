@@ -30,6 +30,10 @@ Netlify → Site configuration → Environment variables. Du trenger:
 | `WEB_PUSH_PUBLIC_KEY`, `WEB_PUSH_PRIVATE_KEY`, `WEB_PUSH_SUBJECT` | for web-push |
 | `APNS_KEY_ID`, `APNS_TEAM_ID`, `APNS_PRIVATE_KEY`, `APNS_BUNDLE_ID`, `APNS_PRODUCTION` | for iOS-push |
 
+`VITE_WEB_PUSH_PUBLIC_KEY` hører ikke hjemme i `.env`: den bakes inn i frontend når imaget bygges. Den ligger som GitHub-variabel (Settings → Secrets and variables → Actions → Variables) og sendes inn som build-arg i `docker-image.yml`.
+
+Skriv verdiene i enkle anførselstegn (`NAVN='verdi'`), så Docker Compose ikke tolker `$` eller `#`. Flerlinjede verdier skrives med `\n`.
+
 ## 2. Klon og start på Oracle-instansen
 
 Første gang: etter at `docker-image.yml` har kjørt, gå til GitHub → profilen → **Packages → jnm-coaching → Package settings** og sett **Visibility** til **Public**, så serveren kan hente imaget uten innlogging.
@@ -43,8 +47,6 @@ chmod 600 .env
 ./deploy.sh --force  # henter imaget for HEAD fra ghcr.io og starter jnm-coaching-app
 docker compose logs -f jnm
 ```
-
-`APNS_PRIVATE_KEY` er flerlinjet. Skriv den på én linje med `\n` der linjeskiftene er, i doble anførselstegn.
 
 Sjekk at containeren svarer inne på instansen:
 

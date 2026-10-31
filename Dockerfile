@@ -4,6 +4,9 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts
 COPY . .
+# Public VAPID key baked into the web bundle (was a Netlify build env var).
+ARG VITE_WEB_PUSH_PUBLIC_KEY=""
+ENV VITE_WEB_PUSH_PUBLIC_KEY=$VITE_WEB_PUSH_PUBLIC_KEY
 RUN npm run build
 
 FROM node:22-alpine

@@ -35,6 +35,8 @@ jobs:
           context: .
           platforms: linux/amd64
           push: true
+          build-args: |
+            VITE_WEB_PUSH_PUBLIC_KEY=${{ vars.VITE_WEB_PUSH_PUBLIC_KEY }}
           tags: |
             ghcr.io/myminimuffin/jnm-coaching:latest
             ghcr.io/myminimuffin/jnm-coaching:${{ github.sha }}
