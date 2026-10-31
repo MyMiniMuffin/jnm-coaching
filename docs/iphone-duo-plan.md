@@ -70,11 +70,13 @@ Ved modul-load (før første React-render) settes `html[data-shell]`. Samme attr
 
 **Path-avhengighet (viktig):** sticky husker forrige wide-tilstand innen sesjonen, men kald start har ingen minne.
 
+**Utfoldet layout:** Rail-shell fjerner telefon-`max-width` (28rem/48rem) og sentrert `header-inner`, så innholdet fyller hele Duo-vinduet minus rail. Tilbake-pillen får ekstra `--app-rail-status-clearance` under safe-area så den ikke overlapper Duo sin statusboble (wifi/tid) øverst til høyre.
+
 | Viewport / path | Shell |
 |---|---|
 | 390×844 vanlig iPhone | Bottom nav (`narrow`) |
 | 390×844 Duo (`?device=duo`) | Rail (telefon-tetthet) |
-| 760×900 Duo | Rail + `duo:`-density |
+| 760×900 Duo | Rail + `duo:`-density + full bredde |
 | 390×844 (lukket portrett, ikke Duo) | Bottom nav |
 | 932×430 (lukket telefon landskap) | Bottom nav |
 | 700×599 (kald start) | Bottom nav |

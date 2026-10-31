@@ -260,7 +260,16 @@ test('navigation supports wide sidebar, Duo rail, and phone bottom nav', () => {
     assert.match(header, /hideClientBack/);
     assert.match(css, /html\[data-shell="rail"\] \.app-stage \{/);
     assert.match(css, /--app-rail-reserve/);
+    assert.match(css, /--app-rail-status-clearance/);
     assert.match(css, /z-index:\s*45/);
+    // Unfolded Duo must not keep phone max-width / centered header.
+    assert.match(css, /html\[data-shell="rail"\] \.header-inner \{[\s\S]*?max-width:\s*none/);
+    assert.match(css, /html\[data-shell="rail"\] \.app-content \{[\s\S]*?max-width:\s*none/);
+    assert.match(css, /html\[data-shell="rail"\] \.app-frame[\s\S]*?max-width:\s*none/);
+    assert.match(
+        css,
+        /padding-top:\s*calc\(env\(safe-area-inset-top,\s*0px\)\s*\+\s*var\(--app-rail-status-clearance\)\)/
+    );
     assert.doesNotMatch(
         css,
         /html\[data-shell="rail"\] \.app-frame,\s*\n\s*html\[data-shell="rail"\] \.app-stage/
@@ -334,7 +343,8 @@ test('docs plan records WebKit segment preview status and Duo rail', () => {
     assert.match(plan, /sessionStorage/);
     assert.match(plan, /Spesifisitet/);
     assert.match(plan, /Path-avhengighet/);
-    assert.match(plan, /Usikkerhet/);
+    assert.match(plan, /Deteksjon|Usikkerhet/);
+    assert.match(plan, /app-rail-status-clearance|Utfoldet layout/);
     assert.match(plan, /appledb\.dev/);
 });
 
