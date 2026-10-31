@@ -779,6 +779,10 @@ html[data-shell="rail"] .app-rail-back-pill {
     height: 2.75rem;
     padding: 0;
     flex-shrink: 0;
+    /* Hairline drawn inside as a shadow, not a border, so the button itself
+     * stays a full 44×44pt (a 1px border left it 42×42). */
+    border: 0;
+    box-shadow: inset 0 0 0 1px rgba(23, 23, 23, 0.08), 0 6px 20px rgba(23, 23, 23, 0.1);
 }
 
 html[data-shell="rail"] .app-rail-back-pill .app-rail-btn {
@@ -786,13 +790,6 @@ html[data-shell="rail"] .app-rail-back-pill .app-rail-btn {
     width: 100%;
     height: 100%;
     z-index: 1;
-}
-
-/* ≥44pt hit target: border-box 44 includes 1px border → expand tap by 1px each side */
-html[data-shell="rail"] .app-rail-back-pill .app-rail-btn::before {
-    content: '';
-    position: absolute;
-    inset: -1px;
 }
 
 /* 44×44pt targets; grid + block SVG keeps icon ink on the pill center (no overflow/baseline gap). */

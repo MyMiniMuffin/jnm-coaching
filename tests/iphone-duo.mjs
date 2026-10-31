@@ -277,7 +277,8 @@ test('navigation supports wide sidebar, Duo rail, and phone bottom nav', () => {
     assert.match(css, /html\[data-shell="rail"\] \.app-rail-back-pill \{[\s\S]*?height:\s*2\.75rem/);
     assert.match(css, /html\[data-shell="rail"\] \.app-rail-back-pill \{[\s\S]*?padding:\s*0/);
     assert.match(css, /html\[data-shell="rail"\] \.app-rail-back-pill \{[\s\S]*?align-self:\s*center/);
-    assert.match(css, /html\[data-shell="rail"\] \.app-rail-back-pill \.app-rail-btn::before \{[\s\S]*?inset:\s*-1px/);
+    // Hairline as inset shadow, not border, so the back button itself is a full 44×44pt.
+    assert.match(css, /html\[data-shell="rail"\] \.app-rail-back-pill \{[\s\S]*?border:\s*0;[\s\S]*?box-shadow:\s*inset 0 0 0 1px/);
     // Inset > 20px clearance (+12pt vs prior caps); no-inset floor stays 3.25rem.
     assert.match(
         css,
