@@ -307,7 +307,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
             ]);
             toast('Før- og etterbildene er samlet i ZIP-filen');
         } catch {
-            toast('Kunne ikke laste ned bildene', 'error');
+            toast('Kunne ikke laste ned bildene. Prøv igjen.', 'error');
         }
     }, [isCoach, compareImages.after, compareImages.before, toast]);
 
@@ -391,7 +391,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
         e.target.value = '';
         if (files.length === 0) return;
         if (files.length > 5) {
-            toast('Maks 5 bilder om gangen', 'error');
+            toast('Maks 5 bilder om gangen.', 'error');
             return;
         }
 
@@ -403,11 +403,11 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
         e.preventDefault();
         const files = selectedUploadFiles;
         if (files.length === 0) {
-            toast('Velg minst ett bilde', 'error');
+            toast('Velg minst ett bilde.', 'error');
             return;
         }
         if (!uploadUserId) {
-            toast('Mangler bruker for opplasting', 'error');
+            toast('Mangler bruker for opplasting.', 'error');
             return;
         }
 
@@ -425,7 +425,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                         reader.readAsDataURL(file);
                     });
                     const result = await api.uploadImage(base64Image, uploadUserId, 'gallery');
-                    if (result.authError) throw new Error('Autentisering feilet');
+                    if (result.authError) throw new Error('Innloggingen feilet. Logg inn på nytt.');
                     completedUploads += 1;
                     setUploadProgress(`${completedUploads} av ${files.length}`);
                     return result.data.url;
@@ -439,7 +439,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
             const failed = results.filter(r => r.status === 'rejected');
             if (failed.length > 0) {
                 console.error('Noen bilder kunne ikke lagres:', failed);
-                toast(`${failed.length} av ${uploadedUrls.length} bilder kunne ikke lagres`, 'error');
+                toast(`${failed.length} av ${uploadedUrls.length} bilder ble ikke lagret. Prøv igjen.`, 'error');
             } else {
                 toast(`${uploadedUrls.length} bilde${uploadedUrls.length > 1 ? 'r' : ''} lagt til`);
             }
@@ -449,7 +449,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
             setUploadForm({ label: 'Startbilde', date: todayLocalISODate(), weight: '' });
         } catch (err) {
             console.error(err);
-            toast(err.message || 'Bildeopplasting feilet', 'error');
+            toast(err.message || 'Bildeopplastingen feilet. Prøv igjen.', 'error');
         } finally {
             setIsUploading(false);
             setUploadProgress('');
@@ -550,8 +550,8 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                     </label>
 
                     <div className="space-y-4">
-                        <p className="text-xs text-ink-muted">Detaljene gjelder alle valgte bilder og kan endres før opplasting.</p>
-                        <TextField id="gallery-upload-label" label="Bildetekst" type="text" value={uploadForm.label} onChange={handleLabelChange} placeholder="F.eks. Startbilde" disabled={isUploading} />
+                        <p className="text-xs text-ink-muted">Samme detaljer gjelder alle valgte bilder.</p>
+                        <TextField id="gallery-upload-label" label="Bildetekst" type="text" value={uploadForm.label} onChange={handleLabelChange} placeholder="For eksempel Startbilde" disabled={isUploading} />
                         <TextField id="gallery-upload-date" label="Dato" type="date" value={uploadForm.date} onChange={handleDateChange} disabled={isUploading} />
                         <TextField id="gallery-upload-weight" label="Vekt (kg, valgfritt)" type="number" inputMode="decimal" step="0.1" value={uploadForm.weight} onChange={handleWeightChange} placeholder="0,0" disabled={isUploading} />
                     </div>
@@ -576,7 +576,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                 {uploadModal}
                 <EmptyState
                     icon={Camera}
-                    title="Ingen bilder enda"
+                    title="Ingen bilder ennå"
                     description="Bilder fra ukesrapporter vises her."
                     action={isCoach && onAddGalleryImage ? (
                         <Button variant="primary" size="md" onClick={() => setShowUploadModal(true)}>
@@ -708,7 +708,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                                 {selectingFor === 'before' && (
                                     <div className="absolute inset-0 bg-ink/10 flex items-center justify-center">
                                         <span className="bg-ink text-white px-3 py-1.5 rounded-full text-sm font-medium">
-                                            Velger...
+                                            Velger…
                                         </span>
                                     </div>
                                 )}
@@ -748,7 +748,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                                 {selectingFor === 'after' && (
                                     <div className="absolute inset-0 bg-ink/10 flex items-center justify-center">
                                         <span className="bg-ink text-white px-3 py-1.5 rounded-full text-sm font-medium">
-                                            Velger...
+                                            Velger…
                                         </span>
                                     </div>
                                 )}
@@ -803,7 +803,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                     {selectingFor && (
                         <Card className="p-3 bg-ink text-white">
                             <p className="text-sm text-center">
-                                Trykk på et bilde nedenfor for å velge som "{selectingFor === 'before' ? 'før' : 'etter'}"-bilde
+                                Trykk på et bilde nedenfor for å velge {selectingFor === 'before' ? 'før-bilde' : 'etter-bilde'}.
                             </p>
                         </Card>
                     )}

@@ -196,8 +196,8 @@ const App = () => {
         const firstClient = clientsWithNewCheckins[0]?.name;
         const multipleClients = clientsWithNewCheckins.length > 1;
         const message = multipleClients
-            ? `${totalNewCheckins} nye rapporter fra ${clientsWithNewCheckins.length} utøvere`
-            : `${firstClient} har sendt inn ${totalNewCheckins > 1 ? `${totalNewCheckins} nye rapporter` : 'en ny rapport'}`;
+            ? `${totalNewCheckins} nye ukesrapporter fra ${clientsWithNewCheckins.length} utøvere`
+            : `${firstClient} har sendt ${totalNewCheckins > 1 ? `${totalNewCheckins} nye ukesrapporter` : 'en ny ukesrapport'}`;
 
         toast(message, 'info');
 
@@ -212,9 +212,9 @@ const App = () => {
 
         const body = multipleClients
             ? clientsWithNewCheckins.map(client => `${client.name}: +${client.delta}`).join(', ')
-            : 'Trykk deg inn i appen for å lese rapporten.';
+            : 'Åpne appen for å lese ukesrapporten.';
 
-        const notification = new Notification('Ny rapport mottatt', {
+        const notification = new Notification('Ny ukesrapport', {
             body,
             icon: '/icon-192.png',
             badge: '/icon-192.png',
@@ -353,7 +353,7 @@ const App = () => {
             toast(
                 isNativeApp()
                     ? 'Varsler er blokkert. Åpne iOS-innstillinger for JNM Coaching for å tillate varsler.'
-                    : 'Systemvarsler er blokkert i nettleseren',
+                    : 'Systemvarsler er blokkert i nettleseren.',
                 'error'
             );
             return;
@@ -372,7 +372,7 @@ const App = () => {
                 toast(
                     isNativeApp()
                         ? 'Varsler er blokkert. Åpne iOS-innstillinger for JNM Coaching for å tillate varsler.'
-                        : 'Systemvarsler er blokkert i nettleseren',
+                        : 'Systemvarsler er blokkert i nettleseren.',
                     'error'
                 );
             }
@@ -648,7 +648,7 @@ const App = () => {
         }
         const savedCheckin = result.data?.checkin;
         if (!savedCheckin) {
-            throw new Error('Mangler lagret rapport fra serveren');
+            throw new Error('Mangler lagret ukesrapport fra serveren');
         }
         setCurrentData(prev => ({
             ...prev,
@@ -807,7 +807,7 @@ const App = () => {
             return true;
         } catch (e) {
             if (previousData) setCurrentData(previousData);
-            const message = e?.message || 'Kunne ikke lagre – endringene ble tilbakestilt. Prøv igjen.';
+            const message = e?.message || 'Kunne ikke lagre. Endringene ble tilbakestilt. Prøv igjen.';
             toast(message, 'error');
             return { error: message };
         } finally {
@@ -849,9 +849,9 @@ const App = () => {
                     checkins: prev.checkins.map(c => c.id === checkinId ? saved : c)
                 }));
             }
-            toast('Rapport oppdatert');
+            toast('Ukesrapport oppdatert');
         } catch (e) {
-            toast(e.message || 'Kunne ikke oppdatere rapporten', 'error');
+            toast(e.message || 'Kunne ikke oppdatere ukesrapporten', 'error');
             setCurrentData(prev => ({ ...prev, checkins: previousCheckins }));
         }
     }, [viewingClient, toast]);
@@ -870,7 +870,7 @@ const App = () => {
                 setCurrentData(prev => ({ ...prev, checkins: previousCheckins }));
             }
         } catch (e) {
-            toast(e.message || 'Kunne ikke slette rapporten', 'error');
+            toast(e.message || 'Kunne ikke slette ukesrapporten', 'error');
             setCurrentData(prev => ({ ...prev, checkins: previousCheckins }));
         }
     }, [viewingClient, toast]);
@@ -981,9 +981,9 @@ const App = () => {
                 console.error('[Push] iOS-registrering feilet:', error);
             },
             onNotificationReceived: (notification) => {
-                const title = notification?.title || 'Ny rapport mottatt';
+                const title = notification?.title || 'Ny ukesrapport';
                 const body = notification?.body || '';
-                toast(body ? `${title}: ${body}` : title, 'info');
+                toast(body ? `${title}. ${body}` : title, 'info');
                 const unreadTotal = Number(notification?.data?.unreadTotal);
                 if (Number.isFinite(unreadTotal)) {
                     setAppBadgeCount(unreadTotal);
@@ -1148,7 +1148,7 @@ const App = () => {
             }
             if (result.data) applyUsersList(result.data);
         } catch (e) {
-            toast(e.message || 'Feil ved opprettelse av utøver', 'error');
+            toast(e.message || 'Kunne ikke opprette utøveren', 'error');
         }
     }, [toast, applyUsersList]);
 
@@ -1163,7 +1163,7 @@ const App = () => {
             if (result.data) applyUsersList(result.data);
             toast('Utøver slettet');
         } catch (e) {
-            toast(e.message || 'Feil ved sletting av utøver', 'error');
+            toast(e.message || 'Kunne ikke slette utøveren', 'error');
         }
     }, [toast, applyUsersList]);
 
@@ -1176,7 +1176,7 @@ const App = () => {
             }
             toast('Passord tilbakestilt', 'success');
         } catch (e) {
-            toast(e.message || 'Feil ved tilbakestilling av passord', 'error');
+            toast(e.message || 'Kunne ikke tilbakestille passordet', 'error');
         }
     }, [toast]);
 
@@ -1216,7 +1216,7 @@ const App = () => {
             toast(archive ? 'Utøver arkivert' : 'Utøver gjenopprettet');
         } catch (e) {
             applyUsersList(previousUsers);
-            toast(e.message || 'Feil ved arkivering', 'error');
+            toast(e.message || (archive ? 'Kunne ikke arkivere utøveren' : 'Kunne ikke gjenopprette utøveren'), 'error');
         }
     }, [toast, applyUsersList]);
 
@@ -1245,7 +1245,7 @@ const App = () => {
                     ...prev,
                     galleryImages: (prev.galleryImages || []).filter(img => img.id !== tempId)
                 }));
-                throw new Error('Autentisering feilet');
+                throw new Error('Innloggingen feilet. Logg inn på nytt.');
             }
 
             const persistedId = result.data?.imageId;
@@ -1404,7 +1404,7 @@ const App = () => {
                     <img src={APP_ICON} alt="JNM Coaching logo" className="w-full h-full" />
                 </div>
                 <Loader2 className="animate-spin text-ink-muted mb-4" size={32} />
-                <p className="text-ink-muted font-medium">Laster...</p>
+                <p className="text-ink-muted font-medium">Laster…</p>
             </div>
         );
     }
@@ -1437,8 +1437,8 @@ const App = () => {
                         </div>
                         <PageTitle className="mb-3">Kontoen er pauset</PageTitle>
                         <p className="text-ink-muted leading-relaxed mb-8">
-                            Din konto er for øyeblikket satt på pause av coachen din.
-                            Du kan fortsatt se historikken din, men kan ikke sende inn nye rapporter.
+                            Coachen har satt kontoen din på pause.
+                            Du kan se historikken, men ikke sende nye ukesrapporter.
                         </p>
 
                         <div className="w-full space-y-3">
@@ -1466,10 +1466,10 @@ const App = () => {
                             <div className="sticky top-0 z-10 border-b border-surface-200 bg-surface-50/95 backdrop-blur-md">
                                 <div className="app-header-top-inset" aria-hidden="true" />
                                 <div className="header-inner flex items-center gap-3 px-4 py-3 duo:px-6 duo-lg:px-8 duo:py-3.5 duo-lg:py-4">
-                                    <IconButton onClick={() => setActiveTab('dashboard')} aria-label="Tilbake til dashboard" className="-ml-2">
+                                    <IconButton onClick={() => setActiveTab('dashboard')} aria-label="Tilbake til oversikten" className="-ml-2">
                                         <ChevronLeft size={22} />
                                     </IconButton>
-                                    <PageTitle>Din historikk</PageTitle>
+                                    <PageTitle>Historikk</PageTitle>
                                 </div>
                             </div>
                             <div className="p-4 pb-8">

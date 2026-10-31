@@ -52,7 +52,7 @@ const LoginScreen = React.memo(({ onLogin }) => {
             } else if (user) onLogin(user);
             else setError('Feil brukernavn eller passord. Sjekk at Caps Lock ikke er på, og prøv igjen.');
         } catch (err) {
-            setError(err.message || 'Kunne ikke logge inn akkurat nå. Sjekk tilkoblingen og prøv igjen.');
+            setError(err.message || 'Kunne ikke logge inn. Sjekk tilkoblingen og prøv igjen.');
         } finally {
             setIsLoading(false);
         }

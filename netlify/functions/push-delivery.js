@@ -49,10 +49,10 @@ const normalizeSubscription = (subscription = {}, platformHint) => {
 };
 
 const buildCoachPushPayload = ({ athleteId, athleteName, unreadCount, unreadTotal }) => {
-  const title = 'Ny rapport mottatt';
+  const title = 'Ny ukesrapport';
   const body = unreadCount > 1
-    ? `${athleteName} har nå ${unreadCount} uleste rapporter.`
-    : `${athleteName} har sendt inn en ny rapport.`;
+    ? `${athleteName} har ${unreadCount} uleste ukesrapporter.`
+    : `${athleteName} har sendt en ny ukesrapport.`;
   const badge = Math.max(1, Number(unreadTotal) || Number(unreadCount) || 1);
 
   return {

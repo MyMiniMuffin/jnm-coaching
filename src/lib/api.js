@@ -209,22 +209,22 @@ export const api = {
     createUser: (newUser) => request('/.netlify/functions/users', {
             method: 'POST',
             body: newUser,
-            errorMessage: 'Feil ved opprettelse'
+            errorMessage: 'Kunne ikke opprette'
         }),
     deleteUser: (userId) => request('/.netlify/functions/users', {
             method: 'DELETE',
             body: { id: userId },
-            errorMessage: 'Feil ved sletting'
+            errorMessage: 'Kunne ikke slette'
         }),
     resetPassword: (userId, newPassword) => request('/.netlify/functions/users', {
             method: 'PATCH',
             body: { id: userId, new_password: newPassword },
-            errorMessage: 'Feil ved tilbakestilling av passord'
+            errorMessage: 'Kunne ikke tilbakestille passordet'
         }),
     archiveUser: (userId, archive) => request('/.netlify/functions/users', {
             method: 'PATCH',
             body: { id: userId, is_archived: archive },
-            errorMessage: 'Feil ved arkivering'
+            errorMessage: 'Kunne ikke arkivere'
         }),
     getUserData: async (userId, useCache = true) => {
         const cacheKey = `user-data-${userId}`;
@@ -237,7 +237,7 @@ export const api = {
 
         try {
             const result = await request(`/.netlify/functions/data?id=${encodeURIComponent(userId)}`, {
-                errorMessage: 'Feil ved henting av data',
+                errorMessage: 'Kunne ikke hente data',
                 // useCache=false betyr "hent ferske data" — da skal heller ikke
                 // nettleserens HTTP-cache kunne svare.
                 cacheMode: useCache ? undefined : 'no-store'
@@ -255,19 +255,19 @@ export const api = {
             return { authError: false, networkError: true };
         }
     },
-    saveUserData: (userId, data) => mutateUserData(userId, 'plan_update', data, 'Lagring feilet'),
-    submitCheckin: (userId, entry) => mutateUserData(userId, 'new_checkin', entry, 'Innsending feilet'),
+    saveUserData: (userId, data) => mutateUserData(userId, 'plan_update', data, 'Kunne ikke lagre'),
+    submitCheckin: (userId, entry) => mutateUserData(userId, 'new_checkin', entry, 'Kunne ikke sende inn'),
     updateCheckin: (userId, checkinId, updates) => mutateUserData(
         userId,
         'update_checkin',
         { checkinId, ...updates },
-        'Oppdatering feilet'
+        'Kunne ikke oppdatere'
     ),
     deleteCheckin: (userId, checkinId) => mutateUserData(
         userId,
         'delete_checkin',
         { checkinId },
-        'Sletting feilet'
+        'Kunne ikke slette'
     ),
     markCheckinsRead: (userId) => mutateUserData(
         userId,
@@ -314,7 +314,7 @@ export const api = {
     uploadImage: (base64Image, userId, purpose) => request('/.netlify/functions/upload', {
             method: 'POST',
             body: { image: base64Image, userId, purpose },
-            errorMessage: 'Opplasting feilet'
+            errorMessage: 'Kunne ikke laste opp'
         }),
     savePushSubscription: (subscription) => request('/.netlify/functions/push-subscriptions', {
             method: 'POST',
@@ -331,7 +331,7 @@ export const api = {
             method: 'POST',
             body: { username, password, newPassword },
             auth: false,
-            errorMessage: 'Login feilet'
+            errorMessage: 'Innlogging feilet'
         });
         return result.authError ? null : result.data;
     },

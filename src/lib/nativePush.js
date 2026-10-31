@@ -71,10 +71,10 @@ export const registerNativePushListeners = async ({
 
 export const registerNativePush = async () => {
     if (!isNativeApp()) {
-        throw new Error('Native push er kun tilgjengelig i iOS-appen');
+        throw new Error('Pushvarsler er kun tilgjengelig i iOS-appen.');
     }
     if (Capacitor.getPlatform() === 'web') {
-        throw new Error('Native push er ikke tilgjengelig i nettleseren');
+        throw new Error('Pushvarsler er ikke tilgjengelig i nettleseren.');
     }
     await PushNotifications.register();
 };

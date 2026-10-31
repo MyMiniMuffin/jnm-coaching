@@ -44,8 +44,9 @@ test('buildCoachPushPayload keeps coach check-in copy and badge count', () => {
     unreadCount: 2,
     unreadTotal: 5
   });
-  assert.equal(payload.title, 'Ny rapport mottatt');
+  assert.equal(payload.title, 'Ny ukesrapport');
   assert.match(payload.body, /Ada/);
+  assert.match(payload.body, /ukesrapport/);
   assert.equal(payload.clientId, 42);
   assert.equal(payload.unreadTotal, 5);
   assert.equal(payload.tag, 'coach-checkin-42');

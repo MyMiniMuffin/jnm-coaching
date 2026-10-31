@@ -156,7 +156,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose, canDownload = fa
             setDownloading(false);
         }
     }, [canDownload, currentImage, currentImageUrl, downloading, index, toast]);
-    const imageTitle = currentImage?.label || (currentImage?.isGalleryImage ? 'Fremgangsbilde' : 'Rapportbilde');
+    const imageTitle = currentImage?.label || (currentImage?.isGalleryImage ? 'Fremgangsbilde' : 'Ukesrapportbilde');
     const imageDate = formatDateNO(currentImage?.date || currentImage?.timestamp);
     const imageWeight = currentImage?.weight ? `${formatWeight(currentImage.weight)} kg` : '';
     const hasNext = index < (images?.length || 0) - 1;
@@ -289,7 +289,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose, canDownload = fa
                         {loadError && (
                             <div className="absolute inset-0 flex items-center justify-center px-12 text-center" role="alert">
                                 <div className="rounded-xl bg-white/10 px-5 py-4 text-sm text-white/85 backdrop-blur-md">
-                                    <p>Bildet kunne ikke lastes inn.</p>
+                                    <p>Bildet ble ikke lastet inn.</p>
                                     <button type="button" className="mt-3 min-h-11 rounded-lg bg-white/15 px-4 font-medium hover:bg-white/25" onClick={() => {
                                         setLoadError(false);
                                         setLoading(true);

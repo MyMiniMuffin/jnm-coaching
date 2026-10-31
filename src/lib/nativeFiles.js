@@ -10,7 +10,7 @@ export const shareNativeFile = async (blob, filename) => {
     ]);
     const data = await new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onerror = () => reject(new Error('Kunne ikke klargjøre filen'));
+        reader.onerror = () => reject(new Error('Kunne ikke klargjøre filen.'));
         reader.onload = () => resolve(String(reader.result).split(',')[1]);
         reader.readAsDataURL(blob);
     });
