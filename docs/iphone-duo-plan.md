@@ -39,7 +39,7 @@
 
 Nativt i `DuoDevice.swift` via `utsname.machine`. Listen speiles i `src/lib/duoDeviceModels.js`.
 
-**Deteksjon:** Fysisk Duo → `utsname.machine` (forventet `iPhone19,4`). **iPhone Duo Simulator** → `uname` er host-arkitektur (`arm64`), så vi leser også `SIMULATOR_MODEL_IDENTIFIER` og `SIMULATOR_DEVICE_NAME` (navn som inneholder «Duo»). DEBUG logger `[DuoDevice] machine=… simName=…`. Ukjente fremtidige Duo-SKU-er må legges til i Swift + `duoDeviceModels.js`.
+**Deteksjon:** Fysisk Duo → `utsname.machine` (forventet `iPhone19,4`, [AppleDB](https://appledb.dev/device/identifier/iPhone19,4) / [IPSW.dev](https://ipsw.dev/iPhone19,4)). **iPhone Duo Simulator** → `uname` er host-arkitektur (`arm64`), så vi leser også `SIMULATOR_MODEL_IDENTIFIER` og `SIMULATOR_DEVICE_NAME` (navn som inneholder «Duo»). DEBUG logger `[DuoDevice] machine=… simName=…`. Ukjente fremtidige Duo-SKU-er må legges til i Swift + `duoDeviceModels.js`.
 
 **Xcode Debug:** Tvinger Duo-rail som fallback. Opt-out: `-NoForceDuoDevice` / `JNM_FORCE_DUO=0`. Release/TestFlight tvinger aldri.
 
