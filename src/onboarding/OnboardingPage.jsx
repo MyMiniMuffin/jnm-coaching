@@ -189,7 +189,7 @@ const OnboardingForm = () => {
                 <p className="mt-5 max-w-xl text-lg leading-8 text-black/60">
                     Jeg har mottatt svarene dine og bruker dem til å forberede oppstarten.
                 </p>
-                <a href="/coaching/" className="coaching-button mt-8">Til JNM Coaching</a>
+                <a href="/" className="coaching-button mt-8">Til JNM Coaching</a>
             </div>
         );
     }
@@ -335,7 +335,7 @@ const OnboardingPage = () => (
     <div className="onboarding-page min-h-screen text-ink">
         <header className="onboarding-header">
             <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 sm:px-8">
-                <a href="/coaching/" className="inline-flex items-center gap-2.5 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-4" aria-label="JNM Coaching">
+                <a href="/" className="inline-flex items-center gap-2.5 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-4" aria-label="JNM Coaching">
                     <img src="/jnm-coaching-logo.svg" alt="" className="h-8 w-8 rounded-lg" />
                     <span className="text-sm font-semibold tracking-[-0.02em]">JNM Coaching</span>
                 </a>

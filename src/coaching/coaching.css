@@ -95,6 +95,45 @@
     transition: opacity 180ms ease, transform 180ms ease, visibility 0s 180ms;
 }
 
+/* Secondary header action for existing clients and the coach. */
+.coaching-login-link {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    border: 1px solid rgba(23, 23, 23, 0.16);
+    border-radius: 0.5em;
+    padding: 0.55rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--coaching-black);
+    transition: border-color 160ms ease, background-color 160ms ease;
+}
+
+.coaching-login-link:hover {
+    border-color: rgba(23, 23, 23, 0.32);
+    background: #fff;
+}
+
+.coaching-login-link:focus-visible,
+.coaching-footer-link:focus-visible {
+    border-radius: 0.25rem;
+    outline: 2px solid var(--coaching-accent);
+    outline-offset: 3px;
+}
+
+.coaching-footer-link {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    gap: 0.45rem;
+    color: rgba(0, 0, 0, 0.6);
+    transition: color 160ms ease;
+}
+
+.coaching-footer-link:hover {
+    color: var(--coaching-black);
+}
+
 .coaching-label {
     margin-bottom: 0.6rem;
     display: block;
@@ -130,24 +169,6 @@
     box-shadow: 0 0 0 3px rgba(36, 101, 104, 0.14);
 }
 
-.coaching-social-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    color: var(--coaching-accent-dark);
-    font-weight: 600;
-    transition: color 160ms ease;
-}
-
-.coaching-social-link:hover {
-    color: var(--coaching-black);
-}
-
-.coaching-social-link:focus-visible {
-    border-radius: 0.25rem;
-    outline: 2px solid var(--coaching-accent);
-    outline-offset: 4px;
-}
 
 .coaching-page[data-reveal-ready] [data-reveal] {
     opacity: 0;

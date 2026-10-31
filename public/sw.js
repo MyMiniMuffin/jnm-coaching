@@ -55,7 +55,7 @@ self.addEventListener('push', (event) => {
     badge: data.badge || '/icon-192.png',
     tag: data.tag || 'coach-checkin-alert',
     data: {
-      url: data.url || '/',
+      url: data.url || '/app/',
       clientId: data.clientId || null
     }
   };
@@ -91,7 +91,7 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
-  const targetUrl = event.notification.data?.url || '/';
+  const targetUrl = event.notification.data?.url || '/app/';
 
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {

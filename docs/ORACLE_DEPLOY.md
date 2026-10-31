@@ -8,6 +8,7 @@ Ingenting i appen endres:
 
 - Funksjonene i `netlify/functions/` kjøres uendret på de samme URL-ene (`/.netlify/functions/*` og `/api/onboarding-image-upload`).
 - Headere, CSP, cache og redirects fra Netlify er gjenskapt i `server.mjs`.
+- Adresser: `/` er forsiden (salgssiden fra `coaching/index.html`), `/app/` er appen (`index.html`), og `/coaching/` sender videre til `/`. Bygget beholder appen i `index.html` fordi iOS og Vite laster den derfra, så det er `server.mjs` som kobler adressene. Lokalt med Vite ligger appen fortsatt på `/` og forsiden på `/coaching/`.
 - Skjemaene på `/coaching/` og `/oppstart/` (tidligere Netlify Forms) lagres i tabellen `form_submissions` i Neon. De 3 gamle innsendingene fra Netlify er kopiert dit med `source = 'netlify'`.
 - iOS-appen kaller `https://jnmcoaching.no`, så den trenger ingen ny App Store-versjon.
 - Databasen blir i Neon, bilder i Cloudinary. Ingen datamigrering.

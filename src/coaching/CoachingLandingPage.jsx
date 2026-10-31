@@ -139,7 +139,7 @@ const ApplicationForm = () => {
                         <input id="phone" name="phone" type="tel" autoComplete="tel" className="coaching-field" />
                     </div>
                     <div>
-                        <label htmlFor="instagram" className="coaching-label">InstagramLogo <span>valgfritt</span></label>
+                        <label htmlFor="instagram" className="coaching-label">Instagram <span>valgfritt</span></label>
                         <input id="instagram" name="instagram" type="text" autoComplete="off" className="coaching-field" />
                     </div>
                     <div className="sm:col-span-2">
@@ -172,18 +172,20 @@ const CoachingLandingPage = () => {
     const [heroCtaRef, heroCtaVisible] = useHeroCtaVisible();
 
     return (
-    <div ref={rootRef} className="coaching-page min-h-screen overflow-hidden bg-white text-ink">
+    <div ref={rootRef} className="coaching-page min-h-screen overflow-x-clip bg-white text-ink">
         <header className="coaching-header sticky top-0 z-40">
             <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:px-8 lg:px-12">
                 <a
-                    href="/coaching/"
+                    href="/"
                     className="inline-flex items-center gap-2.5 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-4"
                     aria-label="JNM Coaching, til toppen"
                 >
                     <img src="/jnm-coaching-logo.svg" alt="" className="h-8 w-8 rounded-lg" />
                     <span className="text-sm font-semibold tracking-[-0.02em]">JNM Coaching</span>
                 </a>
-                <a
+                <nav className="flex items-center gap-2 sm:gap-3" aria-label="Hovedmeny">
+                    {/* "Søk nå" sits left of "Logg inn" so login stays at the edge while the CTA is hidden. */}
+                    <a
                         href="#soknad"
                         className="coaching-button coaching-header-cta"
                         data-hidden={heroCtaVisible || undefined}
@@ -192,6 +194,8 @@ const CoachingLandingPage = () => {
                     >
                         <ButtonIcon /> Søk nå
                     </a>
+                    <a href="/app/" className="coaching-login-link">Logg inn</a>
+                </nav>
             </div>
         </header>
 
@@ -245,22 +249,27 @@ const CoachingLandingPage = () => {
         </main>
 
         <footer className="border-t border-black/10 bg-white">
-            <div className="mx-auto flex max-w-7xl flex-col gap-5 px-5 py-8 text-sm text-black/50 sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-12">
-                <span>© {new Date().getFullYear()} JNM Coaching</span>
-                <div className="flex items-center gap-6">
+            <div className="mx-auto flex max-w-7xl flex-col gap-6 px-5 py-10 text-sm sm:flex-row sm:items-start sm:justify-between sm:px-8 lg:px-12">
+                <div className="flex flex-col gap-2">
+                    <span className="font-semibold text-ink">JNM Coaching</span>
+                    <span className="text-black/50">© {new Date().getFullYear()} JNM Coaching</span>
+                </div>
+                <nav aria-label="Alle sider" className="grid grid-cols-2 gap-x-10 gap-y-1 sm:grid-cols-[auto_auto]">
+                    <a href="#soknad" className="coaching-footer-link">Søk om coaching</a>
+                    <a href="/app/" className="coaching-footer-link">Logg inn</a>
+                    <a href="/oppstart/" className="coaching-footer-link">Kundeoppstart</a>
+                    <a href="/support/" className="coaching-footer-link">Hjelp og kontakt</a>
                     <a
                         href="https://www.instagram.com/jnm.coaching/"
                         target="_blank"
                         rel="noreferrer"
-                        className="coaching-social-link"
-                        aria-label="JNM Coaching på InstagramLogo (åpnes i ny fane)"
+                        className="coaching-footer-link"
+                        aria-label="JNM Coaching på Instagram (åpnes i ny fane)"
                     >
-                        <InstagramLogo size={16} aria-hidden="true" /> InstagramLogo
+                        <InstagramLogo size={15} aria-hidden="true" /> Instagram
                     </a>
-                    <a href="/" className="w-fit transition-colors hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black">
-                        Åpne appen
-                    </a>
-                </div>
+                    <a href="/personvern/" className="coaching-footer-link">Personvern</a>
+                </nav>
             </div>
         </footer>
     </div>

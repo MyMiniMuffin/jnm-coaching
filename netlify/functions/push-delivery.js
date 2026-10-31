@@ -58,7 +58,7 @@ const buildCoachPushPayload = ({ athleteId, athleteName, unreadCount, unreadTota
   return {
     title,
     body,
-    url: '/',
+    url: '/app/',
     tag: `coach-checkin-${athleteId}`,
     clientId: athleteId,
     icon: '/icon-192.png',

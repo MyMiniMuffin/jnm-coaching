@@ -191,6 +191,22 @@ const fileStat = async (filePath) => {
     }
 };
 
+// The build keeps the app in index.html (iOS/Capacitor and Vite load it from
+// there). On the web the coaching page is the front page and the app lives
+// under /app/, so the server maps those URLs to the built files.
+const PAGES = {
+    '/': 'coaching/index.html',
+    '/app/': 'index.html',
+};
+const REDIRECTS = {
+    '/coaching': '/',
+    '/coaching/': '/',
+    '/coaching/index.html': '/',
+    '/index.html': '/app/',
+    '/app': '/app/',
+    '/app/index.html': '/app/',
+};
+
 const serveStatic = async (req, res, url) => {
     let urlPath;
     try {
@@ -199,7 +215,11 @@ const serveStatic = async (req, res, url) => {
         send(res, 400, { 'Content-Type': 'text/plain; charset=utf-8' }, 'Bad request');
         return;
     }
-    let filePath = path.join(DIST, path.normalize(urlPath));
+    if (REDIRECTS[urlPath]) {
+        send(res, 301, { Location: `${REDIRECTS[urlPath]}${url.search}` }, '');
+        return;
+    }
+    let filePath = path.join(DIST, PAGES[urlPath] || path.normalize(urlPath));
     if (filePath !== DIST && !filePath.startsWith(DIST + path.sep)) {
         send(res, 403, { 'Content-Type': 'text/plain; charset=utf-8' }, 'Forbidden');
         return;

@@ -138,6 +138,12 @@ const LoginScreen = React.memo(({ onLogin }) => {
             </div>
 
             <div className="mt-5"><AccountMenu /></div>
+            {/* Web only: the front page sells coaching, which the App Store app should not link to. */}
+            {!isNativeApp() && (
+                <a href="/" className="mt-3 inline-flex min-h-11 items-center text-sm text-ink-muted underline underline-offset-2 hover:text-ink">
+                    Ikke kunde ennå? Les om JNM Coaching
+                </a>
+            )}
             <p className="mt-3 text-ink-muted text-xs">JNM Coaching © {new Date().getFullYear()}</p>
         </div>
     );
