@@ -1,7 +1,7 @@
 /**
  * Self-hosted replacement for Netlify (Oracle + Caddy, same setup as MetalFlow).
  *
- * - Serves the Vite build in dist/ with the headers/redirects from netlify.toml.
+ * - Serves the Vite build in dist/ with the headers/redirects Netlify used to set.
  * - Runs the existing functions unchanged: classic handlers under
  *   /.netlify/functions/<name> and the v2 onboarding upload at
  *   /api/onboarding-image-upload (with the rate limit Netlify used to enforce).
@@ -61,7 +61,7 @@ const CONTENT_TYPES = {
     '.webmanifest': 'application/manifest+json',
 };
 
-/** Cache rules from netlify.toml: hashed assets forever, HTML and sw.js always fresh. */
+/** Cache rules carried over from Netlify: hashed assets forever, HTML and sw.js always fresh. */
 const cacheControlFor = (urlPath, filePath) => {
     if (urlPath.startsWith('/assets/')) return 'public, max-age=31536000, immutable';
     if (filePath.endsWith('.html') || urlPath === '/sw.js') return 'public, max-age=0, must-revalidate';
@@ -206,7 +206,7 @@ const serveStatic = async (req, res, url) => {
 
     let info = await fileStat(filePath);
     if (info?.isDirectory()) {
-        // /coaching → /coaching/ (the 301 redirects in netlify.toml)
+        // /coaching → /coaching/ (the 301 redirects Netlify had)
         if (!urlPath.endsWith('/')) {
             send(res, 301, { Location: `${url.pathname}/${url.search}` }, '');
             return;

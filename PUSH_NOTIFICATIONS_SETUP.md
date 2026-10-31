@@ -26,25 +26,25 @@ Se den oppdaterte guiden med App Store / APNs-steg:
 
 Migrasjonene `007`–`009` kjøres automatisk ved produksjonsdeploy (`scripts/migrate-production.cjs`).
 
-### Web Push (Netlify + Vite)
+### Web Push (server + Vite)
 
 ```bash
 npm run generate-vapid
 ```
 
-Sett i Netlify:
+Sett i `.env` på Oracle-serveren (se `docs/ORACLE_DEPLOY.md`):
 
 - `WEB_PUSH_PUBLIC_KEY`
 - `WEB_PUSH_PRIVATE_KEY`
 - `WEB_PUSH_SUBJECT` (f.eks. `mailto:kontakt@perfectmorning.dev`)
 
-Sett i frontend-build:
+Sett som GitHub Actions-variabel (bakes inn i Docker-imaget):
 
 - `VITE_WEB_PUSH_PUBLIC_KEY` (= samme som public key)
 
-### iOS / APNs (Netlify)
+### iOS / APNs
 
-Sett i Netlify (hemmeligheter – ikke i repo):
+Sett i `.env` på Oracle-serveren (hemmeligheter – ikke i repo):
 
 - `APNS_KEY_ID`
 - `APNS_TEAM_ID` (`55FDY26LN7`)
@@ -58,7 +58,7 @@ Etter kodeendringer: Xcode Cloud bygger ny iOS-versjon fra `main`. Coach må åp
 
 ## Test
 
-1. Deploy Netlify (migrasjoner + funksjoner).
+1. Push til `main`: GitHub Actions bygger imaget, og Oracle henter det og kjører migrasjonene.
 2. Vent på / last opp iOS-bygg med push-capability.
 3. Coach på iPhone: «Slå på» → godta varsler.
 4. Utøver sender check-in.

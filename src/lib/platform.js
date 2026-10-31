@@ -3,7 +3,7 @@ import { Capacitor, CapacitorHttp } from '@capacitor/core';
 export const isNativeApp = () => Capacitor.isNativePlatform();
 
 // Native builds bundle the interface locally and use the existing production API.
-// The browser keeps its same-origin requests (including Netlify previews).
+// The browser keeps its same-origin requests.
 export const getApiUrl = (path, origin = import.meta.env?.VITE_API_ORIGIN || 'https://jnmcoaching.no') => {
     const base = new URL(origin);
     if (base.protocol !== 'https:' || base.username || base.password || base.pathname !== '/' || base.search || base.hash) {

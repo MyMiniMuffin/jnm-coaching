@@ -7,7 +7,8 @@ Instansen er en x86-VM med **1 GB minne**, delt med MetalFlow. Den har plass til
 Ingenting i appen endres:
 
 - Funksjonene i `netlify/functions/` kjøres uendret på de samme URL-ene (`/.netlify/functions/*` og `/api/onboarding-image-upload`).
-- Headere, CSP, cache og redirects fra `netlify.toml` er gjenskapt i `server.mjs`.
+- Headere, CSP, cache og redirects fra Netlify er gjenskapt i `server.mjs`.
+- Skjemaene på `/coaching/` og `/oppstart/` (tidligere Netlify Forms) lagres i tabellen `form_submissions` i Neon. De 3 gamle innsendingene fra Netlify er kopiert dit med `source = 'netlify'`.
 - iOS-appen kaller `https://jnmcoaching.no`, så den trenger ingen ny App Store-versjon.
 - Databasen blir i Neon, bilder i Cloudinary. Ingen datamigrering.
 - Migreringene (`scripts/migrate-production.cjs`) kjører ved hver containerstart, slik Netlify kjørte dem ved hver deploy.
@@ -104,7 +105,7 @@ cd ~/jnm-coaching && ./scripts/install-auto-deploy.sh
 
 Etter dette henter serveren nytt image innen et par minutter etter push til `main`: Actions bygger først, og deploy-timeren prøver igjen hvert minutt til imaget for commiten finnes.
 
-Når alt har gått stabilt i noen dager: slå av builds i Netlify (Site configuration → Build & deploy → Stop builds), og slett prosjektet til slutt. `netlify.toml` kan bli liggende til da, så du kan rulle tilbake ved å peke DNS til Netlify igjen.
+Status 31. oktober 2026: Netlify-bygg er stoppet, `netlify.toml` er fjernet, og DNS ligger hos GoDaddy (`ns81`/`ns82.domaincontrol.com`). Fra 2. november kan DNS-sonen og prosjektet `jnm-coaching` slettes i Netlify.
 
 ## Sammen med MetalFlow
 

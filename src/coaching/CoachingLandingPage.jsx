@@ -117,8 +117,6 @@ const ApplicationForm = () => {
             <form
                 name="coaching-application"
                 method="POST"
-                data-netlify="true"
-                data-netlify-honeypot="bot-field"
                 onSubmit={handleSubmit}
                 className="border-t border-black/10 pt-10 sm:pt-12"
             >
