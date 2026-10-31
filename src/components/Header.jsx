@@ -12,7 +12,7 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
             </div>
         )}
         {isClientPreview && (
-            <div className="border-b border-accent/20 bg-accent/10 px-4 py-3 lg:px-0" role="status">
+            <div className="border-b border-accent/20 bg-accent/10 py-3" role="status">
                 <div className="header-inner flex flex-wrap items-center justify-between gap-2">
                     <div className="min-w-0">
                         <p className="flex items-center gap-2 text-sm font-semibold text-ink"><Eye size={16} /> Utøvervisning</p>
@@ -25,7 +25,7 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
             </div>
         )}
         {viewingClient ? (
-            <div className="header-inner flex items-center px-3 py-3 gap-1 lg:gap-2 duo:px-6 duo-lg:px-8 duo:py-3.5 duo-lg:py-4">
+            <div className="header-inner flex items-center py-3 gap-1 lg:gap-2 duo:py-3.5 duo-lg:py-4">
                 {!hideClientBack && onClearClient && (
                 <button
                     type="button"
@@ -54,7 +54,7 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
                 </IconButton>
             </div>
         ) : (
-            <div className="header-inner flex justify-between items-center px-5 py-3 duo:px-6 duo-lg:px-8 duo:py-3.5 duo-lg:py-4">
+            <div className="header-inner flex justify-between items-center py-3 duo:py-3.5 duo-lg:py-4">
                 <p className="font-semibold text-ink truncate min-w-0">{user.name}</p>
                 <div className="flex items-center gap-1">
                     <AccountMenu user={isClientPreview ? null : user} />

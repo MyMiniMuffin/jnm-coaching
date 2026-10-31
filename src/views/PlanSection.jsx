@@ -776,7 +776,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                     className="plan-save-bar fixed inset-x-0 z-40 border-t border-surface-200/80 bg-surface-50/94 backdrop-blur-xl"
                     style={{ bottom: 'calc(4.35rem + env(safe-area-inset-bottom, 0px))' }}
                 >
-                    <div className="header-inner mx-auto flex items-center gap-2 px-4 py-2.5 duo:px-6 duo-lg:px-8">
+                    <div className="header-inner mx-auto flex items-center gap-2 py-2.5">
                         <p className="min-w-0 flex-1 truncate text-sm text-ink-muted">
                             {saveState === 'saving' ? 'Lagrer endringer…' : saveState === 'dirty' ? 'Ulagrede endringer' : saveState === 'saved' ? 'Lagret' : 'Redigerer'}
                         </p>
