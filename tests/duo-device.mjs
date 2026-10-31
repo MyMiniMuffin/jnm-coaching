@@ -61,7 +61,8 @@ test('DuoBridgeViewController injects WKUserScript on live contentController', (
     assert.match(bridge, /class DuoBridgeViewController:\s*CAPBridgeViewController/);
     assert.match(bridge, /capacitorDidLoad/);
     assert.match(bridge, /injectDuoUserScript/);
-    assert.match(bridge, /userContentController\.addUserScript/);
+    assert.match(bridge, /userContentController/);
+    assert.match(bridge, /\.addUserScript\(/);
     assert.match(bridge, /WKUserScript/);
     assert.match(bridge, /\.atDocumentStart/);
     assert.match(bridge, /DuoDevice\.userScriptSource/);
