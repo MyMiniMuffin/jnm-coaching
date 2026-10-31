@@ -637,7 +637,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                                             ) : (
                                                 <div key={item.key} className="border-b border-surface-100 py-2 sm:px-3 last:border-b-0">
                                                     <div className="grid grid-cols-[1.5rem_minmax(0,1fr)_2.75rem] sm:grid-cols-[1.5rem_minmax(0,1fr)_2.5rem] items-start gap-2">
-                                                        <span className="flex h-10 items-center justify-center text-[11px] tabular-nums text-ink-faint">{String(itemIndex + 1).padStart(2, '0')}</span>
+                                                        <span className="flex h-10 items-center justify-center text-xs tabular-nums text-ink-faint">{String(itemIndex + 1).padStart(2, '0')}</span>
                                                         <AutoGrowTextarea
                                                             aria-label={`Matvare ${itemIndex + 1}`}
                                                             data-item-key={item.key}

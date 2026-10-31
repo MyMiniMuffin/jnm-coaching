@@ -708,7 +708,7 @@ const CheckInView = React.memo(({
                                 </p>
                             </div>
                             {hasDraftContent && (
-                                <span className="shrink-0 text-[11px] font-medium text-ink-muted bg-surface-100 px-2 py-1 rounded-full">
+                                <span className="shrink-0 text-xs font-medium text-ink-muted bg-surface-100 px-2 py-1 rounded-full">
                                     Utkast lagret
                                 </span>
                             )}

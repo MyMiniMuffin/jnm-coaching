@@ -980,3 +980,11 @@ input[type="number"]::-webkit-outer-spin-button {
     -webkit-appearance: none;
     margin: 0;
 }
+
+@media (prefers-reduced-transparency: reduce) {
+    html[data-shell="rail"] .app-rail-pill {
+        background: #F7F7F4;
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+    }
+}

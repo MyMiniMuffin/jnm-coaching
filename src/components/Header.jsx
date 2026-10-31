@@ -40,7 +40,7 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
                 )}
                 <div className={`flex-1 min-w-0 duo:text-left ${hideClientBack ? 'text-left' : 'text-center'}`}>
                     <p className="font-semibold text-ink truncate leading-6">{viewingClient.name}</p>
-                    <p className="truncate text-[11px] leading-4 text-ink-muted">@{viewingClient.username}</p>
+                    <p className="truncate text-xs leading-4 text-ink-muted">@{viewingClient.username}</p>
                 </div>
                 {onToggleClientPreview && (
                     <IconButton onClick={onToggleClientPreview} disabled={previewDisabled} aria-label="Vis som utøver" title="Vis som utøver" className="shrink-0 gap-1.5 disabled:opacity-50 lg:px-3">
