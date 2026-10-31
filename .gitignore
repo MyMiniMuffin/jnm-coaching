@@ -31,3 +31,8 @@ build/
 
 # Lokale leveranser (trykk, profilpakker) – ikke del av appen
 deliverables/
+
+# Server deploy
+deploy.log
+.deploy.lock
+.deployed-sha

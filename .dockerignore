@@ -1,0 +1,14 @@
+node_modules
+dist
+ios
+deliverables
+tests
+.git
+.github
+.netlify
+.claude
+.cursor
+.env
+.env.*
+*.log
+.DS_Store

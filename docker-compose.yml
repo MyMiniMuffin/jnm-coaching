@@ -1,0 +1,45 @@
+# JNM Coaching on the same Oracle instance as MetalFlow.
+# MetalFlow's Caddy terminates HTTPS and proxies jnmcoaching.no to this container
+# over the shared metalflow_proxy network. See docs/ORACLE_DEPLOY.md.
+services:
+  jnm:
+    build: .
+    container_name: jnm-coaching-app
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      CONTEXT: production
+      # Same names as on Netlify, so the functions run unchanged.
+      NETLIFY_DATABASE_URL: ${NETLIFY_DATABASE_URL:?mangler i .env}
+      JWT_SECRET: ${JWT_SECRET:?mangler i .env}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:?mangler i .env}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:?mangler i .env}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:?mangler i .env}
+      WEB_PUSH_PUBLIC_KEY: ${WEB_PUSH_PUBLIC_KEY:-}
+      WEB_PUSH_PRIVATE_KEY: ${WEB_PUSH_PRIVATE_KEY:-}
+      WEB_PUSH_SUBJECT: ${WEB_PUSH_SUBJECT:-}
+      APNS_KEY_ID: ${APNS_KEY_ID:-}
+      APNS_TEAM_ID: ${APNS_TEAM_ID:-}
+      APNS_PRIVATE_KEY: ${APNS_PRIVATE_KEY:-}
+      APNS_BUNDLE_ID: ${APNS_BUNDLE_ID:-no.jnmcoaching.app}
+      APNS_PRODUCTION: ${APNS_PRODUCTION:-}
+    # Shares the instance with MetalFlow: cap JNM so a leak or spike here
+    # cannot starve it. Node idles around 100 MB.
+    mem_limit: 768m
+    cpus: 1.0
+    expose:
+      - "3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true
+    name: metalflow_proxy
