@@ -43,7 +43,7 @@ Nativt i `DuoDevice.swift` via `utsname.machine`. Listen speiles i `src/lib/duoD
 
 **Xcode Debug:** Tvinger Duo-rail som fallback. Opt-out: `-NoForceDuoDevice` / `JNM_FORCE_DUO=0`. Release/TestFlight tvinger aldri.
 
-`DuoBridgeViewController` injiserer `html[data-device="duo"]` via `webViewConfiguration(for:)` **før** første last (ikke etter `makeKeyAndVisible`). `shellMode` observerer `data-device` med `MutationObserver` hvis markøren settes etter modul-load.
+`DuoBridgeViewController` injiserer `html[data-device="duo"]` i `capacitorDidLoad()` på Capacitor sin **ekte** `userContentController` (før `loadWebView`). Scripts lagt kun i `webViewConfiguration(for:)` kastes — Capacitor bytter controller etterpå. Backup: `evaluateJavaScript` i `viewDidAppear`. `shellMode` observerer `data-device` med `MutationObserver`.
 
 **Dev/test-override:** `?device=duo|phone` skriver til **sessionStorage** (aldri localStorage), så en delt lenke ikke låser vanlige brukere permanent. `syncDom` fjerner `data-device` ved `phone`-override.
 
