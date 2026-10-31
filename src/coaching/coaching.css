@@ -27,6 +27,29 @@
         #fff;
 }
 
+.coaching-hero-photo {
+    overflow: hidden;
+    border-radius: 1rem;
+    background: #e9e8e3;
+    box-shadow: 0 1.5rem 3rem rgba(23, 23, 23, 0.14);
+}
+
+.coaching-hero-photo img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    /* Keep the person (right) and the rack in frame on narrow crops. */
+    object-position: 65% center;
+}
+
+@media (min-width: 1024px) {
+    .coaching-hero-photo img {
+        aspect-ratio: 965 / 904;
+    }
+}
+
 .coaching-pillar::before {
     content: '';
     display: block;

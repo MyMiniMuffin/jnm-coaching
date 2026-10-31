@@ -201,7 +201,7 @@ const CoachingLandingPage = () => {
 
         <main>
             <section className="coaching-hero">
-                <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 sm:py-28 lg:px-12 lg:py-36">
+                <div className="mx-auto grid w-full max-w-7xl items-center gap-12 px-5 py-20 sm:px-8 sm:py-28 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16 lg:px-12 lg:py-32">
                     <div data-reveal className="max-w-4xl">
                         <h1 className="coaching-title text-5xl font-semibold leading-[1.02] tracking-[-0.04em] sm:text-6xl lg:text-7xl">
                             En plan du kan følge
@@ -211,6 +211,16 @@ const CoachingLandingPage = () => {
                         </p>
                         <a ref={heroCtaRef} href="#soknad" className="coaching-button mt-8"><ButtonIcon /> Søk om coaching</a>
                     </div>
+                    <figure data-reveal style={{ '--reveal-delay': '120ms' }} className="coaching-hero-photo">
+                        <img
+                            src="/images/coach-gym.jpg"
+                            width="965"
+                            height="904"
+                            alt="Coachen bak JNM Coaching på trening i gymmen"
+                            fetchPriority="high"
+                            decoding="async"
+                        />
+                    </figure>
                 </div>
             </section>
 

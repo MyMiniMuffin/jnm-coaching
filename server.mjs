@@ -66,7 +66,7 @@ const CONTENT_TYPES = {
 const cacheControlFor = (urlPath, filePath) => {
     if (urlPath.startsWith('/assets/')) return 'public, max-age=31536000, immutable';
     if (filePath.endsWith('.html') || urlPath === '/sw.js') return 'public, max-age=0, must-revalidate';
-    if (urlPath.endsWith('.png') || urlPath === '/manifest.json') return 'public, max-age=86400';
+    if (/\.(png|jpe?g)$/.test(urlPath) || urlPath === '/manifest.json') return 'public, max-age=86400';
     return null;
 };
 
