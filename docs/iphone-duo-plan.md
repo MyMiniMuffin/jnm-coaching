@@ -41,6 +41,8 @@ Nativt i `DuoDevice.swift` via `utsname.machine`. Listen speiles i `src/lib/duoD
 
 **Usikkerhet:** `iPhone19,4` er listet som iPhone Duo i community-kilder ([AppleDB](https://appledb.dev/device/identifier/iPhone19,4), [IPSW.dev](https://ipsw.dev/iPhone19,4), board V68AP), men er **ikke** bekreftet via `utsname.machine` på fysisk Duo i dette prosjektet. Simulator returnerer `arm64`/`x86_64` og matcher aldri. DEBUG-bygg logger maskin-id (`[DuoDevice] utsname.machine=…`) så den kan bekreftes på ekte enhet. Ukjente fremtidige Duo-SKU-er må legges til begge steder.
 
+**Xcode / Simulator:** Det delte `App`-skjemaet sender launch-argumentet `-ForceDuoDevice` i Debug (også `JNM_FORCE_DUO=1`). Det injiserer `html[data-device="duo"]` uten fysisk Duo, så høyre rail-meny kan testes i Simulator. Skru av argumentet i Scheme → Run → Arguments for vanlig telefon-bunnmeny. Release/TestFlight ignorerer overstyringen.
+
 `DuoBridgeViewController` injiserer `html[data-device="duo"]` via `webViewConfiguration(for:)` **før** første last (ikke etter `makeKeyAndVisible`). `shellMode` observerer `data-device` med `MutationObserver` hvis markøren settes etter modul-load.
 
 **Dev/test-override:** `?device=duo|phone` skriver til **sessionStorage** (aldri localStorage), så en delt lenke ikke låser vanlige brukere permanent. `syncDom` fjerner `data-device` ved `phone`-override.
