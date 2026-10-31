@@ -9,7 +9,7 @@ Du jobber i `jnm-coaching` (React + Vite + Tailwind, pakket med Capacitor til iO
 ## Les dette først (finnes allerede, bygg videre på det, ikke lag det på nytt)
 
 - `docs/iphone-duo-plan.md`: plattformfakta, shell-modi og hvilke beslutninger som er tatt. **Viktig:** WebKit/WKWebView støtter *ikke* Viewport Segments / Device Posture i produksjon, så hengselposisjon og segmenter er ukjente. Ikke bruk `env(viewport-segment-*)` eller `horizontal-viewport-segments`.
-- `src/lib/shellMode.js`: én tilstand `narrow | wide | rail`. Duo-enhet gir alltid `rail`. Den setter `html[data-shell]`.
+- `src/lib/shellMode.js`: én tilstand `narrow | wide | rail`. Duo får `rail` kun i landskapsform + wide-terskel (`DUO_RAIL_MEDIA_QUERY`); portrett-Duo bruker bunnmeny. Den setter `html[data-shell]`.
 - `src/lib/duoBreakpoint.js`, `tailwind.config.mjs`: variantene `duo:` (wide, eller rail ≥700px) og `duo-lg:`.
 - `src/components/Navigation.jsx`: `.app-rail`, `.app-rail-inner`, `.app-rail-pill`, tilbake-pillen øverst.
 - `src/index.css` (søk etter `data-shell="rail"`): rail-CSS, `--app-rail-width` / `--app-rail-reserve`, og plass til save-bar og toasts.

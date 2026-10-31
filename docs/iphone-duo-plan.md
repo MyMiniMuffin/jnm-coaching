@@ -31,9 +31,9 @@
 
 | Shell | Hvem | Navigasjon |
 |---|---|---|
-| `narrow` | Vanlige iPhoner / smal web | Bunnmeny |
-| `wide` | iPad / desktop (≥1024 eller sticky media) | Venstre sidebar |
-| `rail` | **Kun iPhone Duo** (lukket + utfoldet) | Flytende høyre-piller |
+| `narrow` | Vanlige iPhoner / smal web / **Duo i portrettform** (foldet eller utfoldet oppreist) | Bunnmeny |
+| `wide` | iPad / desktop (≥1024 eller sticky media) — **ikke** Duo | Venstre sidebar |
+| `rail` | **Kun iPhone Duo** når viewport er landskapsformet *og* møter wide-terskelen | Flytende høyre-piller |
 
 ### Duo-deteksjon og `iPhone19,4`
 
@@ -49,8 +49,8 @@ Nativt i `DuoDevice.swift` via `utsname.machine`. Listen og den rene beslutnings
 
 - **Inn i wide (ikke-Duo):** `DUO_MEDIA_QUERY` matcher.
 - **Ut av wide:** bredde &lt; 700, eller kald start uten media-match.
-- **Sticky:** allerede wide + høyde krymper (tastatur) mens bredde ≥ 700 → forblir wide.
-- **Rail:** overstyrer alltid når enheten er Duo (ingen venstre sidebar / bunnmeny), også ≥1024.
+- **Sticky:** allerede wide + høyde krymper (tastatur) mens bredde ≥ 700 → forblir wide. Sticky gjelder **ikke** Duo (kan ikke holde portrett-Duo i rail/wide).
+- **Rail (Duo):** kun når `DUO_RAIL_MEDIA_QUERY` matcher (landskapsform + wide-terskel). Ellers bunnmeny. Ingen venstre sidebar på Duo.
 
 `duo:`-density: `wide` alltid; `rail` kun ved bredde ≥ 700 (lukket Duo 390 beholder telefon-tetthet). Swipe-tilbake beholdes på rail (rail er til høyre; `.app-rail-inner` stopper touch-propagering).
 
@@ -58,6 +58,10 @@ Nativt i `DuoDevice.swift` via `utsname.machine`. Listen og den rene beslutnings
 DUO_MEDIA_QUERY =
   (min-width: 700px) and (min-height: 600px),
   (min-width: 1024px)
+
+DUO_RAIL_MEDIA_QUERY =
+  (min-aspect-ratio: 1/1) and (min-width: 700px) and (min-height: 600px),
+  (min-aspect-ratio: 1/1) and (min-width: 1024px)
 ```
 
 Ved modul-load (før første React-render) settes `html[data-shell]`. Samme attributt driver:
@@ -75,17 +79,20 @@ Ved modul-load (før første React-render) settes `html[data-shell]`. Samme attr
 | Viewport / path | Shell |
 |---|---|
 | 390×844 vanlig iPhone | Bottom nav (`narrow`) |
-| 390×844 Duo (`?device=duo`) | Rail (telefon-tetthet) |
-| 760×900 Duo | Rail + `duo:`-density + full bredde |
+| 390×844 Duo foldet portrett | Bottom nav (`narrow`) |
+| 844×390 Duo foldet landskap | Bottom nav (bredde≥700 men høyde&lt;600 og &lt;1024 → terskel feiler) |
+| 760×900 Duo utfoldet portrett (oppreist) | Bottom nav (`narrow`) — Jonas: upright = bunnmeny |
+| 900×760 Duo utfoldet landskap | Rail |
 | 390×844 (lukket portrett, ikke Duo) | Bottom nav |
 | 932×430 (lukket telefon landskap) | Bottom nav |
 | 700×599 (kald start) | Bottom nav |
 | 900×550 (kald start) | Bottom nav (media matcher ikke; ingen sticky) |
 | 700×600 / iPad-portrett (ikke Duo) | Sidebar (`wide`) |
-| 900×760 → 900×400 (tastatur) | Sidebar beholdes (sticky / `data-shell="wide"`) |
+| 900×760 → 900×400 (tastatur, ikke Duo) | Sidebar beholdes (sticky / `data-shell="wide"`) |
 | 900×400 → 650×400 | Bottom nav (exit under 700) |
 | 1280×550 (kort desktop) | Sidebar (`min-width: 1024px`) |
-| ≥1024 med `?device=duo` | Rail (Duo vinner) |
+| ≥1024 landskap med `?device=duo` | Rail (Duo vinner over sidebar) |
+| 760×900 Duo etter landskap-rail | Bottom nav (sticky kan ikke holde rail i portrett) |
 
 `max-width` ved ≥1024 er **uendret** for ikke-Duo.
 
@@ -93,13 +100,14 @@ Ved modul-load (før første React-render) settes `html[data-shell]`. Samme attr
 
 ---
 
-## Rail-design etter Apple HIG (2026-10-31)
+## Rail-design etter Apple HIG (2026-10-31+)
 
-Kilde: [Designing for iPhone Duo](https://developer.apple.com/design/human-interface-guidelines/designing-for-iphone-duo) (HIG, 9. sep 2026).
+Kilder: [Designing for iPhone Duo](https://developer.apple.com/design/human-interface-guidelines/designing-for-iphone-duo); HIG Layout + WWDC25/26 (size classes — tab bar default, sidebar/rail når det er plass).
 
-- **Side-kontroller:** ytterskjerm og innerskjerm i landskap har toolbar/tab bar langs siden. Øverst: Back/Close; nederst: faner. Kun symboler (tekstknapper hører hjemme i horisontale barer).
-- **Innerskjerm i portrett:** HIG beholder vanlige horisontale barer. Rail blir en flytende bunnkapsel ved `(min-width: 700px) and (orientation: portrait)`; samme rekkefølge (tilbake først, så faner).
-- **Kompakt:** kapsel 52px (44pt knapp + 4px), kant 6px, innholdsgap 8px → `--app-rail-reserve` ≈ 66px (før 76px).
+- **Beslutning fra live viewport (ikke device type / orientation API):** `matchMedia(DUO_RAIL_MEDIA_QUERY)` — rail kun når bredde ≥ høyde *og* wide-terskel. Portrettform (foldet eller utfoldet oppreist) → vanlig bunnmeny.
+- **Side-kontroller (rail):** landskapsformet Duo. Øverst: Back/Close; nederst: faner. Kun symboler.
+- **Samme funksjonalitet** i rail og bunnmeny; bytte er ikke-destruktivt (fane, scroll, nav-state overlever).
+- **Kompakt rail:** kapsel 52px (44pt knapp + 4px), kant 6px, innholdsgap 8px → `--app-rail-reserve` ≈ 66px.
 - Ikke ennå: overflyt bottom-to-top når høyden ikke rekker (HIG `visibility priority`), jevnt antall kolonner rundt hengsel (`ReservedRegion` finnes bare nativt).
 
 ---

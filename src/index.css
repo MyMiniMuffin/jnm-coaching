@@ -691,7 +691,8 @@ html[data-shell="wide"] .toast-stack {
 
 /*
  * iPhone Duo rail — floating right column (Outlook-style pills).
- * Only when shellMode sets data-shell="rail" (Duo hardware / ?device=duo).
+ * Only when shellMode sets data-shell="rail" (Duo + wide landscape space via
+ * DUO_RAIL_MEDIA_QUERY). Portrait Duo (folded or upright) uses bottom nav.
  *
  * Content clearance lives on `.app-stage` only (not also `.app-frame`) so Duo
  * closed (390) does not lose ~65% width from double padding-right.
@@ -907,57 +908,6 @@ html[data-shell="rail"] .toast-stack {
 /* Screens without Navigation (coach list, archived): only the status column. */
 html[data-shell="rail"] .app-frame:not(.app-frame-nav) .app-stage {
     padding-right: env(safe-area-inset-right, 0px);
-}
-
-/*
- * Unfolded Duo in portrait: HIG keeps standard horizontal bars on the inner
- * display in portrait. Same pills, laid out as a floating bottom capsule —
- * back stays leading, tabs follow (same relative order as the side rail).
- */
-@media (min-width: 700px) and (orientation: portrait) {
-    :root {
-        --app-rail-bottom-reserve: calc(var(--app-rail-width) + 2px + max(0.75rem, env(safe-area-inset-bottom, 0px)) + var(--app-rail-gap)); /* +2px capsule border */
-        --app-rail-status-nudge: 0px;
-    }
-
-    html[data-shell="rail"] .app-rail {
-        inset: auto 0 0 0;
-        right: 0;
-        width: auto;
-        justify-content: center;
-        padding: 0 0 max(0.75rem, env(safe-area-inset-bottom, 0px));
-    }
-
-    html[data-shell="rail"] .app-rail-inner {
-        flex-direction: row;
-        align-items: center;
-        height: auto;
-        width: auto;
-        gap: 0.5rem;
-    }
-
-    html[data-shell="rail"] .app-rail-pill {
-        flex-direction: row;
-    }
-
-    html[data-shell="rail"] .app-rail-tabs {
-        margin-top: 0;
-    }
-
-    html[data-shell="rail"] .app-stage {
-        padding-right: env(safe-area-inset-right, 0px);
-        padding-bottom: var(--app-rail-bottom-reserve);
-    }
-
-    html[data-shell="rail"] .app-frame-nav .plan-save-bar {
-        right: 0;
-        bottom: var(--app-rail-bottom-reserve) !important;
-    }
-
-    html[data-shell="rail"] .toast-stack {
-        right: 1rem;
-        bottom: calc(var(--app-rail-bottom-reserve) + 0.5rem);
-    }
 }
 
 /* Smooth number input */

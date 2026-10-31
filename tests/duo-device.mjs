@@ -14,8 +14,8 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (relativePath) => readFileSync(join(root, relativePath), 'utf8');
 
 /** Mirrors `resolveShell` in shellMode.js without importing React/Vite modules. */
-const resolveShell = ({ isDuo, wideSticky }) => {
-    if (isDuo) return 'rail';
+const resolveShell = ({ isDuo, isWideLandscapeSpace, wideSticky }) => {
+    if (isDuo) return isWideLandscapeSpace ? 'rail' : 'narrow';
     return wideSticky ? 'wide' : 'narrow';
 };
 
@@ -71,51 +71,95 @@ test('decideIsDuo is positive-identification only (unknown defaults to not Duo)'
     assert.equal(decideIsDuo({ machineId: 'iPhone19,2', forceDuo: false }), false);
 });
 
-test('non-Duo phone resolves to narrow shell; Duo id resolves to rail', () => {
+test('non-Duo phone resolves to narrow shell; Duo rail only in wide landscape space', () => {
+    const duo = decideIsDuo({ machineId: 'iPhone19,4' });
+    assert.equal(duo, true);
+
+    // Regular iPhone — any size facts → narrow (PR #28 regression)
     assert.equal(
-        resolveShell({ isDuo: false, wideSticky: false }),
+        resolveShell({ isDuo: false, isWideLandscapeSpace: false, wideSticky: false }),
         'narrow',
         'regular phone → narrow (bottom nav)'
     );
     assert.equal(
-        resolveShell({ isDuo: decideIsDuo({ machineId: 'iPhone19,2' }), wideSticky: false }),
+        resolveShell({ isDuo: false, isWideLandscapeSpace: true, wideSticky: false }),
         'narrow',
-        'iPhone 18 Pro (iPhone19,2) → narrow'
+        'regular phone ignores landscape-space flag'
     );
     assert.equal(
-        resolveShell({ isDuo: decideIsDuo({ machineId: 'iPhone18,1' }), wideSticky: false }),
+        resolveShell({ isDuo: decideIsDuo({ machineId: 'iPhone19,2' }), isWideLandscapeSpace: true, wideSticky: false }),
+        'narrow',
+        'iPhone 18 Pro (iPhone19,2) → narrow even if landscape space'
+    );
+    assert.equal(
+        resolveShell({ isDuo: decideIsDuo({ machineId: 'iPhone18,1' }), isWideLandscapeSpace: false, wideSticky: false }),
         'narrow',
         'iPhone 17 Pro (iPhone18,1) → narrow'
     );
     assert.equal(
-        resolveShell({ isDuo: decideIsDuo({ machineId: 'iPhone18,2' }), wideSticky: false }),
+        resolveShell({ isDuo: decideIsDuo({ machineId: 'iPhone18,2' }), isWideLandscapeSpace: false, wideSticky: false }),
         'narrow',
         'iPhone 17 Pro Max (iPhone18,2) → narrow'
     );
     assert.equal(
-        resolveShell({ isDuo: decideIsDuo({ machineId: 'iPhone10,1' }), wideSticky: false }),
+        resolveShell({ isDuo: decideIsDuo({ machineId: 'iPhone10,1' }), isWideLandscapeSpace: false, wideSticky: false }),
         'narrow',
         'iPhone 8 (iPhone10,1) → narrow'
     );
     assert.equal(
-        resolveShell({ isDuo: decideIsDuo({ machineId: 'iPhone10,4' }), wideSticky: false }),
+        resolveShell({ isDuo: decideIsDuo({ machineId: 'iPhone10,4' }), isWideLandscapeSpace: false, wideSticky: false }),
         'narrow',
         'iPhone 8 GSM (iPhone10,4) → narrow'
     );
+
+    // Duo folded portrait (~390×844) → narrow
     assert.equal(
-        resolveShell({ isDuo: decideIsDuo({ machineId: 'iPhone19,4' }), wideSticky: false }),
+        resolveShell({ isDuo: duo, isWideLandscapeSpace: false, wideSticky: false }),
+        'narrow',
+        'Duo folded portrait → narrow'
+    );
+    // Duo unfolded portrait (~760×900, taller than wide) → narrow
+    assert.equal(
+        resolveShell({ isDuo: duo, isWideLandscapeSpace: false, wideSticky: true }),
+        'narrow',
+        'Duo unfolded portrait → narrow; wideSticky cannot force rail/wide'
+    );
+    // Duo unfolded landscape (~900×760) → rail
+    assert.equal(
+        resolveShell({ isDuo: duo, isWideLandscapeSpace: true, wideSticky: false }),
         'rail',
-        'Duo allowlist id → rail'
+        'Duo unfolded landscape → rail'
+    );
+    // Duo folded landscape: threshold decides. ~844×390 fails height/desktop →
+    // isWideLandscapeSpace false → narrow (documented in duoBreakpoint / plan).
+    assert.equal(
+        resolveShell({ isDuo: duo, isWideLandscapeSpace: false, wideSticky: true }),
+        'narrow',
+        'Duo folded landscape below threshold → narrow (sticky ignored)'
+    );
+    // Transition both ways
+    assert.equal(
+        resolveShell({ isDuo: duo, isWideLandscapeSpace: true, wideSticky: true }),
+        'rail',
+        'portrait→landscape: rail when space matches'
     );
     assert.equal(
-        resolveShell({ isDuo: false, wideSticky: true }),
+        resolveShell({ isDuo: duo, isWideLandscapeSpace: false, wideSticky: true }),
+        'narrow',
+        'landscape→portrait: narrow even if sticky still true'
+    );
+
+    assert.equal(
+        resolveShell({ isDuo: false, isWideLandscapeSpace: false, wideSticky: true }),
         'wide',
         'sticky wide without Duo → left sidebar'
     );
     // shellMode must wire the same pure resolveShell helper
     const shell = read('src/lib/shellMode.js');
     assert.match(shell, /export const resolveShell/);
-    assert.match(shell, /if \(isDuo\) return SHELL_RAIL/);
+    assert.match(shell, /isWideLandscapeSpace/);
+    assert.match(shell, /DUO_RAIL_MEDIA_QUERY/);
+    assert.doesNotMatch(shell, /if \(isDuo\) return SHELL_RAIL/);
 });
 
 test('duoDeviceModels documents verification uncertainty and iPhone 18 Pro collision', () => {
@@ -211,6 +255,17 @@ test('shellMode uses sessionStorage override and clears phone data-device', () =
     assert.match(shell, /MutationObserver/);
     assert.match(shell, /localStorage\.removeItem\(DEVICE_STORAGE_KEY\)/);
     assert.doesNotMatch(shell, /localStorage\.setItem\(DEVICE_STORAGE_KEY/);
+    assert.match(shell, /railSpaceMatches|DUO_RAIL_MEDIA_QUERY/);
+    assert.doesNotMatch(shell, /screen\.orientation|window\.orientation/);
+});
+
+test('duoBreakpoint exports DUO_RAIL_MEDIA_QUERY with aspect-ratio + wide threshold', () => {
+    const bp = read('src/lib/duoBreakpoint.js');
+    assert.match(bp, /export const DUO_RAIL_MEDIA_QUERY/);
+    assert.match(bp, /min-aspect-ratio:\s*1\/1/);
+    assert.match(bp, /DUO_MIN_WIDTH_PX/);
+    assert.match(bp, /DUO_MIN_HEIGHT_PX/);
+    assert.match(bp, /DESKTOP_MIN_WIDTH_PX/);
 });
 
 test('railBack stores onBack in a ref (no register loop on unstable callbacks)', () => {
