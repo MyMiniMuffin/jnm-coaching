@@ -715,8 +715,9 @@ html[data-shell="wide"] .toast-stack {
     /* Side column: the status safe area on Duo, else just room for the capsule */
     --app-rail-col: max(env(safe-area-inset-right, 0px), calc(var(--app-rail-width) + 0.75rem));
     --app-rail-reserve: calc(var(--app-rail-col) + var(--app-rail-gap));
-    /* Clear the side status cluster when present (inset > 20px), else a small top gap */
-    --app-rail-status-clearance: max(3.25rem, min(10rem, calc((env(safe-area-inset-right, 0px) - 20px) * 100)));
+    /* Clear the side status cluster when present (inset > 20px), else a small top gap.
+     * Inset case capped at 10.75rem (+12pt vs prior 10rem) so ~8–12pt remains under wifi/dots. */
+    --app-rail-status-clearance: max(3.25rem, min(10.75rem, calc((env(safe-area-inset-right, 0px) - 20px) * 100)));
     /* Align capsule with status cluster (inset > 20px → 5px; else 0). Does not change --app-rail-reserve. */
     --app-rail-status-nudge: clamp(0px, calc((env(safe-area-inset-right, 0px) - 20px) * 100), 5px);
 }
@@ -764,6 +765,34 @@ html[data-shell="rail"] .app-rail-pill {
     border: 1px solid rgba(23, 23, 23, 0.08);
     box-shadow: 0 6px 20px rgba(23, 23, 23, 0.1);
     box-sizing: border-box;
+}
+
+/*
+ * Back pill: one 44pt glass circle matching the active-tab highlight (not the
+ * full 54px capsule). Centered on the same axis as the tab pill; glass matches
+ * .app-rail-pill. Icon stays 20px via .app-rail-btn > svg.
+ */
+html[data-shell="rail"] .app-rail-back-pill {
+    position: relative;
+    align-self: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+html[data-shell="rail"] .app-rail-back-pill .app-rail-btn {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+/* ≥44pt hit target: border-box 44 includes 1px border → expand tap by 1px each side */
+html[data-shell="rail"] .app-rail-back-pill .app-rail-btn::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
 }
 
 /* 44×44pt targets; grid + block SVG keeps icon ink on the pill center (no overflow/baseline gap). */
@@ -842,7 +871,8 @@ html[data-shell="rail"] .app-stage {
 /* Unfolded Duo: roomier content padding across the span */
 @media (min-width: 700px) {
     :root {
-        --app-rail-status-clearance: max(3.25rem, min(7rem, calc((env(safe-area-inset-right, 0px) - 20px) * 100)));
+        /* Inset case +12pt vs prior 7rem; no-inset floor stays 3.25rem */
+        --app-rail-status-clearance: max(3.25rem, min(7.75rem, calc((env(safe-area-inset-right, 0px) - 20px) * 100)));
     }
 
     html[data-shell="rail"] .app-content {

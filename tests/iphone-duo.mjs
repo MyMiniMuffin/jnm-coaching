@@ -270,6 +270,23 @@ test('navigation supports wide sidebar, Duo rail, and phone bottom nav', () => {
     assert.match(css, /z-index:\s*45/);
     // Capsule fits 44pt btn + 4px pad×2 + 1px border×2; buttons use grid + block SVG (no 44-in-42 overflow).
     assert.match(css, /--app-rail-width:\s*calc\(2\.75rem\s*\+\s*0\.5rem\s*\+\s*2px\)/);
+    // Back pill is a 44pt glass circle (matches active-tab highlight), not the full 54px capsule.
+    assert.match(navigation, /app-rail-pill app-rail-back-pill/);
+    assert.match(css, /html\[data-shell="rail"\] \.app-rail-back-pill \{/);
+    assert.match(css, /html\[data-shell="rail"\] \.app-rail-back-pill \{[\s\S]*?width:\s*2\.75rem/);
+    assert.match(css, /html\[data-shell="rail"\] \.app-rail-back-pill \{[\s\S]*?height:\s*2\.75rem/);
+    assert.match(css, /html\[data-shell="rail"\] \.app-rail-back-pill \{[\s\S]*?padding:\s*0/);
+    assert.match(css, /html\[data-shell="rail"\] \.app-rail-back-pill \{[\s\S]*?align-self:\s*center/);
+    assert.match(css, /html\[data-shell="rail"\] \.app-rail-back-pill \.app-rail-btn::before \{[\s\S]*?inset:\s*-1px/);
+    // Inset > 20px clearance (+12pt vs prior caps); no-inset floor stays 3.25rem.
+    assert.match(
+        css,
+        /--app-rail-status-clearance:\s*max\(3\.25rem,\s*min\(10\.75rem,\s*calc\(\(env\(safe-area-inset-right,\s*0px\)\s*-\s*20px\)\s*\*\s*100\)\)\)/
+    );
+    assert.match(
+        css,
+        /--app-rail-status-clearance:\s*max\(3\.25rem,\s*min\(7\.75rem,\s*calc\(\(env\(safe-area-inset-right,\s*0px\)\s*-\s*20px\)\s*\*\s*100\)\)\)/
+    );
     assert.match(css, /html\[data-shell="rail"\] \.app-rail-btn \{/);
     assert.match(css, /place-items:\s*center/);
     assert.match(css, /html\[data-shell="rail"\] \.app-rail-btn > svg \{/);
