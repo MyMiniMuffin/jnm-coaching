@@ -12,7 +12,8 @@
       <BuildableProductRunnable runnableDebuggingMode="0">
          <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="504EC3031FED79650016851F" BuildableName="App.app" BlueprintName="App" ReferencedContainer="container:App.xcodeproj"/>
       </BuildableProductRunnable>
-      <!-- Simulator never reports iPhone19,4. Force Duo rail menus in Debug. -->
+      <!-- Simulator-only: DuoDevice ignores -ForceDuoDevice on physical devices
+           (LaunchAction args also apply when running Debug on hardware). -->
       <CommandLineArguments>
          <CommandLineArgument argument="-ForceDuoDevice" isEnabled="YES"/>
       </CommandLineArguments>

@@ -33,6 +33,7 @@
  * ## Decision function
  * `decideIsDuo` is the pure source of truth mirrored by `DuoDevice.decideIsDuo`
  * in Swift (no iOS test target). Default is NOT Duo when unknown.
+ * Native `forceDuo` is Simulator-only (`#if targetEnvironment(simulator)`).
  */
 export const DUO_MACHINE_IDS = Object.freeze([
     'iPhone19,4',
@@ -71,16 +72,13 @@ export const isDuoMachineId = (machineId) => (
  *
  * @param {object} opts
  * @param {string|null|undefined} opts.machineId utsname / simulator model id
- * @param {boolean} [opts.forceDuo=false] Debug opt-in only (`-ForceDuoDevice`)
+ * @param {boolean} [opts.forceDuo=false] Simulator-only Debug opt-in (`-ForceDuoDevice`)
  * @param {string|null|undefined} [opts.simulatorDeviceName] SIMULATOR_DEVICE_NAME
- * @param {boolean} [opts.hasFoldableDivision=false] UIKit division reserved region
- *   (includeInactive) — definitive foldable hardware signal when available
  */
 export const decideIsDuo = ({
     machineId,
     forceDuo = false,
     simulatorDeviceName = null,
-    hasFoldableDivision = false,
 } = {}) => {
     if (forceDuo === true) return true;
     if (isDuoMachineId(machineId)) return true;
@@ -90,6 +88,5 @@ export const decideIsDuo = ({
     ) {
         return true;
     }
-    if (hasFoldableDivision === true) return true;
     return false;
 };

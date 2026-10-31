@@ -1,5 +1,4 @@
 import Foundation
-import UIKit
 import os
 
 /// Known `utsname.machine` identifiers for iPhone Duo.
@@ -24,16 +23,11 @@ import os
 /// shipped Duo reports a different machine string, add it here and in
 /// `duoDeviceModels.js` — do not broaden to a prefix.
 ///
-/// ## Debug override (opt-in only)
-/// Debug builds do **not** force Duo by default (that made every Debug iPhone
-/// show the rail — PR #17 regression). Opt in with `-ForceDuoDevice` (Debug
-/// scheme includes it) or `JNM_FORCE_DUO=1`. Release/TestFlight never force.
-///
-/// ## Foldable capability
-/// When a UIView reports a `.division` reserved region (including inactive),
-/// that is a definitive foldable signal and counts as Duo even if the machine
-/// id is not yet on the allowlist. Outer-display / pre-view paths still rely
-/// on the exact allowlist.
+/// ## Simulator force (never on physical devices)
+/// `-ForceDuoDevice` / `JNM_FORCE_DUO=1` apply only under
+/// `#if targetEnvironment(simulator)`. Xcode LaunchAction args also reach a
+/// physical Debug device, so a physical non-Duo iPhone must ignore them.
+/// Release/TestFlight never force. Physical Duo is allowlist-only.
 ///
 /// Authoritative cross-checks (community, not Apple public API):
 /// - https://appledb.dev/device/identifier/iPhone19,4
@@ -45,11 +39,10 @@ enum DuoDevice {
         "iPhone19,4",
     ]
 
-    /// Launch argument / env key for Debug-only Duo simulation in Xcode.
+    /// Simulator-only launch argument / env (Debug scheme includes the arg).
     static let forceArgument = "-ForceDuoDevice"
     static let forceEnvironmentKey = "JNM_FORCE_DUO"
-    /// Legacy opt-out from when Debug forced Duo by default (PR #17). Kept so
-    /// old schemes with `-NoForceDuoDevice` still launch cleanly.
+    /// Legacy opt-out from when Debug forced Duo by default (PR #17).
     static let noForceArgument = "-NoForceDuoDevice"
 
     private static let log = Logger(subsystem: "co.jnm.coaching", category: "DuoDevice")
@@ -86,10 +79,11 @@ enum DuoDevice {
         #endif
     }
 
-    /// Debug-only opt-in so Simulator/Xcode can exercise the Duo rail.
-    /// Release/TestFlight always false. Default in Debug is also false —
-    /// require an explicit launch arg / env (scheme ships `-ForceDuoDevice`).
+    /// Simulator-only opt-in so Xcode Run on a sim can exercise the Duo rail
+    /// without a Duo sim model id. Physical devices always return false —
+    /// LaunchAction args still apply when running Debug on hardware.
     static var isForceDuoEnabled: Bool {
+        #if targetEnvironment(simulator)
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains(noForceArgument) {
             return false
@@ -104,77 +98,53 @@ enum DuoDevice {
             return true
         }
         #endif
+        #endif
         return false
     }
 
     /// Pure decision mirrored by `decideIsDuo` in `duoDeviceModels.js`.
     /// Positive identification only; unknown → false.
+    /// `forceDuo` is Simulator-only at the call site (`isForceDuoEnabled`).
     static func decideIsDuo(
         machineId: String,
         forceDuo: Bool,
-        simulatorDeviceName: String?,
-        hasFoldableDivision: Bool
+        simulatorDeviceName: String?
     ) -> Bool {
         if forceDuo { return true }
         if knownMachineIds.contains(machineId) { return true }
         if let name = simulatorDeviceName?.lowercased(), name.contains("duo") {
             return true
         }
-        if hasFoldableDivision { return true }
-        return false
-    }
-
-    /// Definitive foldable signal: a division reserved region (fold), including
-    /// inactive (flat/open). Regular iPhones do not report a hinge division.
-    /// Soft-fails on older SDKs / when the view is not in a window yet.
-    static func hasFoldableDivision(in view: UIView?) -> Bool {
-        guard let view else { return false }
-        // QueryOptions.includeInactive is iOS 27.1+ (fold present but inactive when flat).
-        if #available(iOS 27.1, *) {
-            let regions = view.reservedRegions(kind: .division, options: .includeInactive)
-            return !regions.isEmpty
-        }
         return false
     }
 
     static var isDuo: Bool {
-        isDuo(hasFoldableDivision: false)
-    }
-
-    static func isDuo(hasFoldableDivision: Bool) -> Bool {
         decideIsDuo(
             machineId: machineIdentifier,
             forceDuo: isForceDuoEnabled,
-            simulatorDeviceName: simulatorDeviceName,
-            hasFoldableDivision: hasFoldableDivision
+            simulatorDeviceName: simulatorDeviceName
         )
     }
 
     /// Injected at document-start so the first paint sees `html[data-device="duo"]`.
     static var userScriptSource: String {
-        userScriptSource(hasFoldableDivision: false)
-    }
-
-    static func userScriptSource(hasFoldableDivision: Bool) -> String {
-        if isDuo(hasFoldableDivision: hasFoldableDivision) {
+        if isDuo {
             return "document.documentElement.setAttribute('data-device','duo');"
         }
         return "/* not iPhone Duo (\(machineIdentifier)) */"
     }
 
     /// Logs detection details in DEBUG so Jonas can confirm on device/sim.
-    static func logMachineIdentifierIfNeeded(hasFoldableDivision: Bool = false) {
+    static func logMachineIdentifierIfNeeded() {
         #if DEBUG
         let machine = machineIdentifier
         let unameId = utsnameMachineIdentifier
         let matched = knownMachineIds.contains(machine)
         let namedDuo = simulatorDeviceName?.lowercased().contains("duo") == true
         let forced = isForceDuoEnabled
-        let foldable = hasFoldableDivision
         let simName = simulatorDeviceName ?? "(none)"
-        let duo = isDuo(hasFoldableDivision: hasFoldableDivision)
-        log.debug("machine=\(machine, privacy: .public) uname=\(unameId, privacy: .public) simName=\(simName, privacy: .public) isDuo=\(duo, privacy: .public) matchedKnown=\(matched, privacy: .public) namedDuo=\(namedDuo, privacy: .public) forceDuo=\(forced, privacy: .public) foldableDivision=\(foldable, privacy: .public)")
-        print("[DuoDevice] machine=\(machine) uname=\(unameId) simName=\(simName) isDuo=\(duo) matchedKnown=\(matched) namedDuo=\(namedDuo) forceDuo=\(forced) foldableDivision=\(foldable)")
+        log.debug("machine=\(machine, privacy: .public) uname=\(unameId, privacy: .public) simName=\(simName, privacy: .public) isDuo=\(isDuo, privacy: .public) matchedKnown=\(matched, privacy: .public) namedDuo=\(namedDuo, privacy: .public) forceDuo=\(forced, privacy: .public)")
+        print("[DuoDevice] machine=\(machine) uname=\(unameId) simName=\(simName) isDuo=\(isDuo) matchedKnown=\(matched) namedDuo=\(namedDuo) forceDuo=\(forced)")
         #endif
     }
 }

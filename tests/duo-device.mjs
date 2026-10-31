@@ -62,11 +62,13 @@ test('decideIsDuo is positive-identification only (unknown defaults to not Duo)'
     assert.equal(decideIsDuo({ machineId: 'arm64' }), false);
     assert.equal(decideIsDuo({ machineId: 'iPhone19,4' }), true);
     assert.equal(decideIsDuo({ machineId: 'iPhone19,2' }), false);
+    // forceDuo is Simulator-only in Swift; pure fn still accepts the flag for tests
     assert.equal(decideIsDuo({ machineId: 'iPhone18,1', forceDuo: true }), true);
     assert.equal(decideIsDuo({ machineId: 'arm64', simulatorDeviceName: 'iPhone Duo' }), true);
     assert.equal(decideIsDuo({ machineId: 'arm64', simulatorDeviceName: 'iPhone 16 Pro' }), false);
-    assert.equal(decideIsDuo({ machineId: 'iPhone19,2', hasFoldableDivision: true }), true);
-    assert.equal(decideIsDuo({ machineId: 'iPhone19,2', hasFoldableDivision: false }), false);
+    // Physical iPhone 18 Pro with force flag still maps to rail only if force is honored;
+    // Swift gates force behind targetEnvironment(simulator) so device never passes forceDuo=true.
+    assert.equal(decideIsDuo({ machineId: 'iPhone19,2', forceDuo: false }), false);
 });
 
 test('non-Duo phone resolves to narrow shell; Duo id resolves to rail', () => {
@@ -124,9 +126,11 @@ test('duoDeviceModels documents verification uncertainty and iPhone 18 Pro colli
     assert.match(models, /iPhone19,2/);
     assert.match(models, /Exact-match only|exact-match|never prefix/i);
     assert.match(models, /decideIsDuo/);
+    assert.match(models, /Simulator-only/);
+    assert.doesNotMatch(models, /hasFoldableDivision|reservedRegions/);
 });
 
-test('Swift DuoDevice list stays in sync with duoDeviceModels.js', () => {
+test('Swift DuoDevice is exact allowlist + simulator-only force (no foldable API)', () => {
     const swift = read('ios/App/App/DuoDevice.swift');
     assert.match(swift, /knownMachineIds/);
     assert.match(swift, /iPhone19,4/);
@@ -143,13 +147,16 @@ test('Swift DuoDevice list stays in sync with duoDeviceModels.js', () => {
     assert.match(swift, /SIMULATOR_DEVICE_NAME/);
     assert.match(swift, /targetEnvironment\(simulator\)/);
     assert.match(swift, /decideIsDuo/);
-    assert.match(swift, /hasFoldableDivision/);
-    assert.match(swift, /reservedRegions/);
-    assert.match(swift, /\.division/);
-    assert.match(swift, /includeInactive/);
     assert.match(swift, /Exact-match only|never prefix|iPhone19,2/);
-    // Debug must NOT default-force Duo (PR #17 regression). Opt-in only.
+    // Force must be gated to Simulator (physical Debug + scheme arg must not force).
+    assert.match(
+        swift,
+        /isForceDuoEnabled: Bool \{[\s\S]*?#if targetEnvironment\(simulator\)[\s\S]*?#if DEBUG/
+    );
     assert.match(swift, /arguments\.contains\(forceArgument\)[\s\S]*return true/);
+    assert.doesNotMatch(swift, /hasFoldableDivision|reservedRegions|includeInactive|\.division/);
+    assert.doesNotMatch(swift, /import UIKit/);
+    // Debug must NOT default-force Duo (PR #17 regression). Opt-in only.
     assert.doesNotMatch(
         swift,
         /isForceDuoEnabled: Bool \{[\s\S]*?#if DEBUG[\s\S]*?return true\s*\n\s*#else/
@@ -159,10 +166,11 @@ test('Swift DuoDevice list stays in sync with duoDeviceModels.js', () => {
     }
 });
 
-test('Debug App scheme still documents -ForceDuoDevice launch argument', () => {
+test('Debug App scheme documents Simulator-only -ForceDuoDevice', () => {
     const scheme = read('ios/App/App.xcodeproj/xcshareddata/xcschemes/App.xcscheme');
     assert.match(scheme, /CommandLineArguments/);
     assert.match(scheme, /argument="-ForceDuoDevice"/);
+    assert.match(scheme, /Simulator-only|physical/i);
 });
 
 test('DuoBridgeViewController injects WKUserScript on live contentController', () => {
@@ -178,7 +186,7 @@ test('DuoBridgeViewController injects WKUserScript on live contentController', (
     assert.match(bridge, /DuoDevice\.userScriptSource/);
     assert.match(bridge, /evaluateJavaScript/);
     assert.match(bridge, /ensureDuoDeviceAttribute/);
-    assert.match(bridge, /hasFoldableDivision/);
+    assert.doesNotMatch(bridge, /hasFoldableDivision|reservedRegions/);
     // Capacitor replaces userContentController after webViewConfiguration — document that.
     assert.match(bridge, /prepareWebView|contentController|replaced|discarded/i);
     // Main.storyboard owns the single bridge; a second UIWindow meant two WKWebViews.
