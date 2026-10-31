@@ -51,8 +51,16 @@ async function main() {
     throw new Error('Push key nullability verification failed');
   }
   console.log('Database migrations 007/008/009: applied and verified.');
+  await sql(readFileSync(join(__dirname, '../migrations/010_form_submissions.sql'), 'utf8'));
+  const formColumns = await sql`
+    SELECT column_name FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'form_submissions'
+      AND column_name IN ('form_name', 'data', 'created_at')
+  `;
+  if (formColumns.length !== 3) throw new Error('Form submissions table verification failed');
+  console.log('Database migration 010: applied and verified.');
 }
 main().catch((error) => {
-  console.error('Database migration failed; deployment stopped. Check database configuration and migrations 003–009. SQLSTATE:', error.code || 'unknown');
+  console.error('Database migration failed; deployment stopped. Check database configuration and migrations 003–010. SQLSTATE:', error.code || 'unknown');
   process.exitCode = 1;
 });

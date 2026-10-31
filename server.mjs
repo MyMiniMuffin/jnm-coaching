@@ -5,6 +5,7 @@
  * - Runs the existing functions unchanged: classic handlers under
  *   /.netlify/functions/<name> and the v2 onboarding upload at
  *   /api/onboarding-image-upload (with the rate limit Netlify used to enforce).
+ * - Takes over Netlify Forms: POST / with form-name is stored by forms.js.
  *
  * Caddy terminates HTTPS, compresses responses and sets X-Forwarded-For.
  */
@@ -125,32 +126,46 @@ const runClassicFunction = async (name, req, res, url) => {
     send(res, result?.statusCode || 200, headers, payload);
 };
 
-// Netlify rate limit for onboarding uploads: 6 requests per 180 s per client IP.
-const ONBOARDING_LIMIT = 6;
-const ONBOARDING_WINDOW_MS = 180_000;
-const onboardingHits = new Map();
 const clientIp = (req) => (
     String(req.headers['x-forwarded-for'] || '').split(',')[0].trim()
     || req.socket.remoteAddress
     || 'unknown'
 );
-const isRateLimited = (ip) => {
-    const now = Date.now();
-    const recent = (onboardingHits.get(ip) || []).filter((time) => now - time < ONBOARDING_WINDOW_MS);
-    recent.push(now);
-    onboardingHits.set(ip, recent);
-    return recent.length > ONBOARDING_LIMIT;
+
+/** Sliding-window limit per client IP, in memory (one container). */
+const createRateLimiter = (limit, windowMs) => {
+    const hits = new Map();
+    setInterval(() => {
+        const now = Date.now();
+        for (const [ip, times] of hits) {
+            if (times.every((time) => now - time >= windowMs)) hits.delete(ip);
+        }
+    }, windowMs).unref();
+    return (ip) => {
+        const now = Date.now();
+        const recent = (hits.get(ip) || []).filter((time) => now - time < windowMs);
+        recent.push(now);
+        hits.set(ip, recent);
+        return recent.length > limit;
+    };
 };
-setInterval(() => {
-    const now = Date.now();
-    for (const [ip, hits] of onboardingHits) {
-        if (hits.every((time) => now - time >= ONBOARDING_WINDOW_MS)) onboardingHits.delete(ip);
+
+// Netlify rate limit for onboarding uploads: 6 requests per 180 s per client IP.
+const isOnboardingLimited = createRateLimiter(6, 180_000);
+// Public forms (replaces Netlify Forms): 5 submissions per 10 min per client IP.
+const isFormLimited = createRateLimiter(5, 600_000);
+
+const runForm = async (req, res, url) => {
+    if (isFormLimited(clientIp(req))) {
+        sendJson(res, 429, { error: 'For mange innsendinger. Vent litt og prøv igjen.' });
+        return;
     }
-}, ONBOARDING_WINDOW_MS).unref();
+    await runClassicFunction('forms', req, res, url);
+};
 
 let onboardingUpload;
 const runOnboardingUpload = async (req, res, url) => {
-    if (isRateLimited(clientIp(req))) {
+    if (isOnboardingLimited(clientIp(req))) {
         sendJson(res, 429, { error: 'For mange forsøk. Vent litt og prøv igjen.' });
         return;
     }
@@ -236,6 +251,11 @@ const server = http.createServer(async (req, res) => {
         }
         if (url.pathname === '/api/onboarding-image-upload') {
             await runOnboardingUpload(req, res, url);
+            return;
+        }
+        // Netlify Forms posted to "/" with form-name; the pages still do.
+        if (url.pathname === '/' && req.method === 'POST') {
+            await runForm(req, res, url);
             return;
         }
         if (req.method !== 'GET' && req.method !== 'HEAD') {

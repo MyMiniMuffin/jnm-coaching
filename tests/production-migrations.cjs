@@ -17,6 +17,7 @@ test('production migrations send separate SQL statements and verify the resultin
     queries.push(text);
     if (text.includes('information_schema.columns')) {
       if (text.includes('account_deletion_requests')) return Array.from({ length: 4 }, () => ({}));
+      if (text.includes('form_submissions')) return Array.from({ length: 3 }, () => ({}));
       if (text.includes('push_subscriptions')) {
         return [
           { column_name: 'platform', is_nullable: 'NO' },
