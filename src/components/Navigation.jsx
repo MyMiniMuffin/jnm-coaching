@@ -128,7 +128,7 @@ const Navigation = React.memo(({ activeTab, setActiveTab, shell = 'narrow', onBa
                     onTouchCancel={stopTouchBubble}
                 >
                     {showBack && (
-                        <div className="app-rail-pill" data-testid="app-rail-back-pill">
+                        <div className="app-rail-pill app-rail-back-pill" data-testid="app-rail-back-pill">
                             <button
                                 type="button"
                                 onClick={handleBack}
