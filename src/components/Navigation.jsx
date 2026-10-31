@@ -34,13 +34,13 @@ const NavButton = React.memo(({ item, isActive, onClick, variant }) => {
                 onClick={() => onClick(item.id)}
                 aria-label={item.label}
                 aria-current={isActive ? 'page' : undefined}
-                className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                className={`app-rail-btn inline-flex h-11 w-11 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                     isActive
-                        ? 'bg-white text-accent-hover shadow-sm'
-                        : 'text-ink-muted hover:text-ink'
+                        ? 'bg-white text-accent-hover shadow-sm ring-1 ring-surface-200/70'
+                        : 'text-ink-muted hover:bg-white/60 hover:text-ink'
                 }`}
             >
-                <Icon size={22} strokeWidth={isActive ? 2 : 1.75} />
+                <Icon size={20} strokeWidth={isActive ? 2.1 : 1.75} />
             </button>
         );
     }
@@ -134,9 +134,9 @@ const Navigation = React.memo(({ activeTab, setActiveTab, shell = 'narrow', onBa
                                 onClick={handleBack}
                                 aria-label="Tilbake"
                                 data-testid="app-rail-back"
-                                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-ink transition-colors hover:bg-white/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                                className="app-rail-btn inline-flex h-11 w-11 items-center justify-center rounded-full text-ink transition-colors hover:bg-white/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                             >
-                                <ChevronLeft size={22} strokeWidth={2.25} />
+                                <ChevronLeft size={20} strokeWidth={2.25} />
                             </button>
                         </div>
                     )}

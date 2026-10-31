@@ -93,6 +93,17 @@ Ved modul-load (før første React-render) settes `html[data-shell]`. Samme attr
 
 ---
 
+## Rail-design etter Apple HIG (2026-10-31)
+
+Kilde: [Designing for iPhone Duo](https://developer.apple.com/design/human-interface-guidelines/designing-for-iphone-duo) (HIG, 9. sep 2026).
+
+- **Side-kontroller:** ytterskjerm og innerskjerm i landskap har toolbar/tab bar langs siden. Øverst: Back/Close; nederst: faner. Kun symboler (tekstknapper hører hjemme i horisontale barer).
+- **Innerskjerm i portrett:** HIG beholder vanlige horisontale barer. Rail blir en flytende bunnkapsel ved `(min-width: 700px) and (orientation: portrait)`; samme rekkefølge (tilbake først, så faner).
+- **Kompakt:** kapsel 52px (44pt knapp + 4px), kant 6px, innholdsgap 8px → `--app-rail-reserve` ≈ 66px (før 76px).
+- Ikke ennå: overflyt bottom-to-top når høyden ikke rekker (HIG `visibility priority`), jevnt antall kolonner rundt hengsel (`ReservedRegion` finnes bare nativt).
+
+---
+
 ## Revidert P0 (implementert i fase 2)
 
 1. Plattform-verifikasjon + fjern død segment-CSS; behold `--fold-gap`.

@@ -661,7 +661,10 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
 
         for (const vp of [
             { id: '390x844', width: 390, height: 844 },
-            { id: '760x900', width: 760, height: 900 },
+            { id: '844x390', width: 844, height: 390 },
+            // Inner display in portrait: HIG keeps horizontal bars → bottom capsule.
+            { id: '760x900', width: 760, height: 900, bottomBar: true },
+            { id: '900x760', width: 900, height: 760 },
         ]) {
             await t.test(`Duo rail ?device=duo at ${vp.id}`, async () => {
                 const context = await browser.newContext({
@@ -682,7 +685,13 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
 
                     const railBox = await page.getByTestId('app-rail').boundingBox();
                     assert.ok(railBox, 'rail box');
-                    assert.ok(railBox.x > vp.width / 2, 'rail is on the right half');
+                    if (vp.bottomBar) {
+                        assert.ok(railBox.y > vp.height / 2, 'portrait Duo bar sits in the bottom half');
+                        assert.ok(railBox.height < 80, `bottom bar is one row (h=${railBox.height})`);
+                    } else {
+                        assert.ok(railBox.x > vp.width / 2, 'rail is on the right half');
+                        assert.ok(railBox.width <= 64, `rail stays slim (w=${railBox.width})`);
+                    }
 
                     const tabButtons = page.locator('[data-testid="app-rail"] nav button');
                     const tabCount = await tabButtons.count();
@@ -704,10 +713,16 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
                         `render loop: ${pageErrors.join(' | ')}`
                     );
 
+                    if (vp.bottomBar) {
+                        const padBottom = await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.app-stage')).paddingBottom) || 0);
+                        assert.equal(metrics.stagePadRight, 0, 'no side reserve when bar is at the bottom');
+                        assert.ok(padBottom >= railBox.height + 7, `stage padding-bottom ${padBottom} clears bar ${railBox.height}`);
+                    }
+
                     // Single padding owner on .app-stage; content uses available width (not ~65%).
-                    assert.ok(metrics.stagePadRight > 40, `stage padding-right ${metrics.stagePadRight}`);
+                    if (!vp.bottomBar) assert.ok(metrics.stagePadRight > 40, `stage padding-right ${metrics.stagePadRight}`);
                     assert.equal(metrics.framePadRight, 0, 'app-frame must not also pad for rail');
-                    assert.ok(
+                    if (!vp.bottomBar) assert.ok(
                         metrics.stagePadRight >= metrics.railWidth + 7,
                         `stage pad ${metrics.stagePadRight} should include ≥8px gap beyond rail ${metrics.railWidth}`
                     );
@@ -722,7 +737,7 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
                     );
 
                     // No content under the rail
-                    const overlap = await page.evaluate(() => {
+                    const overlap = vp.bottomBar ? false : await page.evaluate(() => {
                         const rail = document.querySelector('[data-testid="app-rail"]');
                         const railRect = rail.getBoundingClientRect();
                         const content = document.querySelector('.app-content') || document.querySelector('main');
