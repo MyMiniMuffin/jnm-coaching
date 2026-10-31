@@ -50,6 +50,32 @@
     }
 }
 
+.coaching-side-photo {
+    overflow: hidden;
+    border-radius: 1rem;
+    background: #e9e8e3;
+}
+
+.coaching-side-photo img {
+    display: block;
+    width: 100%;
+    height: auto;
+    /* Short on phones so the form stays close; tall beside the form on desktop. */
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+    object-position: center 35%;
+}
+
+@media (min-width: 1024px) {
+    .coaching-side-photo {
+        max-width: 28rem;
+    }
+
+    .coaching-side-photo img {
+        aspect-ratio: 3 / 4;
+    }
+}
+
 .coaching-pillar::before {
     content: '';
     display: block;

@@ -250,6 +250,16 @@ const CoachingLandingPage = () => {
                         <p className="mt-6 max-w-md text-lg leading-8 text-black/60">
                             Send en kort, uforpliktende søknad. Vi vurderer om det passer.
                         </p>
+                        <figure className="coaching-side-photo mt-10">
+                            <img
+                                src="/images/barbell-belt.jpg"
+                                width="750"
+                                height="1000"
+                                alt="Vektstang med skiver og løftebelte på gulvet i gymmen"
+                                loading="lazy"
+                                decoding="async"
+                            />
+                        </figure>
                     </div>
                     <div data-reveal style={{ '--reveal-delay': '80ms' }}>
                         <ApplicationForm />
