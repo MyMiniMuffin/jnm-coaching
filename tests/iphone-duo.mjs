@@ -271,8 +271,16 @@ test('navigation supports wide sidebar, Duo rail, and phone bottom nav', () => {
     assert.match(app, /useShellMode\(\)/);
     assert.match(app, /getBackAction/);
     assert.match(app, /hideClientBack=\{isRail\}/);
-    assert.match(header, /duo:px-6 duo-lg:px-8 duo:py-3\.5 duo-lg:py-4/);
+    assert.match(header, /duo:py-3\.5 duo-lg:py-4/);
+    assert.doesNotMatch(header, /header-inner[^"]*(?:px-\d|duo:px-)/);
     assert.match(header, /hideClientBack/);
+    assert.match(css, /--app-column-max:\s*28rem/);
+    assert.match(css, /--app-gutter-x:\s*1rem/);
+    assert.match(css, /\.header-inner \{[\s\S]*?padding-left:\s*var\(--app-gutter-x\)/);
+    assert.match(css, /\.app-content \{[\s\S]*?padding:\s*1rem var\(--app-gutter-x\)/);
+    // Narrow header must not invent a second centered max-width (breaks Duo upright).
+    assert.match(css, /\.header-inner \{[\s\S]*?max-width:\s*none/);
+    assert.doesNotMatch(css, /\.header-inner \{\s*max-width:\s*28rem/);
     assert.match(css, /html\[data-shell="rail"\] \.app-stage \{/);
     assert.match(css, /--app-rail-reserve/);
     assert.match(css, /--app-rail-status-clearance/);
@@ -318,10 +326,12 @@ test('navigation supports wide sidebar, Duo rail, and phone bottom nav', () => {
     assert.doesNotMatch(navigation, /from 'lucide-react'/);
     assert.match(read('src/lib/config.js'), /from '@phosphor-icons\/react'/);
     assert.match(read('src/components/IconProvider.jsx'), /IconContext/);
-    // Unfolded Duo must not keep phone max-width / centered header.
+    // Rail unlocks frame/content; header column width is shared via --app-gutter-x (no second lock).
     assert.match(css, /html\[data-shell="rail"\] \.header-inner \{[\s\S]*?max-width:\s*none/);
     assert.match(css, /html\[data-shell="rail"\] \.app-content \{[\s\S]*?max-width:\s*none/);
     assert.match(css, /html\[data-shell="rail"\] \.app-frame[\s\S]*?max-width:\s*none/);
+    assert.match(css, /html\[data-shell="wide"\] \{\s*--app-gutter-x:\s*1\.5rem/);
+    assert.match(css, /html\[data-shell="rail"\] \{\s*--app-gutter-x:\s*1\.5rem/);
     assert.match(
         css,
         /padding-top:\s*calc\(env\(safe-area-inset-top,\s*0px\)\s*\+\s*var\(--app-rail-status-clearance\)\)/
@@ -348,7 +358,8 @@ test('PlanSection stacks sections and keeps break-words + whitespace-pre-wrap', 
     );
     assert.doesNotMatch(plan, /break-normal/);
     assert.doesNotMatch(plan, /overflow-x-auto/);
-    assert.match(plan, /duo:px-6 duo-lg:px-8/);
+    assert.match(plan, /header-inner mx-auto flex items-center gap-2 py-2\.5/);
+    assert.doesNotMatch(plan, /header-inner[^"]*(?:px-\d|duo:px-)/);
 });
 
 test('views keep duo density classes without dead segment coupling', () => {
@@ -380,7 +391,8 @@ test('views keep duo density classes without dead segment coupling', () => {
     assert.match(ui, /data-testid=\{wrap \? 'rating-scale'/);
     assert.doesNotMatch(ui, /duo:min-h-11/);
     assert.match(boundary, /sm:grid-cols-4 duo:grid-cols-5/);
-    assert.match(app, /duo:px-6 duo-lg:px-8 duo:py-3\.5 duo-lg:py-4/);
+    assert.match(app, /header-inner flex items-center gap-3 py-3 duo:py-3\.5 duo-lg:py-4/);
+    assert.doesNotMatch(app, /header-inner[^"]*(?:px-\d|duo:px-)/);
 });
 
 test('login card stays max-w-sm without unfolded split layout', () => {

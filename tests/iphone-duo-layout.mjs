@@ -821,6 +821,44 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
                             metrics.contentTextLen > 40,
                             `main content must not be empty (len=${metrics.contentTextLen}) at ${vp.id}`
                         );
+
+                        // Header gutter must match content column (shared --app-gutter-x).
+                        const align = await page.evaluate(() => {
+                            const header = document.querySelector('header .header-inner');
+                            const content = document.querySelector('.app-content') || document.querySelector('main');
+                            if (!header || !content) return null;
+                            const hs = getComputedStyle(header);
+                            const cs = getComputedStyle(content);
+                            const hr = header.getBoundingClientRect();
+                            const cr = content.getBoundingClientRect();
+                            const headerLeft = hr.left + Number.parseFloat(hs.paddingLeft || '0');
+                            const headerRight = hr.right - Number.parseFloat(hs.paddingRight || '0');
+                            const contentLeft = cr.left + Number.parseFloat(cs.paddingLeft || '0');
+                            const contentRight = cr.right - Number.parseFloat(cs.paddingRight || '0');
+                            return {
+                                headerLeft,
+                                headerRight,
+                                contentLeft,
+                                contentRight,
+                                headerMaxWidth: hs.maxWidth,
+                                headerWidth: hr.width,
+                                viewportWidth: window.innerWidth,
+                            };
+                        });
+                        assert.ok(align, 'header/content align metrics');
+                        assert.ok(
+                            Math.abs(align.headerLeft - align.contentLeft) < 1.5,
+                            `header left ${align.headerLeft} vs content left ${align.contentLeft}`
+                        );
+                        assert.ok(
+                            Math.abs(align.headerRight - align.contentRight) < 1.5,
+                            `header right ${align.headerRight} vs content right ${align.contentRight}`
+                        );
+                        assert.ok(
+                            align.headerWidth > align.viewportWidth * 0.9,
+                            `header-inner must span content column (w=${align.headerWidth}, vp=${align.viewportWidth})`
+                        );
+                        assert.notEqual(align.headerMaxWidth, '448px', 'no phone 28rem header lock');
                     }
 
                     assert.equal(
