@@ -184,7 +184,7 @@ const CheckinFields = ({
                     <Check size={14} strokeWidth={2.5} />
                 </div>
                 <div>
-                    <p className="font-medium">Skrittmål oppnådd</p>
+                    <p className="font-medium">Skrittmål nådd</p>
                     <p className="text-sm text-ink-muted">{(stepGoal || 10000).toLocaleString('nb-NO')} skritt</p>
                 </div>
             </label>
@@ -387,7 +387,7 @@ const CheckInView = React.memo(({
                 setFormData(prev => ({ ...prev, images: [...prev.images, ...uploadedUrls] }));
             }
             if (failedCount > 0) {
-                setErrorMessage(`${failedCount} av ${results.length} bilder kunne ikke lastes opp.`);
+                setErrorMessage(`${failedCount} av ${results.length} bilder ble ikke lastet opp. Prøv igjen.`);
             }
         } catch (err) {
             console.error('[CheckIn] Bildeopplasting feilet:', err);
@@ -607,7 +607,7 @@ const CheckInView = React.memo(({
                 </Button>
                 <Button type="submit" disabled={isSavingEdit} className="flex-1">
                     {isSavingEdit ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
-                    {isSavingEdit ? 'Lagrer...' : 'Lagre'}
+                    {isSavingEdit ? 'Lagrer…' : 'Lagre'}
                 </Button>
             </div>
         </form>
@@ -638,7 +638,7 @@ const CheckInView = React.memo(({
                                 <div>
                                     <p className="font-medium">{formatDateNO(featuredReport.date)}</p>
                                     <p className="text-xs text-ink-muted">
-                                        {thisWeekReport ? 'Sendt denne uken' : 'Siste innsending'}
+                                        {thisWeekReport ? 'Sendt denne uken' : 'Siste rapport'}
                                         {previousWeightFor(featuredReport) != null && (
                                             <>
                                                 {' · '}
@@ -689,7 +689,7 @@ const CheckInView = React.memo(({
                             <div className="flex items-start justify-between gap-3">
                                 <div>
                                     <p className="font-medium text-success">Utkast gjenopprettet</p>
-                                    <p className="mt-1 text-sm text-success">Du kan fortsette der du slapp og sende rapporten når du er klar.</p>
+                                    <p className="mt-1 text-sm text-success">Fortsett der du slapp.</p>
                                 </div>
                                 <button
                                     type="button"
@@ -705,9 +705,9 @@ const CheckInView = React.memo(({
                     <Card className="p-5 space-y-5">
                         <div className="flex items-start justify-between gap-3">
                             <div>
-                                <h3 className="section-title">{thisWeekReport ? 'Ny rapport' : 'Ukesrapport'}</h3>
+                                <h3 className="section-title">{thisWeekReport ? 'Ny rapport' : 'Rapport'}</h3>
                                 <p className="text-sm text-ink-muted mt-1">
-                                    {thisWeekReport ? 'Denne sendes i tillegg til rapporten som allerede er inne.' : 'Fyll ut status for uken. Du kan redigere etterpå.'}
+                                    {thisWeekReport ? 'Denne sendes i tillegg til rapporten du allerede har sendt.' : 'Fyll ut rapporten for uken. Du kan redigere etterpå.'}
                                 </p>
                             </div>
                             {hasDraftContent && (
@@ -780,7 +780,7 @@ const CheckInView = React.memo(({
                     <p className="section-label">Tidligere rapporter</p>
                     <p className="text-sm text-ink-muted mt-1">
                         {olderReports.length === 0
-                            ? (thisWeekReport ? 'Ingen eldre innsendinger' : 'Ingen tidligere innsendinger ennå')
+                            ? (thisWeekReport ? 'Ingen eldre rapporter' : 'Ingen tidligere rapporter ennå')
                             : `${olderReports.length} rapport${olderReports.length > 1 ? 'er' : ''}`}
                     </p>
                 </div>
@@ -789,8 +789,8 @@ const CheckInView = React.memo(({
                     !thisWeekReport && (
                         <EmptyState
                             icon={Activity}
-                            title="Ingen rapporter enda"
-                            description={isReadOnly ? 'Når utøveren sender en rapport, vises den her.' : 'Send ukesrapporten over for å starte historikken.'}
+                            title="Ingen rapporter ennå"
+                            description={isReadOnly ? 'Når utøveren sender en rapport, vises den her.' : 'Send rapporten for å starte historikken.'}
                         />
                     )
                 ) : (
