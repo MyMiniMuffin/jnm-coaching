@@ -21,21 +21,23 @@ final class DuoBridgeViewController: CAPBridgeViewController {
 
     public override func capacitorDidLoad() {
         super.capacitorDidLoad()
-        DuoDevice.logMachineIdentifierIfNeeded()
-        injectDuoUserScript()
+        let foldable = DuoDevice.hasFoldableDivision(in: view)
+        DuoDevice.logMachineIdentifierIfNeeded(hasFoldableDivision: foldable)
+        injectDuoUserScript(hasFoldableDivision: foldable)
     }
 
     public override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         // Backup if document-start script missed a navigation or SPA remount.
+        // Re-check foldable: the view is now in a window scene.
         ensureDuoDeviceAttribute()
     }
 
-    private func injectDuoUserScript() {
-        guard DuoDevice.isDuo else { return }
+    private func injectDuoUserScript(hasFoldableDivision: Bool) {
+        guard DuoDevice.isDuo(hasFoldableDivision: hasFoldableDivision) else { return }
         guard let controller = webView?.configuration.userContentController else { return }
         let script = WKUserScript(
-            source: DuoDevice.userScriptSource,
+            source: DuoDevice.userScriptSource(hasFoldableDivision: hasFoldableDivision),
             injectionTime: .atDocumentStart,
             forMainFrameOnly: true
         )
@@ -43,7 +45,11 @@ final class DuoBridgeViewController: CAPBridgeViewController {
     }
 
     private func ensureDuoDeviceAttribute() {
-        guard DuoDevice.isDuo else { return }
-        webView?.evaluateJavaScript(DuoDevice.userScriptSource, completionHandler: nil)
+        let foldable = DuoDevice.hasFoldableDivision(in: view)
+        guard DuoDevice.isDuo(hasFoldableDivision: foldable) else { return }
+        webView?.evaluateJavaScript(
+            DuoDevice.userScriptSource(hasFoldableDivision: foldable),
+            completionHandler: nil
+        )
     }
 }

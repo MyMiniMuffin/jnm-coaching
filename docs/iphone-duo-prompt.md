@@ -14,7 +14,7 @@ Du jobber i `jnm-coaching` (React + Vite + Tailwind, pakket med Capacitor til iO
 - `src/components/Navigation.jsx`: `.app-rail`, `.app-rail-inner`, `.app-rail-pill`, tilbake-pillen øverst.
 - `src/index.css` (søk etter `data-shell="rail"`): rail-CSS, `--app-rail-width` / `--app-rail-reserve`, og plass til save-bar og toasts.
 - `src/lib/railBack.jsx` + `getBackAction()` i `src/App.jsx`: én felles tilbake-handling for header, sveip og rail.
-- Native: `ios/App/App/DuoDevice.swift`, `DuoBridgeViewController.swift`, `src/lib/duoDeviceModels.js`. I Simulator gir `-ForceDuoDevice` / `JNM_FORCE_DUO=1` Duo-modus i Debug.
+- Native: `ios/App/App/DuoDevice.swift`, `DuoBridgeViewController.swift`, `src/lib/duoDeviceModels.js` (`decideIsDuo`). I Simulator: Debug-skjemaet sender `-ForceDuoDevice` (opt-in; ikke default i alle Debug-bygg). `JNM_FORCE_DUO=1` også OK. Aldri prefiks-match på `iPhone19` — 18 Pro er `iPhone19,2`.
 - Tester: `tests/iphone-duo.mjs`, `tests/iphone-duo-layout.mjs`, `tests/duo-device.mjs`.
 
 Start med å kjøre appen med `?device=duo` på viewportene under. Skriv ned hva som er feil eller mangler **før** du endrer noe.
