@@ -690,7 +690,8 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
                         assert.ok(railBox.height < 80, `bottom bar is one row (h=${railBox.height})`);
                     } else {
                         assert.ok(railBox.x > vp.width / 2, 'rail is on the right half');
-                        assert.ok(railBox.width <= 64, `rail stays slim (w=${railBox.width})`);
+                        // 44pt button + 4px pad + 1px border per side (54px capsule) + 12px column margin.
+                        assert.ok(railBox.width <= 66, `rail stays slim (w=${railBox.width})`);
                     }
 
                     const tabButtons = page.locator('[data-testid="app-rail"] nav button');
