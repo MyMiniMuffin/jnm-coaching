@@ -178,6 +178,10 @@ export const api = {
         method: 'PATCH', body: { id, imagesRemoved: true, confirmationSent: true }
     }),
     recordActivity: () => request('/.netlify/functions/activity', { method: 'POST' }),
+    getFormSubmissions: () => request('/.netlify/functions/form-submissions', { cacheMode: 'no-store' }),
+    setFormSubmissionHandled: (id, handled) => request('/.netlify/functions/form-submissions', {
+        method: 'PATCH', body: { id, handled }
+    }),
     getUsers: async (useCache = false) => {
         if (useCache) {
             const cached = cache.get('users-list');

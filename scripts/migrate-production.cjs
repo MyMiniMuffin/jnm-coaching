@@ -59,8 +59,15 @@ async function main() {
   `;
   if (formColumns.length !== 3) throw new Error('Form submissions table verification failed');
   console.log('Database migration 010: applied and verified.');
+  await sql(readFileSync(join(__dirname, '../migrations/011_form_submissions_handled.sql'), 'utf8'));
+  const handledColumn = await sql`
+    SELECT column_name FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'form_submissions' AND column_name = 'handled_at'
+  `;
+  if (handledColumn.length !== 1) throw new Error('Form submissions handled_at verification failed');
+  console.log('Database migration 011: applied and verified.');
 }
 main().catch((error) => {
-  console.error('Database migration failed; deployment stopped. Check database configuration and migrations 003–010. SQLSTATE:', error.code || 'unknown');
+  console.error('Database migration failed; deployment stopped. Check database configuration and migrations 003–011. SQLSTATE:', error.code || 'unknown');
   process.exitCode = 1;
 });

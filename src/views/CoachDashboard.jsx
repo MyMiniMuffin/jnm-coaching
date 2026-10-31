@@ -1,4 +1,5 @@
 import DeletionRequests from '../components/DeletionRequests';
+import FormSubmissions from '../components/FormSubmissions';
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { Plus, X, Trash2, User, ChevronRight, Loader2, KeyRound, BellRing, Search, ArrowUpDown, MoreHorizontal, ArchiveRestore, Archive } from 'lucide-react';
 import { Card, Button, EmptyState, IconButton, TextField, ToggleGroup, SelectField } from '../components/ui';
@@ -335,6 +336,8 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
                     </div>
                 </div>
             </div>
+
+            <FormSubmissions />
 
             {/* Toggle og Ny-knapp */}
             <div className="flex justify-between items-center gap-3">

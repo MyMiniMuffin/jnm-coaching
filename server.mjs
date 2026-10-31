@@ -29,6 +29,7 @@ const HANDLERS = new Set([
     'activity',
     'auth',
     'data',
+    'form-submissions',
     'health-check',
     'push-subscriptions',
     'upload',
