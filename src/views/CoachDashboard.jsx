@@ -1,7 +1,7 @@
 import DeletionRequests from '../components/DeletionRequests';
 import FormSubmissions from '../components/FormSubmissions';
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { Plus, X, Trash2, User, ChevronRight, Loader2, KeyRound, BellRing, Search, ArrowUpDown, MoreHorizontal, ArchiveRestore, Archive } from 'lucide-react';
+import { Plus, X, Trash, User, CaretRight, CircleNotch, Key, BellRinging, MagnifyingGlass, ArrowsDownUp, DotsThree, TrayArrowUp, Archive } from '@phosphor-icons/react';
 import { Card, Button, EmptyState, IconButton, TextField, ToggleGroup, SelectField } from '../components/ui';
 import { useEscapeKey } from '../hooks';
 import { useConfirm } from '../components/ConfirmDialog';
@@ -63,7 +63,7 @@ const ClientActionsMenu = ({ client, isPending, open, onOpenChange, onArchive, o
                     onOpenChange(!open);
                 }}
             >
-                <MoreHorizontal size={18} />
+                <DotsThree size={18} />
             </IconButton>
             {open && (
                 <div
@@ -78,7 +78,7 @@ const ClientActionsMenu = ({ client, isPending, open, onOpenChange, onArchive, o
                         className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-ink hover:bg-surface-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                         onClick={(event) => run(event, onArchive)}
                     >
-                        {client.is_archived ? <ArchiveRestore size={16} /> : <Archive size={16} />}
+                        {client.is_archived ? <TrayArrowUp size={16} /> : <Archive size={16} />}
                         {client.is_archived ? 'Gjenopprett' : 'Arkiver'}
                     </button>
                     <button
@@ -87,7 +87,7 @@ const ClientActionsMenu = ({ client, isPending, open, onOpenChange, onArchive, o
                         className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-ink hover:bg-surface-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                         onClick={(event) => run(event, onReset)}
                     >
-                        <KeyRound size={16} />
+                        <Key size={16} />
                         Tilbakestill passord
                     </button>
                     <button
@@ -96,7 +96,7 @@ const ClientActionsMenu = ({ client, isPending, open, onOpenChange, onArchive, o
                         className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-error hover:bg-error/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                         onClick={(event) => run(event, onDelete)}
                     >
-                        <Trash2 size={16} />
+                        <Trash size={16} />
                         Slett utøver
                     </button>
                 </div>
@@ -267,7 +267,7 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
                             <p className="text-sm text-ink-muted">Utøveren må velge eget passord ved første innlogging.</p>
                             <TextField id="new-athlete-password" label="Midlertidig passord" required name="password" type="password" minLength="6" placeholder="Minst 6 tegn" autoComplete="new-password" />
                             <Button type="submit" size="lg" className="w-full" disabled={isCreating}>
-                                {isCreating ? <><Loader2 size={18} className="animate-spin" /> Oppretter…</> : 'Opprett utøver'}
+                                {isCreating ? <><CircleNotch size={18} className="animate-spin" /> Oppretter…</> : 'Opprett utøver'}
                             </Button>
                         </form>
                     </Card>
@@ -289,7 +289,7 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
                             <p className="text-sm text-ink-muted">Utøveren må velge eget passord ved neste innlogging.</p>
                             <TextField ref={resetPasswordInputRef} id="reset-athlete-password" label="Midlertidig passord" required name="password" type="password" minLength="6" placeholder="Minst 6 tegn" autoComplete="new-password" />
                             <Button type="submit" size="lg" className="w-full" disabled={isResetting}>
-                                {isResetting ? <><Loader2 size={18} className="animate-spin" /> Tilbakestiller…</> : <><KeyRound size={18} /> Tilbakestill passord</>}
+                                {isResetting ? <><CircleNotch size={18} className="animate-spin" /> Tilbakestiller…</> : <><Key size={18} /> Tilbakestill passord</>}
                             </Button>
                         </form>
                     </Card>
@@ -303,7 +303,7 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
                         <p className="text-white/70 text-xs">Oversikt</p>
                         <h2 className="text-2xl font-display leading-tight">Utøvere</h2>
                         <div className="flex flex-wrap items-center gap-1.5 mt-1.5 text-xs text-white/75">
-                            <BellRing size={12} className="shrink-0" />
+                            <BellRinging size={12} className="shrink-0" />
                             <span>
                                 {notificationPermission === 'granted'
                                     ? (totalUnreadCheckins > 0 ? `${totalUnreadCheckins} uleste ukesrapporter` : 'Pushvarsler aktivert')
@@ -351,7 +351,7 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
                         ]}
                     />
                     {isLoading && displayedClients.length > 0 && (
-                        <Loader2 size={14} className="animate-spin text-ink-faint ml-1" aria-label="Oppdaterer" />
+                        <CircleNotch size={14} className="animate-spin text-ink-faint ml-1" aria-label="Oppdaterer" />
                     )}
                 </div>
                 <Button variant="primary" size="sm" onClick={openModal}>
@@ -362,14 +362,14 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
             {(activeClients.length > 0 || archivedClients.length > 0) && (
                 <div className="grid grid-cols-1 sm:grid-cols-[1fr_12rem] lg:grid-cols-[1fr_14rem] gap-3">
                     <TextField
-                        icon={Search}
+                        icon={MagnifyingGlass}
                         value={searchTerm}
                         onChange={handleSearchChange}
                         placeholder="Søk etter utøver"
                         aria-label="Søk etter utøver"
                     />
                     <div className="relative">
-                        <ArrowUpDown className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted z-10" size={18} />
+                        <ArrowsDownUp className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted z-10" size={18} />
                         <SelectField
                             value={sortBy}
                             onChange={handleSortChange}
@@ -446,7 +446,7 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
                                                 : 'Ingen ukesrapporter ennå'}
                                     </span>
                                 </span>
-                                {!isPending && <ChevronRight size={18} className="ml-auto shrink-0 text-ink-faint" />}
+                                {!isPending && <CaretRight size={18} className="ml-auto shrink-0 text-ink-faint" />}
                             </button>
                             <div className="flex items-center shrink-0">
                                 <ClientActionsMenu
@@ -458,7 +458,7 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
                                     onReset={() => openResetModal(client)}
                                     onDelete={() => handleDelete(client.id)}
                                 />
-                                {isPending && <Loader2 size={18} className="text-ink-faint animate-spin" />}
+                                {isPending && <CircleNotch size={18} className="text-ink-faint animate-spin" />}
                             </div>
                         </Card>
                         );

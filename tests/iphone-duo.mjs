@@ -273,9 +273,18 @@ test('navigation supports wide sidebar, Duo rail, and phone bottom nav', () => {
     assert.match(css, /html\[data-shell="rail"\] \.app-rail-btn \{/);
     assert.match(css, /place-items:\s*center/);
     assert.match(css, /html\[data-shell="rail"\] \.app-rail-btn > svg \{/);
+    assert.match(css, /display:\s*block/);
+    assert.match(css, /width:\s*1\.25rem/);
+    assert.match(css, /height:\s*1\.25rem/);
     assert.match(navigation, /className=\{`app-rail-btn /);
     assert.match(navigation, /className="app-rail-btn /);
     assert.doesNotMatch(navigation, /app-rail-btn inline-flex h-11 w-11/);
+    // Phosphor: active nav uses fill weight; rail icons stay 20px so CSS sizing holds.
+    assert.match(navigation, /weight=\{isActive \? 'fill' : 'regular'\}/);
+    assert.match(navigation, /size=\{20\} weight=\{isActive \? 'fill' : 'regular'\}/);
+    assert.doesNotMatch(navigation, /from 'lucide-react'/);
+    assert.match(read('src/lib/config.js'), /from '@phosphor-icons\/react'/);
+    assert.match(read('src/components/IconProvider.jsx'), /IconContext/);
     // Unfolded Duo must not keep phone max-width / centered header.
     assert.match(css, /html\[data-shell="rail"\] \.header-inner \{[\s\S]*?max-width:\s*none/);
     assert.match(css, /html\[data-shell="rail"\] \.app-content \{[\s\S]*?max-width:\s*none/);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react';
-import { Loader2, Pause, Eye, LogOut, ChevronLeft } from 'lucide-react';
+import { CircleNotch, Pause, Eye, SignOut, CaretLeft } from '@phosphor-icons/react';
 
 // Lib
 import { saveSession, getSession, getToken, clearSession, hasValidSession } from './lib/session';
@@ -1403,7 +1403,7 @@ const App = () => {
                 <div className="w-20 h-20 mb-5 animate-pulse">
                     <img src={APP_ICON} alt="JNM Coaching logo" className="w-full h-full" />
                 </div>
-                <Loader2 className="animate-spin text-ink-muted mb-4" size={32} />
+                <CircleNotch className="animate-spin text-ink-muted mb-4" size={32} />
                 <p className="text-ink-muted font-medium">Laster…</p>
             </div>
         );
@@ -1456,7 +1456,7 @@ const App = () => {
                                 className="w-full"
                                 onClick={handleLogout}
                             >
-                                <LogOut size={18} /> Logg ut
+                                <SignOut size={18} /> Logg ut
                             </Button>
                         </div>
                     </div>
@@ -1467,7 +1467,7 @@ const App = () => {
                                 <div className="app-header-top-inset" aria-hidden="true" />
                                 <div className="header-inner flex items-center gap-3 px-4 py-3 duo:px-6 duo-lg:px-8 duo:py-3.5 duo-lg:py-4">
                                     <IconButton onClick={() => setActiveTab('dashboard')} aria-label="Tilbake til oversikten" className="-ml-2">
-                                        <ChevronLeft size={22} />
+                                        <CaretLeft size={22} />
                                     </IconButton>
                                     <PageTitle>Historikk</PageTitle>
                                 </div>

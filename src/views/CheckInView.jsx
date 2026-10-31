@@ -1,9 +1,6 @@
 import ImageViewerLoading from '../components/ImageViewerLoading';
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import {
-  Check, Camera, X, Trash2, Loader2, Scale,
-  Activity, AlertCircle, Save, Pencil, ChevronDown, Plus
-} from 'lucide-react';
+import { Check, Camera, X, Trash, CircleNotch, Scales, Pulse, WarningCircle, FloppyDisk, PencilSimple, CaretDown, Plus } from '@phosphor-icons/react';
 import { Card, Badge, Button, EmptyState, IconButton, InputLabel, SegmentedControl, SessionStepper, TextArea } from '../components/ui';
 import ReportMetrics from '../components/ReportMetrics';
 import { getReportTone } from '../lib/reportStatus';
@@ -111,7 +108,7 @@ const CheckinFields = ({
         <div>
             <label htmlFor="checkin-weight" className="block text-sm font-medium text-ink-muted mb-2">Vekt (kg)</label>
             <div className="relative">
-                <Scale className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" size={18} />
+                <Scales className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" size={18} />
                 <input
                     id="checkin-weight"
                     ref={weightInputRef}
@@ -181,7 +178,7 @@ const CheckinFields = ({
             <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-colors ${values.stepsReached ? 'bg-accent/10 border-accent/20' : 'bg-surface-50 border-surface-200'}`}>
                 <input type="checkbox" checked={values.stepsReached} onChange={(event) => { haptic('toggle'); onField('stepsReached', event.target.checked); }} className="sr-only" />
                 <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${values.stepsReached ? 'bg-accent text-white border-2 border-accent' : 'border-2 border-surface-300 bg-white text-transparent'}`}>
-                    <Check size={14} strokeWidth={2.5} />
+                    <Check size={14} />
                 </div>
                 <div>
                     <p className="font-medium">Skrittmål nådd</p>
@@ -191,7 +188,7 @@ const CheckinFields = ({
             <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-colors ${values.takenSupplements ? 'bg-accent/10 border-accent/20' : 'bg-surface-50 border-surface-200'}`}>
                 <input type="checkbox" checked={values.takenSupplements} onChange={(event) => { haptic('toggle'); onField('takenSupplements', event.target.checked); }} className="sr-only" />
                 <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${values.takenSupplements ? 'bg-accent text-white border-2 border-accent' : 'border-2 border-surface-300 bg-white text-transparent'}`}>
-                    <Check size={14} strokeWidth={2.5} />
+                    <Check size={14} />
                 </div>
                 <div>
                     <p className="font-medium">Kosttilskudd tatt</p>
@@ -238,7 +235,7 @@ const CheckinFields = ({
                     </div>
                 )}
                 <label className={`flex items-center justify-center gap-2 rounded-xl border border-dashed border-surface-200 px-4 py-3 text-sm font-medium text-ink-muted transition-colors hover:border-surface-300 hover:bg-surface-50 ${isUploading ? 'pointer-events-none opacity-50' : 'cursor-pointer'}`}>
-                    {isUploading ? <Loader2 className="animate-spin" size={18} /> : <Camera size={18} />}
+                    {isUploading ? <CircleNotch className="animate-spin" size={18} /> : <Camera size={18} />}
                     {isUploading ? 'Laster opp…' : 'Legg til bilde'}
                     <input type="file" accept="image/*" multiple className="sr-only" onChange={onPickImages} />
                 </label>
@@ -597,7 +594,7 @@ const CheckInView = React.memo(({
             />
             {editError && (
                 <div className="flex items-center gap-3 bg-error/10 border border-error/20 text-error px-4 py-3 rounded-xl text-sm">
-                    <AlertCircle size={18} />
+                    <WarningCircle size={18} />
                     {editError}
                 </div>
             )}
@@ -606,7 +603,7 @@ const CheckInView = React.memo(({
                     Avbryt
                 </Button>
                 <Button type="submit" disabled={isSavingEdit} className="flex-1">
-                    {isSavingEdit ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
+                    {isSavingEdit ? <CircleNotch className="animate-spin" size={18} /> : <FloppyDisk size={18} />}
                     {isSavingEdit ? 'Lagrer…' : 'Lagre'}
                 </Button>
             </div>
@@ -650,7 +647,7 @@ const CheckInView = React.memo(({
                                 <div className="flex shrink-0 flex-wrap items-center gap-2">
                                     {canEdit && onUpdate && (
                                         <IconButton type="button" onClick={() => startEdit(featuredReport)} aria-label="Rediger rapport" tone="accent">
-                                            <Pencil size={16} />
+                                            <PencilSimple size={16} />
                                         </IconButton>
                                     )}
                                     {canDelete && onDelete && (
@@ -664,7 +661,7 @@ const CheckInView = React.memo(({
                                             aria-label="Slett rapport"
                                             tone="danger"
                                         >
-                                            <Trash2 size={16} />
+                                            <Trash size={16} />
                                         </IconButton>
                                     )}
                                     <Badge className="tabular-nums">{formatWeight(featuredReport.weight)} kg</Badge>
@@ -733,7 +730,7 @@ const CheckInView = React.memo(({
 
                     {errorMessage && (
                         <div className="flex items-center gap-3 bg-error/10 border border-error/20 text-error px-4 py-3 rounded-xl text-sm">
-                            <AlertCircle size={18} />
+                            <WarningCircle size={18} />
                             {errorMessage}
                         </div>
                     )}
@@ -768,7 +765,7 @@ const CheckInView = React.memo(({
                             className="flex-1 duo:flex-none"
                             disabled={isPreview || isSubmitting || isCompressing}
                         >
-                            {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
+                            {isSubmitting ? <CircleNotch className="animate-spin" size={18} /> : <FloppyDisk size={18} />}
                             {isSubmitting ? 'Sender…' : 'Send rapport'}
                         </Button>
                     </div>
@@ -788,7 +785,7 @@ const CheckInView = React.memo(({
                 {olderReports.length === 0 ? (
                     !thisWeekReport && (
                         <EmptyState
-                            icon={Activity}
+                            icon={Pulse}
                             title="Ingen ukesrapporter ennå"
                             description={isReadOnly ? 'Når utøveren sender en rapport, vises den her.' : 'Send ukesrapporten for å starte historikken.'}
                         />
@@ -832,11 +829,11 @@ const CheckInView = React.memo(({
                                                     {' · '}søvn {entry.sleep ?? '–'}
                                                 </p>
                                             </div>
-                                            <ChevronDown size={18} className={`shrink-0 text-ink-faint transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                                            <CaretDown size={18} className={`shrink-0 text-ink-faint transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                                         </button>
                                         {canEdit && onUpdate && (
                                             <IconButton type="button" onClick={() => startEdit(entry)} aria-label="Rediger rapport" tone="accent">
-                                                <Pencil size={16} />
+                                                <PencilSimple size={16} />
                                             </IconButton>
                                         )}
                                         {canDelete && onDelete && (
@@ -850,7 +847,7 @@ const CheckInView = React.memo(({
                                                 aria-label="Slett rapport"
                                                 tone="danger"
                                             >
-                                                <Trash2 size={16} />
+                                                <Trash size={16} />
                                             </IconButton>
                                         )}
                                     </div>

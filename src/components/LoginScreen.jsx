@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowRight, AlertCircle, Loader2, Eye, EyeOff } from 'lucide-react';
+import { ArrowRight, WarningCircle, CircleNotch, Eye, EyeSlash } from '@phosphor-icons/react';
 import { Button, TextField } from './ui';
 import { api } from '../lib/api';
 import { APP_ICON } from '../lib/config';
@@ -103,7 +103,7 @@ const LoginScreen = React.memo(({ onLogin }) => {
                                 className="absolute right-1.5 top-1/2 -translate-y-1/2 inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-ink-faint hover:bg-surface-100 hover:text-ink transition-colors"
                                 aria-label={showPassword ? 'Skjul passord' : 'Vis passord'}
                             >
-                                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                {showPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
                             </button>
                         </div>
                         {isCapsLockOn && (
@@ -121,14 +121,14 @@ const LoginScreen = React.memo(({ onLogin }) => {
                     </>}
                     {error && (
                         <div className="flex items-center gap-2 text-error bg-error/10 border border-error/20 px-4 py-3 rounded-xl text-sm">
-                            <AlertCircle size={16} />
+                            <WarningCircle size={16} />
                             {error}
                         </div>
                     )}
 
                     <Button type="submit" disabled={isLoading || !username.trim() || !password} size="lg" className="w-full mt-6">
                         {isLoading ? (
-                            <Loader2 className="animate-spin" size={20} />
+                            <CircleNotch className="animate-spin" size={20} />
                         ) : (
                             <>{mustChangePassword ? 'Lagre passord og fortsett' : 'Logg inn'} <ArrowRight size={18} /></>
                         )}

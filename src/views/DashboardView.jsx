@@ -1,8 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import {
-  Scale, Footprints, Pencil, ChevronRight, TrendingUp, TrendingDown, Minus,
-  X, Plus, Check, Loader2, Pause, Play, Activity, ArrowRight, ArrowLeft, Trash2
-} from 'lucide-react';
+import { Scales, Footprints, PencilSimple, CaretRight, TrendUp, TrendDown, Minus, X, Plus, Check, CircleNotch, Pause, Play, Pulse, ArrowRight, ArrowLeft, Trash } from '@phosphor-icons/react';
 import { Card, Badge, Button, IconButton, TextField } from '../components/ui';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmDialog';
@@ -160,7 +157,7 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                                             onClick={() => handleSaveRename(activePeriod.id)}
                                                             disabled={isLoading}
                                                         >
-                                                            {isLoading ? <><Loader2 size={14} className="animate-spin" /> Lagrer…</> : 'Lagre endringer'}
+                                                            {isLoading ? <><CircleNotch size={14} className="animate-spin" /> Lagrer…</> : 'Lagre endringer'}
                                                         </Button>
                                                     </div>
                                                 </div>
@@ -180,7 +177,7 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                                         disabled={isLoading}
                                                         tone="accent"
                                                     >
-                                                        <Pencil size={16} />
+                                                        <PencilSimple size={16} />
                                                     </IconButton>
                                                     <IconButton
                                                         onClick={() => handleDelete(activePeriod)}
@@ -188,7 +185,7 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                                         disabled={isLoading}
                                                         tone="danger"
                                                     >
-                                                        <Trash2 size={16} />
+                                                        <Trash size={16} />
                                                     </IconButton>
                                                 </>
                                             )}
@@ -214,7 +211,7 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                         onClick={() => handleEnd(activePeriod.id)}
                                         disabled={isLoading}
                                     >
-                                                                    {isLoading ? <><Loader2 size={14} className="animate-spin" /> Avslutter…</> : 'Avslutt runde'}
+                                                                    {isLoading ? <><CircleNotch size={14} className="animate-spin" /> Avslutter…</> : 'Avslutt runde'}
                                     </Button>
                                 </div>
                             </div>
@@ -272,7 +269,7 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                                                     onClick={() => handleSaveRename(period.id)}
                                                                     disabled={isLoading}
                                                                 >
-                                                                    {isLoading ? <><Loader2 size={14} className="animate-spin" /> Lagrer…</> : 'Lagre endringer'}
+                                                                    {isLoading ? <><CircleNotch size={14} className="animate-spin" /> Lagrer…</> : 'Lagre endringer'}
                                                                 </Button>
                                                             </div>
                                                         </div>
@@ -293,7 +290,7 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                                             disabled={isLoading}
                                                             tone="accent"
                                                         >
-                                                            <Pencil size={16} />
+                                                            <PencilSimple size={16} />
                                                         </IconButton>
                                                         <IconButton
                                                             onClick={() => handleDelete(period)}
@@ -301,7 +298,7 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                                             disabled={isLoading}
                                                             tone="danger"
                                                         >
-                                                            <Trash2 size={16} />
+                                                            <Trash size={16} />
                                                         </IconButton>
                                                     </div>
                                                 )}
@@ -348,7 +345,7 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                         <TextField
                             id="new-period-starting-weight"
                             label="Startvekt (kg) *"
-                            icon={Scale}
+                            icon={Scales}
                             type="number"
                             inputMode="decimal"
                             step="0.1"
@@ -375,7 +372,7 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                 Avbryt
                             </Button>
                             <Button type="submit" variant="primary" size="lg" className="flex-1" disabled={isLoading}>
-                                                        {isLoading ? <><Loader2 size={18} className="animate-spin" /> Oppretter…</> : <><Check size={18} /> Opprett</>}
+                                                        {isLoading ? <><CircleNotch size={18} className="animate-spin" /> Oppretter…</> : <><Check size={18} /> Opprett</>}
                             </Button>
                         </div>
                     </form>
@@ -536,7 +533,7 @@ const PlanSettingsModal = React.memo(({ userData, onClose, onUpdateData, onOpenP
                             disabled={isSaving}
                             className="flex min-h-14 w-full items-center gap-3 rounded-xl border border-surface-200 bg-surface-50 px-4 py-3 text-left transition-colors hover:bg-surface-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-60"
                         >
-                            <Activity size={19} className="shrink-0 text-ink-muted" />
+                            <Pulse size={19} className="shrink-0 text-ink-muted" />
                             <span className="min-w-0 flex-1">
                                 <span className="block font-medium">Coaching-runder</span>
                                 <span className="block truncate text-xs text-ink-muted">
@@ -571,7 +568,7 @@ const PlanSettingsModal = React.memo(({ userData, onClose, onUpdateData, onOpenP
                             {hasChanges ? 'Avbryt' : 'Lukk'}
                         </Button>
                         <Button variant="primary" size="md" className="flex-1" onClick={handleSave} disabled={isSaving || !hasChanges || !weeksValid || !stepGoalValid || !dateValid}>
-                            {isSaving ? <><Loader2 size={17} className="animate-spin" /> Lagrer…</> : <><Check size={17} /> Lagre</>}
+                            {isSaving ? <><CircleNotch size={17} className="animate-spin" /> Lagrer…</> : <><Check size={17} /> Lagre</>}
                         </Button>
                     </div>
                 </div>
@@ -782,7 +779,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                                 aria-label="Åpne planinnstillinger"
                                 className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg bg-white/5 hover:bg-white/12 text-white/70 transition-colors"
                             >
-                                <Pencil size={18} />
+                                <PencilSimple size={18} />
                             </button>
                         )}
                     </div>
@@ -809,7 +806,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                             </p>
                             {isCoach && (
                                 <Button variant="secondary" size="sm" onClick={handleOpenPlanSettings}>
-                                    <Pencil size={16} /> Sett opp plan
+                                    <PencilSimple size={16} /> Sett opp plan
                                 </Button>
                             )}
                         </div>
@@ -839,9 +836,9 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                 >
                     <div className="flex flex-wrap justify-between items-start gap-2 mb-3">
                         <div className="w-10 h-10 bg-surface-100 rounded-xl flex items-center justify-center text-ink-muted group-hover:bg-surface-200 transition-colors">
-                            <Scale size={20} />
+                            <Scales size={20} />
                         </div>
-                        <ChevronRight size={16} className="text-ink-faint" />
+                        <CaretRight size={16} className="text-ink-faint" />
                     </div>
                     <p className="section-label">Siste vekt</p>
                     <p className="text-2xl font-semibold mt-1 tabular-nums">
@@ -860,7 +857,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-ink-muted ${isCoach ? 'bg-surface-100 group-hover:bg-surface-200 transition-colors' : 'bg-white'}`}>
                             <Footprints size={20} />
                         </div>
-                        {isCoach && <ChevronRight size={16} className="text-ink-faint" />}
+                        {isCoach && <CaretRight size={16} className="text-ink-faint" />}
                     </div>
                     <p className="section-label">Ukentlig skrittmål</p>
                     <p className="text-2xl font-semibold mt-1">{(userData.stepGoal || 10000).toLocaleString('nb-NO')}</p>
@@ -898,7 +895,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                                 <div
                                     className={`flex items-center justify-center gap-2 rounded-lg p-3 text-sm font-semibold ${wc === 0 ? 'bg-surface-100 text-ink-muted' : 'bg-surface-100 text-ink'}`}
                                 >
-                                    {wc < 0 ? <TrendingDown size={18} /> : wc > 0 ? <TrendingUp size={18} /> : <Minus size={18} />}
+                                    {wc < 0 ? <TrendDown size={18} /> : wc > 0 ? <TrendUp size={18} /> : <Minus size={18} />}
                                     <span className="tabular-nums">
                                         {wc > 0 ? '+' : ''}{stats.weightChange.replace('.', ',')} kg total endring
                                     </span>

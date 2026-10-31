@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Loader2 } from 'lucide-react';
+import { CircleNotch } from '@phosphor-icons/react';
 import { DUO_MEDIA_QUERY } from './lib/duoBreakpoint';
 import { useShellMode, useShellWide, useShellRail } from './lib/shellMode';
 
@@ -125,7 +125,7 @@ export const usePullToRefresh = (onRefresh, options = {}) => {
                 }}
             >
                 <div className={`bg-ink text-white px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 shadow-lg ${refreshing ? 'animate-pulse' : ''}`}>
-                    <Loader2 size={16} className={refreshing ? 'animate-spin' : ''} style={{ transform: `rotate(${pullDistance * 3}deg)` }} />
+                    <CircleNotch size={16} className={refreshing ? 'animate-spin' : ''} style={{ transform: `rotate(${pullDistance * 3}deg)` }} />
                     {refreshing ? 'Oppdaterer…' : pullDistance >= threshold ? 'Slipp for å oppdatere' : 'Dra ned…'}
                 </div>
             </div>

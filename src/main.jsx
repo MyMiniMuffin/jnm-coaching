@@ -5,6 +5,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { ToastProvider } from './components/Toast';
 import { ConfirmProvider } from './components/ConfirmDialog';
+import IconProvider from './components/IconProvider';
 import { RailBackProvider } from './lib/railBack';
 import App from './App';
 
@@ -14,11 +15,13 @@ document.documentElement.classList.toggle('ios-standalone', navigator.standalone
 
 const root = createRoot(document.getElementById('root'));
 root.render(
-    <ToastProvider>
-        <ConfirmProvider>
-            <RailBackProvider>
-                <App />
-            </RailBackProvider>
-        </ConfirmProvider>
-    </ToastProvider>
+    <IconProvider>
+        <ToastProvider>
+            <ConfirmProvider>
+                <RailBackProvider>
+                    <App />
+                </RailBackProvider>
+            </ConfirmProvider>
+        </ToastProvider>
+    </IconProvider>
 );

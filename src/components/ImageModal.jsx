@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, ChevronLeft, ChevronRight, Loader2, Download, ZoomIn, Scan } from 'lucide-react';
+import { X, CaretLeft, CaretRight, CircleNotch, DownloadSimple, MagnifyingGlassPlus, CornersIn } from '@phosphor-icons/react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { formatDateNO, formatWeight, getFullSizeImage } from '../lib/formatters';
 import { buildImageFilename, downloadImageFile } from '../lib/downloadImage';
@@ -204,7 +204,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose, canDownload = fa
                     aria-label="Last ned bilde"
                     className="text-white/75 hover:text-white min-h-[44px] min-w-[44px] p-2 rounded-full bg-white/10 hover:bg-white/18 backdrop-blur-md ring-1 ring-white/10 transition-all disabled:opacity-60"
                 >
-                    {downloading ? <Loader2 size={22} className="animate-spin" /> : <Download size={22} />}
+                    {downloading ? <CircleNotch size={22} className="animate-spin" /> : <DownloadSimple size={22} />}
                 </button>}
                 <button
                     type="button"
@@ -259,7 +259,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose, canDownload = fa
                         {loading && !loadError && (
                             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3" aria-hidden="true">
                                 <div className="rounded-full bg-black/50 p-4 flex items-center justify-center">
-                                    <Loader2 className="text-white/70 animate-spin" size={32} />
+                                    <CircleNotch className="text-white/70 animate-spin" size={32} />
                                 </div>
                                 <p className="text-white/50 text-xs">Laster bilde…</p>
                             </div>
@@ -309,7 +309,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose, canDownload = fa
                         className="absolute top-1/2 -translate-y-1/2 min-h-[48px] min-w-[48px] p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md ring-1 ring-white/10 transition-all active:scale-[0.98] z-[110]"
                         style={{ left: 'calc(env(safe-area-inset-left, 0px) + 0.75rem)' }}
                     >
-                        <ChevronLeft size={26} />
+                        <CaretLeft size={26} />
                     </button>
                 )}
                 {hasNext && (
@@ -320,7 +320,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose, canDownload = fa
                         className="absolute top-1/2 -translate-y-1/2 min-h-[48px] min-w-[48px] p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md ring-1 ring-white/10 transition-all active:scale-[0.98] z-[110]"
                         style={{ right: 'calc(env(safe-area-inset-right, 0px) + 0.75rem)' }}
                     >
-                        <ChevronRight size={26} />
+                        <CaretRight size={26} />
                     </button>
                 )}
                 <div
@@ -354,7 +354,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose, canDownload = fa
                             title={isZoomed ? 'Tilpass bilde' : 'Zoom inn'}
                             className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white transition-colors hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white disabled:opacity-40"
                         >
-                            {isZoomed ? <Scan size={20} /> : <ZoomIn size={20} />}
+                            {isZoomed ? <CornersIn size={20} /> : <MagnifyingGlassPlus size={20} />}
                         </button>
                     </div>
                 </div>

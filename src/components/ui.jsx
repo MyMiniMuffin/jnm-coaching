@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronDown } from 'lucide-react';
+import { CaretDown } from '@phosphor-icons/react';
 import { haptic } from '../lib/haptic';
 
 export const SegmentedControl = React.memo(({ label, hint, value, onChange, options }) => {
@@ -283,7 +283,7 @@ export const SelectField = React.memo(({
                 >
                     {options.map(opt => <option key={opt} value={opt}>{displayLabels[opt] || opt}</option>)}
                 </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" size={18} />
+                <CaretDown className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" size={18} />
             </div>
         </div>
     );

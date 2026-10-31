@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronLeft, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { CaretLeft, TrendUp, TrendDown, Minus } from '@phosphor-icons/react';
 import { Card, Badge, Button, EmptyState, IconButton, PageTitle } from '../components/ui';
 import { formatWeight, formatDateNO } from '../lib/formatters';
 import { useShellRail } from '../hooks';
@@ -161,7 +161,7 @@ const WeightProgressView = React.memo(({ checkins = EMPTY_LIST, periods = EMPTY_
             <div className="flex items-center gap-2">
                 {!isRail && (
                     <IconButton onClick={onBack} aria-label="Tilbake til oversikten" className="-ml-2" data-testid="weight-progress-back">
-                        <ChevronLeft size={22} />
+                        <CaretLeft size={22} />
                     </IconButton>
                 )}
                 <PageTitle>Vektutvikling</PageTitle>
@@ -172,7 +172,7 @@ const WeightProgressView = React.memo(({ checkins = EMPTY_LIST, periods = EMPTY_
                     <p className="section-label mb-1">Total endring</p>
                     <div className={`text-2xl font-semibold flex items-center gap-2 ${isSame ? 'text-ink-muted' : 'text-ink'}`}>
                         {totalChange > 0 ? '+' : ''}{totalChange.replace('.', ',')} kg
-                        {isDown ? <TrendingDown size={20} /> : isSame ? <Minus size={20} /> : <TrendingUp size={20} />}
+                        {isDown ? <TrendDown size={20} /> : isSame ? <Minus size={20} /> : <TrendUp size={20} />}
                     </div>
                 </Card>
                 <Card className="p-5">
@@ -273,7 +273,7 @@ const WeightProgressView = React.memo(({ checkins = EMPTY_LIST, periods = EMPTY_
                                 <div className="flex items-center gap-3">
                                     {prev && change !== 0 && (
                                         <Badge variant="muted">
-                                            {change < 0 ? <TrendingDown size={12}/> : <TrendingUp size={12}/>}
+                                            {change < 0 ? <TrendDown size={12}/> : <TrendUp size={12}/>}
                                             {change > 0 ? '+' : ''}{change.toFixed(1).replace('.', ',')}
                                         </Badge>
                                     )}
