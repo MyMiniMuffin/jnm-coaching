@@ -291,16 +291,16 @@ test('navigation supports wide sidebar, Duo rail, and phone bottom nav', () => {
     );
     assert.match(css, /right:\s*var\(--app-rail-status-nudge\)/);
     assert.match(css, /z-index:\s*45/);
-    // Capsule fits 44pt btn + 4px pad×2 + 1px border×2; buttons use grid + block SVG (no 44-in-42 overflow).
-    assert.match(css, /--app-rail-width:\s*calc\(2\.75rem\s*\+\s*0\.5rem\s*\+\s*2px\)/);
-    // Back pill is a 44pt glass circle (matches active-tab highlight), not the full 54px capsule.
+    // Capsule fits 48pt btn + 4px pad×2 + 1px border×2; buttons use grid + block SVG (no 48-in-46 overflow).
+    assert.match(css, /--app-rail-width:\s*calc\(3rem\s*\+\s*0\.5rem\s*\+\s*2px\)/);
+    // Back pill is a 48pt glass circle (matches active-tab highlight), not the full 58px capsule.
     assert.match(navigation, /app-rail-pill app-rail-back-pill/);
     assert.match(css, /html\[data-shell="rail"\] \.app-rail-back-pill \{/);
-    assert.match(css, /html\[data-shell="rail"\] \.app-rail-back-pill \{[\s\S]*?width:\s*2\.75rem/);
-    assert.match(css, /html\[data-shell="rail"\] \.app-rail-back-pill \{[\s\S]*?height:\s*2\.75rem/);
+    assert.match(css, /html\[data-shell="rail"\] \.app-rail-back-pill \{[\s\S]*?width:\s*3rem/);
+    assert.match(css, /html\[data-shell="rail"\] \.app-rail-back-pill \{[\s\S]*?height:\s*3rem/);
     assert.match(css, /html\[data-shell="rail"\] \.app-rail-back-pill \{[\s\S]*?padding:\s*0/);
     assert.match(css, /html\[data-shell="rail"\] \.app-rail-back-pill \{[\s\S]*?align-self:\s*center/);
-    // Hairline as inset shadow, not border, so the back button itself is a full 44×44pt.
+    // Hairline as inset shadow, not border, so the back button itself is a full 48×48pt.
     assert.match(css, /html\[data-shell="rail"\] \.app-rail-back-pill \{[\s\S]*?border:\s*0;[\s\S]*?box-shadow:\s*inset 0 0 0 1px/);
     // Inset > 20px clearance (+12pt vs prior caps); no-inset floor stays 3.25rem.
     assert.match(
@@ -315,14 +315,16 @@ test('navigation supports wide sidebar, Duo rail, and phone bottom nav', () => {
     assert.match(css, /place-items:\s*center/);
     assert.match(css, /html\[data-shell="rail"\] \.app-rail-btn > svg \{/);
     assert.match(css, /display:\s*block/);
-    assert.match(css, /width:\s*1\.25rem/);
-    assert.match(css, /height:\s*1\.25rem/);
+    assert.match(css, /html\[data-shell="rail"\] \.app-rail-btn > svg \{[^}]*width:\s*1\.5rem/);
+    assert.match(css, /html\[data-shell="rail"\] \.app-rail-btn > svg \{[^}]*height:\s*1\.5rem/);
     assert.match(navigation, /className=\{`app-rail-btn /);
     assert.match(navigation, /className="app-rail-btn /);
     assert.doesNotMatch(navigation, /app-rail-btn inline-flex h-11 w-11/);
-    // Phosphor: active nav uses fill weight; rail icons stay 20px so CSS sizing holds.
+    // Phosphor: active nav uses fill weight; rail icons are 24px (sidebar 20px) so CSS sizing holds.
     assert.match(navigation, /weight=\{isActive \? 'fill' : 'regular'\}/);
     assert.match(navigation, /size=\{20\} weight=\{isActive \? 'fill' : 'regular'\}/);
+    assert.match(navigation, /size=\{24\} weight=\{isActive \? 'fill' : 'regular'\}/);
+    assert.match(navigation, /<CaretLeft size=\{24\} \/>/);
     assert.doesNotMatch(navigation, /from 'lucide-react'/);
     assert.match(read('src/lib/config.js'), /from '@phosphor-icons\/react'/);
     assert.match(read('src/components/IconProvider.jsx'), /IconContext/);
