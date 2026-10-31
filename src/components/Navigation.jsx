@@ -40,7 +40,7 @@ const NavButton = React.memo(({ item, isActive, onClick, variant }) => {
                         : 'text-ink-muted hover:bg-white/60 hover:text-ink'
                 }`}
             >
-                <Icon size={20} weight={isActive ? 'fill' : 'regular'} />
+                <Icon size={24} weight={isActive ? 'fill' : 'regular'} />
             </button>
         );
     }
@@ -136,7 +136,7 @@ const Navigation = React.memo(({ activeTab, setActiveTab, shell = 'narrow', onBa
                                 data-testid="app-rail-back"
                                 className="app-rail-btn rounded-full text-ink transition-colors hover:bg-white/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                             >
-                                <CaretLeft size={20} />
+                                <CaretLeft size={24} />
                             </button>
                         </div>
                     )}

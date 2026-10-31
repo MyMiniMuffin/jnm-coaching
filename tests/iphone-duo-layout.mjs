@@ -680,7 +680,7 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
         for (const vp of [
             // Folded portrait → rail
             { id: '390x844', width: 390, height: 844 },
-            // Folded landscape → rail (short height must still fit 44pt targets)
+            // Folded landscape → rail (short height must still fit 48pt targets)
             { id: '844x390', width: 844, height: 390 },
             // Unfolded portrait (upright) → bottom nav — only Duo bottom-nav state
             { id: '760x900', width: 760, height: 900 },
@@ -713,7 +713,7 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
                         const railBox = await page.getByTestId('app-rail').boundingBox();
                         assert.ok(railBox, 'rail box');
                         assert.ok(railBox.x > vp.width / 2, 'rail is on the right half');
-                        // 44pt button + 4px pad + 1px border per side (54px capsule) + 12px column margin.
+                        // 48pt button + 4px pad + 1px border per side (58px capsule) + 12px column margin.
                         // With status-column safe-area, col can be larger — still must not overflow viewport.
                         assert.ok(railBox.width <= Math.max(120, vp.width * 0.25), `rail column w=${railBox.width}`);
                         assert.ok(
@@ -748,8 +748,11 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
                         assert.equal(tabCount, 5);
                         for (let i = 0; i < tabCount; i += 1) {
                             const box = await tabButtons.nth(i).boundingBox();
-                            assert.ok(box.height >= 43.5, `rail tab height ${box.height}`);
-                            assert.ok(box.width >= 43.5, `rail tab width ${box.width}`);
+                            assert.ok(box.height >= 47.5, `rail tab height ${box.height}`);
+                            assert.ok(box.width >= 47.5, `rail tab width ${box.width}`);
+                            assert.ok(Math.abs(box.width - 48) < 1, `rail tab width ~48 (${box.width})`);
+                            const svgBox = await tabButtons.nth(i).locator('svg').boundingBox();
+                            assert.ok(svgBox && Math.abs(svgBox.width - 24) < 0.5, `rail tab icon 24px (${svgBox?.width})`);
                         }
 
                         const metrics = await mainContentMetrics(page);
@@ -795,7 +798,9 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
                         assert.equal(await page.getByTestId('weight-progress-back').count(), 0, 'no double back in rail');
                         const back = page.getByTestId('app-rail-back');
                         const backBox = await back.boundingBox();
-                        assert.ok(backBox.height >= 43.5 && backBox.width >= 43.5, 'rail back ≥44');
+                        assert.ok(backBox.height >= 47.5 && backBox.width >= 47.5, 'rail back ≥48');
+                        const backSvg = await back.locator('svg').boundingBox();
+                        assert.ok(backSvg && Math.abs(backSvg.width - 24) < 0.5, `rail back icon 24px (${backSvg?.width})`);
                         assert.ok(backBox.y + backBox.height <= vp.height + 0.5, 'back pill inside viewport');
                         await back.click();
                         await page.waitForFunction(() => !document.querySelector('[data-testid="app-rail-back"]'));

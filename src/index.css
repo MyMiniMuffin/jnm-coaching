@@ -727,8 +727,8 @@ html[data-shell="wide"] .toast-stack {
  * the rail left by --app-rail-status-nudge (measured ~5–6pt on folded Duo).
  */
 :root {
-    /* 44pt button + 4px pad each side + 1px border each side (even px; avoids 44-in-42 overflow) */
-    --app-rail-width: calc(2.75rem + 0.5rem + 2px);
+    /* 48pt button + 4px pad each side + 1px border each side (even px; avoids 48-in-46 overflow) */
+    --app-rail-width: calc(3rem + 0.5rem + 2px);
     --app-rail-gap: 0.5rem; /* min 8px gap between content and rail pills */
     /* Side column: the status safe area on Duo, else just room for the capsule */
     --app-rail-col: max(env(safe-area-inset-right, 0px), calc(var(--app-rail-width) + 0.75rem));
@@ -789,19 +789,19 @@ html[data-shell="rail"] .app-rail-pill {
 }
 
 /*
- * Back pill: one 44pt glass circle matching the active-tab highlight (not the
- * full 54px capsule). Centered on the same axis as the tab pill; glass matches
- * .app-rail-pill. Icon stays 20px via .app-rail-btn > svg.
+ * Back pill: one 48pt glass circle matching the active-tab highlight (not the
+ * full 58px capsule). Centered on the same axis as the tab pill; glass matches
+ * .app-rail-pill. Icon stays 24px via .app-rail-btn > svg.
  */
 html[data-shell="rail"] .app-rail-back-pill {
     position: relative;
     align-self: center;
-    width: 2.75rem;
-    height: 2.75rem;
+    width: 3rem;
+    height: 3rem;
     padding: 0;
     flex-shrink: 0;
     /* Hairline drawn inside as a shadow, not a border, so the button itself
-     * stays a full 44×44pt (a 1px border left it 42×42). */
+     * stays a full 48×48pt (a 1px border left it 46×46). */
     border: 0;
     box-shadow: inset 0 0 0 1px rgba(23, 23, 23, 0.08), 0 6px 20px rgba(23, 23, 23, 0.1);
 }
@@ -813,12 +813,12 @@ html[data-shell="rail"] .app-rail-back-pill .app-rail-btn {
     z-index: 1;
 }
 
-/* 44×44pt targets; grid + block SVG keeps icon ink on the pill center (no overflow/baseline gap). */
+/* 48×48pt targets; grid + block SVG keeps icon ink on the pill center (no overflow/baseline gap). */
 html[data-shell="rail"] .app-rail-btn {
     display: grid;
     place-items: center;
-    width: 2.75rem;
-    height: 2.75rem;
+    width: 3rem;
+    height: 3rem;
     margin: 0;
     padding: 0;
     border: 0;
@@ -830,8 +830,8 @@ html[data-shell="rail"] .app-rail-btn {
 
 html[data-shell="rail"] .app-rail-btn > svg {
     display: block;
-    width: 1.25rem;
-    height: 1.25rem;
+    width: 1.5rem;
+    height: 1.5rem;
     margin: 0;
 }
 
@@ -888,7 +888,7 @@ html[data-shell="rail"] .app-stage {
 
 /*
  * Folded landscape (~844×390): short viewport. Shrink top clearance / gaps so
- * 44pt back + 5×44pt tabs fit without overflowing or scrolling the rail.
+ * 48pt back + 5×48pt tabs fit without overflowing or scrolling the rail.
  * Also clear both horizontal safe areas (notch/Dynamic Island left OR right).
  */
 @media (max-height: 500px) and (aspect-ratio > 1/1) {
@@ -911,17 +911,17 @@ html[data-shell="rail"] .app-stage {
         padding: 0.125rem;
     }
 
-    /* Back pill stays a full 44×44 circle — do not inherit tabs padding. */
+    /* Back pill stays a full 48×48 circle — do not inherit tabs padding. */
     html[data-shell="rail"] .app-rail-back-pill {
         padding: 0;
-        width: 2.75rem;
-        height: 2.75rem;
+        width: 3rem;
+        height: 3rem;
         flex-shrink: 0;
     }
 
     html[data-shell="rail"] .app-rail-btn {
-        width: 2.75rem;
-        height: 2.75rem;
+        width: 3rem;
+        height: 3rem;
         flex-shrink: 0;
     }
 
