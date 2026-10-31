@@ -35,7 +35,7 @@ const ReportMetrics = React.memo(({ report, className = '' }) => {
                         <div className="mx-0.5 mt-2 h-1 overflow-hidden rounded-full bg-surface-200">
                             <div className={`h-full rounded-full ${style.bar}`} style={{ width: `${metric.width}%` }} />
                         </div>
-                        <p className="mt-1.5 truncate text-[10px] text-ink-muted">{metric.label}</p>
+                        <p className="mt-1.5 truncate text-xs text-ink-muted">{metric.label}</p>
                     </div>
                     );
                 })}

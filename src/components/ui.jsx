@@ -28,7 +28,7 @@ export const SegmentedControl = React.memo(({ label, hint, value, onChange, opti
                                 haptic('toggle');
                                 onChange(opt);
                             }}
-                            className={`${wrap ? 'min-w-0' : 'flex-1'} min-h-[44px] py-2 rounded-lg text-sm font-semibold transition-all duration-150 active:scale-[0.98] tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 ${
+                            className={`${wrap ? 'min-w-0' : 'flex-1'} min-h-[44px] py-2 rounded-lg text-sm font-semibold transition-[background-color,color,transform] duration-150 active:scale-[0.98] tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 ${
                                 isSelected
                                     ? 'bg-ink text-white shadow-sm'
                                     : 'text-ink-muted hover:bg-white/70'
@@ -59,7 +59,7 @@ export const SessionStepper = React.memo(({ label, value, onChange, min = 0, max
                     aria-label={`Reduser ${label.toLowerCase()}`}
                     disabled={numeric <= min}
                     onClick={() => step(numeric - 1)}
-                    className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-surface-200 bg-surface-50 text-lg font-semibold text-ink disabled:cursor-not-allowed disabled:opacity-30"
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-surface-200 bg-surface-50 text-lg font-semibold text-ink transition-transform active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30"
                 >
                     −
                 </button>
@@ -69,7 +69,7 @@ export const SessionStepper = React.memo(({ label, value, onChange, min = 0, max
                     aria-label={`Øk ${label.toLowerCase()}`}
                     disabled={numeric >= max}
                     onClick={() => step(numeric + 1)}
-                    className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-surface-200 bg-surface-50 text-lg font-semibold text-ink disabled:cursor-not-allowed disabled:opacity-30"
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-surface-200 bg-surface-50 text-lg font-semibold text-ink transition-transform active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30"
                 >
                     +
                 </button>
@@ -114,7 +114,7 @@ const BUTTON_SIZES = {
 export const Button = React.memo(({ children, variant = 'primary', size = 'md', className = '', ...props }) => (
     <button
         type="button"
-        className={`min-h-11 min-w-11 font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 [&>svg]:shrink-0 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${BUTTON_VARIANTS[variant]} ${BUTTON_SIZES[size]} ${className}`}
+        className={`min-h-11 min-w-11 font-medium rounded-lg transition-[background-color,color,transform] duration-200 flex items-center justify-center gap-2 [&>svg]:shrink-0 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${BUTTON_VARIANTS[variant]} ${BUTTON_SIZES[size]} ${className}`}
         {...props}
     >
         {children}
@@ -130,7 +130,7 @@ export const IconButton = React.memo(({ children, className = '', tone = 'neutra
     return (
         <button
             type="button"
-            className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg p-2 transition-colors hover:bg-surface-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${toneClass} ${className}`}
+            className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg p-2 transition-colors hover:bg-surface-100 active:bg-surface-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${toneClass} ${className}`}
             {...props}
         >
             {children}
@@ -150,7 +150,7 @@ export const Card = React.memo(React.forwardRef(({ children, className = "", int
             }
             onKeyDown?.(event);
         } : onKeyDown}
-        className={`surface-card rounded-xl border border-surface-200 ${interactive ? 'surface-card-interactive hover:border-surface-300 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent' : ''} ${className}`}
+        className={`surface-card rounded-xl border border-surface-200 ${interactive ? 'surface-card-interactive hover:border-surface-300 active:bg-surface-50 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent' : ''} ${className}`}
         {...props}
     >
         {children}
@@ -162,7 +162,7 @@ export const InputLabel = React.memo(({ children }) => (
 ));
 
 // Felles utseende for tekstfelt, tekstområder og nedtrekkslister.
-const FIELD_BASE = 'min-w-0 w-full bg-surface-50 border rounded-xl outline-none transition-all focus:ring-2 focus:ring-accent focus:border-accent text-base font-medium placeholder-ink-faint disabled:opacity-50';
+const FIELD_BASE = 'min-w-0 w-full bg-surface-50 border rounded-xl outline-none transition-[border-color,box-shadow] focus:ring-2 focus:ring-accent focus:border-accent text-base font-medium placeholder-ink-faint disabled:opacity-50';
 
 const FieldMessage = ({ id, error, hint }) => {
     const messageId = id ? `${id}-message` : undefined;

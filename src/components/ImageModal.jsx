@@ -202,7 +202,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose, canDownload = fa
                     onClick={handleDownload}
                     disabled={downloading}
                     aria-label="Last ned bilde"
-                    className="text-white/75 hover:text-white min-h-[44px] min-w-[44px] p-2 rounded-full bg-white/10 hover:bg-white/18 backdrop-blur-md ring-1 ring-white/10 transition-all disabled:opacity-60"
+                    className="text-white/75 hover:text-white min-h-[44px] min-w-[44px] p-2 rounded-full bg-white/10 hover:bg-white/18 backdrop-blur-md ring-1 ring-white/10 transition-colors active:bg-white/25 disabled:opacity-60"
                 >
                     {downloading ? <CircleNotch size={22} className="animate-spin" /> : <DownloadSimple size={22} />}
                 </button>}
@@ -210,7 +210,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose, canDownload = fa
                     type="button"
                     onClick={onClose}
                     aria-label="Lukk bildevisning"
-                    className="text-white/75 hover:text-white min-h-[44px] min-w-[44px] p-2 rounded-full bg-white/10 hover:bg-white/18 backdrop-blur-md ring-1 ring-white/10 transition-all"
+                    className="text-white/75 hover:text-white min-h-[44px] min-w-[44px] p-2 rounded-full bg-white/10 hover:bg-white/18 backdrop-blur-md ring-1 ring-white/10 transition-colors active:bg-white/25"
                 >
                     <X size={24} />
                 </button>
@@ -306,7 +306,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose, canDownload = fa
                         type="button"
                         onClick={handlePrev}
                         aria-label="Vis forrige bilde"
-                        className="absolute top-1/2 -translate-y-1/2 min-h-[48px] min-w-[48px] p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md ring-1 ring-white/10 transition-all active:scale-[0.98] z-[110]"
+                        className="absolute top-1/2 -translate-y-1/2 min-h-[48px] min-w-[48px] p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md ring-1 ring-white/10 transition-[background-color,color,transform] active:scale-[0.98] z-[110]"
                         style={{ left: 'calc(env(safe-area-inset-left, 0px) + 0.75rem)' }}
                     >
                         <CaretLeft size={26} />
@@ -317,7 +317,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose, canDownload = fa
                         type="button"
                         onClick={handleNext}
                         aria-label="Vis neste bilde"
-                        className="absolute top-1/2 -translate-y-1/2 min-h-[48px] min-w-[48px] p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md ring-1 ring-white/10 transition-all active:scale-[0.98] z-[110]"
+                        className="absolute top-1/2 -translate-y-1/2 min-h-[48px] min-w-[48px] p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md ring-1 ring-white/10 transition-[background-color,color,transform] active:scale-[0.98] z-[110]"
                         style={{ right: 'calc(env(safe-area-inset-right, 0px) + 0.75rem)' }}
                     >
                         <CaretRight size={26} />
@@ -339,10 +339,10 @@ const ImageModal = React.memo(({ images, initialIndex, onClose, canDownload = fa
                                     {[imageDate, imageWeight].filter(Boolean).join(' · ')}
                                 </p>
                             )}
-                            <p className="mt-0.5 text-[11px] text-white/55 sm:hidden">
+                            <p className="mt-0.5 text-xs text-white/55 sm:hidden">
                                 {images.length > 1 ? 'Sveip · Knip/dobbelttrykk' : 'Knip/dobbelttrykk for zoom'}
                             </p>
-                            <p className="mt-0.5 hidden text-[11px] text-white/55 sm:block">
+                            <p className="mt-0.5 hidden text-xs text-white/55 sm:block">
                                 {images.length > 1 ? 'Piltaster for å bytte · Dobbeltklikk eller rull for zoom' : 'Dobbeltklikk eller rull for zoom'}
                             </p>
                         </div>

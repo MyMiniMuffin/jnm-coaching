@@ -104,7 +104,7 @@ const FullscreenCompareModal = React.memo(({ before, after, daysDiff, weightDiff
                         type="button"
                         onClick={onClose}
                         aria-label="Lukk fullskjerm"
-                        className="text-white/75 hover:text-white min-h-[44px] min-w-[44px] p-2 rounded-full bg-white/10 hover:bg-white/18 backdrop-blur-md ring-1 ring-white/10 transition-all"
+                        className="text-white/75 hover:text-white min-h-[44px] min-w-[44px] p-2 rounded-full bg-white/10 hover:bg-white/18 backdrop-blur-md ring-1 ring-white/10 transition-colors active:bg-white/25"
                     >
                         <X size={24} />
                     </button>
@@ -524,7 +524,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                 </div>
 
                 <form className="min-h-0 space-y-4 overflow-y-auto px-6 pb-6" onSubmit={handleImageUpload}>
-                    <label htmlFor="gallery-upload-files" className={`flex min-h-[132px] flex-col items-center justify-center rounded-xl border-2 border-dashed border-surface-200 p-5 text-center transition-all hover:border-surface-300 hover:bg-surface-50 focus-within:border-accent focus-within:ring-2 focus-within:ring-accent ${isUploading ? 'pointer-events-none opacity-60' : 'cursor-pointer'}`}>
+                    <label htmlFor="gallery-upload-files" className={`flex min-h-[132px] flex-col items-center justify-center rounded-xl border-2 border-dashed border-surface-200 p-5 text-center transition-colors hover:border-surface-300 hover:bg-surface-50 focus-within:border-accent focus-within:ring-2 focus-within:ring-accent ${isUploading ? 'pointer-events-none opacity-60' : 'cursor-pointer'}`}>
                         {isUploading ? (
                             <>
                                 <CircleNotch className="animate-spin text-ink-muted" size={24} />
@@ -680,7 +680,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                             <p className="section-label text-center">Før</p>
                             <button
                                 type="button"
-                                className={`relative block w-full max-w-[33.6vh] duo:max-w-[min(42vh,22rem)] mx-auto aspect-[4/5] rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${selectingFor === 'before' ? 'border-ink ring-2 ring-ink/20' : 'border-surface-200'}`}
+                                className={`relative block w-full max-w-[33.6vh] duo:max-w-[min(42vh,22rem)] mx-auto aspect-[4/5] rounded-xl overflow-hidden cursor-pointer border-2 transition-[border-color,box-shadow] ${selectingFor === 'before' ? 'border-ink ring-2 ring-ink/20' : 'border-surface-200'}`}
                                 onClick={() => setSelectingFor(selectingFor === 'before' ? null : 'before')}
                                 aria-pressed={selectingFor === 'before'}
                                 aria-label={compareImages.before ? `Bytt før-bilde, valgt ${formatDateNO(compareImages.before.date)}` : 'Velg før-bilde'}
@@ -720,7 +720,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                             <p className="section-label text-center">Etter</p>
                             <button
                                 type="button"
-                                className={`relative block w-full max-w-[33.6vh] duo:max-w-[min(42vh,22rem)] mx-auto aspect-[4/5] rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${selectingFor === 'after' ? 'border-ink ring-2 ring-ink/20' : 'border-surface-200'}`}
+                                className={`relative block w-full max-w-[33.6vh] duo:max-w-[min(42vh,22rem)] mx-auto aspect-[4/5] rounded-xl overflow-hidden cursor-pointer border-2 transition-[border-color,box-shadow] ${selectingFor === 'after' ? 'border-ink ring-2 ring-ink/20' : 'border-surface-200'}`}
                                 onClick={() => setSelectingFor(selectingFor === 'after' ? null : 'after')}
                                 aria-pressed={selectingFor === 'after'}
                                 aria-label={compareImages.after ? `Bytt etter-bilde, valgt ${formatDateNO(compareImages.after.date)}` : 'Velg etter-bilde'}
@@ -819,7 +819,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                                     <button
                                         type="button"
                                         key={getImageKey(img, idx)}
-                                        className={`relative aspect-square min-h-[44px] cursor-pointer rounded-lg overflow-hidden border-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${isSelected ? 'border-ink' : 'border-transparent'} ${selectingFor ? 'hover:scale-[1.02]' : ''}`}
+                                        className={`relative aspect-square min-h-[44px] cursor-pointer rounded-lg overflow-hidden border-2 transition-[border-color,box-shadow,transform] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${isSelected ? 'border-ink' : 'border-transparent'} ${selectingFor ? 'hover:scale-[1.02]' : ''}`}
                                         onClick={() => handleCompareImageClick(img)}
                                         aria-pressed={isSelected}
                                         aria-label={`${isSelected ? (isBefore ? 'Valgt som før-bilde' : 'Valgt som etter-bilde') : 'Velg bilde'} fra ${formatDateNO(img.date)}`}
@@ -832,7 +832,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                                             alt={`Fremgang ${formatDateNO(img.date)}`}
                                         />
                                         {isSelected && (
-                                            <div className="absolute top-1 right-1 bg-ink text-white text-[10px] font-semibold px-1.5 py-0.5 rounded">
+                                            <div className="absolute top-1 right-1 bg-ink text-white text-xs font-semibold px-1.5 py-0.5 rounded">
                                                 {isBefore ? 'FØR' : 'ETTER'}
                                             </div>
                                         )}
@@ -878,7 +878,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                                         alt=""
                                     />
                                     {img.isGalleryImage && img.label && (
-                                        <span className={`absolute top-1.5 left-1.5 ${downloadMode || (isCoach && img.isGalleryImage && onDeleteGalleryImage) ? 'right-12' : 'right-1.5'} truncate bg-ink/80 text-white text-[10px] font-medium px-2 py-0.5 rounded-full backdrop-blur-sm`}>
+                                        <span className={`absolute top-1.5 left-1.5 ${downloadMode || (isCoach && img.isGalleryImage && onDeleteGalleryImage) ? 'right-12' : 'right-1.5'} truncate bg-ink/80 text-white text-xs font-medium px-2 py-0.5 rounded-full backdrop-blur-sm`}>
                                             {img.label}
                                         </span>
                                     )}
@@ -886,7 +886,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                                         <span className="absolute bottom-2 left-2 right-2">
                                             <span className="block text-white text-xs font-medium">{formatDateNO(img.date)}</span>
                                             {img.weight && (
-                                                <span className="block text-white/75 text-[10px]">{formatWeight(img.weight)} kg</span>
+                                                <span className="block text-white/75 text-xs">{formatWeight(img.weight)} kg</span>
                                             )}
                                         </span>
                                     </span>

@@ -93,7 +93,7 @@ const LoginScreen = React.memo(({ onLogin }) => {
                                 onKeyUp={handlePasswordKeyState}
                                 onBlur={() => setIsCapsLockOn(false)}
                                 disabled={isLoading}
-                                className="w-full px-4 py-3.5 pr-12 bg-surface-50 border border-surface-200 rounded-xl focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-all disabled:opacity-50 font-medium placeholder-ink-faint"
+                                className="w-full px-4 py-3.5 pr-12 bg-surface-50 border border-surface-200 rounded-xl focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-[border-color,box-shadow] disabled:opacity-50 font-medium placeholder-ink-faint"
                                 placeholder="Skriv inn passord"
                                 autoComplete="current-password"
                             />
