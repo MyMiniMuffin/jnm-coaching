@@ -190,7 +190,7 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
     }, [onAddClient]);
 
     const handleDelete = useCallback(async (clientId) => {
-        if (await confirm('Er du sikker på at du vil slette denne utøveren permanent?', {
+        if (await confirm('Slette denne utøveren permanent?', {
             title: 'Slett utøver',
             confirmText: 'Slett',
             destructive: true
@@ -267,7 +267,7 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
                             <p className="text-sm text-ink-muted">Utøveren må velge eget passord ved første innlogging.</p>
                             <TextField id="new-athlete-password" label="Midlertidig passord" required name="password" type="password" minLength="6" placeholder="Minst 6 tegn" autoComplete="new-password" />
                             <Button type="submit" size="lg" className="w-full" disabled={isCreating}>
-                                {isCreating ? <><Loader2 size={18} className="animate-spin" /> Oppretter...</> : 'Opprett utøver'}
+                                {isCreating ? <><Loader2 size={18} className="animate-spin" /> Oppretter…</> : 'Opprett utøver'}
                             </Button>
                         </form>
                     </Card>
@@ -289,7 +289,7 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
                             <p className="text-sm text-ink-muted">Utøveren må velge eget passord ved neste innlogging.</p>
                             <TextField ref={resetPasswordInputRef} id="reset-athlete-password" label="Midlertidig passord" required name="password" type="password" minLength="6" placeholder="Minst 6 tegn" autoComplete="new-password" />
                             <Button type="submit" size="lg" className="w-full" disabled={isResetting}>
-                                {isResetting ? <><Loader2 size={18} className="animate-spin" /> Tilbakestiller...</> : <><KeyRound size={18} /> Tilbakestill passord</>}
+                                {isResetting ? <><Loader2 size={18} className="animate-spin" /> Tilbakestiller…</> : <><KeyRound size={18} /> Tilbakestill passord</>}
                             </Button>
                         </form>
                     </Card>
@@ -306,7 +306,7 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
                             <BellRing size={12} className="shrink-0" />
                             <span>
                                 {notificationPermission === 'granted'
-                                    ? (totalUnreadCheckins > 0 ? `${totalUnreadCheckins} uleste rapporter` : 'Pushvarsler aktivert')
+                                    ? (totalUnreadCheckins > 0 ? `${totalUnreadCheckins} uleste ukesrapporter` : 'Pushvarsler aktivert')
                                     : notificationPermission === 'denied'
                                         ? 'Varsler blokkert'
                                         : notificationPermission === 'unsupported'
@@ -377,7 +377,7 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
                             aria-label="Sorter utøvere"
                             displayLabels={{
                                 unread: 'Uleste først',
-                                lastCheckin: 'Siste rapport',
+                                lastCheckin: 'Siste ukesrapport',
                                 name: 'Navn'
                             }}
                             selectClassName="pl-12"
@@ -407,8 +407,8 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
                     <div className="duo:col-span-2">
                     <EmptyState
                         icon={User}
-                        title={searchTerm ? 'Ingen treff' : (showArchived ? 'Ingen arkiverte utøvere' : 'Ingen utøvere enda')}
-                        description={searchTerm ? 'Prøv et annet navn eller brukernavn' : (!showArchived ? 'Trykk «Ny» for å legge til din første utøver' : undefined)}
+                        title={searchTerm ? 'Ingen treff' : (showArchived ? 'Ingen arkiverte utøvere' : 'Ingen utøvere ennå')}
+                        description={searchTerm ? 'Prøv et annet navn eller brukernavn.' : (!showArchived ? 'Trykk «Ny» for å legge til en utøver.' : undefined)}
                     />
                     </div>
                 ) : (
@@ -440,10 +440,10 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
                                     <span className="block font-medium truncate">{client.name}</span>
                                     <span className={`block text-sm ${client.unreadCheckins > 0 ? 'text-accent font-medium' : 'text-ink-muted'}`}>
                                         {client.unreadCheckins > 0
-                                            ? `${client.unreadCheckins} ny${client.unreadCheckins > 1 ? 'e' : ''} rapport${client.unreadCheckins > 1 ? 'er' : ''}`
+                                            ? `${client.unreadCheckins} ny${client.unreadCheckins > 1 ? 'e' : ''} ukesrapport${client.unreadCheckins > 1 ? 'er' : ''}`
                                             : client.lastCheckinDate
-                                                ? `Siste rapport: ${formatDateNO(client.lastCheckinDate)}`
-                                                : 'Ingen rapporter ennå'}
+                                                ? `Siste ukesrapport · ${formatDateNO(client.lastCheckinDate)}`
+                                                : 'Ingen ukesrapporter ennå'}
                                     </span>
                                 </span>
                                 {!isPending && <ChevronRight size={18} className="ml-auto shrink-0 text-ink-faint" />}
