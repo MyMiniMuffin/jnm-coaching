@@ -243,7 +243,7 @@ const CoachingLandingPage = () => {
 
             <section id="soknad" className="scroll-mt-16 bg-white py-20 sm:py-28">
                 <div className="mx-auto grid max-w-7xl gap-16 px-5 sm:px-8 lg:grid-cols-[0.8fr_1.2fr] lg:gap-24 lg:px-12">
-                    <div data-reveal>
+                    <div data-reveal className="lg:flex lg:flex-col">
                         <h2 className="max-w-lg text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">
                             Klar for å starte?
                         </h2>

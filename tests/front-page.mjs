@@ -36,3 +36,11 @@ test('front page links every public page and stays sticky', () => {
     // overflow-hidden on the page root broke the sticky header.
     assert.doesNotMatch(page, /coaching-page[^"]*overflow-hidden/);
 });
+
+test('photo beside the application form fills the column without setting its height', () => {
+    const css = read('src/coaching/coaching.css');
+    // Out of flow so the form decides the row height and the photo ends level with it.
+    assert.match(css, /\.coaching-side-photo \{[\s\S]*?position: relative;[\s\S]*?flex: 1 1 0;/);
+    assert.match(css, /\.coaching-side-photo img \{[\s\S]*?position: absolute;[\s\S]*?inset: 0;/);
+    assert.match(read('src/coaching/CoachingLandingPage.jsx'), /data-reveal className="lg:flex lg:flex-col"/);
+});

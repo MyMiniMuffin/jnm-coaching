@@ -71,11 +71,22 @@
         max-width: 28rem;
     }
 
-    /* Landscape beside the form so the column ends near "Send søknad"
-     * instead of hanging far below it. */
+    /* Fill the height left beside the form, so the photo ends level with
+     * the form at every width (3:4 hung below it, 4:3 looked too small). */
+    /* The image is taken out of the flow so it never sets the row height:
+     * the form does, and the photo fills what is left. */
+    .coaching-side-photo {
+        position: relative;
+        flex: 1 1 0;
+        min-height: 18rem;
+    }
+
     .coaching-side-photo img {
-        aspect-ratio: 4 / 3;
-        object-position: center 45%;
+        position: absolute;
+        inset: 0;
+        height: 100%;
+        aspect-ratio: auto;
+        object-position: center 40%;
     }
 }
 
