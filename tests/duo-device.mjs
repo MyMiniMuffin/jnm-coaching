@@ -55,14 +55,21 @@ test('Debug App scheme still documents -ForceDuoDevice launch argument', () => {
     assert.match(scheme, /argument="-ForceDuoDevice"/);
 });
 
-test('DuoBridgeViewController injects WKUserScript before first load', () => {
+test('DuoBridgeViewController injects WKUserScript on live contentController', () => {
     const bridge = read('ios/App/App/DuoBridgeViewController.swift');
     const scene = read('ios/App/App/SceneDelegate.swift');
     assert.match(bridge, /class DuoBridgeViewController:\s*CAPBridgeViewController/);
-    assert.match(bridge, /webViewConfiguration\(for/);
+    assert.match(bridge, /capacitorDidLoad/);
+    assert.match(bridge, /injectDuoUserScript/);
+    assert.match(bridge, /userContentController/);
+    assert.match(bridge, /\.addUserScript\(/);
     assert.match(bridge, /WKUserScript/);
     assert.match(bridge, /\.atDocumentStart/);
     assert.match(bridge, /DuoDevice\.userScriptSource/);
+    assert.match(bridge, /evaluateJavaScript/);
+    assert.match(bridge, /ensureDuoDeviceAttribute/);
+    // Capacitor replaces userContentController after webViewConfiguration — document that.
+    assert.match(bridge, /prepareWebView|contentController|replaced|discarded/i);
     assert.match(scene, /DuoBridgeViewController\(\)/);
     assert.doesNotMatch(scene, /injectDuoDeviceMarker/);
     assert.doesNotMatch(scene, /addUserScript/);
