@@ -60,7 +60,7 @@
     display: block;
     width: 100%;
     height: auto;
-    /* Short on phones so the form stays close; tall beside the form on desktop. */
+    /* Short on phones so the form stays close. */
     aspect-ratio: 16 / 10;
     object-fit: cover;
     object-position: center 35%;
@@ -71,8 +71,11 @@
         max-width: 28rem;
     }
 
+    /* Landscape beside the form so the column ends near "Send søknad"
+     * instead of hanging far below it. */
     .coaching-side-photo img {
-        aspect-ratio: 3 / 4;
+        aspect-ratio: 4 / 3;
+        object-position: center 45%;
     }
 }
 
