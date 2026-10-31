@@ -39,9 +39,9 @@
 
 Nativt i `DuoDevice.swift` via `utsname.machine`. Listen speiles i `src/lib/duoDeviceModels.js`.
 
-**Usikkerhet:** `iPhone19,4` er listet som iPhone Duo i community-kilder ([AppleDB](https://appledb.dev/device/identifier/iPhone19,4), [IPSW.dev](https://ipsw.dev/iPhone19,4), board V68AP), men er **ikke** bekreftet via `utsname.machine` på fysisk Duo i dette prosjektet. Simulator returnerer `arm64`/`x86_64` og matcher aldri. DEBUG-bygg logger maskin-id (`[DuoDevice] utsname.machine=…`) så den kan bekreftes på ekte enhet. Ukjente fremtidige Duo-SKU-er må legges til begge steder.
+**Deteksjon:** Fysisk Duo → `utsname.machine` (forventet `iPhone19,4`). **iPhone Duo Simulator** → `uname` er host-arkitektur (`arm64`), så vi leser også `SIMULATOR_MODEL_IDENTIFIER` og `SIMULATOR_DEVICE_NAME` (navn som inneholder «Duo»). DEBUG logger `[DuoDevice] machine=… simName=…`. Ukjente fremtidige Duo-SKU-er må legges til i Swift + `duoDeviceModels.js`.
 
-**Xcode / Simulator:** Alle **Debug**-bygg tvinger Duo-rail (Simulator matcher aldri `iPhone19,4`). Opt-out: launch-argument `-NoForceDuoDevice` eller `JNM_FORCE_DUO=0`. Release/TestFlight bruker kun ekte maskin-id.
+**Xcode Debug:** Tvinger Duo-rail som fallback. Opt-out: `-NoForceDuoDevice` / `JNM_FORCE_DUO=0`. Release/TestFlight tvinger aldri.
 
 `DuoBridgeViewController` injiserer `html[data-device="duo"]` via `webViewConfiguration(for:)` **før** første last (ikke etter `makeKeyAndVisible`). `shellMode` observerer `data-device` med `MutationObserver` hvis markøren settes etter modul-load.
 
