@@ -709,8 +709,8 @@ html[data-shell="wide"] .toast-stack {
  * the rail left by --app-rail-status-nudge (measured ~5–6pt on folded Duo).
  */
 :root {
-    /* 44pt button + 4px capsule padding each side (HIG: symbol-only side bar) */
-    --app-rail-width: 3.25rem;
+    /* 44pt button + 4px pad each side + 1px border each side (even px; avoids 44-in-42 overflow) */
+    --app-rail-width: calc(2.75rem + 0.5rem + 2px);
     --app-rail-gap: 0.5rem; /* min 8px gap between content and rail pills */
     /* Side column: the status safe area on Duo, else just room for the capsule */
     --app-rail-col: max(env(safe-area-inset-right, 0px), calc(var(--app-rail-width) + 0.75rem));
@@ -763,6 +763,29 @@ html[data-shell="rail"] .app-rail-pill {
     backdrop-filter: blur(18px) saturate(1.2);
     border: 1px solid rgba(23, 23, 23, 0.08);
     box-shadow: 0 6px 20px rgba(23, 23, 23, 0.1);
+    box-sizing: border-box;
+}
+
+/* 44×44pt targets; grid + block SVG keeps Lucide ink on the pill center (no overflow/baseline gap). */
+html[data-shell="rail"] .app-rail-btn {
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+html[data-shell="rail"] .app-rail-btn > svg {
+    display: block;
+    width: 1.25rem;
+    height: 1.25rem;
+    margin: 0;
 }
 
 html[data-shell="rail"] .app-rail-tabs {
