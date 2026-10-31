@@ -35,18 +35,20 @@ test('Swift DuoDevice list stays in sync with duoDeviceModels.js', () => {
     assert.match(swift, /logMachineIdentifierIfNeeded/);
     assert.match(swift, /#if DEBUG/);
     assert.match(swift, /ForceDuoDevice/);
+    assert.match(swift, /NoForceDuoDevice/);
     assert.match(swift, /JNM_FORCE_DUO/);
     assert.match(swift, /isForceDuoEnabled/);
+    // Debug must default-force Duo (Simulator never matches machine id).
+    assert.match(swift, /#if DEBUG[\s\S]*return true/);
     for (const id of DUO_MACHINE_IDS) {
         assert.match(swift, new RegExp(id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
     }
 });
 
-test('Debug App scheme enables -ForceDuoDevice for Simulator rail testing', () => {
+test('Debug App scheme still documents -ForceDuoDevice launch argument', () => {
     const scheme = read('ios/App/App.xcodeproj/xcshareddata/xcschemes/App.xcscheme');
     assert.match(scheme, /CommandLineArguments/);
     assert.match(scheme, /argument="-ForceDuoDevice"/);
-    assert.match(scheme, /argument="-ForceDuoDevice"[^>]*isEnabled="YES"/);
 });
 
 test('DuoBridgeViewController injects WKUserScript before first load', () => {

@@ -13,10 +13,11 @@ import os
 /// add it here and in `duoDeviceModels.js`.
 ///
 /// ## Simulator / Xcode debugging
-/// Pass launch argument `-ForceDuoDevice` (Debug scheme includes it) or set
-/// env `JNM_FORCE_DUO=1` so the WKWebView gets `data-device="duo"` and the
-/// rail shell can be verified without physical Duo hardware. Release builds
-/// ignore the override.
+/// **All Debug builds force Duo rail** so Xcode Run shows the right-edge menu
+/// without depending on scheme args or a physical Duo. Opt out with launch
+/// argument `-NoForceDuoDevice` (or env `JNM_FORCE_DUO=0`) when you need the
+/// normal phone bottom nav in Debug. Release/TestFlight ignore the override
+/// and only match `knownMachineIds`.
 ///
 /// Authoritative cross-checks (community, not Apple public API):
 /// - https://appledb.dev/device/identifier/iPhone19,4
@@ -27,7 +28,9 @@ enum DuoDevice {
         "iPhone19,4",
     ]
 
-    /// Launch argument / env key for Debug-only Duo simulation in Xcode.
+    /// Opt out of Debug Duo forcing (scheme / `simctl` launch args).
+    static let noForceArgument = "-NoForceDuoDevice"
+    /// Legacy explicit force (Debug already forces by default).
     static let forceArgument = "-ForceDuoDevice"
     static let forceEnvironmentKey = "JNM_FORCE_DUO"
 
@@ -43,17 +46,20 @@ enum DuoDevice {
         }
     }
 
-    /// Debug-only override so Simulator/Xcode can exercise the Duo rail.
+    /// Debug builds force Duo rail by default (Simulator never reports iPhone19,4).
     static var isForceDuoEnabled: Bool {
         #if DEBUG
-        if ProcessInfo.processInfo.arguments.contains(forceArgument) {
-            return true
+        if ProcessInfo.processInfo.arguments.contains(noForceArgument) {
+            return false
         }
-        if ProcessInfo.processInfo.environment[forceEnvironmentKey] == "1" {
-            return true
+        if ProcessInfo.processInfo.environment[forceEnvironmentKey] == "0" {
+            return false
         }
-        #endif
+        // Default on in Debug. Explicit -ForceDuoDevice / JNM_FORCE_DUO=1 still OK.
+        return true
+        #else
         return false
+        #endif
     }
 
     static var isDuo: Bool {

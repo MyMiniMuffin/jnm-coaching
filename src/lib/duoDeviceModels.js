@@ -10,9 +10,9 @@
  * (board V68AP), but has **not** been confirmed via `utsname.machine` on a
  * physical Duo in this repo. Simulator never matches (`arm64` / `x86_64`).
  * DEBUG iOS builds log the machine string — compare on device before treating
- * the list as authoritative for shipping. Xcode Debug can force Duo via
- * `-ForceDuoDevice` / `JNM_FORCE_DUO=1` (see `DuoDevice.swift`); Simulator
- * never matches a real machine id.
+ * the list as authoritative for shipping. Xcode Debug forces Duo rail by
+ * default (opt out `-NoForceDuoDevice`); Simulator never matches a real
+ * machine id. See `DuoDevice.swift`.
  *
  * Sources (community, cross-check; not an Apple public API):
  * - https://appledb.dev/device/identifier/iPhone19,4
