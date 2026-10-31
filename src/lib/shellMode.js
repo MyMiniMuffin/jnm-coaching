@@ -2,9 +2,10 @@
  * Single shell-mode store: narrow | wide | rail.
  *
  * - Duo device (`html[data-device="duo"]`, `?device=duo`, or session override):
- *   `rail` only when the live viewport is landscape-shaped AND meets the wide
- *   threshold (`DUO_RAIL_MEDIA_QUERY`); otherwise `narrow` (bottom nav) —
- *   including unfolded Duo held upright. wideSticky never applies to Duo.
+ *   `rail` by default; `narrow` (bottom nav) ONLY when unfolded and
+ *   portrait/square — `DUO_BOTTOM_NAV_MEDIA_QUERY` /
+ *   NOT `DUO_RAIL_MEDIA_QUERY`. Folded portrait, folded landscape, and
+ *   unfolded landscape stay on rail. wideSticky never applies to Duo.
  * - Else enter `wide` when DUO_MEDIA_QUERY matches; stay wide while width ≥ 700
  *   (keyboard shrink); exit when width < 700; cold start without match = `narrow`
  *
@@ -79,19 +80,19 @@ const computeWideSticky = (previous) => {
 
 /**
  * Pure shell resolution (unit-tested).
- * Duo → rail only in wide landscape space; else narrow (never sticky-wide).
+ * Duo → rail when isDuoRailSpace; else narrow (never sticky-wide).
  * Non-Duo → sticky wide / narrow.
  */
-export const resolveShell = ({ isDuo, isWideLandscapeSpace, wideSticky }) => {
+export const resolveShell = ({ isDuo, isDuoRailSpace, wideSticky }) => {
     if (isDuo) {
-        return isWideLandscapeSpace ? SHELL_RAIL : SHELL_NARROW;
+        return isDuoRailSpace ? SHELL_RAIL : SHELL_NARROW;
     }
     return wideSticky ? SHELL_WIDE : SHELL_NARROW;
 };
 
 const computeShell = (sticky) => resolveShell({
     isDuo: isDuoDevice(),
-    isWideLandscapeSpace: railSpaceMatches(),
+    isDuoRailSpace: railSpaceMatches(),
     wideSticky: sticky,
 });
 

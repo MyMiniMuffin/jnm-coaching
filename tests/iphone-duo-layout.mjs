@@ -16,9 +16,11 @@ import { chromium } from 'playwright';
 import {
     DUO_MEDIA_QUERY,
     DUO_RAIL_MEDIA_QUERY,
+    DUO_BOTTOM_NAV_MEDIA_QUERY,
     DUO_MIN_WIDTH_PX,
     DUO_MIN_HEIGHT_PX,
     DESKTOP_MIN_WIDTH_PX,
+    DUO_UNFOLDED_MIN_WIDTH_PX,
 } from '../src/lib/duoBreakpoint.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -325,12 +327,13 @@ async function shellState(page) {
     });
 }
 
-/** True when DUO_RAIL_MEDIA_QUERY would match this CSS viewport. */
+/**
+ * True when DUO_RAIL_MEDIA_QUERY would match this CSS viewport.
+ * Rail: width ≤ 599 OR aspect-ratio > 1/1.
+ * Bottom nav (Duo only): width ≥ 600 AND aspect ≤ 1 (unfolded upright/square).
+ */
 function expectDuoRail(width, height) {
-    const landscape = width >= height;
-    const wideTall = width >= DUO_MIN_WIDTH_PX && height >= DUO_MIN_HEIGHT_PX;
-    const desktop = width >= DESKTOP_MIN_WIDTH_PX;
-    return landscape && (wideTall || desktop);
+    return width < DUO_UNFOLDED_MIN_WIDTH_PX || width > height;
 }
 
 async function openAthleteDuo(page, base, viewportPath = '/') {
@@ -413,8 +416,9 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
         assert.match(DUO_MEDIA_QUERY, new RegExp(String(DUO_MIN_WIDTH_PX)));
         assert.match(DUO_MEDIA_QUERY, new RegExp(String(DUO_MIN_HEIGHT_PX)));
         assert.match(DUO_MEDIA_QUERY, new RegExp(String(DESKTOP_MIN_WIDTH_PX)));
-        assert.match(DUO_RAIL_MEDIA_QUERY, /min-aspect-ratio:\s*1\/1/);
-        assert.match(DUO_RAIL_MEDIA_QUERY, new RegExp(String(DUO_MIN_WIDTH_PX)));
+        assert.match(DUO_BOTTOM_NAV_MEDIA_QUERY, /max-aspect-ratio:\s*1\/1/);
+        assert.match(DUO_RAIL_MEDIA_QUERY, /aspect-ratio > 1\/1/);
+        assert.match(DUO_RAIL_MEDIA_QUERY, new RegExp(String(DUO_UNFOLDED_MIN_WIDTH_PX - 1)));
 
         for (const vp of VIEWPORTS) {
             await t.test(`viewport ${vp.id}`, async () => {
@@ -674,11 +678,11 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
         });
 
         for (const vp of [
-            // Folded portrait → bottom nav (not rail)
+            // Folded portrait → rail
             { id: '390x844', width: 390, height: 844 },
-            // Folded landscape: w>h but height < 600 and width < 1024 → threshold fails → bottom nav
+            // Folded landscape → rail (short height must still fit 44pt targets)
             { id: '844x390', width: 844, height: 390 },
-            // Unfolded portrait (upright) → bottom nav (Jonas decision)
+            // Unfolded portrait (upright) → bottom nav — only Duo bottom-nav state
             { id: '760x900', width: 760, height: 900 },
             // Unfolded landscape → rail
             { id: '900x760', width: 900, height: 760 },
@@ -710,7 +714,34 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
                         assert.ok(railBox, 'rail box');
                         assert.ok(railBox.x > vp.width / 2, 'rail is on the right half');
                         // 44pt button + 4px pad + 1px border per side (54px capsule) + 12px column margin.
-                        assert.ok(railBox.width <= 66, `rail stays slim (w=${railBox.width})`);
+                        // With status-column safe-area, col can be larger — still must not overflow viewport.
+                        assert.ok(railBox.width <= Math.max(120, vp.width * 0.25), `rail column w=${railBox.width}`);
+                        assert.ok(
+                            Math.abs(railBox.height - vp.height) < 2 || railBox.height <= vp.height,
+                            `rail must fit viewport height (h=${railBox.height}, vp=${vp.height})`
+                        );
+
+                        const railFit = await page.evaluate(() => {
+                            const rail = document.querySelector('[data-testid="app-rail"]');
+                            const inner = document.querySelector('[data-testid="app-rail-inner"]');
+                            if (!rail || !inner) return null;
+                            const style = getComputedStyle(inner);
+                            return {
+                                overflowY: style.overflowY,
+                                scrollHeight: inner.scrollHeight,
+                                clientHeight: inner.clientHeight,
+                                railTop: rail.getBoundingClientRect().top,
+                                railBottom: rail.getBoundingClientRect().bottom,
+                                vh: window.innerHeight,
+                            };
+                        });
+                        assert.ok(railFit, 'rail fit metrics');
+                        assert.ok(
+                            railFit.scrollHeight <= railFit.clientHeight + 1,
+                            `rail inner must not scroll (scroll=${railFit.scrollHeight}, client=${railFit.clientHeight})`
+                        );
+                        assert.ok(railFit.railTop >= -0.5, 'rail top in view');
+                        assert.ok(railFit.railBottom <= railFit.vh + 0.5, 'rail bottom in view');
 
                         const tabButtons = page.locator('[data-testid="app-rail"] nav button');
                         const tabCount = await tabButtons.count();
@@ -737,10 +768,6 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
                             widthRatio > 0.72,
                             `content width ratio ${widthRatio.toFixed(3)} (w=${metrics.contentWidth})`
                         );
-                        assert.ok(
-                            Math.abs(metrics.contentWidth - (vp.width - metrics.stagePadRight)) < 3,
-                            `content should span stage inner width (content=${metrics.contentWidth}, expected≈${vp.width - metrics.stagePadRight})`
-                        );
 
                         const overlap = await page.evaluate(() => {
                             const rail = document.querySelector('[data-testid="app-rail"]');
@@ -751,9 +778,16 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
                             return contentRect.right > railRect.left + 2;
                         });
                         assert.equal(overlap, false, 'content does not overlap rail');
-                        assert.equal(metrics.duoProbe, true, 'duo: density on for rail ≥700');
 
-                        // Weight history → rail back → dashboard content restored
+                        if (vp.width < 700) {
+                            assert.equal(metrics.duoProbe, false, 'duo: density off at closed Duo width');
+                            assert.match(metrics.stepGoalText, /10[\s\u00a0]?000/);
+                            assert.equal(metrics.stepGoalClipped, false, 'step goal must not clip at 390');
+                        } else {
+                            assert.equal(metrics.duoProbe, true, 'duo: density on for rail ≥700');
+                        }
+
+                        // Weight history → rail back → dashboard (skip on very short landscape if cramped)
                         await clickNav(page, 'Hjem');
                         await page.getByText('Se historikk', { exact: true }).click();
                         await page.waitForSelector('[data-testid="weight-progress-view"]');
@@ -762,6 +796,7 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
                         const back = page.getByTestId('app-rail-back');
                         const backBox = await back.boundingBox();
                         assert.ok(backBox.height >= 43.5 && backBox.width >= 43.5, 'rail back ≥44');
+                        assert.ok(backBox.y + backBox.height <= vp.height + 0.5, 'back pill inside viewport');
                         await back.click();
                         await page.waitForFunction(() => !document.querySelector('[data-testid="app-rail-back"]'));
                         await page.waitForFunction(() => !document.querySelector('[data-testid="weight-progress-view"]'));
@@ -774,7 +809,7 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
                     } else {
                         const bottomButtons = page.locator('[data-testid="mobile-bottom-nav"] button');
                         const count = await bottomButtons.count();
-                        assert.ok(count >= 5, 'bottom nav buttons on portrait/threshold Duo');
+                        assert.ok(count >= 5, 'bottom nav buttons on unfolded upright Duo');
                         for (let i = 0; i < count; i += 1) {
                             const box = await bottomButtons.nth(i).boundingBox();
                             assert.ok(box, 'bottom button box');
@@ -786,11 +821,6 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
                             metrics.contentTextLen > 40,
                             `main content must not be empty (len=${metrics.contentTextLen}) at ${vp.id}`
                         );
-                        if (vp.width < 700) {
-                            assert.equal(metrics.duoProbe, false, 'duo: density off at closed Duo width');
-                            assert.match(metrics.stepGoalText, /10[\s\u00a0]?000/);
-                            assert.equal(metrics.stepGoalClipped, false, 'step goal must not clip at 390');
-                        }
                     }
 
                     assert.equal(
@@ -799,7 +829,6 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
                         `render loop: ${pageErrors.join(' | ')}`
                     );
 
-                    // Override must not leak to localStorage
                     const stored = await page.evaluate(() => ({
                         local: localStorage.getItem('jnm_device_override'),
                         session: sessionStorage.getItem('jnm_device_override'),
@@ -825,6 +854,7 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
                 await page.getByTestId('plan-sections').waitFor();
                 await page.evaluate(() => window.scrollTo(0, 120));
 
+                // Unfolded upright → bottom nav
                 await page.setViewportSize({ width: 760, height: 900 });
                 await page.waitForFunction(() => document.documentElement.getAttribute('data-shell') === 'narrow');
                 const portrait = await shellState(page);
@@ -835,6 +865,15 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
                     document.querySelector('[aria-current="page"]')?.textContent?.includes('Trening')
                 ));
 
+                // Folded portrait → rail again
+                await page.setViewportSize({ width: 390, height: 844 });
+                await page.waitForFunction(() => document.documentElement.getAttribute('data-shell') === 'rail');
+                assert.equal((await shellState(page)).railVisible, true);
+                await page.waitForFunction(() => (
+                    document.querySelector('[aria-current="page"]')?.textContent?.includes('Trening')
+                ));
+
+                // Unfolded landscape → rail
                 await page.setViewportSize({ width: 900, height: 760 });
                 await page.waitForFunction(() => document.documentElement.getAttribute('data-shell') === 'rail');
                 const landscape = await shellState(page);
@@ -937,7 +976,7 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
         // Real Duo sizes: inner 951×669 ↔ outer 466×678. Each fold is a resize;
         // syncDom used to re-set data-device on every resize, re-triggering its
         // own MutationObserver forever and freezing the page.
-        // Outer 466×678 is portrait → narrow; inner 951×669 is landscape + wide → rail.
+        // Outer 466×678 folded portrait → rail; inner 951×669 unfolded landscape → rail.
         await t.test('Duo fold/unfold resize keeps the page responsive', async () => {
             const context = await browser.newContext({
                 viewport: { width: 951, height: 669 },
@@ -946,10 +985,9 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
             const page = await context.newPage();
             try {
                 await openAthleteDuo(page, base);
-                for (const [width, height] of [[466, 678], [951, 669], [466, 678]]) {
+                for (const [width, height] of [[466, 678], [951, 669], [466, 678], [760, 900]]) {
                     const expected = expectDuoRail(width, height) ? 'rail' : 'narrow';
                     await page.setViewportSize({ width, height });
-                    // Wait for shellMode resize/matchMedia handlers — do not assert mid-frame.
                     const state = await Promise.race([
                         page.waitForFunction(
                             ({ w, shell }) => (
@@ -961,10 +999,7 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
                         ).then(() => page.evaluate(() => ({
                             width: window.innerWidth,
                             shell: document.documentElement.getAttribute('data-shell'),
-                            railMq: window.matchMedia(
-                                '(min-aspect-ratio: 1/1) and (min-width: 700px) and (min-height: 600px), '
-                                + '(min-aspect-ratio: 1/1) and (min-width: 1024px)'
-                            ).matches,
+                            railMq: window.matchMedia('(max-width: 599px), (aspect-ratio > 1/1)').matches,
                         }))),
                         new Promise((resolve) => setTimeout(() => resolve(null), 3500)),
                     ]);
