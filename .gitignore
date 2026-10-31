@@ -28,3 +28,6 @@ npm-debug.log*
 .cache/
 dist/
 build/
+
+# Lokale leveranser (trykk, profilpakker) – ikke del av appen
+deliverables/
