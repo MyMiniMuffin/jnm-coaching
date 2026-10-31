@@ -1,21 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import {
-    Utensils,
-    Dumbbell,
-    Pencil,
-    Loader2,
-    Check,
-    FileText,
-    Plus,
-    Trash2,
-    ArrowUp,
-    ArrowDown,
-    ListChecks,
-    Download,
-    Upload,
-    CornerDownRight,
-    MoreHorizontal
-} from 'lucide-react';
+import { ForkKnife, Barbell, PencilSimple, CircleNotch, Check, FileText, Plus, Trash, ArrowUp, ArrowDown, ListChecks, DownloadSimple, UploadSimple, ArrowBendDownRight, DotsThree } from '@phosphor-icons/react';
 import { Card, Button, EmptyState, TextArea } from '../components/ui';
 import { useConfirm } from '../components/ConfirmDialog';
 import { haptic } from '../lib/haptic';
@@ -77,7 +61,7 @@ const RowMenu = ({ label, items }) => {
                 aria-expanded={open}
                 onClick={() => setOpen(value => !value)}
             >
-                <MoreHorizontal size={16} />
+                <DotsThree size={16} />
             </SmallIconButton>
             {open && (
                 <div
@@ -155,7 +139,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
         return () => clearTimeout(timeoutId);
     }, [saveState]);
 
-    const Icon = type === 'diet' ? Utensils : Dumbbell;
+    const Icon = type === 'diet' ? ForkKnife : Barbell;
     const title = planTitle || (type === 'diet' ? 'Matplan' : 'Treningsplan');
     const itemPlaceholder = type === 'diet'
         ? 'For eksempel: Havregrøt med bær'
@@ -468,12 +452,12 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                     <div className="flex shrink-0 items-center gap-1.5">
                         {!isEditing && parsedPlan.sections.length > 0 && (
                             <Button aria-label={`Eksporter ${title.toLowerCase()} som tekstfil`} title={`Eksporter ${title.toLowerCase()} som tekstfil`} variant="ghost" size="sm" onClick={handleExportText} className="px-2 sm:px-3">
-                                <Download size={16} /> <span className="hidden sm:inline">Eksporter</span>
+                                <DownloadSimple size={16} /> <span className="hidden sm:inline">Eksporter</span>
                             </Button>
                         )}
                         {!isReadOnly && !isEditing && (
                             <Button variant="secondary" size="sm" onClick={handleStartEditing}>
-                                <Pencil size={16} /> Rediger
+                                <PencilSimple size={16} /> Rediger
                             </Button>
                         )}
                     </div>
@@ -488,10 +472,10 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                         <div className="flex flex-wrap gap-2">
                             <input ref={importFileRef} type="file" accept="text/plain,.txt" className="hidden" onChange={handleImportFile} />
                             <Button variant="ghost" size="sm" onClick={handleExportText} disabled={draft.sections.length === 0}>
-                                <Download size={16} /> Eksporter
+                                <DownloadSimple size={16} /> Eksporter
                             </Button>
                             <Button variant="secondary" size="sm" onClick={handleOpenTextImport}>
-                                <Upload size={16} /> Importer tekst
+                                <UploadSimple size={16} /> Importer tekst
                             </Button>
                             <Button variant="secondary" size="sm" onClick={insertTemplate}>
                                 <FileText size={16} /> Bruk forslag
@@ -534,7 +518,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                         <div className="mt-4 flex justify-end gap-2">
                             <Button variant="ghost" size="sm" onClick={handleCloseTextImport}>Avbryt</Button>
                             <Button size="sm" onClick={handleApplyTextImport} disabled={!importText.trim()}>
-                                <Upload size={16} /> Bruk teksten
+                                <UploadSimple size={16} /> Bruk teksten
                             </Button>
                         </div>
                     </div>
@@ -565,7 +549,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                                                 items={[
                                                     { label: 'Flytt opp', icon: <ArrowUp size={15} />, disabled: sectionIndex === 0, onClick: () => moveSection(sectionIndex, -1) },
                                                     { label: 'Flytt ned', icon: <ArrowDown size={15} />, disabled: sectionIndex === displayPlan.sections.length - 1, onClick: () => moveSection(sectionIndex, 1) },
-                                                    { label: type === 'diet' ? 'Slett måltid' : 'Slett seksjon', icon: <Trash2 size={15} />, tone: 'danger', onClick: () => handleRemoveSection(sectionIndex) }
+                                                    { label: type === 'diet' ? 'Slett måltid' : 'Slett seksjon', icon: <Trash size={15} />, tone: 'danger', onClick: () => handleRemoveSection(sectionIndex) }
                                                 ]}
                                             />
                                         </div>
@@ -644,7 +628,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                                                                 items={[
                                                                     { label: 'Flytt opp', icon: <ArrowUp size={15} />, disabled: itemIndex === 0, onClick: () => moveItem(sectionIndex, itemIndex, -1) },
                                                                     { label: 'Flytt ned', icon: <ArrowDown size={15} />, disabled: itemIndex === section.items.length - 1, onClick: () => moveItem(sectionIndex, itemIndex, 1) },
-                                                                    { label: 'Slett øvelse', icon: <Trash2 size={15} />, tone: 'danger', onClick: () => removeItem(sectionIndex, itemIndex) }
+                                                                    { label: 'Slett øvelse', icon: <Trash size={15} />, tone: 'danger', onClick: () => removeItem(sectionIndex, itemIndex) }
                                                                 ]}
                                                             />
                                                         </div>
@@ -667,17 +651,17 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                                                         <RowMenu
                                                             label={`Handlinger for matvare ${itemIndex + 1}`}
                                                             items={[
-                                                                { label: 'Legg til valg', icon: <CornerDownRight size={15} />, onClick: () => addSubItem(sectionIndex, itemIndex) },
+                                                                { label: 'Legg til valg', icon: <ArrowBendDownRight size={15} />, onClick: () => addSubItem(sectionIndex, itemIndex) },
                                                                 { label: 'Flytt opp', icon: <ArrowUp size={15} />, disabled: itemIndex === 0, onClick: () => moveItem(sectionIndex, itemIndex, -1) },
                                                                 { label: 'Flytt ned', icon: <ArrowDown size={15} />, disabled: itemIndex === section.items.length - 1, onClick: () => moveItem(sectionIndex, itemIndex, 1) },
-                                                                { label: 'Slett matvare', icon: <Trash2 size={15} />, tone: 'danger', onClick: () => removeItem(sectionIndex, itemIndex) }
+                                                                { label: 'Slett matvare', icon: <Trash size={15} />, tone: 'danger', onClick: () => removeItem(sectionIndex, itemIndex) }
                                                             ]}
                                                         />
                                                     </div>
 
                                                     {(item.subItems || []).map((subItem, subItemIndex) => (
                                                         <div key={subItem.key} className="ml-2 mt-2 flex items-start gap-2 border-l border-surface-200 pl-2 sm:ml-8 sm:pl-3">
-                                                            <CornerDownRight className="mt-3 shrink-0 text-ink-faint" size={13} />
+                                                            <ArrowBendDownRight className="mt-3 shrink-0 text-ink-faint" size={13} />
                                                             <AutoGrowTextarea
                                                                 aria-label={`Valg ${subItemIndex + 1} for matvare ${itemIndex + 1}`}
                                                                 data-sub-item={subItemIndex === (item.subItems || []).length - 1 ? `${sectionIndex}-${itemIndex}-new` : undefined}
@@ -709,7 +693,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                                                                 tone="danger"
                                                                 onClick={() => removeSubItem(sectionIndex, itemIndex, subItemIndex)}
                                                             >
-                                                                <Trash2 size={13} />
+                                                                <Trash size={13} />
                                                             </SmallIconButton>
                                                         </div>
                                                     ))}
@@ -719,7 +703,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                                                         onClick={() => addSubItem(sectionIndex, itemIndex)}
                                                         className="ml-2 sm:ml-8 mt-1 inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium text-ink-muted hover:bg-surface-100 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                                                     >
-                                                        <CornerDownRight size={13} /> Legg til valg
+                                                        <ArrowBendDownRight size={13} /> Legg til valg
                                                     </button>
                                                 </div>
                                             )
@@ -800,7 +784,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                             Avbryt
                         </Button>
                         <Button variant="primary" size="sm" onClick={handleSave} disabled={!canSave}>
-                            {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                            {isSaving ? <CircleNotch size={16} className="animate-spin" /> : <Check size={16} />}
                             {isSaving ? 'Lagrer' : 'Lagre'}
                         </Button>
                     </div>

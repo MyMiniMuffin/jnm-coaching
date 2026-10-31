@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Check, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { Check, PencilSimple, Plus, Trash, X } from '@phosphor-icons/react';
 import { Button, Card } from '../components/ui';
 import { useConfirm } from '../components/ConfirmDialog';
 import { parseNamedPlans, serializeNamedPlans } from '../lib/namedPlans';
@@ -127,11 +127,11 @@ const NamedPlansSection = ({ type, content, onSave, isReadOnly, isArchived = fal
                             setName(selectedPlan.name);
                             setNameMode('rename');
                         }}>
-                            <Pencil size={15} /> Gi nytt navn
+                            <PencilSimple size={15} /> Gi nytt navn
                         </Button>
                         {plans.length > 1 && (
                             <Button variant="ghost" size="sm" disabled={isSaving} onClick={handleDelete} className="text-error hover:bg-error/10">
-                                <Trash2 size={15} /> Slett
+                                <Trash size={15} /> Slett
                             </Button>
                         )}
                     </div>

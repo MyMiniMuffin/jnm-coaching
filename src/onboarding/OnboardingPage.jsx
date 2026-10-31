@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, Check, ImagePlus, Loader2, LockKeyhole } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Image, CircleNotch, Lock } from '@phosphor-icons/react';
 import { uploadOnboardingImage, validateOnboardingImage } from './imageUpload';
 
 const stepCount = 3;
@@ -37,7 +37,7 @@ const Select = ({ children, ...props }) => <select {...props} className="onboard
 const PhotoField = ({ id, label, file, onChange }) => (
     <label htmlFor={id} className="onboarding-photo-field">
         <span className="onboarding-photo-icon">
-            {file ? <Check size={18} aria-hidden="true" /> : <ImagePlus size={18} aria-hidden="true" />}
+            {file ? <Check size={18} aria-hidden="true" /> : <Image size={18} aria-hidden="true" />}
         </span>
         <span>
             <strong>{label}</strong>
@@ -321,8 +321,8 @@ const OnboardingForm = () => {
                     ) : (
                         <button type="submit" disabled={status === 'submitting'} className="coaching-button">
                             {status === 'submitting' ? (
-                                <><Loader2 className="animate-spin" size={18} aria-hidden="true" /> {uploadStatus || 'Sender'}</>
-                            ) : <><LockKeyhole size={17} aria-hidden="true" /> Send svarene</>}
+                                <><CircleNotch className="animate-spin" size={18} aria-hidden="true" /> {uploadStatus || 'Sender'}</>
+                            ) : <><Lock size={17} aria-hidden="true" /> Send svarene</>}
                         </button>
                     )}
                 </div>
@@ -339,7 +339,7 @@ const OnboardingPage = () => (
                     <img src="/jnm-coaching-logo.svg" alt="" className="h-8 w-8 rounded-lg" />
                     <span className="text-sm font-semibold tracking-[-0.02em]">JNM Coaching</span>
                 </a>
-                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-black/50"><LockKeyhole size={13} aria-hidden="true" /> Fortrolig skjema</span>
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-black/50"><Lock size={13} aria-hidden="true" /> Fortrolig skjema</span>
             </div>
         </header>
 
@@ -352,7 +352,7 @@ const OnboardingPage = () => (
                     Svar ærlig og konkret. Det finnes ingen riktige svar. Informasjonen hjelper meg å lage et opplegg som passer deg.
                 </p>
                 <div className="mt-8 flex items-start gap-3 border-t border-black/10 pt-6 text-sm leading-6 text-black/50">
-                    <LockKeyhole className="mt-1 shrink-0 text-accent" size={16} aria-hidden="true" />
+                    <Lock className="mt-1 shrink-0 text-accent" size={16} aria-hidden="true" />
                     <p>Sett av 5–8 minutter. Svarene sendes direkte til JNM Coaching.</p>
                 </div>
             </aside>

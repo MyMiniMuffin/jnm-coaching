@@ -1,6 +1,6 @@
 import React from 'react';
 import AccountMenu from './AccountMenu';
-import { LogOut, ChevronLeft, WifiOff, Eye } from 'lucide-react';
+import { SignOut, CaretLeft, WifiSlash, Eye } from '@phosphor-icons/react';
 import { IconButton } from './ui';
 
 const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOffline = false, isClientPreview = false, onToggleClientPreview, previewDisabled = false, hideClientBack = false }) => (
@@ -8,7 +8,7 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
         <div className="app-header-top-inset" aria-hidden="true" />
         {isOffline && (
             <div className="bg-warning text-ink text-center text-sm py-2 px-4 flex items-center justify-center gap-2">
-                <WifiOff size={14} /> Ingen nettilkobling. Viser lagrede data.
+                <WifiSlash size={14} /> Ingen nettilkobling. Viser lagrede data.
             </div>
         )}
         {isClientPreview && (
@@ -34,7 +34,7 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
                     data-testid="header-client-back"
                     className="flex min-h-11 items-center gap-0.5 rounded-lg px-2.5 py-2 text-accent transition-colors hover:bg-surface-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent shrink-0"
                 >
-                    <ChevronLeft size={20} strokeWidth={2.5} />
+                    <CaretLeft size={20} />
                     <span className="text-sm font-medium">Utøvere</span>
                 </button>
                 )}
@@ -50,7 +50,7 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
                 )}
                 <AccountMenu user={isClientPreview ? null : user} />
                 <IconButton onClick={onLogout} aria-label="Logg ut" className="shrink-0">
-                    <LogOut size={20} />
+                    <SignOut size={20} />
                 </IconButton>
             </div>
         ) : (
@@ -59,7 +59,7 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
                 <div className="flex items-center gap-1">
                     <AccountMenu user={isClientPreview ? null : user} />
                     <IconButton onClick={onLogout} aria-label="Logg ut" className="shrink-0">
-                        <LogOut size={20} />
+                        <SignOut size={20} />
                     </IconButton>
                 </div>
             </div>

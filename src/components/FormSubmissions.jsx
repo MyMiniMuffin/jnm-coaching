@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ChevronDown, Inbox, Mail, Phone, Instagram, Check, RotateCcw, Loader2, Trash2 } from 'lucide-react';
+import { CaretDown, Tray, EnvelopeSimple, Phone, InstagramLogo, Check, ArrowCounterClockwise, CircleNotch, Trash } from '@phosphor-icons/react';
 import { api } from '../lib/api';
 import { Badge, Button, Card } from './ui';
 import { useConfirm } from './ConfirmDialog';
@@ -40,7 +40,7 @@ const SubmissionDetails = ({ submission }) => {
             <div className="flex flex-wrap gap-2">
                 {data.email && (
                     <a href={`mailto:${data.email}`} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-surface-100 px-3 text-sm text-ink hover:bg-surface-200">
-                        <Mail size={16} /> {data.email}
+                        <EnvelopeSimple size={16} /> {data.email}
                     </a>
                 )}
                 {data.phone && (
@@ -50,7 +50,7 @@ const SubmissionDetails = ({ submission }) => {
                 )}
                 {data.instagram && (
                     <a href={instagramUrl(data.instagram)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-surface-100 px-3 text-sm text-ink hover:bg-surface-200">
-                        <Instagram size={16} /> {data.instagram}
+                        <InstagramLogo size={16} /> {data.instagram}
                     </a>
                 )}
             </div>
@@ -104,7 +104,7 @@ const SubmissionItem = ({ submission, open, onToggle, onSetHandled, onDelete, bu
                     <span className="mt-0.5 block text-xs text-ink-muted">{type?.label || submission.formName} · {formatDate(submission.createdAt)}</span>
                 </span>
                 {!handled && <Badge variant="warning">Ny</Badge>}
-                <ChevronDown size={18} className={`shrink-0 text-ink-faint transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
+                <CaretDown size={18} className={`shrink-0 text-ink-faint transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
             </button>
             {open && (
                 <div id={detailsId} className="pb-4">
@@ -113,13 +113,13 @@ const SubmissionItem = ({ submission, open, onToggle, onSetHandled, onDelete, bu
                         {/* Only handled submissions can be deleted, so a new one never disappears by a mistap. */}
                         {handled && (
                             <Button variant="danger" size="sm" disabled={busy} onClick={() => onDelete(submission)}>
-                                <Trash2 size={16} /> Slett
+                                <Trash size={16} /> Slett
                             </Button>
                         )}
                         <Button variant="secondary" size="sm" disabled={busy} onClick={() => onSetHandled(submission, !handled)}>
                             {busy
-                                ? <Loader2 size={16} className="animate-spin" />
-                                : handled ? <RotateCcw size={16} /> : <Check size={16} />}
+                                ? <CircleNotch size={16} className="animate-spin" />
+                                : handled ? <ArrowCounterClockwise size={16} /> : <Check size={16} />}
                             {handled ? 'Flytt til nye' : 'Marker som behandlet'}
                         </Button>
                     </div>
@@ -192,7 +192,7 @@ export default function FormSubmissions() {
         <Card className="p-5 duo:p-6" aria-labelledby="form-submissions-title" role="region">
             <div className="flex items-center justify-between gap-3">
                 <h2 id="form-submissions-title" className="flex items-center gap-2 font-semibold text-ink">
-                    <Inbox size={18} className="text-ink-muted" aria-hidden="true" />
+                    <Tray size={18} className="text-ink-muted" aria-hidden="true" />
                     {showHandled ? 'Behandlede henvendelser' : 'Henvendelser'}
                     {!showHandled && open.length > 0 && <Badge variant="warning">{open.length} {open.length === 1 ? 'ny' : 'nye'}</Badge>}
                 </h2>

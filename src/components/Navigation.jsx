@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { ChevronLeft } from 'lucide-react';
+import { CaretLeft } from '@phosphor-icons/react';
 import { NAV_ITEMS, APP_ICON } from '../lib/config';
 import { haptic } from '../lib/haptic';
 
@@ -21,7 +21,7 @@ const NavButton = React.memo(({ item, isActive, onClick, variant }) => {
                         : 'text-ink-muted font-medium hover:bg-white/70 hover:text-ink'
                 }`}
             >
-                <Icon size={20} strokeWidth={isActive ? 2 : 1.75} />
+                <Icon size={20} weight={isActive ? 'fill' : 'regular'} />
                 {item.label}
             </button>
         );
@@ -40,7 +40,7 @@ const NavButton = React.memo(({ item, isActive, onClick, variant }) => {
                         : 'text-ink-muted hover:bg-white/60 hover:text-ink'
                 }`}
             >
-                <Icon size={20} strokeWidth={isActive ? 2.1 : 1.75} />
+                <Icon size={20} weight={isActive ? 'fill' : 'regular'} />
             </button>
         );
     }
@@ -53,7 +53,7 @@ const NavButton = React.memo(({ item, isActive, onClick, variant }) => {
             aria-current={isActive ? 'page' : undefined}
             className={`relative z-10 flex flex-col items-center justify-center gap-1 min-h-[48px] min-w-[44px] rounded-xl transition-transform duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${isActive ? 'text-accent-hover' : 'text-ink-muted'}`}
         >
-            <Icon size={22} strokeWidth={isActive ? 2 : 1.5} />
+            <Icon size={22} weight={isActive ? 'fill' : 'regular'} />
             <span className={`text-[11px] ${isActive ? 'font-semibold' : 'font-medium'}`}>{item.label}</span>
         </button>
     );
@@ -136,7 +136,7 @@ const Navigation = React.memo(({ activeTab, setActiveTab, shell = 'narrow', onBa
                                 data-testid="app-rail-back"
                                 className="app-rail-btn rounded-full text-ink transition-colors hover:bg-white/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                             >
-                                <ChevronLeft size={20} strokeWidth={2.25} />
+                                <CaretLeft size={20} />
                             </button>
                         </div>
                     )}

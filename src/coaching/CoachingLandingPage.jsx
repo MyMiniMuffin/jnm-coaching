@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Instagram, Loader2 } from 'lucide-react';
+import { InstagramLogo, CircleNotch } from '@phosphor-icons/react';
 
 const pillars = [
     {
@@ -139,7 +139,7 @@ const ApplicationForm = () => {
                         <input id="phone" name="phone" type="tel" autoComplete="tel" className="coaching-field" />
                     </div>
                     <div>
-                        <label htmlFor="instagram" className="coaching-label">Instagram <span>valgfritt</span></label>
+                        <label htmlFor="instagram" className="coaching-label">InstagramLogo <span>valgfritt</span></label>
                         <input id="instagram" name="instagram" type="text" autoComplete="off" className="coaching-field" />
                     </div>
                     <div className="sm:col-span-2">
@@ -160,7 +160,7 @@ const ApplicationForm = () => {
                     className="coaching-button mt-8 w-full sm:w-auto"
                 >
                     {status === 'submitting' ? (
-                        <><Loader2 className="animate-spin" size={18} aria-hidden="true" /> Sender</>
+                        <><CircleNotch className="animate-spin" size={18} aria-hidden="true" /> Sender</>
                     ) : <><ButtonIcon /> Send søknad</>}
                 </button>
             </form>
@@ -253,9 +253,9 @@ const CoachingLandingPage = () => {
                         target="_blank"
                         rel="noreferrer"
                         className="coaching-social-link"
-                        aria-label="JNM Coaching på Instagram (åpnes i ny fane)"
+                        aria-label="JNM Coaching på InstagramLogo (åpnes i ny fane)"
                     >
-                        <Instagram size={16} aria-hidden="true" /> Instagram
+                        <InstagramLogo size={16} aria-hidden="true" /> InstagramLogo
                     </a>
                     <a href="/" className="w-fit transition-colors hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black">
                         Åpne appen

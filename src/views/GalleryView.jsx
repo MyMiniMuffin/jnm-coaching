@@ -1,7 +1,7 @@
 import ImageViewerLoading from '../components/ImageViewerLoading';
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Camera, X, Loader2, Plus, Eye, TrendingUp, TrendingDown, Minus, Download, Check, Trash2 } from 'lucide-react';
+import { Camera, X, CircleNotch, Plus, Eye, TrendUp, TrendDown, Minus, DownloadSimple, Check, Trash } from '@phosphor-icons/react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { Card, Button, EmptyState, IconButton, PageTitle, TextField } from '../components/ui';
 import { useToast } from '../components/Toast';
@@ -123,7 +123,7 @@ const FullscreenCompareModal = React.memo(({ before, after, daysDiff, weightDiff
                 <div className="flex items-center justify-center gap-2 sm:gap-4 p-3 sm:p-4">
                     {weightDiff && (
                         <div className="flex items-center gap-2 py-2 px-3 sm:px-4 rounded-full backdrop-blur-md ring-1 ring-white/10 bg-white/10 text-white">
-                            {parseFloat(weightDiff) < 0 ? <TrendingDown size={18} /> : parseFloat(weightDiff) > 0 ? <TrendingUp size={18} /> : <Minus size={18} />}
+                            {parseFloat(weightDiff) < 0 ? <TrendDown size={18} /> : parseFloat(weightDiff) > 0 ? <TrendUp size={18} /> : <Minus size={18} />}
                             <span className="font-semibold text-sm sm:text-base">
                                 {parseFloat(weightDiff) > 0 ? '+' : ''}{weightDiff.replace('.', ',')} kg
                             </span>
@@ -138,7 +138,7 @@ const FullscreenCompareModal = React.memo(({ before, after, daysDiff, weightDiff
                             onClick={onDownload}
                             className="inline-flex items-center gap-2 py-2 px-3 sm:px-4 rounded-full backdrop-blur-md ring-1 ring-white/10 bg-white/10 text-white text-xs sm:text-sm font-medium hover:bg-white/18"
                         >
-                            <Download size={16} /> Last ned begge
+                            <DownloadSimple size={16} /> Last ned begge
                         </button>
                     )}
                 </div>
@@ -527,7 +527,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                     <label htmlFor="gallery-upload-files" className={`flex min-h-[132px] flex-col items-center justify-center rounded-xl border-2 border-dashed border-surface-200 p-5 text-center transition-all hover:border-surface-300 hover:bg-surface-50 focus-within:border-accent focus-within:ring-2 focus-within:ring-accent ${isUploading ? 'pointer-events-none opacity-60' : 'cursor-pointer'}`}>
                         {isUploading ? (
                             <>
-                                <Loader2 className="animate-spin text-ink-muted" size={24} />
+                                <CircleNotch className="animate-spin text-ink-muted" size={24} />
                                 <span className="mt-2 text-sm font-medium text-ink-muted">Laster opp {uploadProgress}</span>
                             </>
                         ) : selectedUploadFiles.length > 0 ? (
@@ -561,7 +561,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                             Avbryt
                         </Button>
                         <Button type="submit" variant="primary" size="md" className="flex-1" disabled={selectedUploadFiles.length === 0 || isUploading}>
-                            {isUploading ? <Loader2 size={18} className="animate-spin" /> : <Camera size={18} />}
+                            {isUploading ? <CircleNotch size={18} className="animate-spin" /> : <Camera size={18} />}
                             {isUploading ? 'Laster opp' : 'Last opp'}
                         </Button>
                     </div>
@@ -645,7 +645,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                                 )}
                                 {isCoach && (
                                     <Button variant={downloadMode ? 'primary' : 'secondary'} size="sm" aria-pressed={downloadMode} onClick={toggleDownloadMode} disabled={isDownloading}>
-                                        <Download size={16} /> Last ned
+                                        <DownloadSimple size={16} /> Last ned
                                     </Button>
                                 )}
                             </>
@@ -662,7 +662,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                             <Button variant="secondary" size="sm" disabled={isDownloading} onClick={() => setSelectedDownloads(new Set(allImages.map(img => img.url)))}>Velg alle</Button>
                             <Button variant="secondary" size="sm" disabled={isDownloading || selectedDownloadImages.length === 0} onClick={() => setSelectedDownloads(new Set())}>Fjern valg</Button>
                             <Button variant="primary" size="sm" disabled={isDownloading || selectedDownloadImages.length === 0} onClick={handleDownloadSelected}>
-                                {isDownloading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                                {isDownloading ? <CircleNotch size={16} className="animate-spin" /> : <DownloadSimple size={16} />}
                                 {isDownloading ? 'Laster ned…' : `Last ned valgte (${selectedDownloadImages.length})`}
                             </Button>
                         </div>
@@ -769,7 +769,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                                         <p className="section-label mb-1">Vektendring</p>
                                         <p className={`text-lg font-semibold flex items-center justify-center gap-1 ${parseFloat(weightDiff) === 0 ? 'text-ink-muted' : 'text-ink'}`}>
                                             {parseFloat(weightDiff) > 0 ? '+' : ''}{weightDiff.replace('.', ',')} kg
-                                            {parseFloat(weightDiff) < 0 ? <TrendingDown size={18} /> : parseFloat(weightDiff) > 0 ? <TrendingUp size={18} /> : null}
+                                            {parseFloat(weightDiff) < 0 ? <TrendDown size={18} /> : parseFloat(weightDiff) > 0 ? <TrendUp size={18} /> : null}
                                         </p>
                                     </div>
                                 )}
@@ -794,7 +794,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                                 className="w-full"
                                 onClick={handleDownloadCompare}
                             >
-                                <Download size={18} /> Last ned begge
+                                <DownloadSimple size={18} /> Last ned begge
                             </Button>}
                         </div>
                     )}
@@ -901,7 +901,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                                     disabled={String(img.galleryImageId).startsWith('temp_') || deletingImageId === img.galleryImageId}
                                     tone="danger"
                                     className="absolute top-1 right-1 z-10 rounded-lg bg-white/90 text-error shadow-sm backdrop-blur-sm">
-                                    {String(img.galleryImageId).startsWith('temp_') || deletingImageId === img.galleryImageId ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
+                                    {String(img.galleryImageId).startsWith('temp_') || deletingImageId === img.galleryImageId ? <CircleNotch size={18} className="animate-spin" /> : <Trash size={18} />}
                                 </IconButton>}
                             </div>
                         ))}

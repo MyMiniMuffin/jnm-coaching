@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, Footprints, X } from 'lucide-react';
+import { Check, Footprints, X } from '@phosphor-icons/react';
 import { getScoreTone } from '../lib/reportStatus';
 
 const clampPercent = (value) => Math.max(0, Math.min(100, value));

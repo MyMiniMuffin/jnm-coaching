@@ -766,7 +766,7 @@ html[data-shell="rail"] .app-rail-pill {
     box-sizing: border-box;
 }
 
-/* 44×44pt targets; grid + block SVG keeps Lucide ink on the pill center (no overflow/baseline gap). */
+/* 44×44pt targets; grid + block SVG keeps icon ink on the pill center (no overflow/baseline gap). */
 html[data-shell="rail"] .app-rail-btn {
     display: grid;
     place-items: center;

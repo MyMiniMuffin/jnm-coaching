@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Settings, X, Loader2 } from 'lucide-react';
+import { Gear, X, CircleNotch } from '@phosphor-icons/react';
 import { useEscapeKey, useFocusTrap } from '../hooks';
 import { Button, TextField } from './ui';
 import { api } from '../lib/api';
@@ -55,7 +55,7 @@ export default function AccountMenu({ user }) {
         <button type="button" onClick={() => { setTab('support'); setOpen(true); }}
             aria-label={user ? 'Konto, hjelp og personvern' : undefined}
             className={user ? 'min-h-11 min-w-11 flex items-center justify-center rounded-lg text-ink-muted hover:bg-surface-100 focus-visible:ring-2 focus-visible:ring-accent' : 'min-h-11 px-3 text-sm text-accent underline underline-offset-4'}>
-            {user ? <Settings size={20} /> : 'Hjelp og personvern'}
+            {user ? <Gear size={20} /> : 'Hjelp og personvern'}
         </button>
         {open && createPortal(
             <div className="fixed inset-0 z-[150] flex items-center justify-center bg-ink/60 p-4" onClick={close}>
@@ -84,7 +84,7 @@ export default function AccountMenu({ user }) {
                                     <TextField id="deletion-password" type="password" label="Nåværende passord" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} required disabled={busy} />
                                     <TextField id="deletion-email" type="email" label="E-post for bekreftelse (valgfritt)" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} disabled={busy} />
                                     <p className="text-xs text-ink-muted">Uten e-post bekrefter coachen slettingen via kontaktkanalen dere bruker.</p>
-                                    <div className="flex gap-3"><Button variant="secondary" disabled={busy} onClick={() => { setDeleting(false); setPassword(''); }}>Avbryt</Button><Button variant="danger" type="submit" disabled={busy || !password}>{busy ? <Loader2 size={18} className="animate-spin" /> : 'Send sletteforespørsel'}</Button></div>
+                                    <div className="flex gap-3"><Button variant="secondary" disabled={busy} onClick={() => { setDeleting(false); setPassword(''); }}>Avbryt</Button><Button variant="danger" type="submit" disabled={busy || !password}>{busy ? <CircleNotch size={18} className="animate-spin" /> : 'Send sletteforespørsel'}</Button></div>
                                 </form>}
                             </>}
                         </section>}

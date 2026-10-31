@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { Card, Button } from './ui';
-import { AlertTriangle } from 'lucide-react';
+import { Warning } from '@phosphor-icons/react';
 import { useFocusTrap } from '../hooks';
 import { haptic } from '../lib/haptic';
 
@@ -44,7 +44,7 @@ export const ConfirmProvider = ({ children }) => {
                     >
                         <div className="flex items-start gap-4 mb-5">
                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${state.destructive ? 'bg-error/10 text-error' : 'bg-surface-100 text-ink-muted'}`}>
-                                <AlertTriangle size={20} />
+                                <Warning size={20} />
                             </div>
                             <div>
                                 {state.title && <h2 id="confirm-dialog-title" className="font-display text-xl mb-1">{state.title}</h2>}
