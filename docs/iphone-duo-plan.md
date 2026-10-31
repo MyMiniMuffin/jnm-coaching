@@ -31,9 +31,9 @@
 
 | Shell | Hvem | Navigasjon |
 |---|---|---|
-| `narrow` | Vanlige iPhoner / smal web | Bunnmeny |
-| `wide` | iPad / desktop (≥1024 eller sticky media) | Venstre sidebar |
-| `rail` | **Kun iPhone Duo** (lukket + utfoldet) | Flytende høyre-piller |
+| `narrow` | Vanlige iPhoner / smal web / **Duo utfoldet oppreist** (portrett/kvadrat) | Bunnmeny |
+| `wide` | iPad / desktop (≥1024 eller sticky media) — **ikke** Duo | Venstre sidebar |
+| `rail` | **iPhone Duo** foldet (portrett *eller* landskap) og utfoldet landskap | Flytende høyre-piller |
 
 ### Duo-deteksjon og `iPhone19,4`
 
@@ -49,8 +49,9 @@ Nativt i `DuoDevice.swift` via `utsname.machine`. Listen og den rene beslutnings
 
 - **Inn i wide (ikke-Duo):** `DUO_MEDIA_QUERY` matcher.
 - **Ut av wide:** bredde &lt; 700, eller kald start uten media-match.
-- **Sticky:** allerede wide + høyde krymper (tastatur) mens bredde ≥ 700 → forblir wide.
-- **Rail:** overstyrer alltid når enheten er Duo (ingen venstre sidebar / bunnmeny), også ≥1024.
+- **Sticky:** allerede wide + høyde krymper (tastatur) mens bredde ≥ 700 → forblir wide. Sticky gjelder **ikke** Duo.
+- **Duo bunnmeny:** kun utfoldet oppreist — `DUO_BOTTOM_NAV_MEDIA_QUERY`. Foldet skilles fra utfoldet via kortside/bredde (~390–440 vs ~700+); terskel `600px`.
+- **Duo rail:** `DUO_RAIL_MEDIA_QUERY` (negasjon av bunnmeny-rommet). Ingen venstre sidebar på Duo.
 
 `duo:`-density: `wide` alltid; `rail` kun ved bredde ≥ 700 (lukket Duo 390 beholder telefon-tetthet). Swipe-tilbake beholdes på rail (rail er til høyre; `.app-rail-inner` stopper touch-propagering).
 
@@ -58,6 +59,14 @@ Nativt i `DuoDevice.swift` via `utsname.machine`. Listen og den rene beslutnings
 DUO_MEDIA_QUERY =
   (min-width: 700px) and (min-height: 600px),
   (min-width: 1024px)
+
+DUO_UNFOLDED_MIN_WIDTH_PX = 600
+
+DUO_BOTTOM_NAV_MEDIA_QUERY =
+  (min-width: 600px) and (max-aspect-ratio: 1/1)
+
+DUO_RAIL_MEDIA_QUERY =
+  (max-width: 599px), (aspect-ratio > 1/1)
 ```
 
 Ved modul-load (før første React-render) settes `html[data-shell]`. Samme attributt driver:
@@ -75,17 +84,20 @@ Ved modul-load (før første React-render) settes `html[data-shell]`. Samme attr
 | Viewport / path | Shell |
 |---|---|
 | 390×844 vanlig iPhone | Bottom nav (`narrow`) |
-| 390×844 Duo (`?device=duo`) | Rail (telefon-tetthet) |
-| 760×900 Duo | Rail + `duo:`-density + full bredde |
+| 390×844 Duo foldet portrett | Rail |
+| 844×390 Duo foldet landskap | Rail |
+| 760×900 Duo utfoldet portrett (oppreist) | Bottom nav — eneste Duo-bunnmeny |
+| 800×800 Duo utfoldet kvadrat | Bottom nav |
+| 900×760 Duo utfoldet landskap | Rail |
 | 390×844 (lukket portrett, ikke Duo) | Bottom nav |
 | 932×430 (lukket telefon landskap) | Bottom nav |
 | 700×599 (kald start) | Bottom nav |
 | 900×550 (kald start) | Bottom nav (media matcher ikke; ingen sticky) |
 | 700×600 / iPad-portrett (ikke Duo) | Sidebar (`wide`) |
-| 900×760 → 900×400 (tastatur) | Sidebar beholdes (sticky / `data-shell="wide"`) |
+| 900×760 → 900×400 (tastatur, ikke Duo) | Sidebar beholdes (sticky / `data-shell="wide"`) |
 | 900×400 → 650×400 | Bottom nav (exit under 700) |
 | 1280×550 (kort desktop) | Sidebar (`min-width: 1024px`) |
-| ≥1024 med `?device=duo` | Rail (Duo vinner) |
+| ≥1024 landskap med `?device=duo` | Rail (Duo vinner over sidebar) |
 
 `max-width` ved ≥1024 er **uendret** for ikke-Duo.
 
@@ -93,14 +105,15 @@ Ved modul-load (før første React-render) settes `html[data-shell]`. Samme attr
 
 ---
 
-## Rail-design etter Apple HIG (2026-10-31)
+## Rail-design etter Apple HIG (2026-10-31+)
 
-Kilde: [Designing for iPhone Duo](https://developer.apple.com/design/human-interface-guidelines/designing-for-iphone-duo) (HIG, 9. sep 2026).
+Kilder: [Designing for iPhone Duo](https://developer.apple.com/design/human-interface-guidelines/designing-for-iphone-duo); HIG Layout + WWDC25/26 (size classes).
 
-- **Side-kontroller:** ytterskjerm og innerskjerm i landskap har toolbar/tab bar langs siden. Øverst: Back/Close; nederst: faner. Kun symboler (tekstknapper hører hjemme i horisontale barer).
-- **Innerskjerm i portrett:** HIG beholder vanlige horisontale barer. Rail blir en flytende bunnkapsel ved `(min-width: 700px) and (orientation: portrait)`; samme rekkefølge (tilbake først, så faner).
-- **Kompakt:** kapsel 52px (44pt knapp + 4px), kant 6px, innholdsgap 8px → `--app-rail-reserve` ≈ 66px (før 76px).
-- Ikke ennå: overflyt bottom-to-top når høyden ikke rekker (HIG `visibility priority`), jevnt antall kolonner rundt hengsel (`ReservedRegion` finnes bare nativt).
+- **Beslutning fra live viewport (ikke orientation API):** foldet vs utfoldet via kortside (`DUO_UNFOLDED_MIN_WIDTH_PX = 600`). Bunnmeny *kun* utfoldet oppreist/kvadrat (`DUO_BOTTOM_NAV_MEDIA_QUERY`). Foldet portrett + foldet landskap + utfoldet landskap → rail.
+- **Side-kontroller (rail):** høyre kolonne; back øverst, faner nederst. Kun symboler. Foldet landskap (~390 høyde) komprimerer clearance/gaps så 44pt-mål passer uten rail-scroll.
+- **Samme funksjonalitet** i rail og bunnmeny; bytte er ikke-destruktivt.
+- **Kompakt rail:** kapsel 52px (44pt knapp + 4px), kant 6px → `--app-rail-reserve` ≈ 66px.
+- Ikke ennå: overflyt «Mer»-pille når høyden ikke rekker, jevnt antall kolonner rundt hengsel.
 
 ---
 

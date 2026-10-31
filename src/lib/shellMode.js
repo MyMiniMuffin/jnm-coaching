@@ -1,7 +1,11 @@
 /**
  * Single shell-mode store: narrow | wide | rail.
  *
- * - Duo device (`html[data-device="duo"]`, `?device=duo`, or session override): always `rail`
+ * - Duo device (`html[data-device="duo"]`, `?device=duo`, or session override):
+ *   `rail` by default; `narrow` (bottom nav) ONLY when unfolded and
+ *   portrait/square — `DUO_BOTTOM_NAV_MEDIA_QUERY` /
+ *   NOT `DUO_RAIL_MEDIA_QUERY`. Folded portrait, folded landscape, and
+ *   unfolded landscape stay on rail. wideSticky never applies to Duo.
  * - Else enter `wide` when DUO_MEDIA_QUERY matches; stay wide while width ≥ 700
  *   (keyboard shrink); exit when width < 700; cold start without match = `narrow`
  *
@@ -12,7 +16,11 @@
  * `?device=duo` link cannot permanently lock production users into rail.
  */
 import { useSyncExternalStore } from 'react';
-import { DUO_MEDIA_QUERY, DUO_MIN_WIDTH_PX } from './duoBreakpoint';
+import {
+    DUO_MEDIA_QUERY,
+    DUO_MIN_WIDTH_PX,
+    DUO_RAIL_MEDIA_QUERY,
+} from './duoBreakpoint';
 
 const ATTR = 'data-shell';
 const DEVICE_ATTR = 'data-device';
@@ -28,6 +36,10 @@ const listeners = new Set();
 
 const mediaMatches = () => (
     typeof window !== 'undefined' && window.matchMedia(DUO_MEDIA_QUERY).matches
+);
+
+const railSpaceMatches = () => (
+    typeof window !== 'undefined' && window.matchMedia(DUO_RAIL_MEDIA_QUERY).matches
 );
 
 /**
@@ -67,17 +79,20 @@ const computeWideSticky = (previous) => {
 };
 
 /**
- * Pure shell resolution (unit-tested). Duo → always rail; else sticky wide / narrow.
- * Native `data-device="duo"` / `?device=duo` feed `isDuo`; non-Duo phones must stay narrow
- * at phone viewports (no sticky).
+ * Pure shell resolution (unit-tested).
+ * Duo → rail when isDuoRailSpace; else narrow (never sticky-wide).
+ * Non-Duo → sticky wide / narrow.
  */
-export const resolveShell = ({ isDuo, wideSticky }) => {
-    if (isDuo) return SHELL_RAIL;
+export const resolveShell = ({ isDuo, isDuoRailSpace, wideSticky }) => {
+    if (isDuo) {
+        return isDuoRailSpace ? SHELL_RAIL : SHELL_NARROW;
+    }
     return wideSticky ? SHELL_WIDE : SHELL_NARROW;
 };
 
 const computeShell = (sticky) => resolveShell({
     isDuo: isDuoDevice(),
+    isDuoRailSpace: railSpaceMatches(),
     wideSticky: sticky,
 });
 
@@ -154,8 +169,10 @@ if (typeof window !== 'undefined') {
     syncDom(shell);
 
     const media = window.matchMedia(DUO_MEDIA_QUERY);
+    const railMedia = window.matchMedia(DUO_RAIL_MEDIA_QUERY);
     const onChange = () => recompute();
     media.addEventListener('change', onChange);
+    railMedia.addEventListener('change', onChange);
     window.addEventListener('resize', onChange);
 
     // Native WKUserScript (or late injection) may set data-device after module load.
@@ -171,6 +188,7 @@ if (typeof window !== 'undefined') {
 
     import.meta.hot?.dispose(() => {
         media.removeEventListener('change', onChange);
+        railMedia.removeEventListener('change', onChange);
         window.removeEventListener('resize', onChange);
         mo.disconnect();
         listeners.clear();

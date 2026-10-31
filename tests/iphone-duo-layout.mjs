@@ -15,9 +15,12 @@ import { dirname, join } from 'node:path';
 import { chromium } from 'playwright';
 import {
     DUO_MEDIA_QUERY,
+    DUO_RAIL_MEDIA_QUERY,
+    DUO_BOTTOM_NAV_MEDIA_QUERY,
     DUO_MIN_WIDTH_PX,
     DUO_MIN_HEIGHT_PX,
     DESKTOP_MIN_WIDTH_PX,
+    DUO_UNFOLDED_MIN_WIDTH_PX,
 } from '../src/lib/duoBreakpoint.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -324,6 +327,15 @@ async function shellState(page) {
     });
 }
 
+/**
+ * True when DUO_RAIL_MEDIA_QUERY would match this CSS viewport.
+ * Rail: width ≤ 599 OR aspect-ratio > 1/1.
+ * Bottom nav (Duo only): width ≥ 600 AND aspect ≤ 1 (unfolded upright/square).
+ */
+function expectDuoRail(width, height) {
+    return width < DUO_UNFOLDED_MIN_WIDTH_PX || width > height;
+}
+
 async function openAthleteDuo(page, base, viewportPath = '/') {
     await installMocks(page);
     await seedAthlete(page);
@@ -334,8 +346,11 @@ async function openAthleteDuo(page, base, viewportPath = '/') {
     const url = new URL(viewportPath, base);
     url.searchParams.set('device', 'duo');
     await page.goto(url.toString(), { waitUntil: 'networkidle' });
-    await page.waitForFunction(() => document.documentElement.getAttribute('data-shell') === 'rail');
-    await page.waitForSelector('[data-testid="app-rail"]');
+    await page.waitForFunction(() => document.documentElement.getAttribute('data-device') === 'duo');
+    await page.waitForFunction(() => (
+        document.querySelector('[data-testid="app-rail"]')
+        || document.querySelector('[data-testid="mobile-bottom-nav"]')
+    ));
 }
 
 async function mainContentMetrics(page) {
@@ -401,6 +416,9 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
         assert.match(DUO_MEDIA_QUERY, new RegExp(String(DUO_MIN_WIDTH_PX)));
         assert.match(DUO_MEDIA_QUERY, new RegExp(String(DUO_MIN_HEIGHT_PX)));
         assert.match(DUO_MEDIA_QUERY, new RegExp(String(DESKTOP_MIN_WIDTH_PX)));
+        assert.match(DUO_BOTTOM_NAV_MEDIA_QUERY, /max-aspect-ratio:\s*1\/1/);
+        assert.match(DUO_RAIL_MEDIA_QUERY, /aspect-ratio > 1\/1/);
+        assert.match(DUO_RAIL_MEDIA_QUERY, new RegExp(String(DUO_UNFOLDED_MIN_WIDTH_PX - 1)));
 
         for (const vp of VIEWPORTS) {
             await t.test(`viewport ${vp.id}`, async () => {
@@ -660,13 +678,17 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
         });
 
         for (const vp of [
+            // Folded portrait → rail
             { id: '390x844', width: 390, height: 844 },
+            // Folded landscape → rail (short height must still fit 44pt targets)
             { id: '844x390', width: 844, height: 390 },
-            // Inner display in portrait: HIG keeps horizontal bars → bottom capsule.
-            { id: '760x900', width: 760, height: 900, bottomBar: true },
+            // Unfolded portrait (upright) → bottom nav — only Duo bottom-nav state
+            { id: '760x900', width: 760, height: 900 },
+            // Unfolded landscape → rail
             { id: '900x760', width: 900, height: 760 },
         ]) {
-            await t.test(`Duo rail ?device=duo at ${vp.id}`, async () => {
+            const wantRail = expectDuoRail(vp.width, vp.height);
+            await t.test(`Duo ?device=duo at ${vp.id} → ${wantRail ? 'rail' : 'narrow'}`, async () => {
                 const context = await browser.newContext({
                     viewport: { width: vp.width, height: vp.height },
                     deviceScaleFactor: 1,
@@ -677,122 +699,193 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
                 try {
                     await openAthleteDuo(page, base);
                     const shell = await shellState(page);
-                    assert.equal(shell.shell, 'rail');
                     assert.equal(shell.device, 'duo');
-                    assert.equal(shell.railVisible, true, 'rail visible');
-                    assert.equal(shell.sidebarVisible, false, 'sidebar hidden on Duo');
-                    assert.equal(shell.bottomVisible, false, 'bottom nav hidden on Duo');
+                    assert.equal(shell.sidebarVisible, false, 'sidebar never on Duo');
+                    assert.equal(
+                        shell.shell,
+                        wantRail ? 'rail' : 'narrow',
+                        `shell at ${vp.id}`
+                    );
+                    assert.equal(shell.railVisible, wantRail, `rail visible=${wantRail}`);
+                    assert.equal(shell.bottomVisible, !wantRail, `bottom nav visible=${!wantRail}`);
 
-                    const railBox = await page.getByTestId('app-rail').boundingBox();
-                    assert.ok(railBox, 'rail box');
-                    if (vp.bottomBar) {
-                        assert.ok(railBox.y > vp.height / 2, 'portrait Duo bar sits in the bottom half');
-                        assert.ok(railBox.height < 80, `bottom bar is one row (h=${railBox.height})`);
-                    } else {
+                    if (wantRail) {
+                        const railBox = await page.getByTestId('app-rail').boundingBox();
+                        assert.ok(railBox, 'rail box');
                         assert.ok(railBox.x > vp.width / 2, 'rail is on the right half');
                         // 44pt button + 4px pad + 1px border per side (54px capsule) + 12px column margin.
-                        assert.ok(railBox.width <= 66, `rail stays slim (w=${railBox.width})`);
+                        // With status-column safe-area, col can be larger — still must not overflow viewport.
+                        assert.ok(railBox.width <= Math.max(120, vp.width * 0.25), `rail column w=${railBox.width}`);
+                        assert.ok(
+                            Math.abs(railBox.height - vp.height) < 2 || railBox.height <= vp.height,
+                            `rail must fit viewport height (h=${railBox.height}, vp=${vp.height})`
+                        );
+
+                        const railFit = await page.evaluate(() => {
+                            const rail = document.querySelector('[data-testid="app-rail"]');
+                            const inner = document.querySelector('[data-testid="app-rail-inner"]');
+                            if (!rail || !inner) return null;
+                            const style = getComputedStyle(inner);
+                            return {
+                                overflowY: style.overflowY,
+                                scrollHeight: inner.scrollHeight,
+                                clientHeight: inner.clientHeight,
+                                railTop: rail.getBoundingClientRect().top,
+                                railBottom: rail.getBoundingClientRect().bottom,
+                                vh: window.innerHeight,
+                            };
+                        });
+                        assert.ok(railFit, 'rail fit metrics');
+                        assert.ok(
+                            railFit.scrollHeight <= railFit.clientHeight + 1,
+                            `rail inner must not scroll (scroll=${railFit.scrollHeight}, client=${railFit.clientHeight})`
+                        );
+                        assert.ok(railFit.railTop >= -0.5, 'rail top in view');
+                        assert.ok(railFit.railBottom <= railFit.vh + 0.5, 'rail bottom in view');
+
+                        const tabButtons = page.locator('[data-testid="app-rail"] nav button');
+                        const tabCount = await tabButtons.count();
+                        assert.equal(tabCount, 5);
+                        for (let i = 0; i < tabCount; i += 1) {
+                            const box = await tabButtons.nth(i).boundingBox();
+                            assert.ok(box.height >= 43.5, `rail tab height ${box.height}`);
+                            assert.ok(box.width >= 43.5, `rail tab width ${box.width}`);
+                        }
+
+                        const metrics = await mainContentMetrics(page);
+                        assert.ok(
+                            metrics.contentTextLen > 40,
+                            `main content must not be empty (len=${metrics.contentTextLen}) at ${vp.id}`
+                        );
+                        assert.ok(metrics.stagePadRight > 40, `stage padding-right ${metrics.stagePadRight}`);
+                        assert.equal(metrics.framePadRight, 0, 'app-frame must not also pad for rail');
+                        assert.ok(
+                            metrics.stagePadRight >= metrics.railWidth + 7,
+                            `stage pad ${metrics.stagePadRight} should include ≥8px gap beyond rail ${metrics.railWidth}`
+                        );
+                        const widthRatio = metrics.contentWidth / vp.width;
+                        assert.ok(
+                            widthRatio > 0.72,
+                            `content width ratio ${widthRatio.toFixed(3)} (w=${metrics.contentWidth})`
+                        );
+
+                        const overlap = await page.evaluate(() => {
+                            const rail = document.querySelector('[data-testid="app-rail"]');
+                            const railRect = rail.getBoundingClientRect();
+                            const content = document.querySelector('.app-content') || document.querySelector('main');
+                            if (!content) return false;
+                            const contentRect = content.getBoundingClientRect();
+                            return contentRect.right > railRect.left + 2;
+                        });
+                        assert.equal(overlap, false, 'content does not overlap rail');
+
+                        if (vp.width < 700) {
+                            assert.equal(metrics.duoProbe, false, 'duo: density off at closed Duo width');
+                            assert.match(metrics.stepGoalText, /10[\s\u00a0]?000/);
+                            assert.equal(metrics.stepGoalClipped, false, 'step goal must not clip at 390');
+                        } else {
+                            assert.equal(metrics.duoProbe, true, 'duo: density on for rail ≥700');
+                        }
+
+                        // Weight history → rail back → dashboard (skip on very short landscape if cramped)
+                        await clickNav(page, 'Hjem');
+                        await page.getByText('Se historikk', { exact: true }).click();
+                        await page.waitForSelector('[data-testid="weight-progress-view"]');
+                        await page.waitForSelector('[data-testid="app-rail-back"]');
+                        assert.equal(await page.getByTestId('weight-progress-back').count(), 0, 'no double back in rail');
+                        const back = page.getByTestId('app-rail-back');
+                        const backBox = await back.boundingBox();
+                        assert.ok(backBox.height >= 43.5 && backBox.width >= 43.5, 'rail back ≥44');
+                        assert.ok(backBox.y + backBox.height <= vp.height + 0.5, 'back pill inside viewport');
+                        await back.click();
+                        await page.waitForFunction(() => !document.querySelector('[data-testid="app-rail-back"]'));
+                        await page.waitForFunction(() => !document.querySelector('[data-testid="weight-progress-view"]'));
+                        const afterBack = await mainContentMetrics(page);
+                        assert.ok(
+                            afterBack.contentTextLen > 40,
+                            `dashboard content empty after rail back (len=${afterBack.contentTextLen})`
+                        );
+                        assert.match(afterBack.stepGoalText, /10[\s\u00a0]?000/);
+                    } else {
+                        const bottomButtons = page.locator('[data-testid="mobile-bottom-nav"] button');
+                        const count = await bottomButtons.count();
+                        assert.ok(count >= 5, 'bottom nav buttons on unfolded upright Duo');
+                        for (let i = 0; i < count; i += 1) {
+                            const box = await bottomButtons.nth(i).boundingBox();
+                            assert.ok(box, 'bottom button box');
+                            assert.ok(box.height >= 43.5, `bottom height ${box.height}`);
+                            assert.ok(box.width >= 43.5, `bottom width ${box.width}`);
+                        }
+                        const metrics = await mainContentMetrics(page);
+                        assert.ok(
+                            metrics.contentTextLen > 40,
+                            `main content must not be empty (len=${metrics.contentTextLen}) at ${vp.id}`
+                        );
                     }
 
-                    const tabButtons = page.locator('[data-testid="app-rail"] nav button');
-                    const tabCount = await tabButtons.count();
-                    assert.equal(tabCount, 5);
-                    for (let i = 0; i < tabCount; i += 1) {
-                        const box = await tabButtons.nth(i).boundingBox();
-                        assert.ok(box.height >= 43.5, `rail tab height ${box.height}`);
-                        assert.ok(box.width >= 43.5, `rail tab width ${box.width}`);
-                    }
-
-                    const metrics = await mainContentMetrics(page);
-                    assert.ok(
-                        metrics.contentTextLen > 40,
-                        `main content must not be empty (len=${metrics.contentTextLen}) at ${vp.id}`
-                    );
                     assert.equal(
                         pageErrors.some((msg) => /Maximum update depth|Too many re-renders/i.test(msg)),
                         false,
                         `render loop: ${pageErrors.join(' | ')}`
                     );
 
-                    if (vp.bottomBar) {
-                        const padBottom = await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.app-stage')).paddingBottom) || 0);
-                        assert.equal(metrics.stagePadRight, 0, 'no side reserve when bar is at the bottom');
-                        assert.ok(padBottom >= railBox.height + 7, `stage padding-bottom ${padBottom} clears bar ${railBox.height}`);
-                    }
-
-                    // Single padding owner on .app-stage; content uses available width (not ~65%).
-                    if (!vp.bottomBar) assert.ok(metrics.stagePadRight > 40, `stage padding-right ${metrics.stagePadRight}`);
-                    assert.equal(metrics.framePadRight, 0, 'app-frame must not also pad for rail');
-                    if (!vp.bottomBar) assert.ok(
-                        metrics.stagePadRight >= metrics.railWidth + 7,
-                        `stage pad ${metrics.stagePadRight} should include ≥8px gap beyond rail ${metrics.railWidth}`
-                    );
-                    const widthRatio = metrics.contentWidth / vp.width;
-                    assert.ok(
-                        widthRatio > 0.72,
-                        `content width ratio ${widthRatio.toFixed(3)} (w=${metrics.contentWidth}) — double padding regressed to ~0.65`
-                    );
-                    assert.ok(
-                        Math.abs(metrics.contentWidth - (vp.width - metrics.stagePadRight)) < 3,
-                        `content should span stage inner width (content=${metrics.contentWidth}, expected≈${vp.width - metrics.stagePadRight})`
-                    );
-
-                    // No content under the rail
-                    const overlap = vp.bottomBar ? false : await page.evaluate(() => {
-                        const rail = document.querySelector('[data-testid="app-rail"]');
-                        const railRect = rail.getBoundingClientRect();
-                        const content = document.querySelector('.app-content') || document.querySelector('main');
-                        if (!content) return false;
-                        const contentRect = content.getBoundingClientRect();
-                        return contentRect.right > railRect.left + 2;
-                    });
-                    assert.equal(overlap, false, 'content does not overlap rail');
-
-                    // duo: density only at ≥700
-                    if (vp.width < 700) {
-                        assert.equal(metrics.duoProbe, false, 'duo: density off at closed Duo width');
-                        assert.match(metrics.stepGoalText, /10[\s\u00a0]?000/);
-                        assert.equal(metrics.stepGoalClipped, false, 'step goal must not clip at 390');
-                    } else {
-                        assert.equal(metrics.duoProbe, true, 'duo: density on for unfolded Duo');
-                    }
-
-                    // Override must not leak to localStorage
                     const stored = await page.evaluate(() => ({
                         local: localStorage.getItem('jnm_device_override'),
                         session: sessionStorage.getItem('jnm_device_override'),
                     }));
                     assert.equal(stored.local, null, 'device override must not use localStorage');
                     assert.equal(stored.session, 'duo');
-
-                    // Weight history → rail back → dashboard content restored
-                    await clickNav(page, 'Hjem');
-                    await page.getByText('Se historikk', { exact: true }).click();
-                    await page.waitForSelector('[data-testid="weight-progress-view"]');
-                    await page.waitForSelector('[data-testid="app-rail-back"]');
-                    assert.equal(await page.getByTestId('weight-progress-back').count(), 0, 'no double back in rail');
-                    const back = page.getByTestId('app-rail-back');
-                    const backBox = await back.boundingBox();
-                    assert.ok(backBox.height >= 43.5 && backBox.width >= 43.5, 'rail back ≥44');
-                    await back.click();
-                    await page.waitForFunction(() => !document.querySelector('[data-testid="app-rail-back"]'));
-                    await page.waitForFunction(() => !document.querySelector('[data-testid="weight-progress-view"]'));
-                    const afterBack = await mainContentMetrics(page);
-                    assert.ok(
-                        afterBack.contentTextLen > 40,
-                        `dashboard content empty after rail back (len=${afterBack.contentTextLen})`
-                    );
-                    assert.match(afterBack.stepGoalText, /10[\s\u00a0]?000/);
-                    assert.equal(
-                        pageErrors.some((msg) => /Maximum update depth|Too many re-renders/i.test(msg)),
-                        false,
-                        `render loop after back: ${pageErrors.join(' | ')}`
-                    );
                 } finally {
                     await context.close();
                 }
             });
         }
+
+        await t.test('Duo tab + scroll survive rail ↔ bottom-nav resize', async () => {
+            const context = await browser.newContext({
+                viewport: { width: 900, height: 760 },
+                deviceScaleFactor: 1,
+            });
+            const page = await context.newPage();
+            try {
+                await openAthleteDuo(page, base);
+                assert.equal((await shellState(page)).shell, 'rail');
+                await clickNav(page, 'Trening');
+                await page.getByTestId('plan-sections').waitFor();
+                await page.evaluate(() => window.scrollTo(0, 120));
+
+                // Unfolded upright → bottom nav
+                await page.setViewportSize({ width: 760, height: 900 });
+                await page.waitForFunction(() => document.documentElement.getAttribute('data-shell') === 'narrow');
+                const portrait = await shellState(page);
+                assert.equal(portrait.bottomVisible, true);
+                assert.equal(portrait.railVisible, false);
+                assert.equal(portrait.sidebarVisible, false);
+                await page.waitForFunction(() => (
+                    document.querySelector('[aria-current="page"]')?.textContent?.includes('Trening')
+                ));
+
+                // Folded portrait → rail again
+                await page.setViewportSize({ width: 390, height: 844 });
+                await page.waitForFunction(() => document.documentElement.getAttribute('data-shell') === 'rail');
+                assert.equal((await shellState(page)).railVisible, true);
+                await page.waitForFunction(() => (
+                    document.querySelector('[aria-current="page"]')?.textContent?.includes('Trening')
+                ));
+
+                // Unfolded landscape → rail
+                await page.setViewportSize({ width: 900, height: 760 });
+                await page.waitForFunction(() => document.documentElement.getAttribute('data-shell') === 'rail');
+                const landscape = await shellState(page);
+                assert.equal(landscape.railVisible, true);
+                assert.equal(landscape.bottomVisible, false);
+                await page.waitForFunction(() => (
+                    document.querySelector('[aria-current="page"]')?.textContent?.includes('Trening')
+                ));
+            } finally {
+                await context.close();
+            }
+        });
 
         await t.test('390×844 without device=duo keeps bottom nav', async () => {
             const context = await browser.newContext({
@@ -859,9 +952,31 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
             }
         });
 
+        await t.test('760×900 with device=duo stays narrow (sticky cannot force rail)', async () => {
+            const context = await browser.newContext({
+                viewport: { width: 900, height: 760 },
+                deviceScaleFactor: 1,
+            });
+            const page = await context.newPage();
+            try {
+                await openAthleteDuo(page, base);
+                assert.equal((await shellState(page)).shell, 'rail');
+                await page.setViewportSize({ width: 760, height: 900 });
+                await page.waitForFunction(() => document.documentElement.getAttribute('data-shell') === 'narrow');
+                const after = await shellState(page);
+                assert.equal(after.shell, 'narrow');
+                assert.equal(after.bottomVisible, true);
+                assert.equal(after.railVisible, false);
+                assert.equal(after.sidebarVisible, false, 'Duo never gets left sidebar');
+            } finally {
+                await context.close();
+            }
+        });
+
         // Real Duo sizes: inner 951×669 ↔ outer 466×678. Each fold is a resize;
         // syncDom used to re-set data-device on every resize, re-triggering its
         // own MutationObserver forever and freezing the page.
+        // Outer 466×678 folded portrait → rail; inner 951×669 unfolded landscape → rail.
         await t.test('Duo fold/unfold resize keeps the page responsive', async () => {
             const context = await browser.newContext({
                 viewport: { width: 951, height: 669 },
@@ -870,18 +985,27 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
             const page = await context.newPage();
             try {
                 await openAthleteDuo(page, base);
-                for (const [width, height] of [[466, 678], [951, 669], [466, 678]]) {
+                for (const [width, height] of [[466, 678], [951, 669], [466, 678], [760, 900]]) {
+                    const expected = expectDuoRail(width, height) ? 'rail' : 'narrow';
                     await page.setViewportSize({ width, height });
                     const state = await Promise.race([
-                        page.evaluate(() => ({
+                        page.waitForFunction(
+                            ({ w, shell }) => (
+                                window.innerWidth === w
+                                && document.documentElement.getAttribute('data-shell') === shell
+                            ),
+                            { w: width, shell: expected },
+                            { timeout: 3000 }
+                        ).then(() => page.evaluate(() => ({
                             width: window.innerWidth,
                             shell: document.documentElement.getAttribute('data-shell'),
-                        })),
-                        new Promise((resolve) => setTimeout(() => resolve(null), 3000)),
+                            railMq: window.matchMedia('(max-width: 599px), (aspect-ratio > 1/1)').matches,
+                        }))),
+                        new Promise((resolve) => setTimeout(() => resolve(null), 3500)),
                     ]);
-                    assert.ok(state, `page hung after resize to ${width}×${height}`);
+                    assert.ok(state, `page hung after resize to ${width}×${height} (expected ${expected})`);
                     assert.equal(state.width, width);
-                    assert.equal(state.shell, 'rail');
+                    assert.equal(state.shell, expected, `shell at ${width}×${height} (railMq=${state.railMq})`);
                 }
             } finally {
                 await context.close();

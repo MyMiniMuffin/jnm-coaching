@@ -7,7 +7,10 @@ import {
     DUO_MIN_WIDTH_PX,
     DUO_MIN_HEIGHT_PX,
     DESKTOP_MIN_WIDTH_PX,
+    DUO_UNFOLDED_MIN_WIDTH_PX,
     DUO_MEDIA_QUERY,
+    DUO_RAIL_MEDIA_QUERY,
+    DUO_BOTTOM_NAV_MEDIA_QUERY,
 } from '../src/lib/duoBreakpoint.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -121,6 +124,15 @@ test('duoBreakpoint is the single source for Duo media query', () => {
         DUO_MEDIA_QUERY,
         '(min-width: 700px) and (min-height: 600px), (min-width: 1024px)'
     );
+    assert.equal(DUO_UNFOLDED_MIN_WIDTH_PX, 600);
+    assert.equal(
+        DUO_BOTTOM_NAV_MEDIA_QUERY,
+        '(min-width: 600px) and (max-aspect-ratio: 1/1)'
+    );
+    assert.equal(
+        DUO_RAIL_MEDIA_QUERY,
+        '(max-width: 599px), (aspect-ratio > 1/1)'
+    );
     assert.equal(existsSync(join(root, 'src/lib/duoBreakpoint.cjs')), false);
     assert.equal(existsSync(join(root, 'tailwind.config.js')), false);
     assert.equal(existsSync(join(root, 'tailwind.config.mjs')), true);
@@ -191,11 +203,14 @@ test('shellMode sticky uses duoBreakpoint thresholds', () => {
     const shell = read('src/lib/shellMode.js');
     assert.match(shell, new RegExp(`DUO_MIN_WIDTH_PX`));
     assert.match(shell, /mediaMatches\(\)/);
+    assert.match(shell, /railSpaceMatches\(\)|DUO_RAIL_MEDIA_QUERY/);
     assert.match(shell, /innerWidth < DUO_MIN_WIDTH_PX/);
     assert.match(shell, /const changed = nextSticky !== wideSticky \|\| nextShell !== shell/);
     assert.match(shell, /import\.meta\.hot\?\.dispose/);
     assert.match(shell, /SHELL_RAIL/);
     assert.match(shell, /getShellWide = \(\) => shell === SHELL_WIDE/);
+    assert.match(shell, /isDuoRailSpace/);
+    assert.doesNotMatch(shell, /screen\.orientation|window\.orientation/);
     assert.equal(DUO_MIN_WIDTH_PX, 700);
     assert.equal(DUO_MIN_HEIGHT_PX, 600);
     assert.equal(DESKTOP_MIN_WIDTH_PX, 1024);
@@ -315,6 +330,9 @@ test('navigation supports wide sidebar, Duo rail, and phone bottom nav', () => {
         css,
         /html\[data-shell="rail"\] \.app-frame,\s*\n\s*html\[data-shell="rail"\] \.app-stage/
     );
+    // Portrait Duo uses normal bottom nav (shell=narrow), not a rail bottom capsule.
+    assert.doesNotMatch(css, /orientation:\s*portrait/);
+    assert.doesNotMatch(css, /--app-rail-bottom-reserve/);
 });
 
 test('PlanSection stacks sections and keeps break-words + whitespace-pre-wrap', () => {
@@ -375,6 +393,11 @@ test('docs plan records WebKit segment preview status and Duo rail', () => {
     const plan = read('docs/iphone-duo-plan.md');
     assert.match(plan, /feature flag/i);
     assert.match(plan, /DUO_MEDIA_QUERY/);
+    assert.match(plan, /DUO_RAIL_MEDIA_QUERY/);
+    assert.match(plan, /DUO_BOTTOM_NAV_MEDIA_QUERY/);
+    assert.match(plan, /DUO_UNFOLDED_MIN_WIDTH_PX\s*=\s*600/);
+    assert.match(plan, /max-aspect-ratio:\s*1\/1/);
+    assert.match(plan, /aspect-ratio > 1\/1/);
     assert.match(plan, /min-height: 600px/);
     assert.match(plan, /P1/);
     assert.match(plan, /data-shell/);
@@ -387,6 +410,8 @@ test('docs plan records WebKit segment preview status and Duo rail', () => {
     assert.match(plan, /Deteksjon|Usikkerhet/);
     assert.match(plan, /app-rail-status-clearance|Utfoldet layout/);
     assert.match(plan, /appledb\.dev/);
+    assert.match(plan, /bunnmeny|Bottom nav/);
+    assert.match(plan, /oppreist|utfoldet/);
 });
 
 test('src does not use max-sm/max-md/max-lg or arbitrary min-[ screens', () => {

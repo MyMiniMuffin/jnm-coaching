@@ -691,7 +691,8 @@ html[data-shell="wide"] .toast-stack {
 
 /*
  * iPhone Duo rail — floating right column (Outlook-style pills).
- * Only when shellMode sets data-shell="rail" (Duo hardware / ?device=duo).
+ * Only when shellMode sets data-shell="rail" (Duo folded any orientation, or
+ * unfolded landscape — DUO_RAIL_MEDIA_QUERY). Unfolded upright → bottom nav.
  *
  * Content clearance lives on `.app-stage` only (not also `.app-frame`) so Duo
  * closed (390) does not lose ~65% width from double padding-right.
@@ -750,6 +751,9 @@ html[data-shell="rail"] .app-rail-inner {
     width: var(--app-rail-width);
     gap: 0.75rem;
     touch-action: manipulation;
+    /* Rail owns its column — never scroll the pills themselves. */
+    overflow: hidden;
+    min-height: 0;
 }
 
 html[data-shell="rail"] .app-rail-pill {
@@ -865,6 +869,52 @@ html[data-shell="rail"] .app-stage {
     max-width: none;
 }
 
+/*
+ * Folded landscape (~844×390): short viewport. Shrink top clearance / gaps so
+ * 44pt back + 5×44pt tabs fit without overflowing or scrolling the rail.
+ * Also clear both horizontal safe areas (notch/Dynamic Island left OR right).
+ */
+@media (max-height: 500px) and (aspect-ratio > 1/1) {
+    :root {
+        --app-rail-status-clearance: max(0.25rem, min(2.5rem, calc((env(safe-area-inset-right, 0px) - 20px) * 100)));
+        --app-rail-status-nudge: clamp(0px, calc((env(safe-area-inset-right, 0px) - 20px) * 100), 5px);
+    }
+
+    html[data-shell="rail"] .app-rail {
+        padding-top: calc(env(safe-area-inset-top, 0px) + var(--app-rail-status-clearance));
+        padding-bottom: max(0.35rem, env(safe-area-inset-bottom, 0px));
+    }
+
+    html[data-shell="rail"] .app-rail-inner {
+        gap: 0.25rem;
+    }
+
+    html[data-shell="rail"] .app-rail-tabs {
+        gap: 0;
+        padding: 0.125rem;
+    }
+
+    /* Back pill stays a full 44×44 circle — do not inherit tabs padding. */
+    html[data-shell="rail"] .app-rail-back-pill {
+        padding: 0;
+        width: 2.75rem;
+        height: 2.75rem;
+        flex-shrink: 0;
+    }
+
+    html[data-shell="rail"] .app-rail-btn {
+        width: 2.75rem;
+        height: 2.75rem;
+        flex-shrink: 0;
+    }
+
+    /* Keep left safe area when the notch/island is on the left in landscape. */
+    html[data-shell="rail"] .app-frame {
+        padding-left: env(safe-area-inset-left, 0px);
+        padding-right: 0;
+    }
+}
+
 /* Unfolded Duo: roomier content padding across the span */
 @media (min-width: 700px) {
     :root {
@@ -907,57 +957,6 @@ html[data-shell="rail"] .toast-stack {
 /* Screens without Navigation (coach list, archived): only the status column. */
 html[data-shell="rail"] .app-frame:not(.app-frame-nav) .app-stage {
     padding-right: env(safe-area-inset-right, 0px);
-}
-
-/*
- * Unfolded Duo in portrait: HIG keeps standard horizontal bars on the inner
- * display in portrait. Same pills, laid out as a floating bottom capsule —
- * back stays leading, tabs follow (same relative order as the side rail).
- */
-@media (min-width: 700px) and (orientation: portrait) {
-    :root {
-        --app-rail-bottom-reserve: calc(var(--app-rail-width) + 2px + max(0.75rem, env(safe-area-inset-bottom, 0px)) + var(--app-rail-gap)); /* +2px capsule border */
-        --app-rail-status-nudge: 0px;
-    }
-
-    html[data-shell="rail"] .app-rail {
-        inset: auto 0 0 0;
-        right: 0;
-        width: auto;
-        justify-content: center;
-        padding: 0 0 max(0.75rem, env(safe-area-inset-bottom, 0px));
-    }
-
-    html[data-shell="rail"] .app-rail-inner {
-        flex-direction: row;
-        align-items: center;
-        height: auto;
-        width: auto;
-        gap: 0.5rem;
-    }
-
-    html[data-shell="rail"] .app-rail-pill {
-        flex-direction: row;
-    }
-
-    html[data-shell="rail"] .app-rail-tabs {
-        margin-top: 0;
-    }
-
-    html[data-shell="rail"] .app-stage {
-        padding-right: env(safe-area-inset-right, 0px);
-        padding-bottom: var(--app-rail-bottom-reserve);
-    }
-
-    html[data-shell="rail"] .app-frame-nav .plan-save-bar {
-        right: 0;
-        bottom: var(--app-rail-bottom-reserve) !important;
-    }
-
-    html[data-shell="rail"] .toast-stack {
-        right: 1rem;
-        bottom: calc(var(--app-rail-bottom-reserve) + 0.5rem);
-    }
 }
 
 /* Smooth number input */
