@@ -37,11 +37,11 @@
 
 ### Duo-deteksjon og `iPhone19,4`
 
-Nativt i `DuoDevice.swift` via `utsname.machine`. Listen speiles i `src/lib/duoDeviceModels.js`.
+Nativt i `DuoDevice.swift` via `utsname.machine`. Listen og den rene beslutningsfunksjonen speiles i `src/lib/duoDeviceModels.js` (`decideIsDuo`).
 
-**Deteksjon:** Fysisk Duo → `utsname.machine` (forventet `iPhone19,4`, [AppleDB](https://appledb.dev/device/identifier/iPhone19,4) / [IPSW.dev](https://ipsw.dev/iPhone19,4)). **iPhone Duo Simulator** → `uname` er host-arkitektur (`arm64`), så vi leser også `SIMULATOR_MODEL_IDENTIFIER` og `SIMULATOR_DEVICE_NAME` (navn som inneholder «Duo»). DEBUG logger `[DuoDevice] machine=… simName=…`. Ukjente fremtidige Duo-SKU-er må legges til i Swift + `duoDeviceModels.js`.
+**Deteksjon (positiv ID bare — aldri `iPhone19`-prefiks):** Fysisk Duo → eksakt match på allowlist (forventet `iPhone19,4`, [AppleDB](https://appledb.dev/device/identifier/iPhone19,4) / [IPSW.dev](https://ipsw.dev/iPhone19,4)). **Usikkerhet:** ikke bekreftet på fysisk Duo enda. Samme generasjon som iPhone 18 Pro (`iPhone19,2` m.fl.) — prefiks/range-match ville feilaktig gi rail på vanlige Pro-er. **iPhone Duo Simulator** → `uname` er host-arkitektur (`arm64`), så vi leser også `SIMULATOR_MODEL_IDENTIFIER` (eksakt allowlist) og `SIMULATOR_DEVICE_NAME` (navn som inneholder «Duo»). DEBUG logger `[DuoDevice] machine=…`. **Bekreft `utsname.machine` på ekte Duo og på iPhone 18 Pro** før listen stoles blindt. Ukjente Duo-SKU-er må legges til eksplisitt i Swift + `duoDeviceModels.js`.
 
-**Xcode Debug:** Tvinger Duo-rail som fallback. Opt-out: `-NoForceDuoDevice` / `JNM_FORCE_DUO=0`. Release/TestFlight tvinger aldri.
+**Xcode Simulator:** Opt-in med `-ForceDuoDevice` (Debug-skjemaet har det) eller `JNM_FORCE_DUO=1`, gated med `#if targetEnvironment(simulator)` — LaunchAction-args treffer også fysisk Debug-enhet, så en fysisk ikke-Duo iPhone ignorerer dem alltid. Release/TestFlight tvinger aldri.
 
 `DuoBridgeViewController` injiserer `html[data-device="duo"]` i `capacitorDidLoad()` på Capacitor sin **ekte** `userContentController` (før `loadWebView`). Scripts lagt kun i `webViewConfiguration(for:)` kastes — Capacitor bytter controller etterpå. Backup: `evaluateJavaScript` i `viewDidAppear`. `shellMode` observerer `data-device` med `MutationObserver`.
 

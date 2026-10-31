@@ -66,10 +66,20 @@ const computeWideSticky = (previous) => {
     return Boolean(previous);
 };
 
-const computeShell = (sticky) => {
-    if (isDuoDevice()) return SHELL_RAIL;
-    return sticky ? SHELL_WIDE : SHELL_NARROW;
+/**
+ * Pure shell resolution (unit-tested). Duo → always rail; else sticky wide / narrow.
+ * Native `data-device="duo"` / `?device=duo` feed `isDuo`; non-Duo phones must stay narrow
+ * at phone viewports (no sticky).
+ */
+export const resolveShell = ({ isDuo, wideSticky }) => {
+    if (isDuo) return SHELL_RAIL;
+    return wideSticky ? SHELL_WIDE : SHELL_NARROW;
 };
+
+const computeShell = (sticky) => resolveShell({
+    isDuo: isDuoDevice(),
+    wideSticky: sticky,
+});
 
 /**
  * Write attributes only when they change. The MutationObserver below watches
