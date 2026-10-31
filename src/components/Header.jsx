@@ -8,7 +8,7 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
         <div className="app-header-top-inset" aria-hidden="true" />
         {isOffline && (
             <div className="bg-warning text-ink text-center text-sm py-2 px-4 flex items-center justify-center gap-2">
-                <WifiOff size={14} /> Ingen nettilkobling — viser lagrede data
+                <WifiOff size={14} /> Ingen nettilkobling. Viser lagrede data.
             </div>
         )}
         {isClientPreview && (

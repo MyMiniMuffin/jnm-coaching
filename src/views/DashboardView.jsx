@@ -29,7 +29,7 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
     const handleCreate = useCallback(async (e) => {
         e.preventDefault();
         if (!formData.startingWeight) {
-            setWeightError('Startvekt er påkrevd');
+            setWeightError('Startvekt mangler.');
             return;
         }
         const result = await onCreatePeriod(formData.name || `Runde ${periods.length + 1}`, formData.startingWeight, formData.goalWeight || null);
@@ -49,7 +49,7 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
     const handleDelete = useCallback(async (period) => {
         const linkedReports = (userData.checkins || []).filter(checkin => checkin.periodId === period.id).length;
         const reportMessage = linkedReports > 0
-            ? ` ${linkedReports} ${linkedReports === 1 ? 'rapport beholdes' : 'rapporter beholdes'}, men koblingen til runden fjernes.`
+            ? ` ${linkedReports} ${linkedReports === 1 ? 'ukesrapport beholdes' : 'ukesrapporter beholdes'}, men koblingen til runden fjernes.`
             : '';
         const confirmed = await confirmDialog(
             `Slette «${period.name}» permanent?${reportMessage}${period.isActive ? ' Den aktive runden avsluttes uten å opprette en ny.' : ''}`,
@@ -82,15 +82,15 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
     const handleSaveRename = useCallback(async (periodId) => {
         const trimmedName = editingPeriod.name.trim();
         if (!trimmedName) {
-            setEditError('Navn kan ikke være tomt');
+            setEditError('Skriv inn et navn.');
             return;
         }
         if (!editingPeriod.startDate) {
-            setEditError('Startdato må fylles ut');
+            setEditError('Startdato mangler.');
             return;
         }
         if (editingPeriod.endDate && editingPeriod.endDate < editingPeriod.startDate) {
-            setEditError('Sluttdato kan ikke være før startdato');
+            setEditError('Sluttdato kan ikke være før startdato.');
             return;
         }
         const result = await onUpdatePeriod(periodId, {
@@ -160,7 +160,7 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                                             onClick={() => handleSaveRename(activePeriod.id)}
                                                             disabled={isLoading}
                                                         >
-                                                            {isLoading ? <><Loader2 size={14} className="animate-spin" /> Lagrer...</> : 'Lagre endringer'}
+                                                            {isLoading ? <><Loader2 size={14} className="animate-spin" /> Lagrer…</> : 'Lagre endringer'}
                                                         </Button>
                                                     </div>
                                                 </div>
@@ -214,7 +214,7 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                         onClick={() => handleEnd(activePeriod.id)}
                                         disabled={isLoading}
                                     >
-                                        {isLoading ? <><Loader2 size={14} className="animate-spin" /> Avslutter...</> : 'Avslutt runde'}
+                                                                    {isLoading ? <><Loader2 size={14} className="animate-spin" /> Avslutter…</> : 'Avslutt runde'}
                                     </Button>
                                 </div>
                             </div>
@@ -272,7 +272,7 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                                                     onClick={() => handleSaveRename(period.id)}
                                                                     disabled={isLoading}
                                                                 >
-                                                                    {isLoading ? <><Loader2 size={14} className="animate-spin" /> Lagrer...</> : 'Lagre endringer'}
+                                                                    {isLoading ? <><Loader2 size={14} className="animate-spin" /> Lagrer…</> : 'Lagre endringer'}
                                                                 </Button>
                                                             </div>
                                                         </div>
@@ -375,7 +375,7 @@ const PeriodManagementModal = React.memo(({ userData, onClose, isLoading, onCrea
                                 Avbryt
                             </Button>
                             <Button type="submit" variant="primary" size="lg" className="flex-1" disabled={isLoading}>
-                                {isLoading ? <><Loader2 size={18} className="animate-spin" /> Oppretter...</> : <><Check size={18} /> Opprett</>}
+                                                        {isLoading ? <><Loader2 size={18} className="animate-spin" /> Oppretter…</> : <><Check size={18} /> Opprett</>}
                             </Button>
                         </div>
                     </form>
@@ -407,7 +407,7 @@ const PlanSettingsModal = React.memo(({ userData, onClose, onUpdateData, onOpenP
     const dateValid = !startDate || !Number.isNaN(new Date(startDate).getTime());
 
     const confirmDiscard = useCallback(async () => !hasChanges || confirmDialog(
-        'Endringene i planinnstillingene er ikke lagret. Vil du forkaste dem?',
+        'Endringene i planinnstillingene er ikke lagret. Forkast dem?',
         { title: 'Forkast endringer?', confirmText: 'Forkast endringer', destructive: true }
     ), [hasChanges, confirmDialog]);
 
@@ -571,7 +571,7 @@ const PlanSettingsModal = React.memo(({ userData, onClose, onUpdateData, onOpenP
                             {hasChanges ? 'Avbryt' : 'Lukk'}
                         </Button>
                         <Button variant="primary" size="md" className="flex-1" onClick={handleSave} disabled={isSaving || !hasChanges || !weeksValid || !stepGoalValid || !dateValid}>
-                            {isSaving ? <><Loader2 size={17} className="animate-spin" /> Lagrer...</> : <><Check size={17} /> Lagre</>}
+                            {isSaving ? <><Loader2 size={17} className="animate-spin" /> Lagrer…</> : <><Check size={17} /> Lagre</>}
                         </Button>
                     </div>
                 </div>
@@ -779,7 +779,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                             <button
                                 type="button"
                                 onClick={handleOpenPlanSettings}
-                                aria-label="Åpne plan-innstillinger"
+                                aria-label="Åpne planinnstillinger"
                                 className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg bg-white/5 hover:bg-white/12 text-white/70 transition-colors"
                             >
                                 <Pencil size={18} />
@@ -805,7 +805,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                     {!userData.startDate && (
                         <div className="space-y-3">
                             <p className="text-white/80 text-sm">
-                                {isCoach ? 'Sett opp startdato, skrittmål og eventuelt første coaching-runde for å komme i gang.' : 'Venter på at coach setter opp planen din.'}
+                                {isCoach ? 'Sett startdato, skrittmål og eventuelt første coaching-runde.' : 'Venter på at coachen setter opp planen din.'}
                             </p>
                             {isCoach && (
                                 <Button variant="secondary" size="sm" onClick={handleOpenPlanSettings}>
@@ -818,7 +818,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                     {userData.isPaused && (
                         <div className="space-y-3">
                             <p className="text-white/80 text-sm">
-                                {isCoach ? 'Planen er pauset. Gjenoppta når dere er klare for å fortsette.' : 'Planen er satt på pause akkurat nå.'}
+                                {isCoach ? 'Planen er pauset. Gjenoppta når dere er klare.' : 'Planen er pauset.'}
                             </p>
                             {isCoach && (
                                 <Button variant="secondary" size="sm" onClick={handleOpenPlanSettings}>
@@ -871,7 +871,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
             {/* Totaloversikt - kun hvis det finnes data */}
             {stats && (
                 <div>
-                    <p className="section-label mx-1 mb-3">Din reise så langt</p>
+                    <p className="section-label mx-1 mb-3">Så langt</p>
                     <Card className="p-5">
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center mb-5">
                             <div>
@@ -914,7 +914,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                 {thisWeekReport ? (
                     <div className="mt-2 flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                            <p className="font-semibold">Rapport sendt</p>
+                            <p className="font-semibold">Ukesrapport sendt</p>
                             <p className="text-sm text-ink-muted mt-1">
                                 {formatDateNO(thisWeekReport.date)}
                                 {thisWeekReport.weight ? ` · ${formatWeight(thisWeekReport.weight)} kg` : ''}
@@ -922,21 +922,21 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                         </div>
                         {onOpenCheckin && (
                             <Button variant="secondary" size="sm" onClick={onOpenCheckin}>
-                                Se rapport
+                                Se ukesrapport
                             </Button>
                         )}
                     </div>
                 ) : (
                     <div className="mt-2">
-                        <p className="font-semibold">{isCoach ? 'Ingen rapport enda' : 'Ukesrapport mangler'}</p>
+                        <p className="font-semibold">{isCoach ? 'Ingen ukesrapport ennå' : 'Ukesrapport mangler'}</p>
                         <p className="text-sm text-ink-muted mt-1">
                             {isCoach
                                 ? 'Når utøveren sender ukesrapporten, vises den her.'
-                                : 'Fyll ut status for uken når du er klar.'}
+                                : 'Fyll ut ukesrapporten når du er klar.'}
                         </p>
                         {onOpenCheckin && !isCoach && (
                             <Button size="sm" className="mt-4" onClick={onOpenCheckin}>
-                                Fyll ut rapport
+                                Fyll ut ukesrapport
                             </Button>
                         )}
                     </div>

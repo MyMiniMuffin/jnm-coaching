@@ -4,15 +4,15 @@ import { Instagram, Loader2 } from 'lucide-react';
 const pillars = [
     {
         title: 'Trening',
-        description: 'En plan bygget rundt nivået ditt, målet ditt og tiden du faktisk har.',
+        description: 'En plan rundt nivået ditt, målet ditt og tiden du har.',
     },
     {
         title: 'Kosthold',
-        description: 'Tydelige rammer som fungerer i hverdagen, uten rigide regler.',
+        description: 'Tydelige rammer for hverdagen, uten rigide regler.',
     },
     {
         title: 'Oppfølging',
-        description: 'Konkrete tilbakemeldinger og justeringer når livet eller behovene endrer seg.',
+        description: 'Konkrete tilbakemeldinger og justeringer underveis.',
     },
 ];
 
@@ -107,7 +107,7 @@ const ApplicationForm = () => {
             <div className="flex min-h-[360px] flex-col justify-center border-t border-black/10 py-16" role="status">
                 <h3 className="text-3xl font-semibold tracking-[-0.035em] text-ink sm:text-4xl">Søknaden er sendt</h3>
                 <p className="mt-5 max-w-md text-lg leading-8 text-ink-muted">
-                    Takk for at du tok kontakt. Du hører fra JNM Coaching så snart søknaden er lest.
+                    Du hører fra JNM Coaching når søknaden er lest.
                 </p>
             </div>
         );
@@ -178,7 +178,7 @@ const CoachingLandingPage = () => {
                 <a
                     href="/coaching/"
                     className="inline-flex items-center gap-2.5 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-4"
-                    aria-label="JNM Coaching – til toppen"
+                    aria-label="JNM Coaching, til toppen"
                 >
                     <img src="/jnm-coaching-logo.svg" alt="" className="h-8 w-8 rounded-lg" />
                     <span className="text-sm font-semibold tracking-[-0.02em]">JNM Coaching</span>
@@ -200,7 +200,7 @@ const CoachingLandingPage = () => {
                 <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 sm:py-28 lg:px-12 lg:py-36">
                     <div data-reveal className="max-w-4xl">
                         <h1 className="coaching-title text-5xl font-semibold leading-[1.02] tracking-[-0.04em] sm:text-6xl lg:text-7xl">
-                            En plan du faktisk kan følge
+                            En plan du kan følge
                         </h1>
                         <p className="mt-6 max-w-2xl text-lg leading-8 text-black/60 sm:text-xl">
                             Personlig coaching for trening og kosthold, med oppfølging underveis.
@@ -234,7 +234,7 @@ const CoachingLandingPage = () => {
                             Klar for å starte?
                         </h2>
                         <p className="mt-6 max-w-md text-lg leading-8 text-black/60">
-                            Send en kort, uforpliktende søknad. Så finner vi ut om dette er riktig for deg.
+                            Send en kort, uforpliktende søknad. Vi vurderer om det passer.
                         </p>
                     </div>
                     <div data-reveal style={{ '--reveal-delay': '80ms' }}>

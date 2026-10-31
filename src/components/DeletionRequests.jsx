@@ -45,7 +45,7 @@ export default function DeletionRequests({ allUsers, onSelectClient }) {
     if (!requests.length && !error) return null;
     return <section className="mb-6 rounded-xl border border-error/30 bg-white p-5" aria-labelledby="deletion-requests-title">
         <h2 id="deletion-requests-title" className="font-semibold text-ink">Sletteforespørsler ({requests.length})</h2>
-        <p className="mt-2 text-sm text-ink-muted">Fullfør innen fristen: noter bildeadressene, fjern bildene i Cloudinary, bekreft til brukeren, og slett kontoen i klientlisten. Fullfør deretter forespørselen her. Hent bildelisten før kontoen slettes, og ta vare på den til bildene er fjernet.</p>
+        <p className="mt-2 text-sm text-ink-muted">Før fristen: noter bildeadressene, fjern bildene i Cloudinary, bekreft til brukeren, og slett kontoen i utøverlisten. Fullfør deretter forespørselen her. Hent bildelisten før kontoen slettes, og ta vare på den til bildene er fjernet.</p>
         {error && <p role="alert" className="mt-3 text-sm text-error">{error} <button type="button" className="underline" onClick={load}>Prøv igjen</button></p>}
         <ul className="mt-4 space-y-4">{requests.map(request => {
             const client = allUsers.find(user => Number(user.id) === Number(request.userId));
@@ -55,12 +55,12 @@ export default function DeletionRequests({ allUsers, onSelectClient }) {
                 <p className="text-ink-muted">{request.contactEmail || 'Bekreft via avtalt kontaktkanal.'}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                     {request.userId !== null && <Button variant="secondary" disabled={busy !== null} onClick={() => inventory(request)}>Vis bildeliste</Button>}
-                    {client?.role === 'athlete' && <Button variant="secondary" onClick={() => onSelectClient(client)}>Åpne klient</Button>}
-                    {client?.role === 'coach' && <p className="text-ink-muted">Administratorkonto: behandle slettingen med en annen administrator.</p>}
+                    {client?.role === 'athlete' && <Button variant="secondary" onClick={() => onSelectClient(client)}>Åpne utøver</Button>}
+                    {client?.role === 'coach' && <p className="text-ink-muted">Administratorkonto. Behandle slettingen med en annen administrator.</p>}
                     <Button variant="secondary" disabled={request.userId !== null || busy !== null} onClick={() => complete(request)}>Bekreft fullført</Button>
                 </div>
                 {inventories[request.id] && <div className="mt-3 text-ink-muted">
-                    <p>Slett alle bilder i Cloudinary-mappen <strong>{inventories[request.id].folder}</strong>, også opplastinger som ikke ble knyttet til en rapport. Eldre bilder kan ligge direkte i jnm_coaching; bildelistens adresser viser disse.</p>
+                    <p>Slett alle bilder i Cloudinary-mappen <strong>{inventories[request.id].folder}</strong>, også opplastinger som ikke ble knyttet til en ukesrapport. Eldre bilder kan ligge direkte i jnm_coaching. Bildelistens adresser viser disse.</p>
                     <textarea readOnly aria-label="Bildeliste for sletting" className="mt-2 w-full rounded-lg border border-surface-200 p-3 text-base" rows={4} value={inventories[request.id].urls.join('\n')} />
                 </div>}
             </li>;

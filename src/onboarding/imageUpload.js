@@ -38,7 +38,7 @@ const loadImage = async (file) => {
         image = await new Promise((resolve, reject) => {
             const element = new Image();
             element.onload = () => resolve(element);
-            element.onerror = () => reject(new Error('Bildet kunne ikke åpnes.'));
+            element.onerror = () => reject(new Error('Bildet ble ikke åpnet.'));
             element.src = objectUrl;
         });
     } catch (error) {
@@ -78,7 +78,7 @@ export const prepareOnboardingImage = async (file) => {
             canvas.height = height;
 
             const context = canvas.getContext('2d', { alpha: false });
-            if (!context) throw new Error('Nettleseren kunne ikke behandle bildet.');
+            if (!context) throw new Error('Nettleseren klarte ikke å behandle bildet.');
 
             context.fillStyle = '#ffffff';
             context.fillRect(0, 0, width, height);
@@ -91,7 +91,7 @@ export const prepareOnboardingImage = async (file) => {
         }
 
         if (!blob || blob.size > MAX_UPLOAD_SIZE) {
-            throw new Error('Bildet kunne ikke komprimeres nok. Velg et mindre bilde.');
+            throw new Error('Bildet ble ikke komprimert nok. Velg et mindre bilde.');
         }
 
         return blobToDataUrl(blob);
@@ -116,7 +116,7 @@ export const uploadOnboardingImage = async ({ file, position, botField = '' }) =
     }
 
     if (!response.ok || !data?.url) {
-        throw new Error(data?.error || 'Bildet kunne ikke lastes opp. Prøv igjen.');
+        throw new Error(data?.error || 'Bildet ble ikke lastet opp. Prøv igjen.');
     }
 
     return data;

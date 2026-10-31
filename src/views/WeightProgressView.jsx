@@ -139,8 +139,8 @@ const WeightProgressView = React.memo(({ checkins = EMPTY_LIST, periods = EMPTY_
     if (validCheckins.length === 0) return (
         <div className="flex flex-col items-center justify-center h-[60vh] animate-fade-in" data-testid="weight-progress-view">
             <EmptyState
-                title="Ingen vektdata enda"
-                description="Når en rapport med vekt sendes inn, vises utviklingen her."
+                title="Ingen vektdata ennå"
+                description="Når en ukesrapport med vekt sendes inn, vises utviklingen her."
                 action={!isRail ? <Button variant="secondary" onClick={onBack}>Tilbake</Button> : null}
             />
         </div>
@@ -160,7 +160,7 @@ const WeightProgressView = React.memo(({ checkins = EMPTY_LIST, periods = EMPTY_
         <div className="space-y-6 animate-slide-up pb-32 duo:pb-8" data-testid="weight-progress-view">
             <div className="flex items-center gap-2">
                 {!isRail && (
-                    <IconButton onClick={onBack} aria-label="Tilbake til hjem" className="-ml-2" data-testid="weight-progress-back">
+                    <IconButton onClick={onBack} aria-label="Tilbake til oversikten" className="-ml-2" data-testid="weight-progress-back">
                         <ChevronLeft size={22} />
                     </IconButton>
                 )}

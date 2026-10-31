@@ -75,15 +75,15 @@ export default function AccountMenu({ user }) {
                             <h3 className="font-semibold text-ink">Slett konto og personopplysninger</h3>
                             {pending ? <div className="mt-3 space-y-2 text-sm text-ink-muted" role="status">
                                 <p>Forespørselen din er mottatt {dateLabel(pending.requestedAt)}. Vi behandler den innen {dateLabel(pending.dueAt)}.</p>
-                                <p>{pending.contactEmail ? `Bekreftelse sendes til ${pending.contactEmail}.` : 'Coachen din bekrefter slettingen gjennom kontaktkanalen dere bruker til oppfølging.'}</p>
+                                <p>{pending.contactEmail ? `Bekreftelse sendes til ${pending.contactEmail}.` : 'Coachen bekrefter slettingen via kontaktkanalen dere bruker.'}</p>
                                 <p>Kontoen er tilgjengelig frem til slettingen er fullført. Kontakt oss hvis du vil trekke forespørselen.</p>
                             </div> : <>
-                                <p className="mt-2 text-sm text-ink-muted">Be om å få kontoen, planene, rapportene og bildene dine slettet. Vi fullfører slettingen manuelt innen 30 dager og bekrefter når den er utført.</p>
+                                <p className="mt-2 text-sm text-ink-muted">Be om å få kontoen, planene, ukesrapportene og bildene dine slettet. Vi fullfører slettingen manuelt innen 30 dager og bekrefter når den er utført.</p>
                                 {!deleting ? <Button variant="danger" className="mt-4" onClick={() => { setDeleting(true); setError(''); }}>Be om kontosletting</Button> : <form className="mt-4 space-y-4" onSubmit={submit}>
                                     <p className="text-sm text-ink-muted">Når slettingen er fullført, mister du tilgangen og historikken kan ikke gjenopprettes i appen. Bekreft med passordet ditt.</p>
                                     <TextField id="deletion-password" type="password" label="Nåværende passord" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} required disabled={busy} />
                                     <TextField id="deletion-email" type="email" label="E-post for bekreftelse (valgfritt)" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} disabled={busy} />
-                                    <p className="text-xs text-ink-muted">Uten e-post bekrefter coachen slettingen gjennom kontaktkanalen dere bruker til oppfølging.</p>
+                                    <p className="text-xs text-ink-muted">Uten e-post bekrefter coachen slettingen via kontaktkanalen dere bruker.</p>
                                     <div className="flex gap-3"><Button variant="secondary" disabled={busy} onClick={() => { setDeleting(false); setPassword(''); }}>Avbryt</Button><Button variant="danger" type="submit" disabled={busy || !password}>{busy ? <Loader2 size={18} className="animate-spin" /> : 'Send sletteforespørsel'}</Button></div>
                                 </form>}
                             </>}

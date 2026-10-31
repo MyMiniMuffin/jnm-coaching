@@ -374,7 +374,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
 
     const insertTemplate = useCallback(async () => {
         if (planHasContent(draft)) {
-            const confirmed = await confirmDialog('Forslaget erstatter planen som ligger i editoren nå.', {
+            const confirmed = await confirmDialog('Forslaget erstatter planen som ligger i editoren.', {
                 title: 'Erstatt planen?',
                 confirmText: 'Bruk forslag',
                 destructive: true
@@ -460,7 +460,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                             <h2 className="break-words text-[1.05rem] font-semibold">{title}</h2>
                             {!isReadOnly && isEditing && (
                                 <p className="section-label mt-0.5">
-                                    {saveState === 'saving' ? 'Lagrer endringer...' : saveState === 'dirty' ? 'Ulagrede endringer' : type === 'diet' ? 'Rediger måltider og matvarer' : 'Rediger seksjoner og punkter'}
+                                    {saveState === 'saving' ? 'Lagrer endringer…' : saveState === 'dirty' ? 'Ulagrede endringer' : type === 'diet' ? 'Rediger måltider og matvarer' : 'Rediger seksjoner og punkter'}
                                 </p>
                             )}
                         </div>
@@ -544,8 +544,8 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                     {displayPlan.sections.length === 0 ? (
                         <EmptyState
                             icon={ListChecks}
-                            title="Ingen plan enda"
-                            description={isReadOnly ? 'Planen kommer her når coachen har lagt den inn.' : 'Start med et forslag eller bygg planen fra bunnen.'}
+                            title="Ingen plan ennå"
+                            description={isReadOnly ? 'Planen vises her når coachen har lagt den inn.' : 'Start med et forslag, eller bygg planen fra bunnen.'}
                             action={isEditing && !isReadOnly ? (
                                 <div className="flex flex-wrap justify-center gap-2">
                                     <Button variant="secondary" onClick={insertTemplate}><FileText size={17} /> Bruk forslag</Button>

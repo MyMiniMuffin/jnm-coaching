@@ -46,7 +46,7 @@ const triggerAnchorDownload = (href, filename) => {
 };
 
 export const createImageArchive = async (images) => {
-    if (!images.length) throw new Error('Ingen bilder valgt');
+    if (!images.length) throw new Error('Ingen bilder valgt.');
     const { default: JSZip } = await import('jszip');
     const archive = new JSZip();
     // Fetch a small batch concurrently, without opening a connection for every
@@ -54,9 +54,9 @@ export const createImageArchive = async (images) => {
     for (let offset = 0; offset < images.length; offset += 4) {
         const batch = await Promise.all(images.slice(offset, offset + 4).map(async (image, index) => {
             const source = getOriginalImage(image.url);
-            if (!source) throw new Error('Mangler bildeadresse');
+            if (!source) throw new Error('Mangler bildeadresse.');
             const response = await fetch(source, { mode: 'cors' });
-            if (!response.ok) throw new Error('Kunne ikke hente alle bildene');
+            if (!response.ok) throw new Error('Kunne ikke hente alle bildene.');
             return {
                 filename: buildImageFilename({
                     date: image.date || image.timestamp,
@@ -86,13 +86,13 @@ export const downloadImagesArchive = async (images) => {
 
 export const downloadImageFile = async (url, filename = 'jnm-bilde.jpg') => {
     const source = getOriginalImage(url);
-    if (!source) throw new Error('Mangler bildeadresse');
+    if (!source) throw new Error('Mangler bildeadresse.');
 
     haptic('save');
 
     try {
         const response = await fetch(source, { mode: 'cors' });
-        if (!response.ok) throw new Error('Kunne ikke hente bildet');
+        if (!response.ok) throw new Error('Kunne ikke hente bildet.');
         const blob = await response.blob();
         if (await shareNativeFile(blob, filename)) return;
         const objectUrl = URL.createObjectURL(blob);
@@ -107,6 +107,6 @@ export const downloadImageFile = async (url, filename = 'jnm-bilde.jpg') => {
             triggerAnchorDownload(attachmentUrl, filename);
             return;
         }
-        throw new Error('Kunne ikke laste ned bildet');
+        throw new Error('Kunne ikke laste ned bildet.');
     }
 };

@@ -175,7 +175,7 @@ const OnboardingForm = () => {
             setStatus('error');
             setError(submissionError?.message === 'Submission failed'
                 ? 'Noe gikk galt under innsendingen. Prøv igjen, eller ta kontakt med meg direkte.'
-                : submissionError?.message || 'Bildene kunne ikke lastes opp. Prøv igjen.');
+                : submissionError?.message || 'Bildene ble ikke lastet opp. Prøv igjen.');
         } finally {
             setUploadStatus('');
         }
@@ -187,7 +187,7 @@ const OnboardingForm = () => {
                 <div className="onboarding-success-icon"><Check size={28} aria-hidden="true" /></div>
                 <h1 className="text-4xl font-semibold leading-tight tracking-[-0.045em] sm:text-5xl">Takk, {values.name.split(' ')[0]}.</h1>
                 <p className="mt-5 max-w-xl text-lg leading-8 text-black/60">
-                    Jeg har mottatt svarene dine og bruker dem til å forberede oppstarten og planen din.
+                    Jeg har mottatt svarene dine og bruker dem til å forberede oppstarten.
                 </p>
                 <a href="/coaching/" className="coaching-button mt-8">Til JNM Coaching</a>
             </div>
@@ -349,11 +349,11 @@ const OnboardingPage = () => (
                     La oss bygge et godt utgangspunkt
                 </h1>
                 <p className="mt-6 max-w-md text-lg leading-8 text-black/60">
-                    Svar så ærlig og konkret du kan. Det finnes ingen riktige svar – informasjonen hjelper meg å lage et opplegg som faktisk passer deg.
+                    Svar ærlig og konkret. Det finnes ingen riktige svar. Informasjonen hjelper meg å lage et opplegg som passer deg.
                 </p>
                 <div className="mt-8 flex items-start gap-3 border-t border-black/10 pt-6 text-sm leading-6 text-black/50">
                     <LockKeyhole className="mt-1 shrink-0 text-accent" size={16} aria-hidden="true" />
-                    <p>Sett av omtrent 5–8 minutter. Svarene sendes direkte til JNM Coaching.</p>
+                    <p>Sett av 5–8 minutter. Svarene sendes direkte til JNM Coaching.</p>
                 </div>
             </aside>
 
