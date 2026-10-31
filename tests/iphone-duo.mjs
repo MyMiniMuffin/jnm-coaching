@@ -268,6 +268,14 @@ test('navigation supports wide sidebar, Duo rail, and phone bottom nav', () => {
     );
     assert.match(css, /right:\s*var\(--app-rail-status-nudge\)/);
     assert.match(css, /z-index:\s*45/);
+    // Capsule fits 44pt btn + 4px pad×2 + 1px border×2; buttons use grid + block SVG (no 44-in-42 overflow).
+    assert.match(css, /--app-rail-width:\s*calc\(2\.75rem\s*\+\s*0\.5rem\s*\+\s*2px\)/);
+    assert.match(css, /html\[data-shell="rail"\] \.app-rail-btn \{/);
+    assert.match(css, /place-items:\s*center/);
+    assert.match(css, /html\[data-shell="rail"\] \.app-rail-btn > svg \{/);
+    assert.match(navigation, /className=\{`app-rail-btn /);
+    assert.match(navigation, /className="app-rail-btn /);
+    assert.doesNotMatch(navigation, /app-rail-btn inline-flex h-11 w-11/);
     // Unfolded Duo must not keep phone max-width / centered header.
     assert.match(css, /html\[data-shell="rail"\] \.header-inner \{[\s\S]*?max-width:\s*none/);
     assert.match(css, /html\[data-shell="rail"\] \.app-content \{[\s\S]*?max-width:\s*none/);

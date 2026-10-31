@@ -34,7 +34,7 @@ const NavButton = React.memo(({ item, isActive, onClick, variant }) => {
                 onClick={() => onClick(item.id)}
                 aria-label={item.label}
                 aria-current={isActive ? 'page' : undefined}
-                className={`app-rail-btn inline-flex h-11 w-11 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                className={`app-rail-btn rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                     isActive
                         ? 'bg-white text-accent-hover shadow-sm ring-1 ring-surface-200/70'
                         : 'text-ink-muted hover:bg-white/60 hover:text-ink'
@@ -134,7 +134,7 @@ const Navigation = React.memo(({ activeTab, setActiveTab, shell = 'narrow', onBa
                                 onClick={handleBack}
                                 aria-label="Tilbake"
                                 data-testid="app-rail-back"
-                                className="app-rail-btn inline-flex h-11 w-11 items-center justify-center rounded-full text-ink transition-colors hover:bg-white/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                                className="app-rail-btn rounded-full text-ink transition-colors hover:bg-white/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                             >
                                 <ChevronLeft size={20} strokeWidth={2.25} />
                             </button>
