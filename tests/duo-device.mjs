@@ -38,7 +38,11 @@ test('Swift DuoDevice list stays in sync with duoDeviceModels.js', () => {
     assert.match(swift, /NoForceDuoDevice/);
     assert.match(swift, /JNM_FORCE_DUO/);
     assert.match(swift, /isForceDuoEnabled/);
-    // Debug must default-force Duo (Simulator never matches machine id).
+    assert.match(swift, /SIMULATOR_MODEL_IDENTIFIER/);
+    assert.match(swift, /SIMULATOR_DEVICE_NAME/);
+    assert.match(swift, /isSimulatorNamedDuo/);
+    assert.match(swift, /targetEnvironment\(simulator\)/);
+    // Debug must default-force Duo as fallback.
     assert.match(swift, /#if DEBUG[\s\S]*return true/);
     for (const id of DUO_MACHINE_IDS) {
         assert.match(swift, new RegExp(id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
