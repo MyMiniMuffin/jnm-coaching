@@ -56,7 +56,7 @@ docker exec jnm-coaching-app node -e "fetch('http://127.0.0.1:3000/healthz').the
 
 ## 3. Legg til domenet i MetalFlows Caddy
 
-I `~/metalflow/Caddyfile` (og i MetalFlow-repoet, så det ikke overskrives ved neste deploy):
+Blokken ligger i MetalFlow-repoet i `caddy/Caddyfile` (lagt inn i MetalFlow `799bab5`). Endringer gjøres der og pushes, så henter MetalFlows auto-deploy dem:
 
 ```caddy
 jnmcoaching.no {
@@ -72,7 +72,7 @@ www.jnmcoaching.no {
 }
 ```
 
-Last inn på nytt med `reload`, ikke `restart`. Caddy sjekker den nye konfigurasjonen først og beholder den gamle hvis noe er feil, så `metalflow.no` er oppe hele tiden:
+Last inn på nytt med `reload`, ikke `restart`. Caddy sjekker den nye konfigurasjonen først og beholder den gamle hvis noe er feil, så `metalflow.no` er oppe hele tiden. Det virker fordi MetalFlow monterer mappen `caddy/`, ikke selve filen (MetalFlow `57fea19`):
 
 ```bash
 cd ~/metalflow && docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile
