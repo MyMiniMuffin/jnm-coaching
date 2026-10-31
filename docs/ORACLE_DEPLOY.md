@@ -1,6 +1,8 @@
 # Flytting fra Netlify til Oracle (samme instans som MetalFlow)
 
-JNM Coaching kjører som én Docker-container (`server.mjs`) på Oracle-instansen der MetalFlow allerede går. MetalFlows Caddy tar HTTPS for `jnmcoaching.no` og sender trafikken videre over nettverket `metalflow_proxy`.
+JNM Coaching kjører som én Docker-container (`server.mjs`) på Oracle-instansen der MetalFlow allerede går (`ubuntu@82.70.59.189`). MetalFlows Caddy tar HTTPS for `jnmcoaching.no` og sender trafikken videre over nettverket `metalflow_proxy`.
+
+Instansen er en x86-VM med **1 GB minne**, delt med MetalFlow. Den har plass til å *kjøre* JNM (~90 MB), men ikke til å *bygge* den. Derfor bygger GitHub Actions imaget (`.github/workflows/docker-image.yml`) og legger det på `ghcr.io/myminimuffin/jnm-coaching`, tagget med commit-SHA. Serveren henter bare ferdige images.
 
 Ingenting i appen endres:
 
@@ -30,13 +32,15 @@ Netlify → Site configuration → Environment variables. Du trenger:
 
 ## 2. Klon og start på Oracle-instansen
 
+Første gang: etter at `docker-image.yml` har kjørt, gå til GitHub → profilen → **Packages → jnm-coaching → Package settings** og sett **Visibility** til **Public**, så serveren kan hente imaget uten innlogging.
+
 ```bash
 ssh ubuntu@<oracle-ip>
 git clone https://github.com/MyMiniMuffin/jnm-coaching.git ~/jnm-coaching
 cd ~/jnm-coaching
 nano .env            # lim inn variablene fra steg 1, én per linje: NAVN=verdi
 chmod 600 .env
-./deploy.sh --force  # bygger imaget og starter jnm-coaching-app
+./deploy.sh --force  # henter imaget for HEAD fra ghcr.io og starter jnm-coaching-app
 docker compose logs -f jnm
 ```
 
@@ -76,11 +80,10 @@ Caddy henter sertifikatet først når DNS peker til instansen (steg 4).
 
 ## 4. Flytt DNS
 
-Hos domeneleverandøren for `jnmcoaching.no`:
+DNS for `jnmcoaching.no` ligger i dag i **Netlify DNS** (navneservere `dns1–4.p05.nsone.net`). To måter:
 
-- `A`-post for `jnmcoaching.no` → Oracle-instansens offentlige IP (samme som `metalflow.no`).
-- `www` → `CNAME jnmcoaching.no` (eller samme `A`-post).
-- Fjern Netlify-postene (`apex-loadbalancer.netlify.com` / `*.netlify.app`).
+- **Raskt:** Netlify → Domains → `jnmcoaching.no` → DNS records. Endre `A`-posten for `jnmcoaching.no` til `82.70.59.189`, og `www` til samme. Netlify-sertifikatet trengs ikke lenger.
+- **Varig:** legg postene hos registraren (f.eks. Domeneshop, som for `metalflow.no`) og bytt navneserverne tilbake dit. Gjør dette før Netlify-prosjektet slettes, ellers forsvinner DNS-sonen også.
 
 Senk gjerne TTL til 300 sekunder dagen før, så byttet går raskt.
 
@@ -97,7 +100,7 @@ Senk gjerne TTL til 300 sekunder dagen før, så byttet går raskt.
 cd ~/jnm-coaching && ./scripts/install-auto-deploy.sh
 ```
 
-Etter dette bygger serveren seg selv innen ett minutt etter push til `main`, slik som MetalFlow.
+Etter dette henter serveren nytt image innen et par minutter etter push til `main`: Actions bygger først, og deploy-timeren prøver igjen hvert minutt til imaget for commiten finnes.
 
 Når alt har gått stabilt i noen dager: slå av builds i Netlify (Site configuration → Build & deploy → Stop builds), og slett prosjektet til slutt. `netlify.toml` kan bli liggende til da, så du kan rulle tilbake ved å peke DNS til Netlify igjen.
 
@@ -106,9 +109,10 @@ Når alt har gått stabilt i noen dager: slå av builds i Netlify (Site configur
 - Egne containere, eget compose-prosjekt og egen deploy-timer (`jnm-deploy` / `metalflow-deploy`). MetalFlows `--remove-orphans` rører ikke JNM.
 - JNM publiserer ingen porter på verten; bare Caddy bruker 80/443. Begge appene lytter på 3000 inne i hver sin container.
 - JNM har ingen lokale data eller volumer — databasen er i Neon og bildene i Cloudinary — så MetalFlows backup påvirkes ikke.
-- JNM er begrenset til 768 MB minne og 1 CPU (`docker-compose.yml`), så den ikke kan sulte MetalFlow.
+- JNM er begrenset til 256 MB minne (Node-heap 192 MB) og 1 CPU (`docker-compose.yml`), så den ikke kan sulte MetalFlow på 1 GB-VM-en.
+- Ingenting bygges på serveren: compose har ingen `build:`, og `deploy.sh` bare henter fra ghcr.io.
 - Det eneste som deles, er Caddy og nettverket `metalflow_proxy`. Kjøres `docker compose down` for MetalFlow, mister JNM nettverket. Start da JNM på nytt etterpå: `cd ~/jnm-coaching && docker compose up -d`.
-- Rydd gamle images innimellom, siden begge bygger på samme disk: `docker image prune -f`.
+- Rydd gamle images innimellom (hver commit gir et nytt): `docker image prune -af --filter "until=168h"`.
 
 ## Feilsøking
 

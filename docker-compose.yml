@@ -3,13 +3,18 @@
 # over the shared metalflow_proxy network. See docs/ORACLE_DEPLOY.md.
 services:
   jnm:
-    build: .
+    # Built by .github/workflows/docker-image.yml; the 1 GB VM only pulls.
+    # No `build:` on purpose, so compose can never fall back to building there.
+    # deploy.sh sets JNM_IMAGE_TAG to the deployed commit.
+    image: ghcr.io/myminimuffin/jnm-coaching:${JNM_IMAGE_TAG:-latest}
+    pull_policy: missing
     container_name: jnm-coaching-app
     restart: unless-stopped
     environment:
       NODE_ENV: production
       PORT: "3000"
       CONTEXT: production
+      NODE_OPTIONS: --max-old-space-size=192
       # Same names as on Netlify, so the functions run unchanged.
       NETLIFY_DATABASE_URL: ${NETLIFY_DATABASE_URL:?mangler i .env}
       JWT_SECRET: ${JWT_SECRET:?mangler i .env}
@@ -24,9 +29,9 @@ services:
       APNS_PRIVATE_KEY: ${APNS_PRIVATE_KEY:-}
       APNS_BUNDLE_ID: ${APNS_BUNDLE_ID:-no.jnmcoaching.app}
       APNS_PRODUCTION: ${APNS_PRODUCTION:-}
-    # Shares the instance with MetalFlow: cap JNM so a leak or spike here
-    # cannot starve it. Node idles around 100 MB.
-    mem_limit: 768m
+    # Shares a 1 GB VM with MetalFlow: cap JNM so a leak or spike here
+    # cannot starve it. Node idles around 90 MB.
+    mem_limit: 256m
     cpus: 1.0
     expose:
       - "3000"

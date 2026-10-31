@@ -98,8 +98,15 @@ if [[ "$local_sha" != "$remote_sha" ]]; then
 fi
 
 if [[ "$FORCE" -eq 1 || "$(cat "$DEPLOYED_SHA_FILE" 2>/dev/null || true)" != "$(git rev-parse HEAD)" ]]; then
-  log "building and starting containers"
-  compose up -d --build --remove-orphans
+  # Never build here: the 1 GB VM is shared with MetalFlow. GitHub Actions
+  # publishes the image (docker-image.yml); wait for it, then pull and start.
+  export JNM_IMAGE_TAG="$(git rev-parse HEAD)"
+  if ! compose pull --quiet 2>>"$LOG"; then
+    log "image ${JNM_IMAGE_TAG:0:8} not on ghcr.io yet; retrying next run"
+    exit 0
+  fi
+  log "starting ${JNM_IMAGE_TAG:0:8}"
+  compose up -d --no-build --remove-orphans
   git rev-parse HEAD >"$DEPLOYED_SHA_FILE"
 fi
 
