@@ -705,6 +705,8 @@ html[data-shell="wide"] .toast-stack {
  * HIG puts toolbar + tab bar in that same column under the status items, so
  * the rail sits *inside* the inset column instead of next to it, and
  * .app-stage is the only padding owner (.app-frame drops its safe-area pad).
+ * Status icons sit slightly left of that column's center on device — nudge
+ * the rail left by --app-rail-status-nudge (measured ~5–6pt on folded Duo).
  */
 :root {
     /* 44pt button + 4px capsule padding each side (HIG: symbol-only side bar) */
@@ -715,6 +717,8 @@ html[data-shell="wide"] .toast-stack {
     --app-rail-reserve: calc(var(--app-rail-col) + var(--app-rail-gap));
     /* Clear the side status cluster when present (inset > 20px), else a small top gap */
     --app-rail-status-clearance: max(3.25rem, min(10rem, calc((env(safe-area-inset-right, 0px) - 20px) * 100)));
+    /* Align capsule with status cluster (inset > 20px → 5px; else 0). Does not change --app-rail-reserve. */
+    --app-rail-status-nudge: clamp(0px, calc((env(safe-area-inset-right, 0px) - 20px) * 100), 5px);
 }
 
 .app-rail {
@@ -725,6 +729,7 @@ html[data-shell="rail"] .app-rail {
     display: flex;
     position: fixed;
     inset: 0 0 0 auto;
+    right: var(--app-rail-status-nudge);
     z-index: 45;
     width: var(--app-rail-col);
     justify-content: center;
@@ -862,10 +867,12 @@ html[data-shell="rail"] .app-frame:not(.app-frame-nav) .app-stage {
 @media (min-width: 700px) and (orientation: portrait) {
     :root {
         --app-rail-bottom-reserve: calc(var(--app-rail-width) + 2px + max(0.75rem, env(safe-area-inset-bottom, 0px)) + var(--app-rail-gap)); /* +2px capsule border */
+        --app-rail-status-nudge: 0px;
     }
 
     html[data-shell="rail"] .app-rail {
         inset: auto 0 0 0;
+        right: 0;
         width: auto;
         justify-content: center;
         padding: 0 0 max(0.75rem, env(safe-area-inset-bottom, 0px));

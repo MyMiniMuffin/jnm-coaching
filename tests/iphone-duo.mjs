@@ -261,6 +261,12 @@ test('navigation supports wide sidebar, Duo rail, and phone bottom nav', () => {
     assert.match(css, /html\[data-shell="rail"\] \.app-stage \{/);
     assert.match(css, /--app-rail-reserve/);
     assert.match(css, /--app-rail-status-clearance/);
+    assert.match(css, /--app-rail-status-nudge/);
+    assert.match(
+        css,
+        /--app-rail-status-nudge:\s*clamp\(0px,\s*calc\(\(env\(safe-area-inset-right,\s*0px\)\s*-\s*20px\)\s*\*\s*100\),\s*5px\)/
+    );
+    assert.match(css, /right:\s*var\(--app-rail-status-nudge\)/);
     assert.match(css, /z-index:\s*45/);
     // Unfolded Duo must not keep phone max-width / centered header.
     assert.match(css, /html\[data-shell="rail"\] \.header-inner \{[\s\S]*?max-width:\s*none/);
