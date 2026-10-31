@@ -182,6 +182,9 @@ export const api = {
     setFormSubmissionHandled: (id, handled) => request('/.netlify/functions/form-submissions', {
         method: 'PATCH', body: { id, handled }
     }),
+    deleteFormSubmission: (id) => request('/.netlify/functions/form-submissions', {
+        method: 'DELETE', body: { id }
+    }),
     getUsers: async (useCache = false) => {
         if (useCache) {
             const cached = cache.get('users-list');

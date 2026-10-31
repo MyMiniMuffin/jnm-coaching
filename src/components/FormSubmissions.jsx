@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ChevronDown, Inbox, Mail, Phone, Instagram, Check, RotateCcw, Loader2 } from 'lucide-react';
+import { ChevronDown, Inbox, Mail, Phone, Instagram, Check, RotateCcw, Loader2, Trash2 } from 'lucide-react';
 import { api } from '../lib/api';
 import { Badge, Button, Card } from './ui';
+import { useConfirm } from './ConfirmDialog';
 
 // Labels match the questions on /coaching/ and /oppstart/.
 const FORM_TYPES = {
@@ -85,7 +86,7 @@ const SubmissionDetails = ({ submission }) => {
     );
 };
 
-const SubmissionItem = ({ submission, open, onToggle, onSetHandled, busy }) => {
+const SubmissionItem = ({ submission, open, onToggle, onSetHandled, onDelete, busy }) => {
     const type = FORM_TYPES[submission.formName];
     const handled = Boolean(submission.handledAt);
     const detailsId = `submission-${submission.id}`;
@@ -108,7 +109,13 @@ const SubmissionItem = ({ submission, open, onToggle, onSetHandled, busy }) => {
             {open && (
                 <div id={detailsId} className="pb-4">
                     <SubmissionDetails submission={submission} />
-                    <div className="mt-4 flex justify-end">
+                    <div className="mt-4 flex flex-wrap justify-end gap-2">
+                        {/* Only handled submissions can be deleted, so a new one never disappears by a mistap. */}
+                        {handled && (
+                            <Button variant="danger" size="sm" disabled={busy} onClick={() => onDelete(submission)}>
+                                <Trash2 size={16} /> Slett
+                            </Button>
+                        )}
                         <Button variant="secondary" size="sm" disabled={busy} onClick={() => onSetHandled(submission, !handled)}>
                             {busy
                                 ? <Loader2 size={16} className="animate-spin" />
@@ -129,6 +136,7 @@ export default function FormSubmissions() {
     const [openId, setOpenId] = useState(null);
     const [busyId, setBusyId] = useState(null);
     const [showHandled, setShowHandled] = useState(false);
+    const confirm = useConfirm();
 
     const load = useCallback(async () => {
         try {
@@ -155,6 +163,21 @@ export default function FormSubmissions() {
                 item.id === submission.id ? { ...item, handledAt: result.data.handledAt } : item
             )));
             setOpenId(null);
+        } catch (err) { setError(err.message); }
+        finally { setBusyId(null); }
+    };
+
+    const remove = async (submission) => {
+        const photoCount = ['front-photo-url', 'side-photo-url', 'back-photo-url'].filter((key) => submission.data[key]).length;
+        const message = `Henvendelsen fra ${submission.data.name || 'ukjent'} slettes permanent${photoCount ? `, sammen med ${photoCount === 1 ? 'bildet' : `de ${photoCount} bildene`}` : ''}. Dette kan ikke angres.`;
+        if (!await confirm(message, { title: 'Slett henvendelse?', confirmText: 'Slett', destructive: true })) return;
+        setBusyId(submission.id);
+        try {
+            const result = await api.deleteFormSubmission(Number(submission.id));
+            if (result.authError) throw new Error('Logg inn på nytt.');
+            setSubmissions((previous) => previous.filter((item) => item.id !== submission.id));
+            setOpenId(null);
+            setError('');
         } catch (err) { setError(err.message); }
         finally { setBusyId(null); }
     };
@@ -191,6 +214,7 @@ export default function FormSubmissions() {
                             open={openId === submission.id}
                             onToggle={() => setOpenId((current) => (current === submission.id ? null : submission.id))}
                             onSetHandled={setHandled}
+                            onDelete={remove}
                             busy={busyId === submission.id}
                         />
                     ))}
