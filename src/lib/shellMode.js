@@ -71,14 +71,21 @@ const computeShell = (sticky) => {
     return sticky ? SHELL_WIDE : SHELL_NARROW;
 };
 
+/**
+ * Write attributes only when they change. The MutationObserver below watches
+ * data-device, and setAttribute fires a mutation even for the same value — an
+ * unconditional write made every Duo resize (fold/unfold) loop forever via
+ * recompute → syncDom → mutation → recompute, freezing WKWebView.
+ */
 const syncDom = (nextShell) => {
     if (typeof document === 'undefined') return;
-    document.documentElement.setAttribute(ATTR, nextShell);
+    const root = document.documentElement;
+    if (root.getAttribute(ATTR) !== nextShell) root.setAttribute(ATTR, nextShell);
     const override = readDeviceOverride();
     if (override === 'phone') {
-        document.documentElement.removeAttribute(DEVICE_ATTR);
-    } else if (isDuoDevice()) {
-        document.documentElement.setAttribute(DEVICE_ATTR, 'duo');
+        if (root.hasAttribute(DEVICE_ATTR)) root.removeAttribute(DEVICE_ATTR);
+    } else if (isDuoDevice() && root.getAttribute(DEVICE_ATTR) !== 'duo') {
+        root.setAttribute(DEVICE_ATTR, 'duo');
     }
 };
 

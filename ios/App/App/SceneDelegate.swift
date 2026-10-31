@@ -6,15 +6,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
-        guard let windowScene = scene as? UIWindowScene else { return }
-
-        // DuoBridgeViewController injects the Duo marker via webViewConfiguration(for:)
-        // before the first load — do not add WKUserScript after makeKeyAndVisible.
-        let bridgeVC = DuoBridgeViewController()
-        window = UIWindow(windowScene: windowScene)
-        window?.rootViewController = bridgeVC
-        window?.makeKeyAndVisible()
-
+        // Main.storyboard (UISceneStoryboardFile) already creates `window` with
+        // DuoBridgeViewController as root. Creating another window here left two
+        // live Capacitor bridges / WKWebViews (double API calls and push setup).
         SceneDelegateProxy.shared.scene(scene, willConnectTo: session, options: connectionOptions)
     }
 

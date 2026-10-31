@@ -104,6 +104,16 @@ Kilde: [Designing for iPhone Duo](https://developer.apple.com/design/human-inter
 
 ---
 
+## Ekte Duo-simulator (Xcode 27.1, 2026-10-31)
+
+- **Mål:** ytterskjerm 466×678, innerskjerm 951×669. Statuslinjen ligger i en høyre kolonne: `safe-area-inset-right` = 84pt, bunn 34pt.
+- **Rail i statuskolonnen:** `--app-rail-col = max(safe-area-right, kapsel + 12px)`. Railen ligger *i* kolonnen under klokke/wifi (som Safari), og `.app-frame` dropper sin egen safe-area-padding (tidligere telt dobbelt → 228pt tapt bredde). Skjermer uten nav (coach-oversikt) reserverer bare statuskolonnen.
+- **Frys ved folding (rotårsak):** `syncDom` i `shellMode.js` satte `data-device` på hver resize → egen `MutationObserver` → `recompute` → uendelig løkke. På Duo er hver fold en resize, så WKWebView frøs i gammel størrelse. Nå skrives attributter kun ved endring; regresjonstest i `iphone-duo-layout.mjs`.
+- **Dobbelt vindu:** `SceneDelegate` lagde et eget `UIWindow` i tillegg til storyboardens → to Capacitor-bridger/WKWebViews. Nå eier `Main.storyboard` den ene.
+- **Testtips:** fold med Device Hub (Closed/Open). `simctl io screenshot` viser innerskjermen etter fold — bruk Device Hub som fasit.
+
+---
+
 ## Revidert P0 (implementert i fase 2)
 
 1. Plattform-verifikasjon + fjern død segment-CSS; behold `--fold-gap`.

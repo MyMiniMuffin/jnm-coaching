@@ -70,7 +70,11 @@ test('DuoBridgeViewController injects WKUserScript on live contentController', (
     assert.match(bridge, /ensureDuoDeviceAttribute/);
     // Capacitor replaces userContentController after webViewConfiguration — document that.
     assert.match(bridge, /prepareWebView|contentController|replaced|discarded/i);
-    assert.match(scene, /DuoBridgeViewController\(\)/);
+    // Main.storyboard owns the single bridge; a second UIWindow meant two WKWebViews.
+    const storyboard = read('ios/App/App/Base.lproj/Main.storyboard');
+    assert.match(storyboard, /customClass="DuoBridgeViewController"/);
+    assert.doesNotMatch(scene, /UIWindow\(windowScene:/);
+    assert.doesNotMatch(scene, /DuoBridgeViewController\(\)/);
     assert.doesNotMatch(scene, /injectDuoDeviceMarker/);
     assert.doesNotMatch(scene, /addUserScript/);
 });

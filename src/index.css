@@ -698,17 +698,23 @@ html[data-shell="wide"] .toast-stack {
  * z-index 45: above sticky header (40), below modals (50+).
  *
  * Unfolded Duo: unlock phone max-widths so content spans the full window
- * (minus rail). Duo’s right-display status cluster (time / wifi) sits above
- * the rail — clear it with --app-rail-status-clearance, not only safe-area.
+ * (minus rail).
+ *
+ * On real Duo hardware the status bar (camera / time / wifi) lives in a
+ * right-hand column reported as safe-area-inset-right (84pt in Simulator).
+ * HIG puts toolbar + tab bar in that same column under the status items, so
+ * the rail sits *inside* the inset column instead of next to it, and
+ * .app-stage is the only padding owner (.app-frame drops its safe-area pad).
  */
 :root {
     /* 44pt button + 4px capsule padding each side (HIG: symbol-only side bar) */
     --app-rail-width: 3.25rem;
     --app-rail-gap: 0.5rem; /* min 8px gap between content and rail pills */
-    --app-rail-edge: max(0.375rem, env(safe-area-inset-right, 0px));
-    --app-rail-reserve: calc(var(--app-rail-width) + var(--app-rail-edge) + var(--app-rail-gap));
-    /* Extra below safe-area so back pill clears Duo right-side status control */
-    --app-rail-status-clearance: 3.25rem;
+    /* Side column: the status safe area on Duo, else just room for the capsule */
+    --app-rail-col: max(env(safe-area-inset-right, 0px), calc(var(--app-rail-width) + 0.75rem));
+    --app-rail-reserve: calc(var(--app-rail-col) + var(--app-rail-gap));
+    /* Clear the side status cluster when present (inset > 20px), else a small top gap */
+    --app-rail-status-clearance: max(3.25rem, min(10rem, calc((env(safe-area-inset-right, 0px) - 20px) * 100)));
 }
 
 .app-rail {
@@ -720,10 +726,10 @@ html[data-shell="rail"] .app-rail {
     position: fixed;
     inset: 0 0 0 auto;
     z-index: 45;
-    width: calc(var(--app-rail-width) + var(--app-rail-edge));
+    width: var(--app-rail-col);
+    justify-content: center;
     pointer-events: none;
     padding-top: calc(env(safe-area-inset-top, 0px) + var(--app-rail-status-clearance));
-    padding-right: var(--app-rail-edge);
     padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
     box-sizing: border-box;
 }
@@ -793,7 +799,11 @@ html[data-shell="rail"] .app-content {
     box-sizing: border-box;
 }
 
-/* Single padding owner — do not also pad .app-frame. */
+/* Single padding owner — .app-frame drops its safe-area pad under rail. */
+html[data-shell="rail"] .app-frame {
+    padding-right: 0;
+}
+
 html[data-shell="rail"] .app-stage {
     padding-right: var(--app-rail-reserve);
     box-sizing: border-box;
@@ -803,6 +813,10 @@ html[data-shell="rail"] .app-stage {
 
 /* Unfolded Duo: roomier content padding across the span */
 @media (min-width: 700px) {
+    :root {
+        --app-rail-status-clearance: max(3.25rem, min(7rem, calc((env(safe-area-inset-right, 0px) - 20px) * 100)));
+    }
+
     html[data-shell="rail"] .app-content {
         padding: 1.25rem 1.5rem 2.25rem;
     }
@@ -832,7 +846,12 @@ html[data-shell="rail"] .app-frame-nav .plan-save-bar {
 
 html[data-shell="rail"] .toast-stack {
     bottom: 2rem;
-    right: calc(var(--app-rail-width) + 1rem + env(safe-area-inset-right, 0px));
+    right: calc(var(--app-rail-reserve) + 0.5rem);
+}
+
+/* Screens without Navigation (coach list, archived): only the status column. */
+html[data-shell="rail"] .app-frame:not(.app-frame-nav) .app-stage {
+    padding-right: env(safe-area-inset-right, 0px);
 }
 
 /*
@@ -869,7 +888,7 @@ html[data-shell="rail"] .toast-stack {
     }
 
     html[data-shell="rail"] .app-stage {
-        padding-right: 0;
+        padding-right: env(safe-area-inset-right, 0px);
         padding-bottom: var(--app-rail-bottom-reserve);
     }
 

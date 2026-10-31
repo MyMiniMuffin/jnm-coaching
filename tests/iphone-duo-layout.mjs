@@ -858,6 +858,35 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
             }
         });
 
+        // Real Duo sizes: inner 951×669 ↔ outer 466×678. Each fold is a resize;
+        // syncDom used to re-set data-device on every resize, re-triggering its
+        // own MutationObserver forever and freezing the page.
+        await t.test('Duo fold/unfold resize keeps the page responsive', async () => {
+            const context = await browser.newContext({
+                viewport: { width: 951, height: 669 },
+                deviceScaleFactor: 1,
+            });
+            const page = await context.newPage();
+            try {
+                await openAthleteDuo(page, base);
+                for (const [width, height] of [[466, 678], [951, 669], [466, 678]]) {
+                    await page.setViewportSize({ width, height });
+                    const state = await Promise.race([
+                        page.evaluate(() => ({
+                            width: window.innerWidth,
+                            shell: document.documentElement.getAttribute('data-shell'),
+                        })),
+                        new Promise((resolve) => setTimeout(() => resolve(null), 3000)),
+                    ]);
+                    assert.ok(state, `page hung after resize to ${width}×${height}`);
+                    assert.equal(state.width, width);
+                    assert.equal(state.shell, 'rail');
+                }
+            } finally {
+                await context.close();
+            }
+        });
+
         await t.test('device=phone override clears data-device and does not leak to localStorage', async () => {
             const context = await browser.newContext({
                 viewport: { width: 760, height: 900 },
