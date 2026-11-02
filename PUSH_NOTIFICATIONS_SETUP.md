@@ -65,3 +65,5 @@ Etter kodeendringer: Xcode Cloud bygger ny iOS-versjon fra `main`. Coach må åp
 5. Coach skal få APNs-varsel (bakgrunn) eller in-app toast (forgrunn).
 
 Web: samme flyt i støttet nettleser med VAPID-nøkler satt.
+
+Test av kodebot PR-flyt, kan ignoreres.
