@@ -114,7 +114,7 @@ const BUTTON_SIZES = {
 export const Button = React.memo(({ children, variant = 'primary', size = 'md', className = '', ...props }) => (
     <button
         type="button"
-        className={`min-h-11 min-w-11 font-medium rounded-lg transition-[background-color,color,transform] duration-200 flex items-center justify-center gap-2 [&>svg]:shrink-0 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${BUTTON_VARIANTS[variant]} ${BUTTON_SIZES[size]} ${className}`}
+        className={`min-h-11 min-w-11 font-medium rounded-full transition-[background-color,color,transform] duration-200 flex items-center justify-center gap-2 [&>svg]:shrink-0 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${BUTTON_VARIANTS[variant]} ${BUTTON_SIZES[size]} ${className}`}
         {...props}
     >
         {children}
@@ -130,7 +130,7 @@ export const IconButton = React.memo(({ children, className = '', tone = 'neutra
     return (
         <button
             type="button"
-            className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg p-2 transition-colors hover:bg-surface-100 active:bg-surface-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${toneClass} ${className}`}
+            className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-full p-2 transition-colors hover:bg-surface-100 active:bg-surface-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${toneClass} ${className}`}
             {...props}
         >
             {children}
