@@ -129,7 +129,8 @@ Ikke bruk både stor avstand, ramme, skygge og tonet bakgrunn for samme grupperi
 
 ## 5. Former, rammer og skygger
 
-- `rounded-lg` brukes på knapper og mindre kontroller.
+- `rounded-full` brukes på knapper (`Button`) og ikonknapper (`IconButton`). Ikonknapper er like høye som brede.
+- `rounded-lg` brukes på mindre kontroller.
 - `rounded-xl` brukes på kort, felt, modaler og større interaktive flater.
 - `rounded-full` er for avatarer, statusprikker og ekte pillekontroller.
 - Standard ramme er `border border-surface-200`.
