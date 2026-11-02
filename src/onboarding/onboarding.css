@@ -1,8 +1,8 @@
 .onboarding-page {
-    --coaching-black: #171717;
-    --coaching-accent: #246568;
+    --coaching-black: theme('colors.ink.DEFAULT');
+    --coaching-accent: theme('colors.accent.DEFAULT');
     min-height: 100vh;
-    background: #f7f7f4;
+    background: theme('colors.surface.50');
     padding-bottom: 5.5rem;
     font-family: var(--font-sans);
 }
@@ -58,9 +58,9 @@
     min-height: 3.25rem;
     border: 1px solid rgba(23, 23, 23, 0.14);
     border-radius: 0.85rem;
-    background: #f7f7f4;
+    background: theme('colors.surface.50');
     padding: 0.85rem 0.95rem;
-    color: #171717;
+    color: theme('colors.ink.DEFAULT');
     outline: none;
     transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
 }
@@ -71,7 +71,7 @@
 
 .onboarding-field:focus {
     border-color: var(--coaching-accent);
-    background: #fff;
+    background: theme('colors.white');
     box-shadow: 0 0 0 3px rgba(36, 101, 104, 0.14);
 }
 
@@ -94,12 +94,14 @@
 }
 
 .onboarding-secondary-button:hover {
-    color: #171717;
+    color: theme('colors.ink.DEFAULT');
 }
 
 .onboarding-secondary-button:focus-visible {
     outline: 2px solid var(--coaching-accent);
     outline-offset: 4px;
+    /* Outline is the focus indicator; drop the global ring. */
+    box-shadow: none;
 }
 
 .onboarding-actions {
@@ -134,7 +136,7 @@
 .onboarding-photo-section {
     border: 1px solid rgba(23, 23, 23, 0.1);
     border-radius: 1rem;
-    background: #f7f7f4;
+    background: theme('colors.surface.50');
     padding: 1rem;
 }
 
@@ -147,7 +149,7 @@
     min-height: 4.5rem;
     border: 1px dashed rgba(23, 23, 23, 0.22);
     border-radius: 0.85rem;
-    background: #fff;
+    background: theme('colors.white');
     padding: 0.75rem;
     transition: border-color 150ms ease, background-color 150ms ease;
 }
@@ -218,7 +220,7 @@
 }
 
 .onboarding-consent strong {
-    color: #171717;
+    color: theme('colors.ink.DEFAULT');
     font-size: 0.875rem;
     line-height: 1.45;
 }
