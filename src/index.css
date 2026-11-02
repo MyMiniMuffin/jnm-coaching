@@ -745,8 +745,14 @@ html[data-shell="wide"] .toast-stack {
 html[data-shell="rail"] .app-rail {
     display: flex;
     position: fixed;
-    inset: 0 0 0 auto;
+    /* Pinned to the visual viewport, not the layout viewport: iOS keeps the
+       layout viewport still while the keyboard shrinks and pans what is visible.
+       Vars come from useVisualViewportVars; fallbacks equal the old inset: 0. */
+    top: var(--app-vv-top, 0px);
     right: var(--app-rail-status-nudge);
+    bottom: auto;
+    left: auto;
+    height: var(--app-vv-height, 100%);
     z-index: 45;
     width: var(--app-rail-col);
     justify-content: center;

@@ -930,6 +930,98 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
             }
         });
 
+        /*
+         * iOS WebKit shrinks and pans the *visual* viewport when the keyboard is
+         * open (and while scrolling with it open), but `position: fixed` stays on
+         * the *layout* viewport. Chromium has no on-screen keyboard, so page scale
+         * is the way to put it in the same state: a visual viewport smaller than,
+         * and offset inside, the layout viewport. The app locks zoom in
+         * index.html, so this test serves the page without that lock.
+         */
+        await t.test('Duo rail stays in the visual viewport when it is offset from the layout viewport', async () => {
+            const context = await browser.newContext({
+                viewport: { width: 390, height: 844 },
+                deviceScaleFactor: 1,
+                isMobile: true,
+                hasTouch: true,
+            });
+            const page = await context.newPage();
+            try {
+                await page.route((url) => url.pathname === '/', async (route) => {
+                    const response = await route.fetch();
+                    const html = await response.text();
+                    const unlocked = html.replace(/maximum-scale=[\d.]+,\s*user-scalable=no,\s*/, '');
+                    assert.notEqual(unlocked, html, 'index.html viewport lock not found; update this test');
+                    await route.fulfill({ response, body: unlocked });
+                });
+                await openAthleteDuo(page, base);
+                assert.equal((await shellState(page)).shell, 'rail');
+
+                const cdp = await context.newCDPSession(page);
+                const railVsVisual = () => page.evaluate(() => {
+                    const rail = document.querySelector('[data-testid="app-rail"]').getBoundingClientRect();
+                    const tabs = document.querySelector('[data-testid="app-rail"] .app-rail-tabs').getBoundingClientRect();
+                    const vv = window.visualViewport;
+                    return {
+                        scrollY: window.scrollY,
+                        docHeight: document.documentElement.scrollHeight,
+                        scale: vv.scale,
+                        vvTop: vv.offsetTop,
+                        vvBottom: vv.offsetTop + vv.height,
+                        railTop: rail.top,
+                        railBottom: rail.bottom,
+                        tabsBottom: tabs.bottom,
+                    };
+                });
+                const assertPinned = async (label) => {
+                    // Let the rAF-coalesced viewport sync run.
+                    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+                    const m = await railVsVisual();
+                    const detail = `${label}: ${JSON.stringify(m)}`;
+                    assert.ok(Math.abs(m.railTop - m.vvTop) < 1, `rail top follows visual viewport (${detail})`);
+                    assert.ok(Math.abs(m.railBottom - m.vvBottom) < 1, `rail bottom follows visual viewport (${detail})`);
+                    assert.ok(m.tabsBottom <= m.vvBottom + 0.5, `rail tabs visible (${detail})`);
+                    return m;
+                };
+
+                await assertPinned('initial');
+
+                await page.evaluate(() => {
+                    const filler = document.createElement('div');
+                    filler.id = 'rail-filler';
+                    filler.style.height = '2400px';
+                    document.querySelector('main').appendChild(filler);
+                });
+                await cdp.send('Emulation.setPageScaleFactor', { pageScaleFactor: 2 });
+                await page.waitForFunction(() => window.visualViewport.scale === 2);
+
+                // Touch drag pans the visual viewport inside the layout viewport.
+                await cdp.send('Input.synthesizeScrollGesture', { x: 100, y: 300, yDistance: -300, speed: 2000 });
+                const panned = await assertPinned('panned');
+                assert.ok(panned.vvTop > 100, `visual viewport is offset (${panned.vvTop})`);
+
+                // Further drag scrolls the document as well.
+                await cdp.send('Input.synthesizeScrollGesture', { x: 100, y: 300, yDistance: -900, speed: 2000 });
+                const scrolled = await assertPinned('scrolled');
+                assert.ok(scrolled.scrollY > panned.scrollY + 100, `document scrolled (${panned.scrollY} → ${scrolled.scrollY})`);
+
+                // Another part of the page changes height under the rail.
+                await page.evaluate(() => { document.getElementById('rail-filler').style.height = '600px'; });
+                const shrank = await assertPinned('content shrank');
+                assert.ok(shrank.docHeight < scrolled.docHeight - 1000, `page got shorter (${scrolled.docHeight} → ${shrank.docHeight})`);
+
+                await cdp.send('Input.synthesizeScrollGesture', { x: 100, y: 200, yDistance: 400, speed: 2000 });
+                await assertPinned('scrolled back');
+
+                await cdp.send('Emulation.setPageScaleFactor', { pageScaleFactor: 1 });
+                await page.waitForFunction(() => window.visualViewport.scale === 1);
+                const reset = await assertPinned('zoom reset');
+                assert.ok(Math.abs(reset.railBottom - 844) < 1, `rail spans the window again (${reset.railBottom})`);
+            } finally {
+                await context.close();
+            }
+        });
+
         await t.test('390×844 without device=duo keeps bottom nav', async () => {
             const context = await browser.newContext({
                 viewport: { width: 390, height: 844 },
