@@ -861,7 +861,6 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                                 <button
                                     type="button"
                                     className="absolute inset-0 w-full overflow-hidden rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
-                                    data-swipe-ignore="true"
                                     onPointerDown={(e) => handleTilePointerDown(e, img, idx)}
                                     onPointerUp={handleTilePointerUp}
                                     onKeyDown={(e) => handleTileKeyDown(e, img, idx)}

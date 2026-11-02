@@ -4,64 +4,123 @@ import { DUO_MEDIA_QUERY } from './lib/duoBreakpoint';
 import { useShellMode, useShellWide, useShellRail } from './lib/shellMode';
 
 // --- SWIPE HOOK ---
+const DEFAULT_SWIPE_IGNORE = 'input, textarea, select, [contenteditable="true"], [role="slider"], [role="dialog"], [data-swipe-ignore="true"]';
+const DIRECTION_LOCK_DISTANCE = 10;
+const CLICK_SUPPRESS_MS = 400;
+
+/** True when the touch starts inside something that scrolls horizontally on its own. */
+const isInsideHorizontalScroller = (target, boundary) => {
+    let el = target instanceof Element ? target : target?.parentElement;
+    while (el && el !== boundary && el !== document.body) {
+        if (el.scrollWidth > el.clientWidth + 1) {
+            const overflowX = window.getComputedStyle(el).overflowX;
+            if (overflowX === 'auto' || overflowX === 'scroll') return true;
+        }
+        el = el.parentElement;
+    }
+    return false;
+};
+
+/**
+ * Horizontal swipe detection tuned for iOS WKWebView:
+ * - direction lock after ~10px, so vertical scrolling never turns into a tab change
+ * - start/end read from changedTouches, so quick flicks without touchmove still count
+ * - release velocity from the last samples (not average), so short flicks register
+ * - swipes may start on buttons/cards; the click that follows a swipe is swallowed
+ */
 export const useSwipe = (onSwipeLeft, onSwipeRight, options = {}) => {
     const {
-        threshold = 50,
-        velocityThreshold = 0.48,
-        verticalTolerance = 42,
+        threshold = 64,
+        velocityThreshold = 0.35,
         enabled = true,
         onEdgeSwipe,
-        ignoreSelector = 'input, textarea, select, button, a, [role="dialog"], .hide-scrollbar, [data-swipe-ignore="true"]'
+        ignoreSelector = DEFAULT_SWIPE_IGNORE
     } = options;
-    const touchStart = React.useRef(null);
-    const touchEnd = React.useRef(null);
+    const gesture = React.useRef(null);
+    const callbacks = React.useRef({ onSwipeLeft, onSwipeRight, onEdgeSwipe });
+    callbacks.current = { onSwipeLeft, onSwipeRight, onEdgeSwipe };
+    const suppressClickUntil = React.useRef(0);
+
+    useEffect(() => {
+        const swallowClick = (event) => {
+            if (Date.now() < suppressClickUntil.current) {
+                event.preventDefault();
+                event.stopPropagation();
+                suppressClickUntil.current = 0;
+            }
+        };
+        document.addEventListener('click', swallowClick, true);
+        return () => document.removeEventListener('click', swallowClick, true);
+    }, []);
+
+    const reset = useCallback(() => { gesture.current = null; }, []);
 
     const onTouchStart = useCallback((e) => {
-        if (!enabled) return;
-        if (ignoreSelector && e.target?.closest?.(ignoreSelector)) {
-            touchStart.current = null;
-            touchEnd.current = null;
-            return;
-        }
-        touchEnd.current = null;
-        const touch = e.targetTouches[0];
-        touchStart.current = { x: touch.clientX, y: touch.clientY, time: Date.now() };
+        gesture.current = null;
+        if (!enabled || e.touches.length !== 1) return;
+        const target = e.target;
+        if (ignoreSelector && target?.closest?.(ignoreSelector)) return;
+        if (typeof document !== 'undefined' && document.querySelector('[aria-modal="true"]')) return;
+        if (isInsideHorizontalScroller(target, e.currentTarget)) return;
+        const touch = e.touches[0];
+        const now = Date.now();
+        gesture.current = {
+            startX: touch.clientX,
+            startY: touch.clientY,
+            lastX: touch.clientX,
+            lastT: now,
+            velocity: 0,
+            lock: null
+        };
     }, [enabled, ignoreSelector]);
 
     const onTouchMove = useCallback((e) => {
-        if (!enabled || !touchStart.current) return;
-        const touch = e.targetTouches[0];
-        touchEnd.current = { x: touch.clientX, y: touch.clientY };
-    }, [enabled]);
-
-    const onTouchEnd = useCallback(() => {
-        if (!enabled || !touchStart.current || !touchEnd.current) return;
-        const distance = touchStart.current.x - touchEnd.current.x;
-        const verticalDistance = Math.abs(touchStart.current.y - touchEnd.current.y);
-        const elapsed = Math.max(1, Date.now() - touchStart.current.time);
-        const velocity = Math.abs(distance) / elapsed;
-        if (verticalDistance > verticalTolerance || Math.abs(distance) < verticalDistance * 1.35) {
-            touchStart.current = null;
-            touchEnd.current = null;
-            return;
+        const g = gesture.current;
+        if (!g) return;
+        if (e.touches.length !== 1) { gesture.current = null; return; }
+        const touch = e.touches[0];
+        const dx = touch.clientX - g.startX;
+        const dy = touch.clientY - g.startY;
+        if (!g.lock && Math.max(Math.abs(dx), Math.abs(dy)) > DIRECTION_LOCK_DISTANCE) {
+            g.lock = Math.abs(dx) > Math.abs(dy) * 1.15 ? 'x' : 'y';
         }
-
-        const hasIntent = Math.abs(distance) > threshold || (Math.abs(distance) > threshold * 0.55 && velocity > velocityThreshold);
-        const isLeftSwipe = hasIntent && distance > 0;
-        const isRightSwipe = hasIntent && distance < 0;
-
-        let handled = false;
-        if (isLeftSwipe && onSwipeLeft) handled = onSwipeLeft({ distance, velocity }) !== false;
-        if (isRightSwipe && onSwipeRight) handled = onSwipeRight({ distance, velocity }) !== false;
-        if ((isLeftSwipe || isRightSwipe) && !handled && onEdgeSwipe) {
-            onEdgeSwipe(isLeftSwipe ? 'left' : 'right');
+        if (g.lock === 'y') { gesture.current = null; return; }
+        const now = Date.now();
+        const dt = now - g.lastT;
+        if (dt > 0) {
+            const instant = (touch.clientX - g.lastX) / dt;
+            g.velocity = g.velocity * 0.4 + instant * 0.6;
+            g.lastX = touch.clientX;
+            g.lastT = now;
         }
+    }, []);
 
-        touchStart.current = null;
-        touchEnd.current = null;
-    }, [enabled, threshold, velocityThreshold, verticalTolerance, onSwipeLeft, onSwipeRight, onEdgeSwipe]);
+    const onTouchEnd = useCallback((e) => {
+        const g = gesture.current;
+        gesture.current = null;
+        if (!enabled || !g) return;
+        const touch = e.changedTouches?.[0];
+        if (!touch) return;
+        const dx = touch.clientX - g.startX;
+        const dy = touch.clientY - g.startY;
+        const absX = Math.abs(dx);
+        if (absX < Math.abs(dy) * 1.4) return;
+        // Ignore a stale velocity if the finger paused before lifting.
+        const releaseVelocity = Date.now() - g.lastT > 80 ? 0 : g.velocity;
+        const flick = absX > threshold * 0.45 && Math.abs(releaseVelocity) > velocityThreshold
+            && Math.sign(releaseVelocity) === Math.sign(dx);
+        if (absX < threshold && !flick) return;
 
-    return { onTouchStart, onTouchMove, onTouchEnd };
+        const isLeftSwipe = dx < 0;
+        const { onSwipeLeft: left, onSwipeRight: right, onEdgeSwipe: edge } = callbacks.current;
+        const payload = { distance: -dx, velocity: Math.abs(releaseVelocity) };
+        const handler = isLeftSwipe ? left : right;
+        const handled = handler ? handler(payload) !== false : false;
+        suppressClickUntil.current = Date.now() + CLICK_SUPPRESS_MS;
+        if (!handled && edge) edge(isLeftSwipe ? 'left' : 'right');
+    }, [enabled, threshold, velocityThreshold]);
+
+    return { onTouchStart, onTouchMove, onTouchEnd, onTouchCancel: reset };
 };
 
 // --- PULL TO REFRESH HOOK ---

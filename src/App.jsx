@@ -87,7 +87,10 @@ const RefreshFrame = ({ children, onRefresh, enabled, swipeHandlers }) => {
                 swipeHandlers.onTouchEnd(event);
                 handlers.onTouchEnd(event);
             }}
-            onTouchCancel={handlers.onTouchCancel}
+            onTouchCancel={(event) => {
+                swipeHandlers.onTouchCancel(event);
+                handlers.onTouchCancel(event);
+            }}
         >
             {pullIndicator}
             {children}
@@ -1374,12 +1377,10 @@ const App = () => {
     // Rail sits on the right edge and does not collide with edge-swipe from the left;
     // .app-rail-inner also stopPropagates + data-swipe-ignore.
     const swipeHandlers = useSwipe(handleSwipeLeft, handleSwipeRight, {
-        threshold: 88,
-        velocityThreshold: 0.52,
-        verticalTolerance: 34,
+        threshold: 64,
+        velocityThreshold: 0.35,
         onEdgeSwipe: handleEdgeSwipe,
-        ignoreSelector: 'input, textarea, select, button, a, [role="dialog"], .hide-scrollbar, [data-swipe-ignore="true"], .app-rail-inner',
-        enabled: !isWide && !isClientLoading && (activeTab === 'dashboard' || activeTab === 'checkin' || showWeightHistory)
+        enabled: !isWide && !isClientLoading && (TAB_ORDER.includes(activeTab) || showWeightHistory)
     });
 
     const handleRefresh = useCallback(async () => {
