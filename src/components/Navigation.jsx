@@ -1,7 +1,8 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useRef } from 'react';
 import { CaretLeft } from '@phosphor-icons/react';
 import { NAV_ITEMS, APP_ICON } from '../lib/config';
 import { haptic } from '../lib/haptic';
+import { useVisualViewportVars } from '../lib/visualViewport';
 
 const stopTouchBubble = (event) => {
     event.stopPropagation();
@@ -67,6 +68,8 @@ const Navigation = React.memo(({ activeTab, setActiveTab, shell = 'narrow', onBa
     const isWide = shell === 'wide';
     const isRail = shell === 'rail';
     const showBack = isRail && typeof onBack === 'function';
+    const railRef = useRef(null);
+    useVisualViewportVars(railRef, isRail);
 
     const handleTabClick = useCallback((id) => {
         if (id !== activeTab) haptic('tap');
@@ -113,6 +116,7 @@ const Navigation = React.memo(({ activeTab, setActiveTab, shell = 'narrow', onBa
 
             {/* iPhone Duo floating right rail */}
             <div
+                ref={railRef}
                 className={`app-rail ${isRail ? 'flex' : 'hidden'}`}
                 data-testid="app-rail"
                 role="navigation"
