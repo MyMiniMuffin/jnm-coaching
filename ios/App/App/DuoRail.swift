@@ -210,6 +210,10 @@ struct DuoRailView: View {
         .allowsHitTesting(model.isShown)
         .animation(.easeOut(duration: 0.2), value: model.isShown)
         .animation(.easeOut(duration: 0.2), value: model.showsBack)
+        // Fixed-size content is centred inside the safe-area rect, which shifted the
+        // rail ~(left - right inset)/2 into the page. A flexible root lets
+        // ignoresSafeArea hand it the full column, so all padding above is exact.
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .ignoresSafeArea()
         .preferredColorScheme(.light)
     }
@@ -346,6 +350,9 @@ final class DuoRailController: NSObject, WKScriptMessageHandler {
 
         host.view.backgroundColor = .clear
         host.view.isOpaque = false
+        if #available(iOS 16.4, *) {
+            host.safeAreaRegions = []
+        }
         parent.addChild(host)
         container.backgroundColor = .clear
         container.isHidden = true
