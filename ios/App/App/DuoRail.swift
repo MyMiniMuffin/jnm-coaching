@@ -180,6 +180,47 @@ private struct RailGlass<S: InsettableShape>: ViewModifier {
     }
 }
 
+/// Lets the selection lens and the capsule blend as one piece of glass (iOS 26+).
+private struct RailGlassContainer<Content: View>: View {
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        #if compiler(>=6.2)
+        if #available(iOS 26.0, *) {
+            GlassEffectContainer(spacing: 8) { content }
+        } else {
+            content
+        }
+        #else
+        content
+        #endif
+    }
+}
+
+/// The sliding selection: a glass lens on iOS 26+, a white disc before that.
+private struct RailSelectionLens: View {
+    var body: some View {
+        #if compiler(>=6.2)
+        if #available(iOS 26.0, *) {
+            Circle()
+                .fill(Color.clear)
+                .glassEffect(.regular.tint(DuoRailPalette.accent.opacity(0.18)), in: Circle())
+        } else {
+            disc
+        }
+        #else
+        disc
+        #endif
+    }
+
+    private var disc: some View {
+        Circle()
+            .fill(Color.white.opacity(0.78))
+            .overlay(Circle().strokeBorder(Color.black.opacity(0.06), lineWidth: 1))
+            .shadow(color: Color.black.opacity(0.08), radius: 3, x: 0, y: 1)
+    }
+}
+
 private enum DuoRailPalette {
     /// tailwind: surface.50, accent.hover, ink.muted, ink.DEFAULT
     static let surface = Color(red: 247 / 255, green: 247 / 255, blue: 244 / 255)
@@ -236,13 +277,24 @@ struct DuoRailView: View {
     }
 
     private func tabs(_ m: DuoRailMetrics) -> some View {
-        VStack(spacing: m.tabGap) {
-            ForEach(model.items) { item in
-                tabButton(item)
+        let activeIndex = model.items.firstIndex { $0.id == model.activeId }
+        let step = DuoRailMetrics.buttonSize + m.tabGap
+        return RailGlassContainer {
+            ZStack(alignment: .top) {
+                RailSelectionLens()
+                    .frame(width: DuoRailMetrics.buttonSize, height: DuoRailMetrics.buttonSize)
+                    .offset(y: CGFloat(activeIndex ?? 0) * step)
+                    .opacity(activeIndex == nil ? 0 : 1)
+                    .animation(.spring(response: 0.42, dampingFraction: 0.72), value: activeIndex)
+                VStack(spacing: m.tabGap) {
+                    ForEach(model.items) { item in
+                        tabButton(item)
+                    }
+                }
             }
+            .padding(m.capsuleInset)
+            .modifier(RailGlass(shape: Capsule()))
         }
-        .padding(m.capsuleInset)
-        .modifier(RailGlass(shape: Capsule()))
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Hovednavigasjon")
     }
@@ -252,19 +304,11 @@ struct DuoRailView: View {
         return Button {
             model.onSelect?(item.id)
         } label: {
-            ZStack {
-                if isActive {
-                    Circle()
-                        .fill(Color.white.opacity(0.78))
-                        .overlay(Circle().strokeBorder(Color.black.opacity(0.06), lineWidth: 1))
-                        .shadow(color: Color.black.opacity(0.08), radius: 3, x: 0, y: 1)
-                        .transition(.opacity)
-                }
-                Image(systemName: item.symbol)
-                    .symbolVariant(isActive ? .fill : .none)
-                    .font(.system(size: 21, weight: isActive ? .semibold : .regular))
-                    .foregroundColor(isActive ? DuoRailPalette.accent : DuoRailPalette.inkMuted)
-            }
+            Image(systemName: item.symbol)
+                .symbolVariant(isActive ? .fill : .none)
+                .font(.system(size: 21, weight: isActive ? .semibold : .regular))
+                .foregroundColor(isActive ? DuoRailPalette.accent : DuoRailPalette.inkMuted)
+                .animation(.easeOut(duration: 0.2), value: isActive)
             .frame(width: DuoRailMetrics.buttonSize, height: DuoRailMetrics.buttonSize)
             .contentShape(Circle())
         }
@@ -434,7 +478,7 @@ final class DuoRailController: NSObject, WKScriptMessageHandler {
 
         if let items, model.items != items { model.items = items }
         if let active, !active.isEmpty, model.activeId != active {
-            withAnimation(.easeOut(duration: 0.2)) { model.activeId = active }
+            model.activeId = active
         }
         if model.showsBack != showsBack { model.showsBack = showsBack }
         if model.isVisible != visible { model.isVisible = visible }
@@ -459,7 +503,7 @@ final class DuoRailController: NSObject, WKScriptMessageHandler {
             haptics.impactOccurred()
         }
         // Optimistic; the web layer confirms with its next state message.
-        withAnimation(.easeOut(duration: 0.2)) { model.activeId = id }
+        model.activeId = id
         dispatch(["action": "select", "id": id])
     }
 

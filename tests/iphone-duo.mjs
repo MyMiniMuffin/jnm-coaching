@@ -459,6 +459,10 @@ test('native Duo rail: SwiftUI overlay is wired to the web app through jnmRail',
     assert.match(swift, /\.glassEffect\(/);
     assert.match(swift, /#available\(iOS 26\.0, \*\)/);
     assert.match(swift, /\.ultraThinMaterial/);
+    // Selection is one sliding glass lens (spring), not a per-button fade.
+    assert.match(swift, /RailSelectionLens\(\)[\s\S]*?\.offset\(y: CGFloat\(activeIndex \?\? 0\) \* step\)/);
+    assert.match(swift, /\.spring\(response: 0\.42, dampingFraction: 0\.72\), value: activeIndex/);
+    assert.match(swift, /GlassEffectContainer/);
     // Layout constants ported from the CSS rail.
     assert.match(swift, /capsuleWidth: CGFloat = 58/);
     assert.match(swift, /buttonSize: CGFloat = 48/);
