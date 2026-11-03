@@ -762,6 +762,11 @@ html[data-shell="rail"] .app-rail {
     box-sizing: border-box;
 }
 
+/* Native Duo rail (SwiftUI) draws the pills; the column reserve below still applies. */
+html[data-shell="rail"] .app-rail[data-native="true"] {
+    display: none;
+}
+
 html[data-shell="rail"] .app-rail-inner {
     pointer-events: auto;
     display: flex;

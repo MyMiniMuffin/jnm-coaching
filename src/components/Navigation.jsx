@@ -1,8 +1,9 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { CaretLeft } from '@phosphor-icons/react';
 import { NAV_ITEMS, APP_ICON } from '../lib/config';
 import { haptic } from '../lib/haptic';
 import { useVisualViewportVars } from '../lib/visualViewport';
+import { hasNativeRail, onNativeRailAction, postNativeRailState } from '../lib/nativeRail';
 
 const stopTouchBubble = (event) => {
     event.stopPropagation();
@@ -83,6 +84,37 @@ const Navigation = React.memo(({ activeTab, setActiveTab, shell = 'narrow', onBa
         onBack();
     }, [onBack]);
 
+    // iPhone Duo: the native app draws the rail (Liquid Glass). The DOM rail stays
+    // as the fallback for browsers and non-Duo devices, where no handler exists.
+    const nativeRail = isRail && hasNativeRail();
+    const backRef = useRef(handleBack);
+    backRef.current = handleBack;
+
+    useEffect(() => {
+        if (!hasNativeRail()) return undefined;
+        return onNativeRailAction(({ action, id }) => {
+            if (!isRail) return;
+            if (action === 'back') {
+                backRef.current();
+            } else if (action === 'select' && NAV_ITEMS.some((item) => item.id === id)) {
+                // Native already played the haptic.
+                setActiveTab(id);
+                window.scrollTo({ top: 0, behavior: 'auto' });
+            }
+        });
+    }, [isRail, setActiveTab]);
+
+    useEffect(() => {
+        if (!hasNativeRail()) return undefined;
+        postNativeRailState({ visible: isRail, activeId: activeTab, showBack, items: NAV_ITEMS });
+        return undefined;
+    }, [isRail, activeTab, showBack]);
+
+    // Hide the native rail when this navigation unmounts (screens without nav).
+    useEffect(() => () => {
+        postNativeRailState({ visible: false, activeId: '', showBack: false, items: NAV_ITEMS });
+    }, []);
+
     const activeIndex = NAV_ITEMS.findIndex(item => item.id === activeTab);
     const pillStyle = { transform: `translateX(${activeIndex * 100}%)` };
 
@@ -117,7 +149,8 @@ const Navigation = React.memo(({ activeTab, setActiveTab, shell = 'narrow', onBa
             {/* iPhone Duo floating right rail */}
             <div
                 ref={railRef}
-                className={`app-rail ${isRail ? 'flex' : 'hidden'}`}
+                className={`app-rail ${isRail && !nativeRail ? 'flex' : 'hidden'}`}
+                data-native={nativeRail ? 'true' : undefined}
                 data-testid="app-rail"
                 role="navigation"
                 aria-label="Duo-navigasjon"

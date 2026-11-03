@@ -117,6 +117,22 @@ Kilder: [Designing for iPhone Duo](https://developer.apple.com/design/human-inte
 
 ---
 
+## Native rail (SwiftUI / Liquid Glass)
+
+På Duo tegnes railen nativt: `ios/App/App/DuoRail.swift` legger en SwiftUI-overlay over WKWebView (`.glassEffect` på iOS 26+, `.ultraThinMaterial`-kapsel før det). Layouten er portert 1:1 fra rail-CSS-en (48pt knapper, 58pt kapsel, tilbake-sirkel øverst, faner nederst, statuskolonne + clearance + nudge, kompakt foldet landskap). Web eier fortsatt tilstanden:
+
+| Retning | Kanal |
+|---|---|
+| web → native | `webkit.messageHandlers.jnmRail.postMessage({type:'state', visible, activeId, showBack, items})` (`src/lib/nativeRail.js`) |
+| native → web | `window` `CustomEvent('jnm:rail', {action:'select'\|'back', id?})` |
+
+- `Navigation.jsx` skjuler DOM-railen (`data-native="true"`) bare når handleren finnes — nettleser, `?device=duo` og ikke-Duo bruker DOM-railen som før.
+- `--app-rail-col` / `--app-rail-reserve` er uendret, så innholdet reserverer samme plass.
+- Tastatur: railen følger synlig høyde og skjules hvis den ikke får plass (ingenting klippes).
+- Ikke verifisert på maskinvare/simulator fra Linux-miljøet — bygg i Xcode og sjekk foldet, utfoldet landskap og tastatur.
+
+---
+
 ## Ekte Duo-simulator (Xcode 27.1, 2026-10-31)
 
 - **Mål:** ytterskjerm 466×678, innerskjerm 951×669. Statuslinjen ligger i en høyre kolonne: `safe-area-inset-right` = 84pt, bunn 34pt.

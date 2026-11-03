@@ -446,3 +446,43 @@ test('src does not use max-sm/max-md/max-lg or arbitrary min-[ screens', () => {
         assert.doesNotMatch(source, /min-\[[^\]]+\]:/);
     }
 });
+
+test('native Duo rail: SwiftUI overlay is wired to the web app through jnmRail', () => {
+    const swift = read('ios/App/App/DuoRail.swift');
+    const bridge = read('ios/App/App/DuoBridgeViewController.swift');
+    const pbxproj = read('ios/App/App.xcodeproj/project.pbxproj');
+    const nativeRail = read('src/lib/nativeRail.js');
+    const navigation = read('src/components/Navigation.jsx');
+    const css = read('src/index.css');
+
+    // Liquid Glass on iOS 26, material fallback before.
+    assert.match(swift, /\.glassEffect\(/);
+    assert.match(swift, /#available\(iOS 26\.0, \*\)/);
+    assert.match(swift, /\.ultraThinMaterial/);
+    // Layout constants ported from the CSS rail.
+    assert.match(swift, /capsuleWidth: CGFloat = 58/);
+    assert.match(swift, /buttonSize: CGFloat = 48/);
+    assert.match(swift, /max\(52, min\(172, raw\)\)/);
+    assert.match(swift, /max\(52, min\(124, raw\)\)/);
+    assert.match(swift, /max\(4, min\(40, raw\)\)/);
+    // Duo only, and registered in the Xcode target.
+    assert.match(bridge, /guard DuoDevice\.isDuo, rail == nil/);
+    assert.match(bridge, /DuoRailController\(parent: self, webView: webView\)/);
+    assert.match(pbxproj, /DuoRail\.swift in Sources/);
+    // Bridge names agree on both sides.
+    assert.match(swift, /handlerName = "jnmRail"/);
+    assert.match(swift, /CustomEvent\('jnm:rail'/);
+    assert.match(nativeRail, /NATIVE_RAIL_HANDLER = 'jnmRail'/);
+    assert.match(nativeRail, /NATIVE_RAIL_EVENT = 'jnm:rail'/);
+    // Every NAV_ITEMS id has a native symbol.
+    const config = read('src/lib/config.js');
+    for (const [, id] of config.matchAll(/\{ id: '(\w+)', label:/g)) {
+        assert.match(swift, new RegExp(`"${id}": "`), `missing SF Symbol for ${id}`);
+    }
+    // Web falls back to the DOM rail without the handler, and hides it with it.
+    assert.match(navigation, /hasNativeRail\(\)/);
+    assert.match(navigation, /data-native=\{nativeRail \? 'true' : undefined\}/);
+    assert.match(css, /\.app-rail\[data-native="true"\] \{\s*display: none;/);
+    // The column reserve stays, so content still clears the native rail.
+    assert.match(css, /html\[data-shell="rail"\] \.app-stage \{\s*padding-right: var\(--app-rail-reserve\)/);
+});
