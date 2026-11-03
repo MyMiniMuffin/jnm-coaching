@@ -486,3 +486,9 @@ test('native Duo rail: SwiftUI overlay is wired to the web app through jnmRail',
     // The column reserve stays, so content still clears the native rail.
     assert.match(css, /html\[data-shell="rail"\] \.app-stage \{\s*padding-right: var\(--app-rail-reserve\)/);
 });
+
+test('Duo unfolded upright: header uses the top band beside the status cluster', () => {
+    const css = read('src/index.css');
+    assert.match(css, /html\[data-device="duo"\]\[data-shell="narrow"\] \.app-header > \.app-header-top-inset \{\s*padding-top: 0\.75rem/);
+    assert.match(css, /html\[data-device="duo"\]\[data-shell="narrow"\] \.app-header \.header-inner \{\s*padding-right: calc\(var\(--app-gutter-x\) \+ 8\.5rem\)/);
+});

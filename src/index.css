@@ -113,6 +113,20 @@ select {
     }
 }
 
+/*
+ * Duo unfolded upright (bottom nav): the status cluster (time / wifi) sits in the
+ * top-right corner, so the full-width safe-area band above the header is mostly
+ * empty. Let the header start near the top and keep its content clear of the
+ * cluster instead (~133pt wide from the right edge in the Duo simulator).
+ */
+html[data-device="duo"][data-shell="narrow"] .app-header > .app-header-top-inset {
+    padding-top: 0.75rem;
+}
+
+html[data-device="duo"][data-shell="narrow"] .app-header .header-inner {
+    padding-right: calc(var(--app-gutter-x) + 8.5rem);
+}
+
 .login-page {
     min-height: 100svh;
     background: theme('colors.surface.50');

@@ -855,9 +855,11 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
                             Math.abs(align.headerLeft - align.contentLeft) < 1.5,
                             `header left ${align.headerLeft} vs content left ${align.contentLeft}`
                         );
+                        // Unfolded upright Duo keeps the header clear of the status cluster
+                        // (time / wifi, top-right): 8.5rem = 136px extra right padding.
                         assert.ok(
-                            Math.abs(align.headerRight - align.contentRight) < 1.5,
-                            `header right ${align.headerRight} vs content right ${align.contentRight}`
+                            Math.abs((align.contentRight - align.headerRight) - 136) < 1.5,
+                            `header right ${align.headerRight} vs content right ${align.contentRight} (expected 136px status clearance)`
                         );
                         assert.ok(
                             align.headerWidth > align.viewportWidth * 0.9,
