@@ -12,6 +12,10 @@ import WebKit
 /// Inject on the live controller in `capacitorDidLoad()` (still before
 /// `loadWebView()`), and re-assert with `evaluateJavaScript` after appear.
 final class DuoBridgeViewController: CAPBridgeViewController {
+    /// Native Liquid Glass rail (Duo only). The web rail hides itself when the
+    /// `jnmRail` message handler exists — see `src/lib/nativeRail.js`.
+    private var rail: DuoRailController?
+
     // CAPBridgeViewController (Capacitor 8.5.3) declares these as `open`.
     // Members of a `final` class cannot be `open` — use `public override`.
     public override func webViewConfiguration(for instanceConfiguration: InstanceConfiguration) -> WKWebViewConfiguration {
@@ -23,6 +27,12 @@ final class DuoBridgeViewController: CAPBridgeViewController {
         super.capacitorDidLoad()
         DuoDevice.logMachineIdentifierIfNeeded()
         injectDuoUserScript()
+        installNativeRail()
+    }
+
+    public override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        rail?.layout()
     }
 
     public override func viewDidAppear(_ animated: Bool) {
@@ -40,6 +50,13 @@ final class DuoBridgeViewController: CAPBridgeViewController {
             forMainFrameOnly: true
         )
         controller.addUserScript(script)
+    }
+
+    private func installNativeRail() {
+        guard DuoDevice.isDuo, rail == nil, let webView else { return }
+        let controller = DuoRailController(parent: self, webView: webView)
+        controller.install()
+        rail = controller
     }
 
     private func ensureDuoDeviceAttribute() {
