@@ -230,8 +230,8 @@ const OnboardingForm = () => {
                             <h2 id="step-1-title">Trening og mål</h2>
                         </div>
                         <div className="grid gap-6 sm:grid-cols-2">
-                            <Field label="Hvor skal du trene?" hint="Treningssenter, hjemmegym eller annet. Oppgi gjerne navnet på senteret.">
-                                <TextArea id="training-location" name="training-location" required rows="3" value={values['training-location']} onChange={updateValue} />
+                            <Field label="Hvor skal du trene?">
+                                <TextArea id="training-location" placeholder="Treningssenter, hjemmegym …" name="training-location" required rows="3" value={values['training-location']} onChange={updateValue} />
                             </Field>
                             <Field label="Ønsket antall treninger i uken">
                                 <Select id="training-days" name="training-days" required value={values['training-days']} onChange={updateValue}>
@@ -245,13 +245,13 @@ const OnboardingForm = () => {
                                 </Select>
                             </Field>
                             <div className="sm:col-span-2">
-                                <Field label="Hva er målene dine med treningen?" hint="Ta også med spesifikke øvelser du liker godt eller ønsker å bli bedre i.">
-                                    <TextArea id="training-goals" name="training-goals" required rows="4" value={values['training-goals']} onChange={updateValue} />
+                                <Field label="Hva er målene dine med treningen?">
+                                    <TextArea id="training-goals" placeholder="Mål og øvelser du vil bli bedre i" name="training-goals" required rows="4" value={values['training-goals']} onChange={updateValue} />
                                 </Field>
                             </div>
                             <div className="sm:col-span-2">
-                                <Field label="Hvordan er treningen og aktiviteten din nå?" hint="For eksempel antall skritt per dag, styrketrening, kondisjon eller annen aktivitet i løpet av uken.">
-                                    <TextArea id="current-activity" name="current-activity" required rows="4" value={values['current-activity']} onChange={updateValue} />
+                                <Field label="Hvordan er treningen og aktiviteten din nå?">
+                                    <TextArea id="current-activity" placeholder="Skritt per dag, styrke, kondisjon …" name="current-activity" required rows="4" value={values['current-activity']} onChange={updateValue} />
                                 </Field>
                             </div>
                         </div>
@@ -265,13 +265,13 @@ const OnboardingForm = () => {
                         </div>
                         <div className="grid gap-6 sm:grid-cols-2">
                             <div className="sm:col-span-2">
-                                <Field label="Hvordan er kostholdet ditt nå?" hint="Skriv litt om hva og hvordan du vanligvis spiser i løpet av en dag.">
-                                    <TextArea id="current-diet" name="current-diet" required rows="5" value={values['current-diet']} onChange={updateValue} />
+                                <Field label="Hvordan er kostholdet ditt nå?">
+                                    <TextArea id="current-diet" placeholder="Hva og hvordan du spiser en vanlig dag" name="current-diet" required rows="5" value={values['current-diet']} onChange={updateValue} />
                                 </Field>
                             </div>
                             <div className="sm:col-span-2">
-                                <Field label="Er det annen informasjon jeg bør vite?" hint="For eksempel skader, sykdommer, allergier, medisiner eller spesifikke ønsker. Skriv «nei» hvis det ikke er noe å ta hensyn til.">
-                                    <TextArea id="other-information" name="other-information" required rows="5" value={values['other-information']} onChange={updateValue} />
+                                <Field label="Er det annen informasjon jeg bør vite?">
+                                    <TextArea id="other-information" placeholder="Skader, allergier, medisiner – eller skriv «nei»" name="other-information" required rows="5" value={values['other-information']} onChange={updateValue} />
                                 </Field>
                             </div>
                             <div className="sm:col-span-2">
@@ -281,7 +281,6 @@ const OnboardingForm = () => {
                                             <h3 className="onboarding-label">Fremgangsbilder</h3>
                                             <span className="text-xs text-black/40">Valgfritt</span>
                                         </div>
-                                        <p className="mt-2 text-sm leading-6 text-black/50">Last opp bilder forfra, fra siden og bakfra hvis du ønsker.</p>
                                     </div>
                                     <div className="mt-4 grid gap-3 sm:grid-cols-3">
                                         <PhotoField id="front-photo" label="Forfra" file={photos.front} onChange={handlePhotoChange('front')} />
@@ -353,7 +352,7 @@ const OnboardingPage = () => (
                 </p>
                 <div className="mt-8 flex items-start gap-3 border-t border-black/10 pt-6 text-sm leading-6 text-black/50">
                     <Lock className="mt-1 shrink-0 text-accent" size={16} aria-hidden="true" />
-                    <p>Sett av 5–8 minutter. Svarene sendes direkte til JNM Coaching.</p>
+                    <p>Tar 5–8 minutter.</p>
                 </div>
             </aside>
 
