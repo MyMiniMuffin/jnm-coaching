@@ -439,6 +439,12 @@ input:focus, textarea:focus, select:focus, button:focus-visible {
     @apply ring-2 ring-accent;
 }
 
+/* Accent is 2.68:1 against the dark hero, under the 3:1 a focus ring needs.
+   White keeps the ring visible there. */
+.hero-tint :focus-visible {
+    @apply ring-white;
+}
+
 /* View transition — subtil fade ved tab-bytte */
 .view-enter {
     animation: viewEnter 0.2s ease-out;
