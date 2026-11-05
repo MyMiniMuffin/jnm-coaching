@@ -100,6 +100,8 @@
 .onboarding-secondary-button:focus-visible {
     outline: 2px solid var(--coaching-accent);
     outline-offset: 4px;
+    /* The outline is the focus indicator; drop the global ring. */
+    box-shadow: none;
 }
 
 .onboarding-actions {

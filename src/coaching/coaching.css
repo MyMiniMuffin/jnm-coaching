@@ -140,6 +140,8 @@
 .coaching-button:focus-visible {
     outline: 2px solid var(--coaching-accent);
     outline-offset: 3px;
+    /* The outline is the focus indicator; keep the resting shadow instead of the global ring. */
+    box-shadow: 0 0.35rem 1rem rgba(23, 23, 23, 0.13);
 }
 
 .coaching-button:disabled {
