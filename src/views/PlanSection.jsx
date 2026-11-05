@@ -467,7 +467,6 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-surface-100 bg-white px-5 py-3.5">
                         <div>
                             <p className="text-sm text-ink-muted">{editorHint}</p>
-                            {type === 'diet' && <p className="mt-1 text-xs text-ink-muted">Enter legger til neste matvare. Shift + Enter gir linjeskift.</p>}
                         </div>
                         <div className="flex flex-wrap gap-2">
                             <input ref={importFileRef} type="file" accept="text/plain,.txt" className="hidden" onChange={handleImportFile} />

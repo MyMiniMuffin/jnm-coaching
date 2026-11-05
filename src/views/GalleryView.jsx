@@ -550,7 +550,6 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                     </label>
 
                     <div className="space-y-4">
-                        <p className="text-xs text-ink-muted">Samme detaljer gjelder alle valgte bilder.</p>
                         <TextField id="gallery-upload-label" label="Bildetekst" type="text" value={uploadForm.label} onChange={handleLabelChange} placeholder="For eksempel Startbilde" disabled={isUploading} />
                         <TextField id="gallery-upload-date" label="Dato" type="date" value={uploadForm.date} onChange={handleDateChange} disabled={isUploading} />
                         <TextField id="gallery-upload-weight" label="Vekt (kg, valgfritt)" type="number" inputMode="decimal" step="0.1" value={uploadForm.weight} onChange={handleWeightChange} placeholder="0,0" disabled={isUploading} />
@@ -577,7 +576,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                 <EmptyState
                     icon={Camera}
                     title="Ingen bilder ennå"
-                    description="Bilder fra ukesrapporter vises her."
+                    description="Vises etter første ukesrapport."
                     action={isCoach && onAddGalleryImage ? (
                         <Button variant="primary" size="md" onClick={() => setShowUploadModal(true)}>
                             <Plus size={18} /> Last opp startbilde
@@ -656,7 +655,6 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                     <Card className="flex flex-wrap items-center justify-between gap-3 p-3">
                         <div aria-live="polite">
                             <p className="text-sm font-medium">{selectedDownloadImages.length} bilder valgt</p>
-                            <p className="text-xs text-ink-muted">Velg bilder og last ned samlet som ZIP.</p>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
                             <Button variant="secondary" size="sm" disabled={isDownloading} onClick={() => setSelectedDownloads(new Set(allImages.map(img => img.url)))}>Velg alle</Button>

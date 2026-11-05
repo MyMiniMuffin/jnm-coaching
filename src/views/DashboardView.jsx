@@ -477,8 +477,7 @@ const PlanSettingsModal = React.memo(({ userData, onClose, onUpdateData, onOpenP
 
                 <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-5 sm:px-6">
                     <section aria-labelledby="plan-timeline-title">
-                        <h3 id="plan-timeline-title" className="font-semibold text-ink">Tidsplan</h3>
-                        <p className="mb-3 text-sm text-ink-muted">Startdato og varighet styrer ukevisningen og fremdriften.</p>
+                        <h3 id="plan-timeline-title" className="mb-3 font-semibold text-ink">Tidsplan</h3>
                         <div className="grid gap-4 sm:grid-cols-2">
                             <TextField
                                 id="plan-start-date"
@@ -506,8 +505,7 @@ const PlanSettingsModal = React.memo(({ userData, onClose, onUpdateData, onOpenP
                     </section>
 
                     <section aria-labelledby="plan-goal-title" className="border-t border-surface-200 pt-4">
-                        <h3 id="plan-goal-title" className="font-semibold text-ink">Mål</h3>
-                        <p className="mb-3 text-sm text-ink-muted">Skrittmålet vises i ukesrapporten.</p>
+                        <h3 id="plan-goal-title" className="mb-3 font-semibold text-ink">Mål</h3>
                         <TextField
                             id="plan-step-goal"
                             label="Skrittmål"

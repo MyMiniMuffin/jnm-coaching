@@ -154,8 +154,7 @@ const CheckinFields = ({
             options={OPTIONS_1_TO_10}
         />
         <SegmentedControl
-            label="Nøyaktighet"
-            hint="Hvor godt fulgte du mat- og treningsplanen denne uken?"
+            label="Hvor godt fulgte du mat- og treningsplanen?"
             value={values.accuracy}
             onChange={(value) => onField('accuracy', value)}
             options={OPTIONS_1_TO_10}
@@ -686,7 +685,6 @@ const CheckInView = React.memo(({
                             <div className="flex items-start justify-between gap-3">
                                 <div>
                                     <p className="font-medium text-success">Utkast gjenopprettet</p>
-                                    <p className="mt-1 text-sm text-success">Fortsett der du slapp.</p>
                                 </div>
                                 <button
                                     type="button"
