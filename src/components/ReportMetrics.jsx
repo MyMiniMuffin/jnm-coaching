@@ -40,12 +40,14 @@ const ReportMetrics = React.memo(({ report, className = '' }) => {
             <div data-testid="report-ratings" className="grid grid-cols-3 gap-3">
                 {ratings.map(rating => {
                     const style = toneStyles[rating.tone];
-                    const summary = `${rating.label}: ${style.label ? `${style.label}, ` : ''}${rating.display} av 10`;
+                    const summary = rating.value == null || rating.value === ''
+                        ? `${rating.label}: ikke oppgitt`
+                        : `${rating.label}: ${style.label ? `${style.label}, ` : ''}${rating.display} av 10`;
                     return (
                         <div key={rating.label} className="min-w-0" title={style.label ? `${rating.label}: ${style.label} (${rating.display}/10)` : rating.label}>
                             <span className="sr-only">{summary}</span>
                             <div aria-hidden="true">
-                                <p className="text-sm text-ink-muted">{rating.label}</p>
+                                <p className="text-sm text-ink-muted break-words hyphens-auto">{rating.label}</p>
                                 <p className="mt-1 flex items-baseline gap-1 tabular-nums">
                                     <span className={`text-2xl font-semibold leading-none ${style.text}`}>{rating.display}</span>
                                     <span className="text-sm text-ink-faint">/10</span>

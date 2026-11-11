@@ -17,7 +17,7 @@ test('ratings and sessions render as separate groups', () => {
 
 test('metric labels are never truncated and stay at least text-sm', () => {
     assert.doesNotMatch(metrics, /truncate/);
-    assert.match(metrics, /text-sm text-ink-muted">\{rating\.label\}/);
+    assert.match(metrics, /className="text-sm text-ink-muted[^"]*">\{rating\.label\}/);
 });
 
 test('report tone colors are not applied to session counts', () => {
@@ -59,4 +59,8 @@ test('collapsed history row shows date and weight only; expanded row keeps the f
     assert.match(collapsed, /CaretDown/);
     assert.match(collapsed, /WeightDelta/);
     assert.match(checkin.slice(end), /renderReportBody\(entry\)/);
+});
+
+test('missing ratings read as "ikke oppgitt" for screen readers', () => {
+    assert.match(metrics, /ikke oppgitt/);
 });
