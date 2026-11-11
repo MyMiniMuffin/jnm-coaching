@@ -1,7 +1,7 @@
 import ImageViewerLoading from '../components/ImageViewerLoading';
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Check, Camera, X, Trash, CircleNotch, Scales, Pulse, WarningCircle, FloppyDisk, PencilSimple, CaretDown, Plus } from '@phosphor-icons/react';
-import { Card, Badge, Button, EmptyState, IconButton, InputLabel, SegmentedControl, SessionStepper, TextArea } from '../components/ui';
+import { Card, Button, EmptyState, IconButton, InputLabel, SegmentedControl, SessionStepper, TextArea } from '../components/ui';
 import ReportMetrics from '../components/ReportMetrics';
 import { getReportTone } from '../lib/reportStatus';
 import { useToast } from '../components/Toast';
@@ -630,17 +630,21 @@ const CheckInView = React.memo(({
                         renderEditForm(featuredReport)
                     ) : (
                         <>
-                            <div className="flex flex-wrap justify-between items-start gap-2 mb-4">
-                                <div>
-                                    <p className="font-medium">{formatDateNO(featuredReport.date)}</p>
-                                    <p className="text-xs text-ink-muted">
-                                        {thisWeekReport ? 'Sendt denne uken' : 'Siste ukesrapport'}
+                            <div className="flex justify-between items-start gap-3 mb-6">
+                                <div className="min-w-0">
+                                    <p className="flex flex-wrap items-baseline gap-x-2 tabular-nums">
+                                        <span className="text-2xl font-semibold leading-8">
+                                            {formatWeight(featuredReport.weight)}
+                                            <span className="ml-1 text-sm font-normal text-ink-muted">kg</span>
+                                        </span>
                                         {previousWeightFor(featuredReport) != null && (
-                                            <>
-                                                {' · '}
-                                                <WeightDelta current={featuredReport.weight} previous={previousWeightFor(featuredReport)} />
-                                            </>
+                                            <WeightDelta className="text-sm" current={featuredReport.weight} previous={previousWeightFor(featuredReport)} />
                                         )}
+                                    </p>
+                                    <p className="mt-1 text-sm text-ink-muted">
+                                        {formatDateNO(featuredReport.date)}
+                                        {' · '}
+                                        {thisWeekReport ? 'Sendt denne uken' : 'Siste ukesrapport'}
                                     </p>
                                 </div>
                                 <div className="flex shrink-0 flex-wrap items-center gap-2">
@@ -663,7 +667,6 @@ const CheckInView = React.memo(({
                                             <Trash size={16} />
                                         </IconButton>
                                     )}
-                                    <Badge className="tabular-nums">{formatWeight(featuredReport.weight)} kg</Badge>
                                 </div>
                             </div>
                             {renderReportBody(featuredReport)}
@@ -815,7 +818,7 @@ const CheckInView = React.memo(({
                                         >
                                             <div className="min-w-0 flex-1">
                                                 <p className="font-medium truncate">{formatDateNO(entry.date)}</p>
-                                                <p className="text-xs text-ink-muted tabular-nums">
+                                                <p className="text-sm text-ink-muted tabular-nums">
                                                     {formatWeight(entry.weight)} kg
                                                     {previousWeight != null && (
                                                         <>
@@ -823,8 +826,6 @@ const CheckInView = React.memo(({
                                                             <WeightDelta current={entry.weight} previous={previousWeight} />
                                                         </>
                                                     )}
-                                                    {' · '}energi {entry.energy ?? '–'}
-                                                    {' · '}søvn {entry.sleep ?? '–'}
                                                 </p>
                                             </div>
                                             <CaretDown size={18} className={`shrink-0 text-ink-faint transition-transform ${isExpanded ? 'rotate-180' : ''}`} />

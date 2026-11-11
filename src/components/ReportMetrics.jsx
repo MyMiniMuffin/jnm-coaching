@@ -3,21 +3,32 @@ import { Check, Footprints, X } from '@phosphor-icons/react';
 import { getScoreTone } from '../lib/reportStatus';
 
 const clampPercent = (value) => Math.max(0, Math.min(100, value));
-const scoreStyles = {
+
+// Report tone colors belong to the 1–10 ratings only. Session counts stay neutral.
+const toneStyles = {
     good: { text: 'text-report-good', bar: 'bg-report-good', label: 'Bra' },
     medium: { text: 'text-report-medium', bar: 'bg-report-medium', label: 'Medium' },
     poor: { text: 'text-report-poor', bar: 'bg-report-poor', label: 'Dårlig' },
-    training: { text: 'text-report-training', bar: 'bg-report-training', label: '' },
-    neutral: { text: 'text-ink', bar: 'bg-ink/45', label: '' },
+    neutral: { text: 'text-ink', bar: 'bg-ink/30', label: '' },
 };
 
+const sessionText = (count) => `${count} ${count === 1 ? 'økt' : 'økter'}`;
+
 const ReportMetrics = React.memo(({ report, className = '' }) => {
-    const metrics = [
-        { label: 'Nøyaktighet', value: report.accuracy ?? '–', tone: getScoreTone(report.accuracy), width: clampPercent((parseInt(report.accuracy, 10) || 0) * 10) },
-        { label: 'Energi', value: report.energy ?? '–', tone: getScoreTone(report.energy), width: clampPercent((parseInt(report.energy, 10) || 0) * 10) },
-        { label: 'Søvn', value: report.sleep ?? '–', tone: getScoreTone(report.sleep), width: clampPercent((parseInt(report.sleep, 10) || 0) * 10) },
-        { label: 'Styrke', value: report.strengthSessions || 0, tone: 'training', width: clampPercent(Math.round(((parseInt(report.strengthSessions, 10) || 0) / 7) * 100)) },
-        { label: 'Cardio', value: report.cardioSessions || 0, tone: 'training', width: clampPercent(Math.round(((parseInt(report.cardioSessions, 10) || 0) / 7) * 100)) },
+    const ratings = [
+        { label: 'Nøyaktighet', value: report.accuracy },
+        { label: 'Energi', value: report.energy },
+        { label: 'Søvn', value: report.sleep },
+    ].map(rating => ({
+        ...rating,
+        display: rating.value ?? '–',
+        tone: getScoreTone(rating.value),
+        width: clampPercent((parseInt(rating.value, 10) || 0) * 10),
+    }));
+
+    const sessions = [
+        { label: 'Styrke', count: parseInt(report.strengthSessions, 10) || 0 },
+        { label: 'Cardio', count: parseInt(report.cardioSessions, 10) || 0 },
     ];
 
     const statusClass = (isActive) => isActive
@@ -26,30 +37,46 @@ const ReportMetrics = React.memo(({ report, className = '' }) => {
 
     return (
         <div className={className}>
-            <div className="grid grid-cols-5 gap-2 text-center">
-                {metrics.map(metric => {
-                    const style = scoreStyles[metric.tone || 'neutral'];
+            <div data-testid="report-ratings" className="grid grid-cols-3 gap-3">
+                {ratings.map(rating => {
+                    const style = toneStyles[rating.tone];
+                    const summary = `${rating.label}: ${style.label ? `${style.label}, ` : ''}${rating.display} av 10`;
                     return (
-                    <div key={metric.label} className="min-w-0" title={style.label ? `${metric.label}: ${style.label} (${metric.value}/10)` : metric.label}>
-                        <p className={`text-lg font-semibold leading-none tabular-nums ${style.text}`}>{metric.value}</p>
-                        <div className="mx-0.5 mt-2 h-1 overflow-hidden rounded-full bg-surface-200">
-                            <div className={`h-full rounded-full ${style.bar}`} style={{ width: `${metric.width}%` }} />
+                        <div key={rating.label} className="min-w-0" title={style.label ? `${rating.label}: ${style.label} (${rating.display}/10)` : rating.label}>
+                            <span className="sr-only">{summary}</span>
+                            <div aria-hidden="true">
+                                <p className="text-sm text-ink-muted">{rating.label}</p>
+                                <p className="mt-1 flex items-baseline gap-1 tabular-nums">
+                                    <span className={`text-2xl font-semibold leading-none ${style.text}`}>{rating.display}</span>
+                                    <span className="text-sm text-ink-faint">/10</span>
+                                </p>
+                                <div className="mt-3 h-1 overflow-hidden rounded-full bg-surface-200">
+                                    <div className={`h-full rounded-full ${style.bar}`} style={{ width: `${rating.width}%` }} />
+                                </div>
+                            </div>
                         </div>
-                        <p className="mt-1.5 truncate text-xs text-ink-muted">{metric.label}</p>
-                    </div>
                     );
                 })}
             </div>
 
-            <div className="mt-4 flex flex-wrap gap-2 border-t border-surface-100 pt-3">
-                <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${statusClass(report.stepsReached)}`}>
-                    <Footprints size={12} />
-                    {report.stepsReached ? 'Skrittmål nådd' : 'Under skrittmål'}
-                </span>
-                <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${statusClass(report.takenSupplements)}`}>
-                    {report.takenSupplements ? <Check size={12} /> : <X size={12} />}
-                    Tilskudd
-                </span>
+            <div className="mt-5 space-y-3 border-t border-surface-100 pt-4">
+                <p data-testid="report-sessions" className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink-muted tabular-nums">
+                    {sessions.map(session => (
+                        <span key={session.label}>
+                            {session.label} <span className="text-ink">{sessionText(session.count)}</span>
+                        </span>
+                    ))}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${statusClass(report.stepsReached)}`}>
+                        <Footprints size={12} />
+                        {report.stepsReached ? 'Skrittmål nådd' : 'Under skrittmål'}
+                    </span>
+                    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${statusClass(report.takenSupplements)}`}>
+                        {report.takenSupplements ? <Check size={12} /> : <X size={12} />}
+                        Tilskudd
+                    </span>
+                </div>
             </div>
         </div>
     );
