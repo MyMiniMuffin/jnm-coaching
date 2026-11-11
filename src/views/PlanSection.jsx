@@ -115,7 +115,7 @@ const AutoGrowTextarea = ({ value, onChange, ...props }) => {
     );
 };
 
-const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived = false, planTitle, onEditingChange }) => {
+const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived = false, planTitle, onEditingChange, titleControl = null, headerActions = null, headerExtra = null }) => {
     const confirmDialog = useConfirm();
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -434,14 +434,15 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                     Utøveren er arkivert. Gjenopprett utøveren fra utøverlisten før du endrer planen.
                 </p>
             )}
-            <Card className="overflow-hidden">
-                <div className="flex flex-wrap justify-between items-center gap-3 p-4 sm:p-5 border-b border-surface-100 bg-white">
-                    <div className="flex items-center gap-3 min-w-0">
+            <Card>
+                <div className="flex flex-wrap justify-between items-center gap-3 rounded-t-xl p-4 sm:p-5 border-b border-surface-100 bg-white">
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
                         <div className="w-10 h-10 shrink-0 rounded-lg bg-surface-100 flex items-center justify-center text-ink-muted">
                             <Icon size={20} />
                         </div>
-                        <div className="min-w-0">
-                            <h2 className="break-words text-[1.05rem] font-semibold">{title}</h2>
+                        <div className="min-w-0 flex-1">
+                            <h2 className={titleControl ? 'sr-only' : 'break-words text-[1.05rem] font-semibold'}>{title}</h2>
+                            {titleControl}
                             {!isReadOnly && isEditing && (
                                 <p className="section-label mt-0.5">
                                     {saveState === 'saving' ? 'Lagrer endringer…' : saveState === 'dirty' ? 'Ulagrede endringer' : type === 'diet' ? 'Rediger måltider og matvarer' : 'Rediger seksjoner og punkter'}
@@ -460,8 +461,10 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                                 <PencilSimple size={16} /> Rediger
                             </Button>
                         )}
+                        {headerActions}
                     </div>
                 </div>
+                {headerExtra}
 
                 {isEditing && !isReadOnly && (
                     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-surface-100 bg-white px-5 py-3.5">
