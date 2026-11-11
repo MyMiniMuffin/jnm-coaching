@@ -47,6 +47,7 @@ const PlanMenu = ({ label, disabled, canDelete, newLabel, onNew, onRename, onDel
 
     const run = (action) => {
         setOpen(false);
+        menuRef.current?.querySelector('[aria-haspopup="menu"]')?.focus();
         action();
     };
 
@@ -155,7 +156,7 @@ const NamedPlansSection = ({ type, content, onSave, isReadOnly, isArchived = fal
     ));
 
     const planSelector = showPlanPicker ? (
-        <div className="relative max-w-full">
+        <div className="relative w-fit min-w-0 max-w-full">
             <select
                 aria-label={isDiet ? 'Velg diett' : 'Velg treningsplan'}
                 value={selectedPlan.id}

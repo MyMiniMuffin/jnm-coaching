@@ -174,8 +174,12 @@ export default function FormSubmissions() {
         const photoCount = ['front-photo-url', 'side-photo-url', 'back-photo-url'].filter((key) => submission.data[key]).length;
         const message = `Henvendelsen fra ${submission.data.name || 'ukjent'} slettes permanent${photoCount ? `, sammen med ${photoCount === 1 ? 'bildet' : `de ${photoCount} bildene`}` : ''}. Dette kan ikke angres.`;
         setIsConfirming(true);
-        const confirmed = await confirm(message, { title: 'Slett henvendelse?', confirmText: 'Slett', destructive: true });
-        setIsConfirming(false);
+        let confirmed;
+        try {
+            confirmed = await confirm(message, { title: 'Slett henvendelse?', confirmText: 'Slett', destructive: true });
+        } finally {
+            setIsConfirming(false);
+        }
         if (!confirmed) return;
         setBusyId(submission.id);
         try {
@@ -196,7 +200,15 @@ export default function FormSubmissions() {
     useEscapeKey(closePanel, panelOpen && !isConfirming);
     const panelRef = useFocusTrap(panelOpen);
 
-    if (!submissions.length && !error) return null;
+    const isEmpty = !submissions.length && !error;
+    useEffect(() => {
+        if (!isEmpty) return;
+        setPanelOpen(false);
+        setOpenId(null);
+        setShowHandled(false);
+    }, [isEmpty]);
+
+    if (isEmpty) return null;
 
     const summary = error && !submissions.length
         ? 'Kunne ikke hente'

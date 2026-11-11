@@ -31,7 +31,34 @@ test('mailbox row is quiet with zero new and only accent when there are new', ()
 });
 
 test('mailbox renders nothing without submissions and without error', () => {
-    assert.match(mailbox, /if \(!submissions\.length && !error\) return null;/);
+    assert.match(mailbox, /if \(isEmpty\) return null;/);
+});
+
+test('mailbox closes its panel when the last submission is gone', () => {
+    assert.match(mailbox, /const isEmpty = !submissions\.length && !error;/);
+    const effect = mailbox.slice(mailbox.indexOf('useEffect(() => {\n        if (!isEmpty)'));
+    const body = effect.slice(0, effect.indexOf('[isEmpty]'));
+    assert.match(body, /setPanelOpen\(false\)/);
+    assert.match(body, /setOpenId\(null\)/);
+    assert.match(body, /setShowHandled\(false\)/);
+    assert.match(mailbox, /finally \{\s*setIsConfirming\(false\);/);
+});
+
+test('plan menu returns focus to its trigger before running an action', () => {
+    const run = named.slice(named.indexOf('const run = '), named.indexOf('return (', named.indexOf('const run = ')));
+    assert.ok(run.indexOf('.focus()') > -1 && run.indexOf('.focus()') < run.indexOf('action()'));
+    assert.match(run, /aria-haspopup="menu"/);
+});
+
+test('plan card does not clip the absolute menu and the header shrinks on narrow screens', () => {
+    const cardLine = plan.slice(plan.indexOf('<Card'), plan.indexOf('>', plan.indexOf('<Card')));
+    assert.doesNotMatch(cardLine, /overflow-hidden/);
+    const header = plan.slice(plan.indexOf('<Card>'), plan.indexOf('{headerActions}'));
+    assert.match(header, /rounded-t-xl/);
+    assert.match(header, /min-w-0 flex-1/);
+    const wrapper = named.slice(named.indexOf('const planSelector'), named.indexOf('<select'));
+    assert.match(wrapper, /min-w-0/);
+    assert.match(wrapper, /max-w-full/);
 });
 
 test('mailbox hover is gated for touch', () => {
