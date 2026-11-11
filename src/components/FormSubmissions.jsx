@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { CaretDown, Tray, EnvelopeSimple, Phone, InstagramLogo, Check, ArrowCounterClockwise, CircleNotch, Trash } from '@phosphor-icons/react';
+import { CaretDown, CaretRight, Tray, X, EnvelopeSimple, Phone, InstagramLogo, Check, ArrowCounterClockwise, CircleNotch, Trash } from '@phosphor-icons/react';
 import { api } from '../lib/api';
-import { Badge, Button, Card } from './ui';
+import { Badge, Button, Card, IconButton } from './ui';
 import { useConfirm } from './ConfirmDialog';
+import { useEscapeKey, useFocusTrap } from '../hooks';
 
 // Labels match the questions on /coaching/ and /oppstart/.
 const FORM_TYPES = {
@@ -129,13 +130,15 @@ const SubmissionItem = ({ submission, open, onToggle, onSetHandled, onDelete, bu
     );
 };
 
-/** Coach inbox for applications and onboarding forms from the public pages. */
+/** Compact «Postkasse» row for applications and onboarding forms; the full list opens in a panel. */
 export default function FormSubmissions() {
     const [submissions, setSubmissions] = useState([]);
     const [error, setError] = useState('');
     const [openId, setOpenId] = useState(null);
     const [busyId, setBusyId] = useState(null);
     const [showHandled, setShowHandled] = useState(false);
+    const [panelOpen, setPanelOpen] = useState(false);
+    const [isConfirming, setIsConfirming] = useState(false);
     const confirm = useConfirm();
 
     const load = useCallback(async () => {
@@ -170,7 +173,10 @@ export default function FormSubmissions() {
     const remove = async (submission) => {
         const photoCount = ['front-photo-url', 'side-photo-url', 'back-photo-url'].filter((key) => submission.data[key]).length;
         const message = `Henvendelsen fra ${submission.data.name || 'ukjent'} slettes permanent${photoCount ? `, sammen med ${photoCount === 1 ? 'bildet' : `de ${photoCount} bildene`}` : ''}. Dette kan ikke angres.`;
-        if (!await confirm(message, { title: 'Slett henvendelse?', confirmText: 'Slett', destructive: true })) return;
+        setIsConfirming(true);
+        const confirmed = await confirm(message, { title: 'Slett henvendelse?', confirmText: 'Slett', destructive: true });
+        setIsConfirming(false);
+        if (!confirmed) return;
         setBusyId(submission.id);
         try {
             const result = await api.deleteFormSubmission(Number(submission.id));
@@ -186,40 +192,78 @@ export default function FormSubmissions() {
     const handled = useMemo(() => submissions.filter((item) => item.handledAt), [submissions]);
     const visible = showHandled ? handled : open;
 
+    const closePanel = useCallback(() => setPanelOpen(false), []);
+    useEscapeKey(closePanel, panelOpen && !isConfirming);
+    const panelRef = useFocusTrap(panelOpen);
+
     if (!submissions.length && !error) return null;
 
+    const summary = error && !submissions.length
+        ? 'Kunne ikke hente'
+        : open.length > 0
+            ? `${open.length} ${open.length === 1 ? 'ny' : 'nye'}`
+            : 'Ingen nye';
+
     return (
-        <Card className="p-5 duo:p-6" aria-labelledby="form-submissions-title" role="region">
-            <div className="flex items-center justify-between gap-3">
-                <h2 id="form-submissions-title" className="flex items-center gap-2 font-semibold text-ink">
-                    <Tray size={18} className="text-ink-muted" aria-hidden="true" />
-                    {showHandled ? 'Behandlede henvendelser' : 'Henvendelser'}
-                    {!showHandled && open.length > 0 && <Badge variant="warning">{open.length} {open.length === 1 ? 'ny' : 'nye'}</Badge>}
-                </h2>
-                {(handled.length > 0 || showHandled) && (
-                    <Button variant="ghost" size="sm" onClick={() => { setShowHandled((value) => !value); setOpenId(null); }}>
-                        {showHandled ? 'Vis nye' : `Behandlet (${handled.length})`}
-                    </Button>
-                )}
-            </div>
-            {error && <p role="alert" className="mt-3 text-sm text-error">{error} <button type="button" className="underline" onClick={load}>Prøv igjen</button></p>}
-            {visible.length === 0 ? (
-                <p className="mt-3 text-sm text-ink-muted">{showHandled ? 'Ingen behandlede henvendelser ennå.' : 'Ingen nye henvendelser.'}</p>
-            ) : (
-                <ul className="mt-2">
-                    {visible.map((submission) => (
-                        <SubmissionItem
-                            key={submission.id}
-                            submission={submission}
-                            open={openId === submission.id}
-                            onToggle={() => setOpenId((current) => (current === submission.id ? null : submission.id))}
-                            onSetHandled={setHandled}
-                            onDelete={remove}
-                            busy={busyId === submission.id}
-                        />
-                    ))}
-                </ul>
+        <>
+            <button
+                type="button"
+                data-testid="mailbox-row"
+                aria-haspopup="dialog"
+                onClick={() => setPanelOpen(true)}
+                className="flex min-h-11 w-full touch-manipulation items-center gap-2.5 rounded-xl border border-surface-200 bg-white px-4 py-2 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent active:bg-surface-100 [@media(hover:hover)_and_(pointer:fine)]:hover:bg-surface-50"
+            >
+                <Tray size={18} className="shrink-0 text-ink-muted" aria-hidden="true" />
+                <span className="font-medium text-ink">Postkasse</span>
+                <span className={`ml-auto tabular-nums ${open.length > 0 ? 'font-medium text-accent' : 'text-ink-muted'}`}>{summary}</span>
+                <CaretRight size={16} className="shrink-0 text-ink-faint" aria-hidden="true" />
+            </button>
+            {panelOpen && (
+                <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center bg-ink/60 p-4 backdrop-blur-sm animate-fade-in" onClick={closePanel}>
+                    <Card
+                        ref={panelRef}
+                        data-testid="mailbox-panel"
+                        className="modal-scroll-panel w-full max-w-lg p-4 sm:p-5 animate-scale-in"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="mailbox-title"
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between gap-3">
+                            <h2 id="mailbox-title" className="text-xl font-display">Postkasse</h2>
+                            <IconButton onClick={closePanel} aria-label="Lukk">
+                                <X size={20} />
+                            </IconButton>
+                        </div>
+                        <div className="mt-3 flex items-center justify-between gap-3">
+                            <p className="text-sm font-semibold text-ink">{showHandled ? 'Behandlede henvendelser' : 'Henvendelser'}</p>
+                            {(handled.length > 0 || showHandled) && (
+                                <Button variant="ghost" size="sm" onClick={() => { setShowHandled((value) => !value); setOpenId(null); }}>
+                                    {showHandled ? 'Vis nye' : `Behandlet (${handled.length})`}
+                                </Button>
+                            )}
+                        </div>
+                        {error && <p role="alert" className="mt-3 text-sm text-error">{error} <button type="button" className="underline" onClick={load}>Prøv igjen</button></p>}
+                        {visible.length === 0 ? (
+                            <p className="mt-3 text-sm text-ink-muted">{showHandled ? 'Ingen behandlede henvendelser ennå.' : 'Ingen nye henvendelser.'}</p>
+                        ) : (
+                            <ul className="mt-1">
+                                {visible.map((submission) => (
+                                    <SubmissionItem
+                                        key={submission.id}
+                                        submission={submission}
+                                        open={openId === submission.id}
+                                        onToggle={() => setOpenId((current) => (current === submission.id ? null : submission.id))}
+                                        onSetHandled={setHandled}
+                                        onDelete={remove}
+                                        busy={busyId === submission.id}
+                                    />
+                                ))}
+                            </ul>
+                        )}
+                    </Card>
+                </div>
             )}
-        </Card>
+        </>
     );
 }
