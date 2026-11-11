@@ -145,12 +145,24 @@ test('selector replaces the title only when plans.length > 1; h2 stays for scree
     assert.match(named, /\) : null;\s*\n\s*const planMenu/);
     assert.match(named, /aria-label=\{isDiet \? 'Velg diett' : 'Velg treningsplan'\}/);
     assert.match(plan, /titleControl = null/);
-    assert.match(plan, /<h2 className=\{titleControl \? 'sr-only' : '[^']*font-semibold'\}>\{title\}<\/h2>/);
+    assert.match(plan, /<h2 className=\{titleControl \? 'sr-only' : '[^']*font-semibold'\}[^>]*>\{title\}<\/h2>/);
     assert.match(plan, /\{titleControl\}/);
     const select = named.slice(named.indexOf('<select'), named.indexOf('</select>'));
     assert.match(select, /min-h-11/);
     assert.match(select, /text-\[1\.05rem\] font-semibold/);
     assert.doesNotMatch(select, /bg-surface-50/);
+});
+
+test('plan header stays on one row on a folded cover without mid-word breaks', () => {
+    const h2 = plan.match(/<h2 className=\{titleControl[^\n]*<\/h2>/)[0];
+    assert.doesNotMatch(h2, /break-words/);
+    assert.match(h2, /: 'truncate text-\[1\.05rem\] font-semibold'\}/);
+    assert.match(h2, /title=\{titleControl \? undefined : title\}/);
+    assert.match(plan, /aria-label="Rediger" title="Rediger"/);
+    assert.match(plan, /<span className="hidden sm:inline">Rediger<\/span>/);
+    assert.match(plan, /className="hidden sm:flex w-10 h-10 shrink-0/);
+    assert.match(named, /<div className="relative w-full min-w-0 max-w-full sm:w-fit">/);
+    assert.doesNotMatch(named, /relative w-fit/); // w-fit only from sm and up
 });
 
 test('name input only appears in new or rename mode, at 16px', () => {

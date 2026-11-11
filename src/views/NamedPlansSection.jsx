@@ -156,7 +156,7 @@ const NamedPlansSection = ({ type, content, onSave, isReadOnly, isArchived = fal
     ));
 
     const planSelector = showPlanPicker ? (
-        <div className="relative w-fit min-w-0 max-w-full">
+        <div className="relative w-full min-w-0 max-w-full sm:w-fit">
             <select
                 aria-label={isDiet ? 'Velg diett' : 'Velg treningsplan'}
                 value={selectedPlan.id}
