@@ -437,11 +437,11 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
             <Card>
                 <div className="flex flex-wrap justify-between items-center gap-3 rounded-t-xl p-4 sm:p-5 border-b border-surface-100 bg-white">
                     <div className="flex min-w-0 flex-1 items-center gap-3">
-                        <div className="w-10 h-10 shrink-0 rounded-lg bg-surface-100 flex items-center justify-center text-ink-muted">
+                        <div className="hidden sm:flex w-10 h-10 shrink-0 rounded-lg bg-surface-100 items-center justify-center text-ink-muted">
                             <Icon size={20} />
                         </div>
                         <div className="min-w-0 flex-1">
-                            <h2 className={titleControl ? 'sr-only' : 'break-words text-[1.05rem] font-semibold'}>{title}</h2>
+                            <h2 className={titleControl ? 'sr-only' : 'truncate text-[1.05rem] font-semibold'} title={titleControl ? undefined : title}>{title}</h2>
                             {titleControl}
                             {!isReadOnly && isEditing && (
                                 <p className="section-label mt-0.5">
@@ -457,8 +457,8 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                             </Button>
                         )}
                         {!isReadOnly && !isEditing && (
-                            <Button variant="secondary" size="sm" onClick={handleStartEditing}>
-                                <PencilSimple size={16} /> Rediger
+                            <Button aria-label="Rediger" title="Rediger" variant="secondary" size="sm" onClick={handleStartEditing}>
+                                <PencilSimple size={16} /> <span className="hidden sm:inline">Rediger</span>
                             </Button>
                         )}
                         {headerActions}
