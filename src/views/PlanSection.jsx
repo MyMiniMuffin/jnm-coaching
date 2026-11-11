@@ -457,7 +457,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                             </Button>
                         )}
                         {!isReadOnly && !isEditing && (
-                            <Button aria-label="Rediger" title="Rediger" variant="secondary" size="sm" onClick={handleStartEditing} className="px-2 sm:px-3">
+                            <Button aria-label="Rediger" title="Rediger" variant="secondary" size="sm" onClick={handleStartEditing}>
                                 <PencilSimple size={16} /> <span className="hidden sm:inline">Rediger</span>
                             </Button>
                         )}

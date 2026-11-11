@@ -154,7 +154,9 @@ test('selector replaces the title only when plans.length > 1; h2 stays for scree
 });
 
 test('plan header stays on one row on a folded cover without mid-word breaks', () => {
-    const h2 = plan.match(/<h2 className=\{titleControl[^\n]*<\/h2>/)[0];
+    const h2Match = plan.match(/<h2 className=\{titleControl[\s\S]*?<\/h2>/);
+    assert.ok(h2Match, 'plan h2 not found');
+    const h2 = h2Match[0];
     assert.doesNotMatch(h2, /break-words/);
     assert.match(h2, /: 'truncate text-\[1\.05rem\] font-semibold'\}/);
     assert.match(h2, /title=\{titleControl \? undefined : title\}/);
