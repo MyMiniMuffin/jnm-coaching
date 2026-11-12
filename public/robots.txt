@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Allow: /personvern/
+Allow: /support/
+Disallow: /app/
+Disallow: /oppstart/
+Disallow: /.netlify/functions/
+Disallow: /api/
+
+Sitemap: https://jnmcoaching.no/sitemap.xml
