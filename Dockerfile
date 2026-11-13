@@ -1,5 +1,5 @@
 # Build the Vite site, then run it with server.mjs (replaces Netlify hosting + functions).
-FROM node:22-alpine AS build
+FROM node:22.23-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts
@@ -9,7 +9,7 @@ ARG VITE_WEB_PUSH_PUBLIC_KEY=""
 ENV VITE_WEB_PUSH_PUBLIC_KEY=$VITE_WEB_PUSH_PUBLIC_KEY
 RUN npm run build
 
-FROM node:22-alpine
+FROM node:22.23-alpine
 WORKDIR /app
 ENV NODE_ENV=production \
     PORT=3000 \

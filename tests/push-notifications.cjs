@@ -1,5 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
 const path = require('node:path');
 
 const {
@@ -7,6 +8,7 @@ const {
   buildCoachBadgeSyncPayload,
   buildCoachPushPayload,
   extractApnsDeviceToken,
+  getWebPushClient,
   normalizeSubscription
 } = require('../netlify/functions/push-delivery');
 
@@ -92,4 +94,63 @@ test('push migration SQL files each contain a single statement for Neon HTTP', (
     const statements = text.split(';').filter((part) => part.trim());
     assert.equal(statements.length, 1, name);
   }
+});
+
+const withWebPushEnv = (env, fn) => {
+  const keys = ['WEB_PUSH_PUBLIC_KEY', 'WEB_PUSH_PRIVATE_KEY', 'WEB_PUSH_SUBJECT'];
+  const saved = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
+  const originalError = console.error;
+  const errorCalls = [];
+  console.error = (...args) => errorCalls.push(args);
+  try {
+    for (const key of keys) {
+      if (env[key] === undefined) delete process.env[key];
+      else process.env[key] = env[key];
+    }
+    return fn(errorCalls);
+  } finally {
+    console.error = originalError;
+    for (const key of keys) {
+      if (saved[key] === undefined) delete process.env[key];
+      else process.env[key] = saved[key];
+    }
+  }
+};
+
+test('web-push 4 loads via require() on this Node', () => {
+  const pkg = JSON.parse(
+    fs.readFileSync(path.join(__dirname, '..', 'node_modules', 'web-push', 'package.json'), 'utf8')
+  );
+  assert.ok(pkg.version.startsWith('4.'), `unexpected web-push version ${pkg.version}`);
+  const webpush = require('web-push');
+  assert.equal(typeof webpush.setVapidDetails, 'function');
+  assert.equal(typeof webpush.sendNotification, 'function');
+});
+
+test('Node version supports require(esm) (>=22.12)', () => {
+  const [major, minor] = process.versions.node.split('.').map(Number);
+  assert.ok(major > 22 || (major === 22 && minor >= 12), `Node ${process.versions.node} is too old`);
+});
+
+test('getWebPushClient returns a working client without silent fallback', () => {
+  const keys = require('web-push').generateVAPIDKeys();
+  withWebPushEnv(
+    {
+      WEB_PUSH_PUBLIC_KEY: keys.publicKey,
+      WEB_PUSH_PRIVATE_KEY: keys.privateKey,
+      WEB_PUSH_SUBJECT: 'mailto:test@example.com'
+    },
+    (errorCalls) => {
+      const client = getWebPushClient();
+      assert.notEqual(client, null);
+      assert.equal(typeof client.sendNotification, 'function');
+      assert.equal(errorCalls.length, 0, 'console.error should not have been called');
+    }
+  );
+});
+
+test('getWebPushClient returns null when keys are absent', () => {
+  withWebPushEnv({}, () => {
+    assert.equal(getWebPushClient(), null);
+  });
 });
