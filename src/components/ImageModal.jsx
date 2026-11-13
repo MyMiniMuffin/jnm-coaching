@@ -234,7 +234,7 @@ const ImageModal = React.memo(({ images, initialIndex, onClose, canDownload = fa
                     key={index}
                     ref={zoomRef}
                     {...IMAGE_ZOOM_PROPS}
-                    onTransformed={(_, state) => {
+                    onTransform={(_, state) => {
                         const wasZoomed = scaleRef.current > 1.02;
                         scaleRef.current = state.scale;
                         const nowZoomed = state.scale > 1.02;

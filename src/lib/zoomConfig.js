@@ -1,3 +1,12 @@
+/**
+ * Delt zoom-oppsett for ImageModal og GalleryView (react-zoom-pan-pinch v4).
+ *
+ * v3 → v4 (relevante brudd):
+ * - wheel.smoothStep er fjernet; ved smooth=true er det wheel.step som
+ *   multipliseres med |deltaY| (tidligere smoothStep * |deltaY|).
+ * - alignmentAnimation er omdøpt til autoAlignment.
+ * - onTransformed er omdøpt til onTransform (settes i ImageModal).
+ */
 export const IMAGE_ZOOM_PROPS = {
     initialScale: 1,
     minScale: 1,
@@ -7,8 +16,8 @@ export const IMAGE_ZOOM_PROPS = {
     centerOnInit: true,
     smooth: true,
     wheel: {
-        step: 0.32,
-        smoothStep: 0.004
+        // Matcher tidligere smoothStep (0.004): step * |deltaY| ved smooth zoom.
+        step: 0.004
     },
     pinch: {
         step: 7
@@ -24,7 +33,7 @@ export const IMAGE_ZOOM_PROPS = {
         animationTime: 80,
         animationType: 'easeOut'
     },
-    alignmentAnimation: {
+    autoAlignment: {
         animationTime: 90,
         velocityAlignmentTime: 120,
         animationType: 'easeOut'
