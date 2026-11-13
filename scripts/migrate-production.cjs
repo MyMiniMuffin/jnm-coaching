@@ -10,7 +10,7 @@ async function main() {
   if (!process.env.NETLIFY_DATABASE_URL) throw new Error('Missing database configuration');
   const sql = neon(process.env.NETLIFY_DATABASE_URL);
   const migration = readFileSync(join(__dirname, '../migrations/003_require_password_change.sql'), 'utf8');
-  await sql(migration);
+  await sql.query(migration);
   const columns = await sql`
     SELECT column_name FROM information_schema.columns
     WHERE table_schema = 'public' AND table_name = 'users'
@@ -19,7 +19,7 @@ async function main() {
   `;
   if (columns.length !== 1) throw new Error('Password-change column verification failed');
   console.log('Database migration 003: applied and verified.');
-  await sql(readFileSync(join(__dirname, '../migrations/004_add_last_active.sql'), 'utf8'));
+  await sql.query(readFileSync(join(__dirname, '../migrations/004_add_last_active.sql'), 'utf8'));
   const activityColumns = await sql`
     SELECT column_name FROM information_schema.columns
     WHERE table_schema = 'public' AND table_name = 'users'
@@ -27,9 +27,9 @@ async function main() {
   `;
   if (activityColumns.length !== 1) throw new Error('Activity column verification failed');
   console.log('Database migration 004: applied and verified.');
-  await sql(readFileSync(join(__dirname, '../migrations/005_account_deletion_requests.sql'), 'utf8'));
+  await sql.query(readFileSync(join(__dirname, '../migrations/005_account_deletion_requests.sql'), 'utf8'));
   // Neon HTTP executes one SQL statement per request. Keep the index separate.
-  await sql(readFileSync(join(__dirname, '../migrations/006_account_deletion_pending_index.sql'), 'utf8'));
+  await sql.query(readFileSync(join(__dirname, '../migrations/006_account_deletion_pending_index.sql'), 'utf8'));
   const requestColumns = await sql`
     SELECT column_name FROM information_schema.columns
     WHERE table_schema = 'public' AND table_name = 'account_deletion_requests'
@@ -37,9 +37,9 @@ async function main() {
   `;
   if (requestColumns.length !== 4) throw new Error('Account deletion request table verification failed');
   console.log('Database migrations 005/006: applied and verified.');
-  await sql(readFileSync(join(__dirname, '../migrations/007_push_subscriptions_platform.sql'), 'utf8'));
-  await sql(readFileSync(join(__dirname, '../migrations/008_push_subscriptions_p256dh_nullable.sql'), 'utf8'));
-  await sql(readFileSync(join(__dirname, '../migrations/009_push_subscriptions_auth_nullable.sql'), 'utf8'));
+  await sql.query(readFileSync(join(__dirname, '../migrations/007_push_subscriptions_platform.sql'), 'utf8'));
+  await sql.query(readFileSync(join(__dirname, '../migrations/008_push_subscriptions_p256dh_nullable.sql'), 'utf8'));
+  await sql.query(readFileSync(join(__dirname, '../migrations/009_push_subscriptions_auth_nullable.sql'), 'utf8'));
   const pushColumns = await sql`
     SELECT column_name, is_nullable FROM information_schema.columns
     WHERE table_schema = 'public' AND table_name = 'push_subscriptions'
@@ -51,7 +51,7 @@ async function main() {
     throw new Error('Push key nullability verification failed');
   }
   console.log('Database migrations 007/008/009: applied and verified.');
-  await sql(readFileSync(join(__dirname, '../migrations/010_form_submissions.sql'), 'utf8'));
+  await sql.query(readFileSync(join(__dirname, '../migrations/010_form_submissions.sql'), 'utf8'));
   const formColumns = await sql`
     SELECT column_name FROM information_schema.columns
     WHERE table_schema = 'public' AND table_name = 'form_submissions'
@@ -59,7 +59,7 @@ async function main() {
   `;
   if (formColumns.length !== 3) throw new Error('Form submissions table verification failed');
   console.log('Database migration 010: applied and verified.');
-  await sql(readFileSync(join(__dirname, '../migrations/011_form_submissions_handled.sql'), 'utf8'));
+  await sql.query(readFileSync(join(__dirname, '../migrations/011_form_submissions_handled.sql'), 'utf8'));
   const handledColumn = await sql`
     SELECT column_name FROM information_schema.columns
     WHERE table_schema = 'public' AND table_name = 'form_submissions' AND column_name = 'handled_at'
