@@ -332,6 +332,7 @@ module.exports = {
   buildCoachPushPayload,
   buildCoachBadgeSyncPayload,
   extractApnsDeviceToken,
+  getWebPushClient,
   sendCoachPushNotifications,
   syncCoachAppBadge
 };
