@@ -2,7 +2,18 @@
 <html lang="nb">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <script>
+        /* Native-only zoom lock. Web users must be able to pinch-zoom (accessibility), but in the
+           Capacitor iOS shell (WKWebView) page zoom got stuck (see commit 49503d4). Capacitor injects
+           its bridge before page scripts, so this runs early enough. */
+        (function () {
+            var cap = window.Capacitor;
+            if (!cap || !cap.isNativePlatform || !cap.isNativePlatform()) return;
+            var m = document.querySelector('meta[name="viewport"]');
+            if (m) m.setAttribute('content', m.getAttribute('content') + ', maximum-scale=1, user-scalable=no');
+        })();
+    </script>
     <title>JNM Coaching</title>
     <meta name="robots" content="noindex, nofollow">
 
