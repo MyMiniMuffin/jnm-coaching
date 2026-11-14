@@ -79,14 +79,18 @@ const InstallPrompt = ({ engaged }) => {
         // Skjul dialogen eksplisitt når den native dialogen åpnes.
         setVisible(false);
         if (!event) return;
+        let choice;
         try {
             await event.prompt();
-            const choice = await event.userChoice;
-            if (choice?.outcome === 'accepted') {
-                markInstallInstalled();
-                return;
-            }
-        } catch { /* behandles som «Ikke nå» */ }
+            choice = await event.userChoice;
+        } catch {
+            // Feil er ikke et brukervalg: ingen 14-dagers utsettelse (sesjonsflagget hindrer ny visning).
+            return;
+        }
+        if (choice?.outcome === 'accepted') {
+            markInstallInstalled();
+            return;
+        }
         dismiss();
     }, [dismiss]);
 
