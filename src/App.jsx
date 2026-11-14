@@ -34,6 +34,7 @@ import LoginScreen from './components/LoginScreen';
 import ReauthPrompt from './components/ReauthPrompt';
 import Header from './components/Header';
 import Navigation from './components/Navigation';
+import InstallPrompt from './components/InstallPrompt';
 import { ViewErrorBoundary, ViewSkeleton } from './components/ViewBoundary';
 
 // Views (lazy loaded — each gets its own chunk)
@@ -1595,6 +1596,7 @@ const App = () => {
                 )}
             </main>
             </div>
+            <InstallPrompt engaged={!isLoading && !isClientLoading} />
         </RefreshFrame>
     );
 };
