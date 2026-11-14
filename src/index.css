@@ -509,6 +509,16 @@ input:focus, textarea:focus, select:focus, button:focus-visible {
     }
 }
 
+/* Installer-popup: holdes innenfor safe area (hull, hjemmeindikator, sidekanter) */
+.install-prompt-overlay {
+    padding:
+        max(1rem, env(safe-area-inset-top, 0px))
+        max(1rem, env(safe-area-inset-right, 0px))
+        max(1rem, env(safe-area-inset-bottom, 0px))
+        max(1rem, env(safe-area-inset-left, 0px));
+    overscroll-behavior: contain;
+}
+
 /* Nav pill indicator */
 .nav-pill {
     transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.2s ease;
