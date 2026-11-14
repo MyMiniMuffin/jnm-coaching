@@ -8,6 +8,10 @@ import { ConfirmProvider } from './components/ConfirmDialog';
 import IconProvider from './components/IconProvider';
 import { RailBackProvider } from './lib/railBack';
 import App from './App';
+import { startInstallPromptCapture } from './lib/installPrompt';
+
+// Fang beforeinstallprompt tidlig, før innlogging og første visning.
+startInstallPromptCapture();
 
 // iOS can report display-mode: browser for an installed Home Screen app.
 // Detect it before mounting so the first navigation render uses the full height.
