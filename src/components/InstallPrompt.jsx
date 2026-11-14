@@ -33,7 +33,7 @@ const InstallPrompt = ({ engaged }) => {
     // Abonnerer slik at en hendelse som kommer sent (eller en appinstalled) vurderes på nytt.
     const storeVersion = useSyncExternalStore(subscribeInstallPrompt, getInstallPromptVersion, () => 0);
 
-    const evaluate = useCallback(() => shouldShowInstallPrompt({
+    const evaluate = useCallback((modalOpen) => shouldShowInstallPrompt({
         userAgent: navigator.userAgent,
         maxTouchPoints: navigator.maxTouchPoints || 0,
         isNative: isNativeApp(),
@@ -41,32 +41,30 @@ const InstallPrompt = ({ engaged }) => {
         hasDeferredPrompt: hasDeferredInstallPrompt(),
         now: Date.now(),
         engaged,
-        modalOpen: otherDialogOpen(),
+        modalOpen,
         ...readInstallState(),
     }), [engaged]);
 
     useEffect(() => {
         if (visible) return undefined;
-        // Rimelig forhåndssjekk uten modal-/delay-avhengighet: ingen timer hvis aldri aktuelt.
-        if (!engaged || !hasDeferredInstallPrompt()) return undefined;
+        // Ingen timer hvis popupen aldri kan vises (plattform, standalone, native, cooldown osv.).
+        if (!evaluate(false)) return undefined;
         let timeoutId;
         const attempt = () => {
-            if (evaluate()) {
+            if (evaluate(otherDialogOpen())) {
                 markInstallShown();
                 setVisible(true);
                 return;
             }
-            const state = readInstallState();
-            // Kun åpen modal er et midlertidig hinder. Alt annet er endelig for denne økten.
-            if (otherDialogOpen() && hasDeferredInstallPrompt() && !state.installedFlag && !state.shownThisSession) {
-                timeoutId = setTimeout(attempt, RETRY_MS);
-            }
+            // Prøv igjen kun når en åpen modal er eneste hinder.
+            if (evaluate(false)) timeoutId = setTimeout(attempt, RETRY_MS);
         };
         timeoutId = setTimeout(attempt, SHOW_DELAY_MS);
         return () => clearTimeout(timeoutId);
     }, [engaged, evaluate, visible, storeVersion]);
 
     // appinstalled tømmer hendelsen: skjul uten å vente på noe mer.
+    // install() tar hendelsen uten å emitte og skjuler dialogen selv.
     useEffect(() => {
         if (visible && !hasDeferredInstallPrompt()) setVisible(false);
     }, [visible, storeVersion]);
@@ -78,13 +76,14 @@ const InstallPrompt = ({ engaged }) => {
 
     const install = useCallback(async () => {
         const event = takeDeferredInstallPrompt();
-        if (!event) { setVisible(false); return; }
+        // Skjul dialogen eksplisitt når den native dialogen åpnes.
+        setVisible(false);
+        if (!event) return;
         try {
             await event.prompt();
             const choice = await event.userChoice;
             if (choice?.outcome === 'accepted') {
                 markInstallInstalled();
-                setVisible(false);
                 return;
             }
         } catch { /* behandles som «Ikke nå» */ }

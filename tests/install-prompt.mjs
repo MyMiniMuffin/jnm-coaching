@@ -1,6 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { INSTALL_COOLDOWN_MS, isAndroidWeb, shouldShowInstallPrompt } from '../src/lib/installPrompt.js';
+import {
+    INSTALL_COOLDOWN_MS,
+    INSTALL_INSTALLED_KEY,
+    hasDeferredInstallPrompt,
+    isAndroidWeb,
+    shouldShowInstallPrompt,
+    startInstallPromptCapture,
+} from '../src/lib/installPrompt.js';
 
 const ANDROID = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36';
 const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1';
@@ -62,4 +69,32 @@ test('waits for engagement and for other dialogs to close', () => {
 test('ignores invalid stored timestamps', () => {
     assert.equal(show({ dismissedAt: 'abc' }), true);
     assert.equal(show({ dismissedAt: null }), true);
+});
+
+test('ignores a dismissedAt in the future (clock skew)', () => {
+    assert.equal(show({ dismissedAt: NOW + 1000 }), true);
+    assert.equal(show({ dismissedAt: NOW + INSTALL_COOLDOWN_MS * 2 }), true);
+});
+
+test('a fresh beforeinstallprompt clears the stored installed flag', () => {
+    const store = new Map([[INSTALL_INSTALLED_KEY, '1']]);
+    const handlers = {};
+    globalThis.window = {
+        localStorage: {
+            getItem: k => (store.has(k) ? store.get(k) : null),
+            setItem: (k, v) => store.set(k, v),
+            removeItem: k => store.delete(k),
+        },
+        addEventListener: (name, fn) => { handlers[name] = fn; },
+    };
+    try {
+        startInstallPromptCapture();
+        let prevented = false;
+        handlers.beforeinstallprompt({ preventDefault: () => { prevented = true; } });
+        assert.equal(prevented, true);
+        assert.equal(store.has(INSTALL_INSTALLED_KEY), false);
+        assert.equal(hasDeferredInstallPrompt(), true);
+    } finally {
+        delete globalThis.window;
+    }
 });

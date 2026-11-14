@@ -33,7 +33,8 @@ export const shouldShowInstallPrompt = ({
     if (installedFlag || shownThisSession) return false;
     if (!engaged || modalOpen) return false;
     const dismissed = Number(dismissedAt);
-    if (Number.isFinite(dismissed) && dismissed > 0 && now - dismissed < INSTALL_COOLDOWN_MS) return false;
+    // Tidsstempel i fremtiden (klokkeavvik) er ugyldig og ignoreres.
+    if (Number.isFinite(dismissed) && dismissed > 0 && dismissed <= now && now - dismissed < INSTALL_COOLDOWN_MS) return false;
     return true;
 };
 
@@ -51,6 +52,9 @@ export const readInstallState = () => ({
 });
 export const markInstallDismissed = (now = Date.now()) => writeStorage(window.localStorage, INSTALL_DISMISSED_KEY, String(now));
 export const markInstallInstalled = () => writeStorage(window.localStorage, INSTALL_INSTALLED_KEY, '1');
+export const clearInstallInstalled = () => {
+    try { window.localStorage.removeItem(INSTALL_INSTALLED_KEY); } catch { /* lagring kan være blokkert */ }
+};
 export const markInstallShown = () => writeStorage(window.sessionStorage, INSTALL_SESSION_KEY, '1');
 
 export const detectStandalone = () => {
@@ -81,10 +85,10 @@ export const getInstallPromptVersion = () => version;
 export const hasDeferredInstallPrompt = () => deferredEvent !== null;
 
 // Hendelsen kan bare brukes én gang, så den slippes så snart den er tatt.
+// Emitter bevisst ikke: kalleren skjuler dialogen eksplisitt.
 export const takeDeferredInstallPrompt = () => {
     const event = deferredEvent;
     deferredEvent = null;
-    emit();
     return event;
 };
 
@@ -93,6 +97,8 @@ export const startInstallPromptCapture = () => {
     started = true;
     window.addEventListener('beforeinstallprompt', (event) => {
         event.preventDefault();
+        // Ferske beforeinstallprompt betyr at Chrome anser appen som ikke installert (f.eks. avinstallert).
+        clearInstallInstalled();
         deferredEvent = event;
         emit();
     });
