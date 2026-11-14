@@ -18,7 +18,11 @@ body {
 }
 
 button,
-a {
+a,
+select,
+summary,
+label,
+[role="button"] {
     touch-action: manipulation;
 }
 
@@ -36,11 +40,12 @@ select {
     user-select: text;
 }
 
-@media (max-width: 1023px) {
+/* iOS zooms the page on focus when an input is < 16px. !important so Tailwind text-* classes can't undercut it. */
+@media (pointer: coarse), (max-width: 1023px) {
     input,
     textarea,
     select {
-        font-size: 16px;
+        font-size: 16px !important;
     }
 }
 

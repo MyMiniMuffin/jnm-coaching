@@ -937,8 +937,8 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
          * open (and while scrolling with it open), but `position: fixed` stays on
          * the *layout* viewport. Chromium has no on-screen keyboard, so page scale
          * is the way to put it in the same state: a visual viewport smaller than,
-         * and offset inside, the layout viewport. The app locks zoom in
-         * index.html, so this test serves the page without that lock.
+         * and offset inside, the layout viewport. The static viewport
+         * meta allows zoom (only the native shell locks it at runtime).
          */
         await t.test('Duo rail stays in the visual viewport when it is offset from the layout viewport', async () => {
             const context = await browser.newContext({
@@ -949,13 +949,6 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
             });
             const page = await context.newPage();
             try {
-                await page.route((url) => url.pathname === '/', async (route) => {
-                    const response = await route.fetch();
-                    const html = await response.text();
-                    const unlocked = html.replace(/maximum-scale=[\d.]+,\s*user-scalable=no,\s*/, '');
-                    assert.notEqual(unlocked, html, 'index.html viewport lock not found; update this test');
-                    await route.fulfill({ response, body: unlocked });
-                });
                 await openAthleteDuo(page, base);
                 assert.equal((await shellState(page)).shell, 'rail');
 
