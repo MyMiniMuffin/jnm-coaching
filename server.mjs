@@ -25,6 +25,7 @@ const {
     BASE_PATH: COACH_API_BASE,
     MAX_BODY_BYTES: COACH_MAX_BODY_BYTES,
     createCoachGateway,
+    queryFromSearchParams,
 } = require('./coach-api/http.js');
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const DIST = path.join(ROOT, 'dist');
@@ -188,7 +189,8 @@ const runCoachApi = async (req, res, url) => {
     const result = await getCoachGateway().handle({
         method: req.method,
         path: url.pathname,
-        query: Object.fromEntries(url.searchParams),
+        // Repeated parameters stay arrays, so "?dryRun=true&dryRun=false" is rejected instead of written.
+        query: queryFromSearchParams(url.searchParams),
         headers: req.headers,
         body: body.length ? body : null,
         ip: clientIp(req),

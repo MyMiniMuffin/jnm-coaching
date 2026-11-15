@@ -49,6 +49,13 @@ export const handleMcpRequest = async (req, res, { gateway, ip, body }) => {
     sendResponse(res, jsonRpcError(400, -32700, 'Parse error'));
     return;
   }
+  // The rate limit counts HTTP requests per key, so a JSON-RPC batch of many
+  // tools/call messages would slip past it. The SDK clients send every message
+  // (initialize, tools/list, tools/call, ...) as its own POST, so batches are refused.
+  if (Array.isArray(parsedBody)) {
+    sendResponse(res, jsonRpcError(400, -32600, 'Batch requests are not supported'));
+    return;
+  }
 
   const server = createCoachMcpServer({ service: gateway.service, key: auth.key });
   const transport = new StreamableHTTPServerTransport({

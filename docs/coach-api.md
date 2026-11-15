@@ -49,7 +49,7 @@ Lagre nøkkelen rett i connectoren/passordbehandleren. Ikke legg den i repoet, i
 
 - Manglende, feilformatert, ukjent, feil eller tilbakekalt nøkkel gir **401**. Nøkkel uten scope `coach`, eller knyttet til en bruker som ikke (lenger) er coach, gir **403**.
 - Nøkler sammenlignes med `crypto.timingSafeEqual` på hashen. Nøkkelen logges aldri.
-- Rate limit i minnet: 120 forespørsler per minutt per nøkkel, og 30 mislykkede innlogginger per 10 minutter per IP (**429**).
+- Rate limit i minnet: 120 forespørsler per minutt per nøkkel, og 30 mislykkede innlogginger per 10 minutter per IP (**429**). En IP som har nådd grensen for mislykkede innlogginger, får 429 før nøkkelen slås opp (også med riktig nøkkel) til den eldste registrerte feilen er 10 minutter gammel.
 - Svarene inneholder aldri passord, tokens, push-abonnementer eller bilder/bilde-URL-er (Cloudinary). Alle spørringer lister kolonnene eksplisitt. App Review-demokontoen (`apple_review`) er utelatt, som i coach-oversikten.
 - Arkiverte utøvere kan leses (`includeArchived=true`), men ikke endres (**409**).
 - Alle lagrede endringer skrives til `coach_api_audit_log` (nøkkel-ID og -navn, tidspunkt, handling, utøver, før og etter) i **samme SQL-setning** som selve endringen. Endret noen planen i appen mellom lesing og skriving, avvises skrivingen med **409** i stedet for å overskrive.
@@ -109,7 +109,7 @@ Valideringen er streng (ukjente felt gir 400): navn 1–120 tegn og unike som i 
 
 ### Dry-run
 
-Legg til `?dryRun=true` eller `"dryRun": true` i body. Query-verdien tolkes strengt: bare `true`, `false`, `1` og `0` er gyldige (alt annet, f.eks. `TRUE` eller `yes`, gir 400). PUT/PATCH avviser også ukjente query-parametere med 400, så en feilstavet `?dryrun=true` aldri blir en ekte lagring. Er dry-run slått på i body, kan ikke `?dryRun=false` slå det av. Svaret har samme form som ved lagring, men `saved: false`:
+Legg til `?dryRun=true` eller `"dryRun": true` i body. Query-verdien tolkes strengt: bare `true`, `false`, `1` og `0` er gyldige (alt annet, f.eks. `TRUE` eller `yes`, gir 400). PUT/PATCH avviser også ukjente og gjentatte query-parametere med 400 (f.eks. `?dryRun=true&dryRun=false`), så en feilstavet `?dryrun=true` aldri blir en ekte lagring. Er dry-run slått på i body, kan ikke `?dryRun=false` slå det av. Svaret har samme form som ved lagring, men `saved: false`:
 
 ```json
 {
@@ -141,7 +141,7 @@ curl -s -X PATCH 'https://jnmcoaching.no/api/coach/v1/athletes/5/training-progra
 
 ## 5. MCP
 
-Server: `https://jnmcoaching.no/mcp`, Streamable HTTP, stateless (ingen sesjoner, JSON-svar). Hver forespørsel må ha `Authorization: Bearer <nøkkel>`, som valideres akkurat som for REST-API-et (samme 401/403/429). Bare `POST` støttes: `GET` (SSE-strøm) og `DELETE` (avslutt sesjon) gir 405 med `Allow: POST`, og en tom eller ugyldig body gir 400 (JSON-RPC parse error).
+Server: `https://jnmcoaching.no/mcp`, Streamable HTTP, stateless (ingen sesjoner, JSON-svar). Hver forespørsel må ha `Authorization: Bearer <nøkkel>`, som valideres akkurat som for REST-API-et (samme 401/403/429). Bare `POST` støttes: `GET` (SSE-strøm) og `DELETE` (avslutt sesjon) gir 405 med `Allow: POST`, og en tom eller ugyldig body gir 400 (JSON-RPC parse error). JSON-RPC-batcher (en array av meldinger) avvises med 400 (`-32600`), slik at hvert verktøykall teller i rate limit; SDK-klientene sender uansett én melding per POST.
 
 | Verktøy | Tilsvarer |
 | --- | --- |

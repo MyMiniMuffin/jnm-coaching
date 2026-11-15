@@ -81,8 +81,8 @@ test('MCP write tools default to dry-run and return the diff without writing', a
 });
 
 /** Same shape as server.mjs: the body is read (stream drained) before handleMcpRequest. */
-const startHttpServer = async (t, db) => {
-  const gateway = createCoachGateway({ sql: db.sql });
+const startHttpServer = async (t, db, gatewayOptions = {}) => {
+  const gateway = createCoachGateway({ sql: db.sql, ...gatewayOptions });
   const server = http.createServer(async (req, res) => {
     const chunks = [];
     for await (const chunk of req) chunks.push(chunk);
@@ -164,6 +164,41 @@ test('MCP over HTTP: GET/DELETE get 405 without a transport, empty POST gets a p
 
   // Unauthenticated empty POST still gets 401, not a parse error.
   assert.equal((await fetch(url, { method: 'POST' })).status, 401);
+});
+
+test('MCP over HTTP rejects JSON-RPC batches, so one POST cannot carry many tool calls', async (t) => {
+  const db = createFakeDb();
+  const url = await startHttpServer(t, db);
+  const headers = {
+    'Content-Type': 'application/json',
+    Accept: 'application/json, text/event-stream',
+    Authorization: `Bearer ${db.keys.valid}`
+  };
+  const call = (id) => ({
+    jsonrpc: '2.0',
+    id,
+    method: 'tools/call',
+    params: { name: 'update_meal_plan', arguments: { athleteId: 5, mode: 'replace', plans: [{ name: 'Matplan', text: `Ny ${id}` }], dryRun: false } }
+  });
+  for (const batch of [[call(1), call(2), call(3)], [call(1)], []]) {
+    const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(batch) });
+    assert.equal(response.status, 400, `batch of ${batch.length}`);
+    const json = await response.json();
+    assert.equal(json.jsonrpc, '2.0');
+    assert.equal(json.error.code, -32600);
+    assert.equal(json.error.message, 'Batch requests are not supported');
+    assert.equal(json.id, null);
+  }
+  assert.equal(db.state.planWrites, 0);
+  assert.equal(db.state.audit.length, 0);
+
+  // Every batch still counts as one request against the per-key limit.
+  const limitedUrl = await startHttpServer(t, db, { requestsPerMinute: 2 });
+  const statuses = [];
+  for (let i = 0; i < 3; i += 1) {
+    statuses.push((await fetch(limitedUrl, { method: 'POST', headers, body: JSON.stringify([call(1), call(2)]) })).status);
+  }
+  assert.deepEqual(statuses, [400, 400, 429]);
 });
 
 test('MCP over Streamable HTTP authenticates with the coach key', async (t) => {

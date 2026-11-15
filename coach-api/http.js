@@ -35,8 +35,27 @@ const errorResponse = (error) => {
 const WRITE_QUERY_PARAMS = new Set(['dryRun']);
 const QUERY_FLAGS = { true: true, 1: true, false: false, 0: false };
 
-/** Strict parse of the dryRun query value: true/false/1/0, anything else is 400. */
+/**
+ * URLSearchParams → query object for handle(). A parameter given once is a
+ * string; a repeated parameter keeps every value as an array (instead of the
+ * last one winning, as with Object.fromEntries), so handlers can reject it.
+ */
+const queryFromSearchParams = (searchParams) => Object.fromEntries(
+  [...new Set(searchParams.keys())].map((name) => {
+    const values = searchParams.getAll(name);
+    return [name, values.length === 1 ? values[0] : values];
+  })
+);
+
+/** Strict parse of the write query: no repeated parameters, only dryRun, and dryRun true/false/1/0. */
 const parseWriteQuery = (query) => {
+  const repeated = Object.keys(query).filter((name) => Array.isArray(query[name]));
+  if (repeated.length) {
+    throw new CoachApiError(400, 'Gjentatt query-parameter', repeated.map((name) => ({
+      path: name,
+      message: 'Kan bare oppgis én gang'
+    })));
+  }
   const unknown = Object.keys(query).filter((name) => !WRITE_QUERY_PARAMS.has(name));
   if (unknown.length) {
     throw new CoachApiError(400, 'Ukjent query-parameter', unknown.map((name) => ({
@@ -54,8 +73,11 @@ const parseWriteQuery = (query) => {
 
 /**
  * Auth + rate limits shared by REST and MCP.
- * - failed authentications: per client IP (slows down key guessing)
- * - requests: per API key
+ * - failed authentications: per client IP (slows down key guessing). An IP
+ *   that has reached the limit gets 429 before the key is looked up, so it
+ *   costs no database round-trip, even if it now sends a valid key, until its
+ *   oldest recorded failure is 10 minutes old.
+ * - requests: per API key, counted after successful authentication.
  */
 const createCoachGateway = ({
   sql,
@@ -65,15 +87,16 @@ const createCoachGateway = ({
   const isKeyLimited = createRateLimiter(requestsPerMinute, 60_000);
   const isFailureLimited = createRateLimiter(failedAuthPer10Min, 600_000);
   const service = createCoachService(sql);
+  const tooManyFailures = () => respond(429, { error: 'For mange mislykkede forsøk. Vent litt og prøv igjen.' }, { 'Retry-After': '600' });
 
   /** Returns { ok: true, key } or { ok: false, response }. */
   const authorize = async ({ headers = {}, ip = 'unknown' }) => {
+    if (isFailureLimited.isLimited(ip)) return { ok: false, response: tooManyFailures() };
     const authorization = headers.authorization ?? headers.Authorization;
     const auth = await authenticateCoachKey(sql, authorization);
     if (!auth.ok) {
-      if (isFailureLimited(ip)) {
-        return { ok: false, response: respond(429, { error: 'For mange mislykkede forsøk. Vent litt og prøv igjen.' }, { 'Retry-After': '600' }) };
-      }
+      // Records the failure; only true if concurrent failures filled the limit during the lookup.
+      if (isFailureLimited(ip)) return { ok: false, response: tooManyFailures() };
       const challenge = auth.statusCode === 401 ? { 'WWW-Authenticate': 'Bearer realm="jnm-coach"' } : {};
       return { ok: false, response: respond(auth.statusCode, { error: auth.error }, challenge) };
     }
@@ -164,4 +187,4 @@ const createCoachGateway = ({
   return { authorize, handle, service };
 };
 
-module.exports = { BASE_PATH, MAX_BODY_BYTES, createCoachGateway };
+module.exports = { BASE_PATH, MAX_BODY_BYTES, createCoachGateway, queryFromSearchParams };

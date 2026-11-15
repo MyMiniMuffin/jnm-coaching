@@ -1,7 +1,8 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { createFakeDb } = require('./fixtures/coach-fake-db.cjs');
-const { createCoachGateway } = require('../coach-api/http');
+const { createCoachGateway, queryFromSearchParams } = require('../coach-api/http');
+const { createRateLimiter } = require('../coach-api/rate-limit');
 const { generateKey, hashKey, parseKey } = require('../coach-api/keys');
 const { parseStoredPlans, serializeStoredPlans } = require('../coach-api/plans');
 const { isoWeekRange } = require('../coach-api/service');
@@ -99,6 +100,44 @@ test('failed authentication is rate limited per IP, requests per key', async () 
   const keyStatuses = [];
   for (let i = 0; i < 4; i += 1) keyStatuses.push((await call('GET', '/me')).statusCode);
   assert.deepEqual(keyStatuses, [200, 200, 200, 429]);
+});
+
+test('an IP over the failed-auth limit gets 429 without a key lookup, even with a valid key', async () => {
+  const { call, db } = setup({ failedAuthPer10Min: 2 });
+  const ip = '5.6.7.8';
+  for (let i = 0; i < 2; i += 1) assert.equal((await call('GET', '/me', { key: generateKey().key, ip })).statusCode, 401);
+  const lookups = () => db.state.queries.filter((q) => q.text.includes('FROM coach_api_keys')).length;
+  const before = lookups();
+  const blocked = await call('GET', '/me', { ip });
+  assert.equal(blocked.statusCode, 429);
+  assert.equal(blocked.headers['Retry-After'], '600');
+  assert.equal((await call('GET', '/me', { key: generateKey().key, ip })).statusCode, 429);
+  assert.equal(lookups(), before, 'no database round-trip during the lockout');
+  // Other IPs are unaffected.
+  assert.equal((await call('GET', '/me', { ip: '5.6.7.9' })).statusCode, 200);
+});
+
+test('rate limiter stops recording once a key is over its limit', () => {
+  const limiter = createRateLimiter(3, 60_000);
+  const results = [];
+  for (let i = 0; i < 50; i += 1) results.push(limiter('k'));
+  assert.deepEqual(results.slice(0, 4), [false, false, false, true]);
+  assert.ok(results.slice(3).every(Boolean));
+  assert.equal(limiter.size('k'), 3);
+  // isLimited checks without recording.
+  assert.equal(limiter.isLimited('other'), false);
+  assert.equal(limiter.size('other'), 0);
+  assert.equal(limiter.isLimited('k'), true);
+});
+
+test('rate limiter allows a key again once its oldest hit leaves the window', async () => {
+  const limiter = createRateLimiter(2, 50);
+  assert.equal(limiter('k'), false);
+  assert.equal(limiter('k'), false);
+  assert.equal(limiter('k'), true);
+  await new Promise((resolve) => setTimeout(resolve, 60));
+  assert.equal(limiter('k'), false);
+  assert.equal(limiter.size('k'), 1);
 });
 
 // --- Read endpoints ---
@@ -265,6 +304,49 @@ test('query dryRun fails closed: strict values, unknown parameters rejected on w
 
   // GET keeps ignoring unrelated query parameters.
   assert.equal((await call('GET', '/athletes/5/meal-plan', { query: { foo: 'bar' } })).statusCode, 200);
+});
+
+test('repeated query parameters (built like server.mjs) are rejected on writes, never last-wins', async () => {
+  const { call, db } = setup();
+  const query = (search) => queryFromSearchParams(new URL(`http://localhost/api/coach/v1/x${search}`).searchParams);
+
+  assert.deepEqual(query('?dryRun=true&dryRun=false&a=1'), { dryRun: ['true', 'false'], a: '1' });
+  assert.deepEqual(query('?week=2026-W46'), { week: '2026-W46' });
+  assert.deepEqual(query(''), {});
+  // A "__proto__" parameter is an own property, not a prototype change.
+  const proto = query('?__proto__=x');
+  assert.equal(Object.getPrototypeOf(proto), Object.prototype);
+  assert.ok(Object.hasOwn(proto, '__proto__'));
+  assert.equal(proto.__proto__, 'x');
+
+  const body = { plans: [{ id: 'original', text: 'Ny' }] };
+  for (const search of ['?dryRun=true&dryRun=false', '?dryRun=false&dryRun=false', '?dryRun=0&dryRun=true']) {
+    for (const method of ['PUT', 'PATCH']) {
+      const response = await call(method, '/athletes/5/meal-plan', {
+        body: method === 'PUT' ? { plans: [{ name: 'Matplan', text: 'Ny' }] } : body,
+        query: query(search)
+      });
+      assert.equal(response.statusCode, 400, `${method} ${search}`);
+      assert.deepEqual(response.json.details, [{ path: 'dryRun', message: 'Kan bare oppgis én gang' }]);
+    }
+  }
+  assert.equal(db.state.planWrites, 0);
+  assert.equal(db.state.audit.length, 0);
+
+  // Single values keep working through the same helper.
+  const dry = await call('PATCH', '/athletes/5/meal-plan', { body, query: query('?dryRun=true') });
+  assert.equal(dry.statusCode, 200);
+  assert.equal(dry.json.dryRun, true);
+  assert.equal(db.state.planWrites, 0);
+
+  // GET works with single values and turns repeated ones into a 400, not a crash.
+  assert.equal((await call('GET', '/athletes', { query: query('?includeArchived=true') })).statusCode, 200);
+  assert.equal((await call('GET', '/athletes/5/reports', { query: query('?week=2026-W46') })).statusCode, 200);
+  assert.equal((await call('GET', '/athletes/5/weight', { query: query('?from=2026-01-01') })).statusCode, 200);
+  assert.equal((await call('GET', '/athletes/5/reports', { query: query('?week=2026-W46&week=2026-W45') })).statusCode, 400);
+  assert.equal((await call('GET', '/athletes/5/reports', { query: query('?limit=1&limit=2') })).statusCode, 400);
+  assert.equal((await call('GET', '/athletes', { query: query('?includeArchived=true&includeArchived=false') })).statusCode, 400);
+  assert.equal((await call('GET', '/reports/latest', { query: query('?includeArchived=1&includeArchived=0') })).statusCode, 400);
 });
 
 test('a semantically unchanged write is not saved or audited, even when the storage format differs', async () => {
