@@ -1050,6 +1050,7 @@ input[type="number"]::-webkit-outer-spin-button {
     100% { --plan-tabs-fade-start: 1.5rem; --plan-tabs-fade-end: 0px; }
 }
 .plan-tabs {
+    position: relative;
     display: flex;
     overflow-x: auto;
     overscroll-behavior-x: contain;
@@ -1097,7 +1098,7 @@ input[type="number"]::-webkit-outer-spin-button {
     bottom: 0;
     border-block-end: 2px solid transparent;
 }
-.plan-tab:active {
+.plan-tab:active:not(:disabled) {
     background: theme('colors.surface.100');
 }
 .plan-tab[aria-selected="true"] {

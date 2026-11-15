@@ -93,7 +93,7 @@ const NamedPlansSection = ({ type, content, onSave, isReadOnly, isArchived = fal
     const [isSaving, setIsSaving] = useState(false);
     const [saveError, setSaveError] = useState('');
     const tabListRef = useRef(null);
-    const didMountRef = useRef(false);
+    const prevSelectedIdRef = useRef(plans[0].id);
     const selectedPlan = plans.find(plan => plan.id === selectedId) || plans[0];
     const showPlanPicker = plans.length > 1;
     const duplicateName = plans.some(plan =>
@@ -106,13 +106,24 @@ const NamedPlansSection = ({ type, content, onSave, isReadOnly, isArchived = fal
         if (!plans.some(plan => plan.id === selectedId)) setSelectedId(plans[0].id);
     }, [plans, selectedId]);
 
-    // Scroller bare tablisten (ikke siden) slik at den valgte fanen alltid er synlig.
+    // Scroller bare tablisten (aldri siden): regn ut scrollLeft fra fanens offset, med litt luft.
+    const scrollTabIntoView = (tab) => {
+        const list = tabListRef.current;
+        if (!list || !tab) return;
+        const gutter = 24; // 1.5rem, som scroll-padding-inline
+        const start = tab.offsetLeft - gutter;
+        const end = tab.offsetLeft + tab.offsetWidth + gutter - list.clientWidth;
+        let left = list.scrollLeft;
+        if (start < left) left = start;
+        else if (end > left) left = end;
+        left = Math.max(0, Math.min(left, list.scrollWidth - list.clientWidth));
+        if (left !== list.scrollLeft) list.scrollTo({ left, behavior: 'auto' });
+    };
+
     useEffect(() => {
-        if (!didMountRef.current) {
-            didMountRef.current = true;
-            return;
-        }
-        tabListRef.current?.querySelector('[aria-selected="true"]')?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+        if (prevSelectedIdRef.current === selectedPlan.id) return;
+        prevSelectedIdRef.current = selectedPlan.id;
+        scrollTabIntoView(tabListRef.current?.querySelector('[aria-selected="true"]'));
     }, [selectedPlan.id]);
 
     const savePlans = async (nextPlans) => {
@@ -167,9 +178,10 @@ const NamedPlansSection = ({ type, content, onSave, isReadOnly, isArchived = fal
     ));
 
     const tabId = (id) => `${type}-plan-tab-${id}`;
-    const tabsLocked = isEditingPlan || isSaving;
+    const tabsLocked = isEditingPlan || isSaving || Boolean(nameMode);
 
     const selectPlan = (id) => {
+        if (tabsLocked) return;
         setSelectedId(id);
         setNameMode(null);
     };
@@ -185,7 +197,7 @@ const NamedPlansSection = ({ type, content, onSave, isReadOnly, isArchived = fal
             : event.key === 'ArrowRight' ? (index + 1) % plans.length
             : (index - 1 + plans.length) % plans.length;
         selectPlan(plans[nextIndex].id);
-        tabListRef.current?.querySelectorAll('[role="tab"]')[nextIndex]?.focus();
+        tabListRef.current?.querySelectorAll('[role="tab"]')[nextIndex]?.focus({ preventScroll: true });
     };
 
     const planTabs = showPlanPicker ? (
@@ -208,6 +220,7 @@ const NamedPlansSection = ({ type, content, onSave, isReadOnly, isArchived = fal
                             aria-selected={selected}
                             tabIndex={selected ? 0 : -1}
                             disabled={tabsLocked && !selected}
+                            title={plan.name}
                             onClick={() => selectPlan(plan.id)}
                             className="plan-tab min-h-11 touch-manipulation select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent disabled:opacity-50"
                         >
@@ -281,7 +294,7 @@ const NamedPlansSection = ({ type, content, onSave, isReadOnly, isArchived = fal
                 isReadOnly={isReadOnly}
                 onEditingChange={setIsEditingPlan}
                 heading={showPlanPicker ? (isDiet ? 'Matplan' : 'Treningsplan') : null}
-                panelProps={showPlanPicker ? { role: 'tabpanel', 'aria-labelledby': tabId(selectedPlan.id) } : null}
+                panelProps={showPlanPicker ? { role: 'tabpanel', tabIndex: 0, 'aria-labelledby': tabId(selectedPlan.id) } : null}
                 headerActions={planMenu}
                 headerExtra={(planTabs || nameForm) ? <>{planTabs}{nameForm}</> : null}
             />

@@ -143,7 +143,7 @@ test('plans are tabs only when there is more than one plan', () => {
     assert.match(tabsBlock, /type="button"/);
     assert.match(tabsBlock, /role="tab"/);
     assert.match(tabsBlock, /aria-selected=\{selected\}/);
-    assert.match(named, /role: 'tabpanel', 'aria-labelledby': tabId\(selectedPlan\.id\)/);
+    assert.match(named, /role: 'tabpanel', tabIndex: 0, 'aria-labelledby': tabId\(selectedPlan\.id\)/);
     assert.match(named, /panelProps=\{showPlanPicker \?/);
     assert.doesNotMatch(named, /aria-controls/);
 });
@@ -170,7 +170,7 @@ test('tabs use roving tabindex and arrow, Home and End keys with selection follo
     assert.match(keys, /'Home'/);
     assert.match(keys, /'End'/);
     assert.match(keys, /selectPlan\(plans\[nextIndex\]\.id\)/);
-    assert.match(keys, /\.focus\(\)/);
+    assert.match(keys, /\.focus\(\{ preventScroll: true \}\)/);
     assert.doesNotMatch(named, /focusgroup/);
 });
 
@@ -187,9 +187,19 @@ test('tabs are 44px touch targets, scroll horizontally and style selection from 
     assert.match(css, /\.plan-tab \{[^}]*white-space: nowrap/);
     assert.match(css, /\.plan-tab\[aria-selected="true"\]::after \{\s*border-block-end-color/);
     assert.match(css, /\.plan-tab::after \{[^}]*border-block-end: 2px solid/);
-    assert.match(css, /\.plan-tab:active/);
+    assert.match(css, /\.plan-tab:active:not\(:disabled\) \{/);
     assert.match(css, /@media \(hover: hover\) and \(pointer: fine\) \{\s*\.plan-tab\[aria-selected="false"\]:not\(:disabled\):hover/);
-    assert.match(named, /scrollIntoView\?\.\(\{ block: 'nearest', inline: 'nearest' \}\)/);
+    assert.doesNotMatch(named, /scrollIntoView/);
+    assert.match(named, /list\.scrollTo\(\{ left/);
+    assert.match(named, /tab\.offsetLeft/);
+    assert.match(named, /focus\(\{ preventScroll: true \}\)/);
+    assert.match(named, /prevSelectedIdRef/);
+    assert.doesNotMatch(named, /didMountRef/);
+    assert.match(named, /tabsLocked = isEditingPlan \|\| isSaving \|\| Boolean\(nameMode\)/);
+    assert.match(named, /const selectPlan = \(id\) => \{\s*if \(tabsLocked\) return;/);
+    assert.match(named, /title=\{plan\.name\}/);
+    assert.match(named, /tabIndex: 0, 'aria-labelledby'/);
+    assert.match(css, /\.plan-tabs \{\s*position: relative/);
     assert.doesNotMatch(css.slice(css.indexOf('.plan-tab {')), /font-weight: 600|touch-action: none/);
 });
 
