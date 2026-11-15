@@ -56,9 +56,7 @@ test('plan card does not clip the absolute menu and the header shrinks on narrow
     const header = plan.slice(plan.indexOf('<Card>'), plan.indexOf('{headerActions}'));
     assert.match(header, /rounded-t-xl/);
     assert.match(header, /min-w-0 flex-1/);
-    const wrapper = named.slice(named.indexOf('const planSelector'), named.indexOf('<select'));
-    assert.match(wrapper, /min-w-0/);
-    assert.match(wrapper, /max-w-full/);
+    assert.match(plan, /<h2 className="truncate text-\[1\.05rem\] font-semibold"/);
 });
 
 test('mailbox hover is gated for touch', () => {
@@ -132,39 +130,88 @@ test('menu keeps last-plan protection and disabled states', () => {
     assert.match(named, /setSaveError\(/);
 });
 
-test('plan selector only when there is more than one plan, as a compact select', () => {
+const css = read('src/index.css');
+const tabsBlock = named.slice(named.indexOf('const planTabs'), named.indexOf('const planMenu'));
+
+test('plans are tabs only when there is more than one plan', () => {
     assert.match(named, /const showPlanPicker = plans\.length > 1;/);
-    assert.match(named, /const planSelector = showPlanPicker \? \(/);
-    assert.match(named, /<select/);
-    assert.match(named, /titleControl=\{planSelector\}/);
-    assert.doesNotMatch(named, /titleAccessory/);
+    assert.match(named, /const planTabs = showPlanPicker \? \(/);
+    assert.match(tabsBlock, /\) : null;\s*$/);
+    assert.match(tabsBlock, /role="tablist"/);
+    assert.match(tabsBlock, /aria-label=\{isDiet \? 'Dietter' : 'Treningsplaner'\}/);
+    assert.match(tabsBlock, /<button/);
+    assert.match(tabsBlock, /type="button"/);
+    assert.match(tabsBlock, /role="tab"/);
+    assert.match(tabsBlock, /aria-selected=\{selected\}/);
+    assert.match(named, /role: 'tabpanel', 'aria-labelledby': tabId\(selectedPlan\.id\)/);
+    assert.match(named, /panelProps=\{showPlanPicker \?/);
+    assert.doesNotMatch(named, /aria-controls/);
 });
 
-test('selector replaces the title only when plans.length > 1; h2 stays for screen readers', () => {
-    assert.match(named, /const planSelector = showPlanPicker \? \(/);
-    assert.match(named, /\) : null;\s*\n\s*const planMenu/);
-    assert.match(named, /aria-label=\{isDiet \? 'Velg diett' : 'Velg treningsplan'\}/);
-    assert.match(plan, /titleControl = null/);
-    assert.match(plan, /<h2 className=\{titleControl \? 'sr-only' : '[^']*font-semibold'\}[^>]*>\{title\}<\/h2>/);
-    assert.match(plan, /\{titleControl\}/);
-    const select = named.slice(named.indexOf('<select'), named.indexOf('</select>'));
-    assert.match(select, /min-h-11/);
-    assert.match(select, /text-\[1\.05rem\] font-semibold/);
-    assert.doesNotMatch(select, /bg-surface-50/);
+test('no select or caret is used to switch plans', () => {
+    assert.doesNotMatch(named, /<select|<option|CaretDown/);
+    assert.doesNotMatch(plan, /<select|CaretDown|titleControl/);
+});
+
+test('single plan shows a visible title, multiple plans keep the section title visible', () => {
+    assert.match(named, /heading=\{showPlanPicker \? \(isDiet \? 'Matplan' : 'Treningsplan'\) : null\}/);
+    assert.match(plan, /heading = null, panelProps = null/);
+    assert.doesNotMatch(plan, /sr-only' : 'truncate/);
+    const h2 = plan.match(/<h2[\s\S]*?<\/h2>/)[0];
+    assert.doesNotMatch(h2, /sr-only/);
+    assert.match(h2, /\{heading \|\| title\}/);
+});
+
+test('tabs use roving tabindex and arrow, Home and End keys with selection following focus', () => {
+    assert.match(tabsBlock, /tabIndex=\{selected \? 0 : -1\}/);
+    const keys = named.slice(named.indexOf('const handleTabKeyDown'), named.indexOf('const planTabs'));
+    assert.match(keys, /ArrowRight/);
+    assert.match(keys, /ArrowLeft/);
+    assert.match(keys, /'Home'/);
+    assert.match(keys, /'End'/);
+    assert.match(keys, /selectPlan\(plans\[nextIndex\]\.id\)/);
+    assert.match(keys, /\.focus\(\)/);
+    assert.doesNotMatch(named, /focusgroup/);
+});
+
+test('tabs are 44px touch targets, scroll horizontally and style selection from aria-selected', () => {
+    assert.match(tabsBlock, /className="plan-tab min-h-11 touch-manipulation select-none/);
+    assert.match(css, /\.plan-tabs \{[^}]*overflow-x: auto/);
+    assert.match(css, /\.plan-tabs \{[^}]*overscroll-behavior-x: contain/);
+    assert.match(css, /\.plan-tabs \{[^}]*scrollbar-width: none/);
+    assert.match(css, /scroll-snap-type: inline proximity/);
+    assert.doesNotMatch(css, /scroll-snap-type: inline mandatory/);
+    assert.match(css, /@property --plan-tabs-fade-start/);
+    assert.match(css, /@property --plan-tabs-fade-end/);
+    assert.match(css, /\.plan-tab \{[^}]*flex: none/);
+    assert.match(css, /\.plan-tab \{[^}]*white-space: nowrap/);
+    assert.match(css, /\.plan-tab\[aria-selected="true"\]::after \{\s*border-block-end-color/);
+    assert.match(css, /\.plan-tab::after \{[^}]*border-block-end: 2px solid/);
+    assert.match(css, /\.plan-tab:active/);
+    assert.match(css, /@media \(hover: hover\) and \(pointer: fine\) \{\s*\.plan-tab\[aria-selected="false"\]:not\(:disabled\):hover/);
+    assert.match(named, /scrollIntoView\?\.\(\{ block: 'nearest', inline: 'nearest' \}\)/);
+    assert.doesNotMatch(css.slice(css.indexOf('.plan-tab {')), /font-weight: 600|touch-action: none/);
 });
 
 test('plan header stays on one row on a folded cover without mid-word breaks', () => {
-    const h2Match = plan.match(/<h2 className=\{titleControl[\s\S]*?<\/h2>/);
+    const h2Match = plan.match(/<h2[\s\S]*?<\/h2>/);
     assert.ok(h2Match, 'plan h2 not found');
     const h2 = h2Match[0];
     assert.doesNotMatch(h2, /break-words/);
-    assert.match(h2, /: 'truncate text-\[1\.05rem\] font-semibold'\}/);
-    assert.match(h2, /title=\{titleControl \? undefined : title\}/);
+    assert.match(h2, /className="truncate text-\[1\.05rem\] font-semibold"/);
+    assert.match(h2, /title=\{heading \|\| title\}/);
     assert.match(plan, /aria-label="Rediger" title="Rediger"/);
     assert.match(plan, /<span className="hidden sm:inline">Rediger<\/span>/);
     assert.match(plan, /className="hidden sm:flex w-10 h-10 shrink-0/);
-    assert.match(named, /<div className="relative w-full min-w-0 max-w-full sm:w-fit">/);
-    assert.doesNotMatch(named, /relative w-fit/); // w-fit only from sm and up
+});
+
+test('export still uses the selected plan', () => {
+    assert.match(named, /key=\{selectedPlan\.id\}/);
+    assert.match(named, /planTitle=\{selectedPlan\.name\}/);
+    assert.match(named, /content=\{selectedPlan\.content\}/);
+    assert.match(plan, /const title = planTitle \|\|/);
+    assert.match(plan, /serializePlanAsPlainText\(isEditing \? draft : parsedPlan\)/);
+    assert.match(plan, /Eksporter \$\{title\.toLowerCase\(\)\} som tekstfil/);
 });
 
 test('name input only appears in new or rename mode, at 16px', () => {
@@ -173,7 +220,6 @@ test('name input only appears in new or rename mode, at 16px', () => {
     const input = named.slice(named.indexOf('<input'), named.indexOf('/>', named.indexOf('<input')));
     assert.match(input, /text-base/);
     assert.doesNotMatch(input, /text-sm/);
-    assert.match(named, /<select[\s\S]*?text-\[1\.05rem\]/);
 });
 
 test('read-only athlete view has no change menu', () => {
@@ -183,7 +229,7 @@ test('read-only athlete view has no change menu', () => {
 
 test('archived warning stays and PlanSection works with a single plan and no new props', () => {
     assert.match(named, /Utøveren er arkivert/);
-    assert.match(plan, /titleControl = null, headerActions = null, headerExtra = null/);
+    assert.match(plan, /heading = null, panelProps = null, headerActions = null, headerExtra = null/);
 });
 
 test('plan edit, import and export are kept', () => {

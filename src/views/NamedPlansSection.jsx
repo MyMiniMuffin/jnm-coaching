@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { CaretDown, Check, DotsThree, PencilSimple, Plus, Trash, X } from '@phosphor-icons/react';
+import { Check, DotsThree, PencilSimple, Plus, Trash, X } from '@phosphor-icons/react';
 import { Button, IconButton } from '../components/ui';
 import { useConfirm } from '../components/ConfirmDialog';
 import { parseNamedPlans, serializeNamedPlans } from '../lib/namedPlans';
@@ -92,6 +92,8 @@ const NamedPlansSection = ({ type, content, onSave, isReadOnly, isArchived = fal
     const [isEditingPlan, setIsEditingPlan] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [saveError, setSaveError] = useState('');
+    const tabListRef = useRef(null);
+    const didMountRef = useRef(false);
     const selectedPlan = plans.find(plan => plan.id === selectedId) || plans[0];
     const showPlanPicker = plans.length > 1;
     const duplicateName = plans.some(plan =>
@@ -103,6 +105,15 @@ const NamedPlansSection = ({ type, content, onSave, isReadOnly, isArchived = fal
     useEffect(() => {
         if (!plans.some(plan => plan.id === selectedId)) setSelectedId(plans[0].id);
     }, [plans, selectedId]);
+
+    // Scroller bare tablisten (ikke siden) slik at den valgte fanen alltid er synlig.
+    useEffect(() => {
+        if (!didMountRef.current) {
+            didMountRef.current = true;
+            return;
+        }
+        tabListRef.current?.querySelector('[aria-selected="true"]')?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+    }, [selectedPlan.id]);
 
     const savePlans = async (nextPlans) => {
         setSaveError('');
@@ -155,21 +166,56 @@ const NamedPlansSection = ({ type, content, onSave, isReadOnly, isArchived = fal
         plan.id === selectedPlan.id ? { ...plan, content: value } : plan
     ));
 
-    const planSelector = showPlanPicker ? (
-        <div className="relative w-full min-w-0 max-w-full sm:w-fit">
-            <select
-                aria-label={isDiet ? 'Velg diett' : 'Velg treningsplan'}
-                value={selectedPlan.id}
-                disabled={isEditingPlan || isSaving}
-                onChange={event => {
-                    setSelectedId(event.target.value);
-                    setNameMode(null);
-                }}
-                className="min-h-11 w-full max-w-full cursor-pointer appearance-none truncate rounded-lg border border-transparent bg-transparent py-1.5 pl-2 pr-8 text-[1.05rem] font-semibold text-ink outline-none hover:border-surface-200 focus:border-accent focus:ring-2 focus:ring-accent disabled:cursor-not-allowed disabled:opacity-50 [@media(pointer:coarse)]:border-surface-200"
+    const tabId = (id) => `${type}-plan-tab-${id}`;
+    const tabsLocked = isEditingPlan || isSaving;
+
+    const selectPlan = (id) => {
+        setSelectedId(id);
+        setNameMode(null);
+    };
+
+    // Klassisk ARIA-fanemønster: roving tabindex, piltaster/Home/End, valg følger fokus.
+    const handleTabKeyDown = (event) => {
+        if (tabsLocked) return;
+        if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(event.key) || event.altKey || event.ctrlKey || event.metaKey) return;
+        event.preventDefault();
+        const index = plans.findIndex(plan => plan.id === selectedPlan.id);
+        const nextIndex = event.key === 'Home' ? 0
+            : event.key === 'End' ? plans.length - 1
+            : event.key === 'ArrowRight' ? (index + 1) % plans.length
+            : (index - 1 + plans.length) % plans.length;
+        selectPlan(plans[nextIndex].id);
+        tabListRef.current?.querySelectorAll('[role="tab"]')[nextIndex]?.focus();
+    };
+
+    const planTabs = showPlanPicker ? (
+        <div className="border-b border-surface-100 bg-white">
+            <div
+                ref={tabListRef}
+                role="tablist"
+                aria-label={isDiet ? 'Dietter' : 'Treningsplaner'}
+                onKeyDown={handleTabKeyDown}
+                className="plan-tabs"
             >
-                {plans.map(plan => <option key={plan.id} value={plan.id}>{plan.name}</option>)}
-            </select>
-            <CaretDown size={16} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-muted" aria-hidden="true" />
+                {plans.map(plan => {
+                    const selected = plan.id === selectedPlan.id;
+                    return (
+                        <button
+                            key={plan.id}
+                            id={tabId(plan.id)}
+                            type="button"
+                            role="tab"
+                            aria-selected={selected}
+                            tabIndex={selected ? 0 : -1}
+                            disabled={tabsLocked && !selected}
+                            onClick={() => selectPlan(plan.id)}
+                            className="plan-tab min-h-11 touch-manipulation select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent disabled:opacity-50"
+                        >
+                            <span className="block truncate">{plan.name}</span>
+                        </button>
+                    );
+                })}
+            </div>
         </div>
     ) : null;
 
@@ -234,9 +280,10 @@ const NamedPlansSection = ({ type, content, onSave, isReadOnly, isArchived = fal
                 onSave={handleSavePlan}
                 isReadOnly={isReadOnly}
                 onEditingChange={setIsEditingPlan}
-                titleControl={planSelector}
+                heading={showPlanPicker ? (isDiet ? 'Matplan' : 'Treningsplan') : null}
+                panelProps={showPlanPicker ? { role: 'tabpanel', 'aria-labelledby': tabId(selectedPlan.id) } : null}
                 headerActions={planMenu}
-                headerExtra={nameForm}
+                headerExtra={(planTabs || nameForm) ? <>{planTabs}{nameForm}</> : null}
             />
         </div>
     );
