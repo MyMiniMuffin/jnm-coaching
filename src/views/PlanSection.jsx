@@ -115,7 +115,7 @@ const AutoGrowTextarea = ({ value, onChange, ...props }) => {
     );
 };
 
-const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived = false, planTitle, onEditingChange, titleControl = null, headerActions = null, headerExtra = null }) => {
+const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived = false, planTitle, onEditingChange, heading = null, panelProps = null, headerActions = null, headerExtra = null }) => {
     const confirmDialog = useConfirm();
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -441,8 +441,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                             <Icon size={20} />
                         </div>
                         <div className="min-w-0 flex-1">
-                            <h2 className={titleControl ? 'sr-only' : 'truncate text-[1.05rem] font-semibold'} title={titleControl ? undefined : title}>{title}</h2>
-                            {titleControl}
+                            <h2 className="truncate text-[1.05rem] font-semibold" title={heading || title}>{heading || title}</h2>
                             {!isReadOnly && isEditing && (
                                 <p className="section-label mt-0.5">
                                     {saveState === 'saving' ? 'Lagrer endringer…' : saveState === 'dirty' ? 'Ulagrede endringer' : type === 'diet' ? 'Rediger måltider og matvarer' : 'Rediger seksjoner og punkter'}
@@ -526,7 +525,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
                     </div>
                 )}
 
-                <div className="p-4 sm:p-5">
+                <div className="p-4 sm:p-5" {...panelProps}>
                     {displayPlan.sections.length === 0 ? (
                         <EmptyState
                             icon={ListChecks}

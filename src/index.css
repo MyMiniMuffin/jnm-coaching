@@ -1032,3 +1032,89 @@ input[type="number"]::-webkit-outer-spin-button {
         backdrop-filter: none;
     }
 }
+
+/* Planfaner: én rad som scroller horisontalt, uten synlig scrollbar. Fade i kantene som har mer innhold. */
+@property --plan-tabs-fade-start {
+    syntax: '<length>';
+    inherits: false;
+    initial-value: 0px;
+}
+@property --plan-tabs-fade-end {
+    syntax: '<length>';
+    inherits: false;
+    initial-value: 0px;
+}
+@keyframes plan-tabs-fade {
+    0% { --plan-tabs-fade-start: 0px; --plan-tabs-fade-end: 1.5rem; }
+    2%, 98% { --plan-tabs-fade-start: 1.5rem; --plan-tabs-fade-end: 1.5rem; }
+    100% { --plan-tabs-fade-start: 1.5rem; --plan-tabs-fade-end: 0px; }
+}
+.plan-tabs {
+    position: relative;
+    display: flex;
+    gap: 0.375rem;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    scroll-snap-type: inline proximity;
+    scroll-padding-inline: 1.5rem;
+    padding-block: 0.5rem;
+    padding-inline: 1rem;
+}
+.plan-tabs::-webkit-scrollbar {
+    display: none;
+}
+@supports (animation-timeline: scroll()) {
+    .plan-tabs {
+        animation: plan-tabs-fade linear both;
+        animation-timeline: scroll(self inline);
+        -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--plan-tabs-fade-start), #000 calc(100% - var(--plan-tabs-fade-end)), transparent 100%);
+        mask-image: linear-gradient(to right, transparent 0, #000 var(--plan-tabs-fade-start), #000 calc(100% - var(--plan-tabs-fade-end)), transparent 100%);
+    }
+}
+@media (min-width: 640px) {
+    .plan-tabs {
+        padding-inline: 1.5rem;
+    }
+}
+.plan-tab {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    max-width: 14rem;
+    padding-inline: 1rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    font-weight: 500;
+    white-space: nowrap;
+    color: theme('colors.ink.DEFAULT');
+    background: theme('colors.surface.100');
+    scroll-snap-align: start;
+    border-radius: 9999px;
+    transition: background-color 150ms, color 150ms;
+}
+.plan-tab:active:not(:disabled) {
+    background: theme('colors.surface.200');
+}
+.plan-tab[aria-selected="true"] {
+    color: #fff;
+    background: theme('colors.ink.DEFAULT');
+}
+.plan-tab[aria-selected="true"]:active:not(:disabled) {
+    background: theme('colors.ink.muted');
+}
+@media (hover: hover) and (pointer: fine) {
+    .plan-tab[aria-selected="false"]:not(:disabled):hover {
+        background: theme('colors.surface.200');
+    }
+}
+@media (forced-colors: active) {
+    .plan-tab {
+        border: 1px solid ButtonText;
+    }
+    .plan-tab[aria-selected="true"] {
+        color: HighlightText;
+        background: Highlight;
+        border-color: Highlight;
+    }
+}
