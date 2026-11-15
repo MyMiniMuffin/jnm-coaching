@@ -185,8 +185,14 @@ test('tabs are 44px touch targets, scroll horizontally and style selection from 
     assert.match(css, /@property --plan-tabs-fade-end/);
     assert.match(css, /\.plan-tab \{[^}]*flex: none/);
     assert.match(css, /\.plan-tab \{[^}]*white-space: nowrap/);
-    assert.match(css, /\.plan-tab\[aria-selected="true"\]::after \{\s*border-block-end-color/);
-    assert.match(css, /\.plan-tab::after \{[^}]*border-block-end: 2px solid/);
+    assert.match(css, /\.plan-tab \{[^}]*border-radius: 9999px/);
+    assert.match(css, /\.plan-tab \{[^}]*background: theme\('colors\.surface\.100'\)/);
+    assert.match(css, /\.plan-tab\[aria-selected="true"\] \{[^}]*color: #fff;[^}]*background: theme\('colors\.ink\.DEFAULT'\)/);
+    assert.match(css, /\.plan-tabs \{[^}]*gap: 0\.375rem/);
+    assert.match(css, /background: Highlight/);
+    assert.doesNotMatch(css.slice(css.indexOf('.plan-tabs {')), /::after|border-block-end/);
+    assert.match(tabsBlock, /focus-visible:ring-offset-2/);
+    assert.doesNotMatch(tabsBlock, /ring-inset/);
     assert.match(css, /\.plan-tab:active:not\(:disabled\) \{/);
     assert.match(css, /@media \(hover: hover\) and \(pointer: fine\) \{\s*\.plan-tab\[aria-selected="false"\]:not\(:disabled\):hover/);
     assert.doesNotMatch(named, /scrollIntoView/);

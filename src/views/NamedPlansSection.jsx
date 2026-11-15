@@ -201,7 +201,7 @@ const NamedPlansSection = ({ type, content, onSave, isReadOnly, isArchived = fal
     };
 
     const planTabs = showPlanPicker ? (
-        <div className="border-b border-surface-100 bg-white">
+        <div className="bg-white">
             <div
                 ref={tabListRef}
                 role="tablist"
@@ -222,7 +222,7 @@ const NamedPlansSection = ({ type, content, onSave, isReadOnly, isArchived = fal
                             disabled={tabsLocked && !selected}
                             title={plan.name}
                             onClick={() => selectPlan(plan.id)}
-                            className="plan-tab min-h-11 touch-manipulation select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent disabled:opacity-50"
+                            className="plan-tab min-h-11 touch-manipulation select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:opacity-50"
                         >
                             <span className="block truncate">{plan.name}</span>
                         </button>
