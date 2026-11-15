@@ -5,6 +5,8 @@
  * - Runs the existing functions unchanged: classic handlers under
  *   /.netlify/functions/<name> and the v2 onboarding upload at
  *   /api/onboarding-image-upload (with the rate limit Netlify used to enforce).
+ * - Coach API (/api/coach/v1/*) and MCP server (/mcp) for the coach's AI
+ *   assistants, authenticated with coach API keys (docs/coach-api.md).
  * - Takes over Netlify Forms: POST / with form-name is stored by forms.js.
  *
  * Caddy terminates HTTPS, compresses responses and sets X-Forwarded-For.
@@ -17,6 +19,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
+// Sliding-window limit in memory (one container), shared with the coach API.
+const { createRateLimiter } = require('./coach-api/rate-limit.js');
+const {
+    BASE_PATH: COACH_API_BASE,
+    MAX_BODY_BYTES: COACH_MAX_BODY_BYTES,
+    createCoachGateway,
+} = require('./coach-api/http.js');
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const DIST = path.join(ROOT, 'dist');
 const PORT = Number(process.env.PORT) || 3000;
@@ -71,14 +80,14 @@ const cacheControlFor = (urlPath, filePath) => {
     return null;
 };
 
-const readBody = (req) => new Promise((resolve, reject) => {
+const readBody = (req, maxBytes = MAX_BODY_BYTES) => new Promise((resolve, reject) => {
     const chunks = [];
     let size = 0;
     let tooLarge = false;
     req.on('data', (chunk) => {
         if (tooLarge) return; // drain the rest so the client still gets the 413
         size += chunk.length;
-        if (size > MAX_BODY_BYTES) {
+        if (size > maxBytes) {
             tooLarge = true;
             chunks.length = 0;
             reject(Object.assign(new Error('Request body too large'), { status: 413 }));
@@ -134,24 +143,6 @@ const clientIp = (req) => (
     || 'unknown'
 );
 
-/** Sliding-window limit per client IP, in memory (one container). */
-const createRateLimiter = (limit, windowMs) => {
-    const hits = new Map();
-    setInterval(() => {
-        const now = Date.now();
-        for (const [ip, times] of hits) {
-            if (times.every((time) => now - time >= windowMs)) hits.delete(ip);
-        }
-    }, windowMs).unref();
-    return (ip) => {
-        const now = Date.now();
-        const recent = (hits.get(ip) || []).filter((time) => now - time < windowMs);
-        recent.push(now);
-        hits.set(ip, recent);
-        return recent.length > limit;
-    };
-};
-
 // Netlify rate limit for onboarding uploads: 6 requests per 180 s per client IP.
 const isOnboardingLimited = createRateLimiter(6, 180_000);
 // Public forms (replaces Netlify Forms): 5 submissions per 10 min per client IP.
@@ -182,6 +173,37 @@ const runOnboardingUpload = async (req, res, url) => {
     });
     const response = await onboardingUpload(request);
     send(res, response.status, Object.fromEntries(response.headers), Buffer.from(await response.arrayBuffer()));
+};
+
+// Coach API (/api/coach/v1/*) and MCP (/mcp), both authenticated with a coach
+// API key. Created on first use so the rest of the site runs without them.
+let coachGateway;
+const getCoachGateway = () => {
+    coachGateway ??= createCoachGateway({ sql: require('./coach-api/db.js').getSql() });
+    return coachGateway;
+};
+
+const runCoachApi = async (req, res, url) => {
+    const body = await readBody(req, COACH_MAX_BODY_BYTES);
+    const result = await getCoachGateway().handle({
+        method: req.method,
+        path: url.pathname,
+        query: Object.fromEntries(url.searchParams),
+        headers: req.headers,
+        body: body.length ? body : null,
+        ip: clientIp(req),
+    });
+    send(res, result.statusCode, result.headers, result.body);
+};
+
+let handleMcpRequest;
+const runMcp = async (req, res) => {
+    const body = await readBody(req, COACH_MAX_BODY_BYTES);
+    handleMcpRequest ??= (await import('./mcp/http.mjs')).handleMcpRequest;
+    // The SDK transport writes the response itself; these merge into its headers.
+    for (const [name, value] of Object.entries(SECURITY_HEADERS)) res.setHeader(name, value);
+    res.setHeader('Cache-Control', 'no-store');
+    await handleMcpRequest(req, res, { gateway: getCoachGateway(), ip: clientIp(req), body });
 };
 
 const fileStat = async (filePath) => {
@@ -273,6 +295,15 @@ const server = http.createServer(async (req, res) => {
         }
         if (url.pathname === '/api/onboarding-image-upload') {
             await runOnboardingUpload(req, res, url);
+            return;
+        }
+        // Before the static/SPA handling, so API and MCP routes are never served as files.
+        if (url.pathname === COACH_API_BASE || url.pathname.startsWith(`${COACH_API_BASE}/`)) {
+            await runCoachApi(req, res, url);
+            return;
+        }
+        if (url.pathname === '/mcp') {
+            await runMcp(req, res);
             return;
         }
         // Netlify Forms posted to "/" with form-name; the pages still do.

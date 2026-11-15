@@ -66,8 +66,18 @@ async function main() {
   `;
   if (handledColumn.length !== 1) throw new Error('Form submissions handled_at verification failed');
   console.log('Database migration 011: applied and verified.');
+  await sql.query(readFileSync(join(__dirname, '../migrations/012_coach_api_keys.sql'), 'utf8'));
+  await sql.query(readFileSync(join(__dirname, '../migrations/013_coach_api_audit_log.sql'), 'utf8'));
+  const coachApiColumns = await sql`
+    SELECT table_name, column_name FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND ((table_name = 'coach_api_keys' AND column_name IN ('prefix', 'key_hash', 'scope', 'coach_user_id', 'revoked_at'))
+        OR (table_name = 'coach_api_audit_log' AND column_name IN ('key_id', 'action', 'athlete_id', 'before_value', 'after_value')))
+  `;
+  if (coachApiColumns.length !== 10) throw new Error('Coach API tables verification failed');
+  console.log('Database migrations 012/013: applied and verified.');
 }
 main().catch((error) => {
-  console.error('Database migration failed; deployment stopped. Check database configuration and migrations 003–011. SQLSTATE:', error.code || 'unknown');
+  console.error('Database migration failed; deployment stopped. Check database configuration and migrations 003–013. SQLSTATE:', error.code || 'unknown');
   process.exitCode = 1;
 });

@@ -21,7 +21,10 @@ RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 COPY --from=build /app/dist ./dist
 COPY server.mjs ./
 COPY netlify/functions ./netlify/functions
-COPY scripts/migrate-production.cjs ./scripts/
+# Coach API + MCP server, and the key tool (docker exec ... npm run coach-key).
+COPY coach-api ./coach-api
+COPY mcp ./mcp
+COPY scripts/migrate-production.cjs scripts/coach-key.cjs ./scripts/
 COPY migrations ./migrations
 
 USER node

@@ -13,6 +13,7 @@ Ingenting i appen endres:
 - iOS-appen kaller `https://jnmcoaching.no`, så den trenger ingen ny App Store-versjon.
 - Databasen blir i Neon, bilder i Cloudinary. Ingen datamigrering.
 - Migreringene (`scripts/migrate-production.cjs`) kjører ved hver containerstart, slik Netlify kjørte dem ved hver deploy.
+- Coach-API (`/api/coach/v1`) og MCP-server (`/mcp`) for coachens AI-assistenter kjører i samme container. Nøkler og bruk: [coach-api.md](coach-api.md).
 
 ## 0. Før du starter: ta over Neon-databasen
 
