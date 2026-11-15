@@ -316,7 +316,11 @@ const diffPlans = (beforePlans, afterPlans) => {
       modified.push({ id: after.id, name: after.name, ...(formatChanged ? { format: after.sections ? 'sections' : 'text' } : {}), lines });
     }
   }
-  return { added, removed, renamed, modified };
+  // Plan order is the tab order in the app, so a pure reorder is a change too.
+  const keptBefore = beforePlans.filter((plan) => afterPlans.some((after) => after.id === plan.id)).map((plan) => plan.id);
+  const keptAfter = afterPlans.filter((plan) => beforePlans.some((before) => before.id === plan.id)).map((plan) => plan.id);
+  const reordered = keptBefore.some((id, index) => keptAfter[index] !== id);
+  return { added, removed, renamed, modified, ...(reordered ? { order: afterPlans.map((plan) => plan.id) } : {}) };
 };
 
 module.exports = {

@@ -356,7 +356,10 @@ const createCoachService = (sql) => {
       throw new CoachApiError(400, `Planene er for lange (maks ${MAX_PLANS_LENGTH.toLocaleString('nb-NO')} tegn lagret)`);
     }
     const after = parseStoredPlans(afterRaw, type);
-    const changed = afterRaw !== (beforeRaw ?? '');
+    // Semantic comparison: re-serialize what is stored now the same way the
+    // result will be stored. Key order/whitespace in the stored JSON, or legacy
+    // text vs. named plans, then do not count as a change.
+    const changed = serializeStoredPlans(before.plans, type) !== afterRaw;
     const result = {
       athlete,
       dryRun,
@@ -366,7 +369,14 @@ const createCoachService = (sql) => {
       after: { plans: after.plans },
       diff: diffPlans(before.plans, after.plans)
     };
-    if (dryRun || !changed) return result;
+    if (!changed) {
+      // Nothing to save; a format-only conversion (legacy → named-plans) is not written either.
+      return { ...result, message: 'Ingen endringer i innholdet; ingenting ble lagret.' };
+    }
+    if (before.storageFormat !== 'named-plans') {
+      result.storageConversion = { from: before.storageFormat, to: 'named-plans' };
+    }
+    if (dryRun) return result;
 
     const rows = await writePlanWithAudit(type, {
       athleteId: athlete.id,

@@ -109,7 +109,7 @@ Valideringen er streng (ukjente felt gir 400): navn 1–120 tegn og unike som i 
 
 ### Dry-run
 
-Legg til `?dryRun=true` eller `"dryRun": true` i body. Svaret har samme form som ved lagring, men `saved: false`:
+Legg til `?dryRun=true` eller `"dryRun": true` i body. Query-verdien tolkes strengt: bare `true`, `false`, `1` og `0` er gyldige (alt annet, f.eks. `TRUE` eller `yes`, gir 400). PUT/PATCH avviser også ukjente query-parametere med 400, så en feilstavet `?dryrun=true` aldri blir en ekte lagring. Er dry-run slått på i body, kan ikke `?dryRun=false` slå det av. Svaret har samme form som ved lagring, men `saved: false`:
 
 ```json
 {
@@ -126,6 +126,8 @@ Legg til `?dryRun=true` eller `"dryRun": true` i body. Svaret har samme form som
 
 Ved lagring kommer i tillegg `auditId`.
 
+`changed` sammenligner innholdet, ikke teksten i databasen: planene (id, navn, rekkefølge og innhold) normaliseres som ved lagring før de sammenlignes. Er det ingen endring, lagres og logges ingenting (`changed: false`, `saved: false` og en `message`), også når bare lagringsformatet ville endret seg (eldre tekst → `named-plans`). Ved en ekte endring av en eldre plan står konverteringen i svaret som `storageConversion: { "from": "legacy", "to": "named-plans" }`. Er rekkefølgen på planene endret, har `diff` i tillegg `order` (plan-ID-ene i ny rekkefølge).
+
 ### Eksempler
 
 ```bash
@@ -139,7 +141,7 @@ curl -s -X PATCH 'https://jnmcoaching.no/api/coach/v1/athletes/5/training-progra
 
 ## 5. MCP
 
-Server: `https://jnmcoaching.no/mcp`, Streamable HTTP, stateless (ingen sesjoner, JSON-svar). Hver forespørsel må ha `Authorization: Bearer <nøkkel>`, som valideres akkurat som for REST-API-et (samme 401/403/429).
+Server: `https://jnmcoaching.no/mcp`, Streamable HTTP, stateless (ingen sesjoner, JSON-svar). Hver forespørsel må ha `Authorization: Bearer <nøkkel>`, som valideres akkurat som for REST-API-et (samme 401/403/429). Bare `POST` støttes: `GET` (SSE-strøm) og `DELETE` (avslutt sesjon) gir 405 med `Allow: POST`, og en tom eller ugyldig body gir 400 (JSON-RPC parse error).
 
 | Verktøy | Tilsvarer |
 | --- | --- |
@@ -163,7 +165,7 @@ Menyvalgene i Grok endrer seg innimellom; det som trengs er alltid en remote MCP
 
 ### Lokalt (stdio)
 
-For klienter som bare støtter stdio (eller lokal testing). Kobler direkte til databasen med samme tjenestelag og nøkkelsjekk:
+For klienter som bare støtter stdio (eller lokal testing). Kobler direkte til databasen med samme tjenestelag og nøkkelsjekk. Nøkkelen sjekkes ved oppstart og på nytt før hvert verktøykall, så `revoke` (eller endret scope) virker umiddelbart også for en prosess som allerede kjører: kallene gir da `401`/`403`. Rate limiting gjelder bare HTTP.
 
 ```bash
 COACH_API_KEY='jnmc_...' NETLIFY_DATABASE_URL='postgres://...' node mcp/stdio.mjs

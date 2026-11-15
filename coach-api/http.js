@@ -30,7 +30,27 @@ const errorResponse = (error) => {
   return respond(500, { error: 'Intern feil' });
 };
 
-const isTrue = (value) => value === 'true' || value === '1';
+// Writes fail closed: only these query parameters are accepted on PUT/PATCH, so a
+// misspelled "?dryrun=true" is rejected instead of silently becoming a real write.
+const WRITE_QUERY_PARAMS = new Set(['dryRun']);
+const QUERY_FLAGS = { true: true, 1: true, false: false, 0: false };
+
+/** Strict parse of the dryRun query value: true/false/1/0, anything else is 400. */
+const parseWriteQuery = (query) => {
+  const unknown = Object.keys(query).filter((name) => !WRITE_QUERY_PARAMS.has(name));
+  if (unknown.length) {
+    throw new CoachApiError(400, 'Ukjent query-parameter', unknown.map((name) => ({
+      path: name,
+      message: 'Ikke støttet her (bare "dryRun" er tillatt)'
+    })));
+  }
+  if (query.dryRun === undefined) return { dryRun: false };
+  const value = query.dryRun;
+  if (typeof value !== 'string' || !Object.hasOwn(QUERY_FLAGS, value)) {
+    throw new CoachApiError(400, 'Ugyldig dryRun', [{ path: 'dryRun', message: 'Må være true, false, 1 eller 0' }]);
+  }
+  return { dryRun: QUERY_FLAGS[value] };
+};
 
 /**
  * Auth + rate limits shared by REST and MCP.
@@ -118,7 +138,8 @@ const createCoachGateway = ({
     allow(['GET', 'PUT', 'PATCH']);
     if (method === 'GET') return plan.get(athleteId);
     const mode = method === 'PUT' ? 'replace' : 'patch';
-    return plan.update(athleteId, mode, parseBody(body), { key, dryRun: isTrue(query.dryRun) });
+    const { dryRun } = parseWriteQuery(query);
+    return plan.update(athleteId, mode, parseBody(body), { key, dryRun });
   };
 
   /** request: { method, path, query, headers, body, ip } → { statusCode, headers, body } */

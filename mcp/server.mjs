@@ -10,6 +10,7 @@ import { z } from 'zod';
 
 const require = createRequire(import.meta.url);
 const { CoachApiError } = require('../coach-api/service.js');
+const { authenticateCoachKey } = require('../coach-api/keys.js');
 const { fullPlanSchema, patchPlanSchema } = require('../coach-api/plans.js');
 const { version } = require('../package.json');
 
@@ -41,19 +42,39 @@ const fail = (error) => {
   return { isError: true, content: [{ type: 'text', text: `${error.statusCode}: ${error.message}${details}` }] };
 };
 
-const run = async (fn) => {
-  try {
-    return ok(await fn());
-  } catch (error) {
-    return fail(error);
-  }
+/**
+ * Returns a function that checks the key against the database (revoked, scope,
+ * coach role) and resolves to the current key, or throws a CoachApiError 401/403.
+ * Used by stdio, where one process lives as long as the client: checking on every
+ * tool call makes `coach-key revoke` take effect immediately there as well.
+ */
+export const createKeyAuthorizer = (sql, apiKey) => async () => {
+  const auth = await authenticateCoachKey(sql, `Bearer ${apiKey}`);
+  if (!auth.ok) throw new CoachApiError(auth.statusCode, auth.error);
+  return auth.key;
 };
 
 const READ_ONLY = { readOnlyHint: true, destructiveHint: false, openWorldHint: false };
 const WRITE = { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false };
 
-/** @param {{ service: ReturnType<import('../coach-api/service.js').createCoachService>, key: object }} options */
-export const createCoachMcpServer = ({ service, key }) => {
+/**
+ * @param {{
+ *   service: ReturnType<import('../coach-api/service.js').createCoachService>,
+ *   key: object,
+ *   authorize?: () => Promise<object>
+ * }} options
+ *   `authorize` runs before every tool call and returns the key to use (default:
+ *   `key` as is, for HTTP where each request is already authenticated).
+ */
+export const createCoachMcpServer = ({ service, key, authorize = async () => key }) => {
+  const run = async (fn) => {
+    try {
+      return ok(await fn(await authorize()));
+    } catch (error) {
+      return fail(error);
+    }
+  };
+
   const server = new McpServer(
     { name: 'jnm-coaching', version },
     {
@@ -109,7 +130,7 @@ export const createCoachMcpServer = ({ service, key }) => {
     description: `Endrer matplanen til en utøver. Returnerer før/etter og diff. ${PLAN_HELP}`,
     inputSchema: updateShape,
     annotations: WRITE
-  }, ({ athleteId: id, mode, dryRun, ...body }) => run(() => service.updateMealPlan(id, mode, body, { key, dryRun })));
+  }, ({ athleteId: id, mode, dryRun, ...body }) => run((currentKey) => service.updateMealPlan(id, mode, body, { key: currentKey, dryRun })));
 
   server.registerTool('get_training_program', {
     title: 'Hent treningsprogram',
@@ -123,7 +144,7 @@ export const createCoachMcpServer = ({ service, key }) => {
     description: `Endrer treningsprogrammet til en utøver. Returnerer før/etter og diff. ${PLAN_HELP}`,
     inputSchema: updateShape,
     annotations: WRITE
-  }, ({ athleteId: id, mode, dryRun, ...body }) => run(() => service.updateTrainingProgram(id, mode, body, { key, dryRun })));
+  }, ({ athleteId: id, mode, dryRun, ...body }) => run((currentKey) => service.updateTrainingProgram(id, mode, body, { key: currentKey, dryRun })));
 
   return server;
 };

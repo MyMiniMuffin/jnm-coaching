@@ -227,6 +227,99 @@ test('dry-run returns before/after/diff and writes nothing', async () => {
   assert.equal(db.state.planWrites, 0);
 });
 
+test('query dryRun fails closed: strict values, unknown parameters rejected on writes', async () => {
+  const { call, db } = setup();
+  const body = { plans: [{ id: 'original', text: 'Ny' }] };
+  for (const query of [
+    { dryRun: 'TRUE' },
+    { dryRun: 'yes' },
+    { dryRun: '' },
+    { dryRun: ['true', 'false'] },
+    { dryrun: 'true' },
+    { dry_run: '1' },
+    { dryRun: 'true', extra: '1' }
+  ]) {
+    for (const method of ['PUT', 'PATCH']) {
+      const response = await call(method, '/athletes/5/meal-plan', { body: method === 'PUT' ? { plans: [{ name: 'Matplan', text: 'Ny' }] } : body, query });
+      assert.equal(response.statusCode, 400, `${method} ${JSON.stringify(query)}`);
+      assert.ok(response.json.details.length);
+    }
+  }
+  assert.equal(db.state.planWrites, 0);
+  assert.equal(db.state.audit.length, 0);
+
+  for (const value of ['true', '1']) {
+    const response = await call('PATCH', '/athletes/5/meal-plan', { body, query: { dryRun: value } });
+    assert.equal(response.json.dryRun, true, value);
+  }
+  assert.equal(db.state.planWrites, 0);
+
+  // The query cannot turn off a dryRun requested in the body.
+  const bodyWins = await call('PATCH', '/athletes/5/meal-plan', { body: { ...body, dryRun: true }, query: { dryRun: 'false' } });
+  assert.equal(bodyWins.json.dryRun, true);
+  assert.equal(db.state.planWrites, 0);
+
+  const real = await call('PATCH', '/athletes/5/meal-plan', { body, query: { dryRun: '0' } });
+  assert.equal(real.json.saved, true);
+  assert.equal(db.state.planWrites, 1);
+
+  // GET keeps ignoring unrelated query parameters.
+  assert.equal((await call('GET', '/athletes/5/meal-plan', { query: { foo: 'bar' } })).statusCode, 200);
+});
+
+test('a semantically unchanged write is not saved or audited, even when the storage format differs', async () => {
+  const { call, db } = setup();
+  const legacy = db.state.users[5].diet_plan;
+
+  // Legacy plain text, PATCH with the same text: only the storage format would change.
+  for (const dryRun of [true, false]) {
+    const response = await call('PATCH', '/athletes/5/meal-plan', { body: { plans: [{ id: 'original', text: legacy }], dryRun } });
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.json.changed, false);
+    assert.equal(response.json.saved, false);
+    assert.match(response.json.message, /Ingen endringer/);
+    assert.equal(response.json.storageConversion, undefined);
+    assert.deepEqual(response.json.diff, { added: [], removed: [], renamed: [], modified: [] });
+  }
+  assert.equal(db.state.users[5].diet_plan, legacy);
+
+  // Named plans stored with other key order and whitespace than we would write.
+  db.state.users[5].workout_plan = JSON.stringify({
+    plans: [{ content: JSON.stringify({ sections: [{ items: [{ reps: '6', text: 'Knebøy', sets: '4' }], title: 'Dag 1' }], version: 3, format: 'jnm-plan' }), name: 'A', id: 'a' }],
+    version: 1,
+    format: 'jnm-workout-plans'
+  }, null, 2);
+  const stored = db.state.users[5].workout_plan;
+  const same = await call('PUT', '/athletes/5/training-program', {
+    body: { plans: [{ id: 'a', name: 'A', sections: [{ title: 'Dag 1', items: [{ text: 'Knebøy', sets: 4, reps: 6 }] }] }] }
+  });
+  assert.equal(same.json.changed, false);
+  assert.equal(same.json.saved, false);
+  assert.equal(db.state.users[5].workout_plan, stored);
+  assert.equal(db.state.planWrites, 0);
+  assert.equal(db.state.audit.length, 0);
+  assert.ok(db.state.queries.every((q) => !/WITH updated AS/.test(q.text)));
+
+  // A real change to a legacy plan is saved and reports the format conversion.
+  const changed = await call('PATCH', '/athletes/5/meal-plan', { body: { plans: [{ id: 'original', text: 'Ny' }] } });
+  assert.equal(changed.json.changed, true);
+  assert.equal(changed.json.saved, true);
+  assert.deepEqual(changed.json.storageConversion, { from: 'legacy', to: 'named-plans' });
+  assert.equal(db.state.audit.length, 1);
+});
+
+test('reordering plans is a change and shows up in the diff', async () => {
+  const { call, db } = setup();
+  db.state.users[5].diet_plan = serializeStoredPlans([
+    { id: 'a', name: 'A', text: 'x' },
+    { id: 'b', name: 'B', text: 'y' }
+  ], 'diet');
+  const response = await call('PUT', '/athletes/5/meal-plan', { body: { plans: [{ id: 'b', name: 'B', text: 'y' }, { id: 'a', name: 'A', text: 'x' }] } });
+  assert.equal(response.json.changed, true);
+  assert.deepEqual(response.json.diff.order, ['b', 'a']);
+  assert.equal(response.json.saved, true);
+});
+
 test('real update stores the app format and writes an audit row with before/after', async () => {
   const { call, db } = setup();
   const response = await call('PUT', '/athletes/5/training-program', { body: structuredProgram });
