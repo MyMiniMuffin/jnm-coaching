@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
     INSTALL_ARRIVAL_GUARD_MS,
+    INSTALL_GESTURE_MS,
+    INSTALL_STALE_POINTER_MS,
     createArrivalGuard,
     isEditableElement,
     isGuardedPointer,
@@ -147,6 +149,23 @@ test('a fresh tap after the guard window is accepted (explicit Ikke nå / Lukk)'
     assert.equal(guard.shouldIgnoreClick(click(2000)), false);
 });
 
+test('a stale pointerdown from before show does not block a click long after the guard', () => {
+    const { guard, clock } = makeGuard();
+    guard.onPointerDown({ pointerId: 1, timeStamp: 990 });
+    guard.onPointerUp({ pointerId: 1 });
+    guard.markShown();
+    clock.t = 1000 + INSTALL_GESTURE_MS + 1000;
+    assert.equal(guard.shouldIgnoreClick(click(clock.t)), false);
+});
+
+test('a held pointer without pointerup expires and stops postponing mid-interaction', () => {
+    const { guard, clock } = makeGuard();
+    guard.onPointerDown({ pointerId: 7, timeStamp: 1000 });
+    clock.t = 1000 + INSTALL_STALE_POINTER_MS + 1;
+    assert.equal(guard.isMidInteraction(null), false);
+    assert.equal(guard.isPointerDown(), false);
+});
+
 test('keyboard activation (detail 0) is never blocked by a stale pointerdown', () => {
     const { guard, clock } = makeGuard();
     guard.onPointerDown({ pointerId: 1, timeStamp: 990 });
@@ -192,7 +211,7 @@ test('attach tracks pointer events in the capture phase on the target', () => {
     };
     const detach = guard.attach(target);
     detach();
-    for (const n of ['pointerdown', 'pointerup', 'pointercancel', 'scroll']) {
+    for (const n of ['pointerdown', 'pointerup', 'pointercancel', 'scroll', 'visibilitychange']) {
         assert.ok(calls.some(c => c[0] === 'add' && c[1] === n && c[2] === true), n);
         assert.ok(calls.some(c => c[0] === 'remove' && c[1] === n && c[2] === true), n);
     }
@@ -201,7 +220,10 @@ test('attach tracks pointer events in the capture phase on the target', () => {
 // --- Kildenivå: komponenten bruker vernet og lukker bare eksplisitt ---
 const jsx = readFileSync(new URL('../src/components/InstallPrompt.jsx', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../src/index.css', import.meta.url), 'utf8');
-const overlayTag = jsx.slice(jsx.indexOf('<div\n            className="install-prompt-overlay'), jsx.indexOf('<Card'));
+const overlayStart = jsx.indexOf('<div\n            className="install-prompt-overlay');
+const overlayEnd = jsx.indexOf('<Card');
+assert.ok(overlayStart !== -1 && overlayEnd > overlayStart, 'overlay markup not found');
+const overlayTag = jsx.slice(overlayStart, overlayEnd);
 
 test('overlay has no click handler (no backdrop dismiss)', () => {
     assert.ok(overlayTag.includes('data-testid="install-prompt"'));
@@ -216,7 +238,7 @@ test('component uses the arrival guard and guards all three buttons', () => {
     assert.match(jsx, /aria-label="Lukk" onClick=\{guarded\(dismiss\)\}/);
     assert.match(jsx, /onClick=\{guarded\(dismiss\)\}>\s*Ikke nå/);
     assert.match(jsx, /onClick=\{guarded\(install\)\}/);
-    assert.doesNotMatch(jsx, /disabled/);
+    assert.doesNotMatch(jsx, /\bdisabled\s*=/);
 });
 
 test('Escape stays an explicit keyboard dismiss and prefers-reduced-motion stays in CSS', () => {

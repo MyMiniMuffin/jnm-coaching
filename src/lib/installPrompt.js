@@ -41,6 +41,8 @@ export const shouldShowInstallPrompt = ({
 // --- Ankomstvern og "midt i interaksjon" (ren logikk, testbar uten nettleser) ---
 export const INSTALL_ARRIVAL_GUARD_MS = 700;
 export const INSTALL_SCROLL_QUIET_MS = 300;
+export const INSTALL_STALE_POINTER_MS = 10000;
+export const INSTALL_GESTURE_MS = 4000;
 
 // Et trykk er "vernet" hvis det startet før popupen dukket opp eller innenfor vernevinduet.
 // Alle tidsstempler er på samme klokke (performance.now() / event.timeStamp).
@@ -61,17 +63,24 @@ export const createArrivalGuard = ({
     scrollQuietMs = INSTALL_SCROLL_QUIET_MS,
     now = defaultClock,
 } = {}) => {
-    const down = new Set();
+    const down = new Map(); // pointerId -> timeStamp
     let lastDownAt = null;
     let lastScrollAt = -Infinity;
     let shownAt = null;
 
+    const pruneDowns = (t) => {
+        for (const [id, at] of down) {
+            if (t - at > INSTALL_STALE_POINTER_MS) down.delete(id);
+        }
+    };
     const onPointerDown = (event) => {
-        down.add(event.pointerId ?? 0);
-        lastDownAt = event.timeStamp ?? now();
+        const at = event.timeStamp ?? now();
+        down.set(event.pointerId ?? 0, at);
+        lastDownAt = at;
     };
     const onPointerEnd = (event) => { down.delete(event.pointerId ?? 0); };
     const onScroll = (event) => { lastScrollAt = event?.timeStamp ?? now(); };
+    const onHidden = () => { down.clear(); };
 
     return {
         guardMs,
@@ -81,30 +90,46 @@ export const createArrivalGuard = ({
         onScroll,
         markShown: () => { shownAt = now(); },
         reset: () => { shownAt = null; },
-        isPointerDown: () => down.size > 0,
+        isPointerDown: () => { pruneDowns(now()); return down.size > 0; },
         // Utsett visning hvis brukeren er midt i en interaksjon.
-        isMidInteraction: (activeElement = null) =>
-            down.size > 0 || now() - lastScrollAt < scrollQuietMs || isEditableElement(activeElement),
+        isMidInteraction: (activeElement = null) => {
+            const t = now();
+            pruneDowns(t);
+            return down.size > 0 || t - lastScrollAt < scrollQuietMs || isEditableElement(activeElement);
+        },
         // Skal et klikk på popupens egne knapper ignoreres? Tastaturaktivering (detail === 0)
-        // påvirkes aldri av gamle pekerhendelser.
+        // påvirkes aldri av gamle pekerhendelser. Et pointerdown fra før visning teller bare
+        // hvis klikket tilhører samme gest (innen INSTALL_GESTURE_MS), så det ikke sperrer senere klikk.
         shouldIgnoreClick: (event) => {
             if (shownAt === null) return false;
             if (event.detail === 0) return false;
-            const downAt = lastDownAt ?? event.timeStamp ?? now();
-            return isGuardedPointer(shownAt, downAt, guardMs) || now() - shownAt < guardMs;
+            const until = shownAt + guardMs;
+            const clickAt = event.timeStamp ?? now();
+            if (isGuardedPointer(shownAt, clickAt, guardMs)) return true;
+            if (lastDownAt != null && lastDownAt < until && clickAt - lastDownAt >= 0 && clickAt - lastDownAt <= INSTALL_GESTURE_MS) return true;
+            pruneDowns(clickAt);
+            for (const downAt of down.values()) {
+                if (downAt < until) return true;
+            }
+            return false;
         },
         // Fanger pekerhendelser tidlig (capture), også de som startet før popupen fantes.
         attach: (target) => {
             const opts = { capture: true, passive: true };
+            const onVisibility = () => {
+                if (target.visibilityState === 'hidden') onHidden();
+            };
             target.addEventListener('pointerdown', onPointerDown, opts);
             target.addEventListener('pointerup', onPointerEnd, opts);
             target.addEventListener('pointercancel', onPointerEnd, opts);
             target.addEventListener('scroll', onScroll, opts);
+            target.addEventListener('visibilitychange', onVisibility, opts);
             return () => {
                 target.removeEventListener('pointerdown', onPointerDown, opts);
                 target.removeEventListener('pointerup', onPointerEnd, opts);
                 target.removeEventListener('pointercancel', onPointerEnd, opts);
                 target.removeEventListener('scroll', onScroll, opts);
+                target.removeEventListener('visibilitychange', onVisibility, opts);
             };
         },
     };
