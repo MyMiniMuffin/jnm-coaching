@@ -4,6 +4,8 @@ import { DUO_MIN_WIDTH_PX } from './src/lib/duoBreakpoint.js';
 
 /** @type {import('tailwindcss').Config} */
 export default {
+  // Safety net: any remaining bare `hover:` compiles to @media (hover: hover), so touch never gets sticky hover.
+  future: { hoverOnlyWhenSupported: true },
   content: [
     './index.html',
     './src/**/*.{js,jsx}',

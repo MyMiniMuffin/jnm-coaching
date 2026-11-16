@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CaretDown, Tray, X, EnvelopeSimple, Phone, InstagramLogo, Check, ArrowCounterClockwise, CircleNotch, Trash } from '@phosphor-icons/react';
 import { api } from '../lib/api';
@@ -41,17 +41,17 @@ const SubmissionDetails = ({ submission }) => {
         <div className="mt-3 space-y-4 border-t border-surface-200 pt-4">
             <div className="flex flex-wrap gap-2">
                 {data.email && (
-                    <a href={`mailto:${data.email}`} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-surface-100 px-3 text-sm text-ink hover:bg-surface-200">
+                    <a href={`mailto:${data.email}`} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-surface-100 px-3 text-sm text-ink active:bg-surface-200 [@media(hover:hover)_and_(pointer:fine)]:hover:bg-surface-200">
                         <EnvelopeSimple size={16} /> {data.email}
                     </a>
                 )}
                 {data.phone && (
-                    <a href={`tel:${data.phone.replace(/\s+/g, '')}`} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-surface-100 px-3 text-sm text-ink hover:bg-surface-200">
+                    <a href={`tel:${data.phone.replace(/\s+/g, '')}`} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-surface-100 px-3 text-sm text-ink active:bg-surface-200 [@media(hover:hover)_and_(pointer:fine)]:hover:bg-surface-200">
                         <Phone size={16} /> {data.phone}
                     </a>
                 )}
                 {data.instagram && (
-                    <a href={instagramUrl(data.instagram)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-surface-100 px-3 text-sm text-ink hover:bg-surface-200">
+                    <a href={instagramUrl(data.instagram)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-surface-100 px-3 text-sm text-ink active:bg-surface-200 [@media(hover:hover)_and_(pointer:fine)]:hover:bg-surface-200">
                         <InstagramLogo size={16} /> {data.instagram}
                     </a>
                 )}
@@ -201,6 +201,15 @@ export default function FormSubmissions() {
     useEscapeKey(closePanel, panelOpen && !isConfirming);
     const panelRef = useFocusTrap(panelOpen);
 
+    // iOS Safari does not focus a button on tap, so useFocusTrap's "previously focused" is often <body>.
+    // Return focus to the mailbox trigger explicitly when the panel closes; the trigger stays mounted.
+    const triggerRef = useRef(null);
+    const wasPanelOpen = useRef(false);
+    useEffect(() => {
+        if (wasPanelOpen.current && !panelOpen) triggerRef.current?.focus();
+        wasPanelOpen.current = panelOpen;
+    }, [panelOpen]);
+
     const isEmpty = !submissions.length && !error;
     useEffect(() => {
         if (!isEmpty) return;
@@ -221,6 +230,7 @@ export default function FormSubmissions() {
         <>
             {/* Always rendered on coach home; the badge only shows when something is open. */}
             <IconButton
+                ref={triggerRef}
                 data-testid="mailbox-trigger"
                 aria-label={label}
                 aria-haspopup="dialog"

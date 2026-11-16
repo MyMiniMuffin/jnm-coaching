@@ -141,7 +141,7 @@ test('push status moved out of the dashboard into the coach-only account menu', 
     }
     assert.match(account, /onClick=\{onEnableNotifications\}/);
     assert.match(account, /<BellRinging size=\{16\}[^>]*aria-hidden="true"/);
-    assert.match(header, /<AccountMenu user=\{isClientPreview \? null : user\} notificationPermission=\{notificationPermission\} onEnableNotifications=\{onEnableNotifications\}/);
+    assert.match(header, /<AccountMenu user=\{isClientPreview \? null : user\} onLogout=\{isClientPreview \? undefined : onLogout\} notificationPermission=\{notificationPermission\} onEnableNotifications=\{onEnableNotifications\}/);
     assert.match(app, /onEnableNotifications=\{requestCoachPushNotifications\}/);
     assert.match(app, /Systemvarsler er blokkert i nettleseren/);
 });
@@ -163,7 +163,7 @@ test('segments, search and sort share one row', () => {
 test('search is a disclosure: aria state, autofocus, Escape and focus return, 16px input', () => {
     assert.match(dashboard, /aria-expanded=\{searchOpen\}/);
     assert.match(dashboard, /aria-controls="coach-search"/);
-    assert.match(dashboard, /if \(searchOpen\) searchInputRef\.current\?\.focus\(\);/);
+    assert.match(dashboard, /input\?\.focus\(\);\s*input\?\.scrollIntoView\(\{ block: 'nearest'/);
     const close = dashboard.slice(dashboard.indexOf('const closeSearch'), dashboard.indexOf('const toggleSearch'));
     assert.match(close, /setSearchTerm\(''\)/);
     assert.match(close, /setSearchOpen\(false\)/);

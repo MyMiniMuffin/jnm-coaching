@@ -6,6 +6,7 @@ import { useEscapeKey } from '../hooks';
 import { useConfirm } from '../components/ConfirmDialog';
 import { haptic } from '../lib/haptic';
 import { formatDateNO } from '../lib/formatters';
+import { useKeepFieldVisible } from '../lib/visualViewport';
 
 const RecentActivityDot = ({ lastActiveAt }) => {
     const [now, setNow] = useState(Date.now);
@@ -74,7 +75,7 @@ const ClientActionsMenu = ({ client, isPending, open, onOpenChange, onArchive, o
                     <button
                         type="button"
                         role="menuitem"
-                        className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-ink hover:bg-surface-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                        className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-ink active:bg-surface-200 [@media(hover:hover)_and_(pointer:fine)]:hover:bg-surface-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                         onClick={(event) => run(event, onArchive)}
                     >
                         {client.is_archived ? <TrayArrowUp size={16} /> : <Archive size={16} />}
@@ -83,7 +84,7 @@ const ClientActionsMenu = ({ client, isPending, open, onOpenChange, onArchive, o
                     <button
                         type="button"
                         role="menuitem"
-                        className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-ink hover:bg-surface-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                        className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-ink active:bg-surface-200 [@media(hover:hover)_and_(pointer:fine)]:hover:bg-surface-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                         onClick={(event) => run(event, onReset)}
                     >
                         <Key size={16} />
@@ -92,7 +93,7 @@ const ClientActionsMenu = ({ client, isPending, open, onOpenChange, onArchive, o
                     <button
                         type="button"
                         role="menuitem"
-                        className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-error hover:bg-error/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                        className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-error active:bg-error/15 [@media(hover:hover)_and_(pointer:fine)]:hover:bg-error/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                         onClick={(event) => run(event, onDelete)}
                     >
                         <Trash size={16} />
@@ -185,9 +186,17 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, newAthleteRequest
     const handleSortChange = useCallback((e) => setSortBy(e.target.value), []);
 
     // Search disclosure: focus moves into the field on open and back to the icon on close.
+    // The field sits in normal flow under the sticky header: bring it fully into view
+    // (scroll-margin on .coach-search-input clears header + safe area) and keep it there
+    // when the keyboard opens or the viewport resizes (fold/unfold). State lives here, not in
+    // anything keyed on shell width, so a resize never closes search or clears the query.
     useEffect(() => {
-        if (searchOpen) searchInputRef.current?.focus();
+        if (!searchOpen) return;
+        const input = searchInputRef.current;
+        input?.focus();
+        input?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     }, [searchOpen]);
+    useKeepFieldVisible(searchInputRef, searchOpen);
     const closeSearch = useCallback(() => {
         setSearchTerm('');
         setSearchOpen(false);
@@ -361,14 +370,15 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, newAthleteRequest
                         >
                             <MagnifyingGlass size={20} aria-hidden="true" />
                         </IconButton>
-                        <div className={`relative inline-flex min-h-11 min-w-11 shrink-0 touch-manipulation items-center justify-center rounded-full text-ink-muted transition-colors focus-within:ring-2 focus-within:ring-accent active:bg-surface-200 [@media(hover:hover)_and_(pointer:fine)]:hover:bg-surface-100 [@media(hover:hover)_and_(pointer:fine)]:hover:text-ink ${sortBy !== 'unread' ? 'bg-surface-200 text-ink' : ''}`}>
-                            <ArrowsDownUp size={20} aria-hidden="true" />
-                            {/* Native select overlay: keyboard, screen reader and OS picker for free */}
+                        <div className={`relative isolate inline-flex min-h-11 min-w-11 shrink-0 touch-manipulation items-center justify-center rounded-full text-ink-muted transition-colors focus-within:ring-2 focus-within:ring-accent active:bg-surface-200 [@media(hover:hover)_and_(pointer:fine)]:hover:bg-surface-100 [@media(hover:hover)_and_(pointer:fine)]:hover:text-ink ${sortBy !== 'unread' ? 'bg-surface-200 text-ink' : ''}`}>
+                            <ArrowsDownUp size={20} aria-hidden="true" className="pointer-events-none" />
+                            {/* Native select overlay (iOS picker): fills the whole 44×44 target, sits above the icon,
+                                16px+ so iOS does not zoom, opacity 0.01 not 0 (iOS can drop taps on fully transparent controls). */}
                             <select
                                 value={sortBy}
                                 onChange={handleSortChange}
                                 aria-label="Sorter utøvere"
-                                className="absolute inset-0 h-full w-full cursor-pointer appearance-none rounded-full text-base opacity-0 focus:outline-none"
+                                className="absolute inset-0 z-10 h-full min-h-11 w-full min-w-11 cursor-pointer appearance-none rounded-full text-base opacity-[0.01] focus:outline-none"
                             >
                                 <option value="unread">Uleste først</option>
                                 <option value="lastCheckin">Siste ukesrapport</option>
@@ -392,7 +402,7 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, newAthleteRequest
                         aria-label="Søk etter utøver"
                         autoComplete="off"
                         enterKeyHint="search"
-                        className="min-h-11 w-full min-w-0 rounded-xl border border-surface-200 bg-surface-50 py-2 pl-12 pr-12 text-base font-medium outline-none transition-[border-color,box-shadow] placeholder:text-ink-faint focus:border-accent focus:ring-2 focus:ring-accent [&::-webkit-search-cancel-button]:appearance-none"
+                        className="coach-search-input min-h-11 w-full min-w-0 rounded-xl border border-surface-200 bg-surface-50 py-2 pl-12 pr-12 text-base font-medium outline-none transition-[border-color,box-shadow] placeholder:text-ink-faint focus:border-accent focus:ring-2 focus:ring-accent [&::-webkit-search-cancel-button]:appearance-none"
                     />
                     <IconButton
                         aria-label="Lukk søk"
@@ -436,7 +446,7 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, newAthleteRequest
                         return (
                         <Card
                             key={client.id}
-                            className={`relative ${isMenuOpen ? 'z-30' : 'z-0'} px-3 py-1.5 sm:px-4 sm:py-2 flex items-center justify-between gap-1 group ${showArchived ? (isMenuOpen ? '' : 'opacity-60') : client.unreadCheckins > 0 ? 'border-accent/30 bg-accent/5' : ''} ${isPending ? 'opacity-70' : 'hover:border-surface-300'}`}
+                            className={`relative ${isMenuOpen ? 'z-30' : 'z-0'} px-3 py-1.5 sm:px-4 sm:py-2 flex items-center justify-between gap-1 group ${showArchived ? (isMenuOpen ? '' : 'opacity-60') : client.unreadCheckins > 0 ? 'border-accent/30 bg-accent/5' : ''} ${isPending ? 'opacity-70' : '[@media(hover:hover)_and_(pointer:fine)]:hover:border-surface-300'}`}
                         >
                             <button
                                 type="button"

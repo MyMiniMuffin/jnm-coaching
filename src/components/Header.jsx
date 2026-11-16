@@ -1,6 +1,6 @@
 import React from 'react';
 import AccountMenu from './AccountMenu';
-import { SignOut, CaretLeft, WifiSlash, Eye, Plus } from '@phosphor-icons/react';
+import { CaretLeft, WifiSlash, Eye, Plus } from '@phosphor-icons/react';
 import { IconButton } from './ui';
 import FormSubmissions from './FormSubmissions';
 
@@ -20,21 +20,21 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
                         <p className="flex items-center gap-2 text-sm font-semibold text-ink"><Eye size={16} /> Utøvervisning</p>
                         <p className="mt-1 text-xs text-ink-muted">Forhåndsvisning · Endringer og innsending er deaktivert.</p>
                     </div>
-                    <button type="button" onClick={onToggleClientPreview} className="min-h-11 rounded-lg px-3 py-2 text-sm font-semibold text-accent hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                    <button type="button" onClick={onToggleClientPreview} className="min-h-11 rounded-lg px-3 py-2 text-sm font-semibold text-accent active:bg-white/60 focus-visible:outline-none [@media(hover:hover)_and_(pointer:fine)]:hover:bg-white/60 focus-visible:ring-2 focus-visible:ring-accent">
                         Tilbake til coach
                     </button>
                 </div>
             </div>
         )}
         {viewingClient ? (
-            <div className="header-inner flex items-center py-3 gap-1 lg:gap-2 duo:py-3.5 duo-lg:py-4">
+            <div className="header-inner flex flex-nowrap items-center py-3 gap-1 lg:gap-2 duo:py-3.5 duo-lg:py-4">
                 {!hideClientBack && onClearClient && (
                 <button
                     type="button"
                     onClick={onClearClient}
                     aria-label="Tilbake til utøverlisten"
                     data-testid="header-client-back"
-                    className="flex min-h-11 items-center gap-0.5 rounded-lg px-2.5 py-2 text-accent transition-colors hover:bg-surface-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent shrink-0"
+                    className="flex min-h-11 items-center gap-0.5 rounded-lg px-2.5 py-2 text-accent transition-colors active:bg-surface-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent shrink-0 [@media(hover:hover)_and_(pointer:fine)]:hover:bg-surface-100"
                 >
                     <CaretLeft size={20} />
                     <span className="text-sm font-medium">Utøvere</span>
@@ -50,15 +50,12 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
                         <span className="hidden text-sm font-medium duo:inline">Vis som utøver</span>
                     </IconButton>
                 )}
-                <AccountMenu user={isClientPreview ? null : user} notificationPermission={notificationPermission} onEnableNotifications={onEnableNotifications} />
-                <IconButton onClick={onLogout} aria-label="Logg ut" className="shrink-0">
-                    <SignOut size={20} />
-                </IconButton>
+                <AccountMenu user={isClientPreview ? null : user} onLogout={isClientPreview ? undefined : onLogout} notificationPermission={notificationPermission} onEnableNotifications={onEnableNotifications} />
             </div>
         ) : (
-            <div className="header-inner flex justify-between items-center py-3 duo:py-3.5 duo-lg:py-4">
-                <p className="font-semibold text-ink truncate min-w-0">{user.name}</p>
-                <div className="flex items-center gap-1">
+            <div className="header-inner flex flex-nowrap items-center justify-between gap-2 py-3 duo:py-3.5 duo-lg:py-4">
+                <p className="min-w-0 flex-1 truncate font-semibold text-ink">{user.name}</p>
+                <div className="flex shrink-0 items-center gap-1">
                     {coachHome && !isClientPreview && (
                         <>
                             <FormSubmissions />
@@ -72,10 +69,7 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
                             </button>
                         </>
                     )}
-                    <AccountMenu user={isClientPreview ? null : user} notificationPermission={notificationPermission} onEnableNotifications={onEnableNotifications} />
-                    <IconButton onClick={onLogout} aria-label="Logg ut" className="shrink-0">
-                        <SignOut size={20} />
-                    </IconButton>
+                    <AccountMenu user={isClientPreview ? null : user} onLogout={isClientPreview ? undefined : onLogout} notificationPermission={notificationPermission} onEnableNotifications={onEnableNotifications} />
                 </div>
             </div>
         )}

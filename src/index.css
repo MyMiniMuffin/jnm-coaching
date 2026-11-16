@@ -95,6 +95,17 @@ select {
     column-gap: var(--fold-gap, 1.25rem);
 }
 
+/*
+ * Coach search field sits in normal flow under the sticky header. scrollIntoView
+ * honors scroll-margin, so the field clears header (safe-area top + ~4.5rem row,
+ * a bit more on Duo) and the keyboard-shrunk visual viewport. Assumed Duo CSS
+ * sizes (@3x, unverified on hardware): 466x678 / 678x466 closed, 626x890 / 890x626 open.
+ */
+.coach-search-input {
+    scroll-margin-top: calc(env(safe-area-inset-top, 0px) + 5.75rem);
+    scroll-margin-bottom: 1rem;
+}
+
 .safe-area-pb { padding-bottom: env(safe-area-inset-bottom); }
 .safe-area-pt { padding-top: env(safe-area-inset-top); }
 
@@ -130,6 +141,24 @@ html[data-device="duo"][data-shell="narrow"] .app-header > .app-header-top-inset
 
 html[data-device="duo"][data-shell="narrow"] .app-header .header-inner {
     padding-right: calc(var(--app-gutter-x) + 8.5rem);
+}
+
+/*
+ * iPhone Duo is a physical display, not a desktop browser window.
+ * The 28rem / 48rem centered phone-band on .app-frame is for mid-size
+ * browser viewports. Unlock it on Duo so unfolded portrait (narrow shell,
+ * ~626 CSS px at an assumed @3x of the inner 1878×2670 panel) uses the
+ * full inner screen. Rail already unlocks the frame; this covers narrow.
+ */
+html[data-device="duo"] .app-shell,
+html[data-device="duo"] .app-frame {
+    max-width: none;
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    border-left: none;
+    border-right: none;
+    box-shadow: none;
 }
 
 .login-page {
