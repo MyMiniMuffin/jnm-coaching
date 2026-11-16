@@ -102,7 +102,7 @@ test('built dist keeps robots, sitemap and SEO head tags when present', () => {
     assert.equal(existsSync(path.join(dist, 'sitemap.xml')), true);
     const homeHtml = read('dist/coaching/index.html');
     assert.match(homeHtml, /<link rel="canonical" href="https:\/\/jnmcoaching\.no\/">/);
-    assert.match(home, /application\/ld\+json/);
+    assert.match(homeHtml, /application\/ld\+json/);
     assert.match(read('dist/index.html'), /noindex, nofollow/);
     assert.match(read('dist/personvern/index.html'), /rel="canonical" href="https:\/\/jnmcoaching\.no\/personvern\/"/);
     assert.match(read('dist/support/index.html'), /rel="canonical" href="https:\/\/jnmcoaching\.no\/support\/"/);
