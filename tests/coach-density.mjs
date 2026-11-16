@@ -31,8 +31,11 @@ test('mailbox is a header icon button with a badge only when something is open',
 });
 
 test('mailbox accessible name carries the unread count, plain «Postkasse» when none', () => {
-    assert.match(mailbox, /`Postkasse, \$\{open\.length\} \$\{open\.length === 1 \? 'ny' : 'nye'\}` : 'Postkasse'/);
+    assert.match(mailbox, /'Postkasse, kunne ikke hente'/);
+    assert.match(mailbox, /`Postkasse, \$\{open\.length\} \$\{open\.length === 1 \? 'ny' : 'nye'\}`/);
+    assert.match(mailbox, /: 'Postkasse'/);
     assert.match(rowBlock, /aria-label=\{label\}/);
+    assert.match(rowBlock, /fetchFailed \? ' text-error' : ''/);
 });
 
 test('mailbox icon renders even when the inbox is empty', () => {
@@ -199,7 +202,10 @@ test('«Ny utøver» is a round plus icon button in the header, wired to the das
     assert.match(header, /\[@media\(hover:hover\)_and_\(pointer:fine\)\]:hover:bg-ink\/90/);
     assert.match(app, /onNewAthlete=\{requestNewAthlete\}/);
     assert.match(app, /newAthleteRequest=\{newAthleteRequest\}/);
-    assert.match(dashboard, /if \(newAthleteRequest > 0\) setShowModal\(true\);/);
+    assert.match(dashboard, /seenNewAthleteRequest = useRef\(newAthleteRequest\)/);
+    assert.match(dashboard, /if \(newAthleteRequest === seenNewAthleteRequest\.current\) return;/);
+    assert.match(dashboard, /setShowModal\(true\)/);
+    assert.doesNotMatch(dashboard, /if \(newAthleteRequest > 0\) setShowModal\(true\)/);
     assert.doesNotMatch(dashboard, /<Plus|>\s*Ny\s*<|«Ny»/);
     assert.match(dashboard, /Trykk på \+ øverst for å legge til en utøver\./);
     assert.match(dashboard, /id="new-athlete-title"[^>]*>Ny utøver</);

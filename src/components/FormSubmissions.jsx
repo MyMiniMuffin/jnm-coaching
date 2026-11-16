@@ -210,7 +210,12 @@ export default function FormSubmissions() {
     }, [isEmpty]);
 
     const hasOpen = open.length > 0;
-    const label = hasOpen ? `Postkasse, ${open.length} ${open.length === 1 ? 'ny' : 'nye'}` : 'Postkasse';
+    const fetchFailed = Boolean(error && !submissions.length);
+    const label = fetchFailed
+        ? 'Postkasse, kunne ikke hente'
+        : hasOpen
+            ? `Postkasse, ${open.length} ${open.length === 1 ? 'ny' : 'nye'}`
+            : 'Postkasse';
 
     return (
         <>
@@ -221,7 +226,7 @@ export default function FormSubmissions() {
                 aria-haspopup="dialog"
                 aria-expanded={panelOpen}
                 onClick={() => setPanelOpen(true)}
-                className="relative shrink-0 touch-manipulation"
+                className={`relative shrink-0 touch-manipulation${fetchFailed ? ' text-error' : ''}`}
             >
                 <Tray size={20} aria-hidden="true" />
                 {hasOpen && (

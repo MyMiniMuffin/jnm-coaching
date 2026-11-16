@@ -156,9 +156,13 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, newAthleteRequest
     }, [activeClients, archivedClients, searchTerm, showArchived, sortBy]);
 
     const closeModal = useCallback(() => setShowModal(false), []);
-    // The header's «Ny utøver» button bumps newAthleteRequest; 0 is the initial value.
+    // Header «Ny utøver» bumps the counter in App. Remember the value seen on
+    // mount so a remount (open an athlete, then return) does not reopen the modal.
+    const seenNewAthleteRequest = useRef(newAthleteRequest);
     useEffect(() => {
-        if (newAthleteRequest > 0) setShowModal(true);
+        if (newAthleteRequest === seenNewAthleteRequest.current) return;
+        seenNewAthleteRequest.current = newAthleteRequest;
+        setShowModal(true);
     }, [newAthleteRequest]);
     useEscapeKey(closeModal, showModal);
 
