@@ -38,6 +38,78 @@ export const shouldShowInstallPrompt = ({
     return true;
 };
 
+// --- Ankomstvern og "midt i interaksjon" (ren logikk, testbar uten nettleser) ---
+export const INSTALL_ARRIVAL_GUARD_MS = 700;
+export const INSTALL_SCROLL_QUIET_MS = 300;
+
+// Et trykk er "vernet" hvis det startet før popupen dukket opp eller innenfor vernevinduet.
+// Alle tidsstempler er på samme klokke (performance.now() / event.timeStamp).
+export const isGuardedPointer = (shownAt, pointerDownTimeStamp, guardMs = INSTALL_ARRIVAL_GUARD_MS) =>
+    pointerDownTimeStamp < shownAt + guardMs;
+
+export const isEditableElement = (el) => {
+    if (!el || typeof el !== 'object') return false;
+    const tag = String(el.tagName || '').toUpperCase();
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+    return el.isContentEditable === true;
+};
+
+const defaultClock = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+
+export const createArrivalGuard = ({
+    guardMs = INSTALL_ARRIVAL_GUARD_MS,
+    scrollQuietMs = INSTALL_SCROLL_QUIET_MS,
+    now = defaultClock,
+} = {}) => {
+    const down = new Set();
+    let lastDownAt = null;
+    let lastScrollAt = -Infinity;
+    let shownAt = null;
+
+    const onPointerDown = (event) => {
+        down.add(event.pointerId ?? 0);
+        lastDownAt = event.timeStamp ?? now();
+    };
+    const onPointerEnd = (event) => { down.delete(event.pointerId ?? 0); };
+    const onScroll = (event) => { lastScrollAt = event?.timeStamp ?? now(); };
+
+    return {
+        guardMs,
+        onPointerDown,
+        onPointerUp: onPointerEnd,
+        onPointerCancel: onPointerEnd,
+        onScroll,
+        markShown: () => { shownAt = now(); },
+        reset: () => { shownAt = null; },
+        isPointerDown: () => down.size > 0,
+        // Utsett visning hvis brukeren er midt i en interaksjon.
+        isMidInteraction: (activeElement = null) =>
+            down.size > 0 || now() - lastScrollAt < scrollQuietMs || isEditableElement(activeElement),
+        // Skal et klikk på popupens egne knapper ignoreres? Tastaturaktivering (detail === 0)
+        // påvirkes aldri av gamle pekerhendelser.
+        shouldIgnoreClick: (event) => {
+            if (shownAt === null) return false;
+            if (event.detail === 0) return false;
+            const downAt = lastDownAt ?? event.timeStamp ?? now();
+            return isGuardedPointer(shownAt, downAt, guardMs) || now() - shownAt < guardMs;
+        },
+        // Fanger pekerhendelser tidlig (capture), også de som startet før popupen fantes.
+        attach: (target) => {
+            const opts = { capture: true, passive: true };
+            target.addEventListener('pointerdown', onPointerDown, opts);
+            target.addEventListener('pointerup', onPointerEnd, opts);
+            target.addEventListener('pointercancel', onPointerEnd, opts);
+            target.addEventListener('scroll', onScroll, opts);
+            return () => {
+                target.removeEventListener('pointerdown', onPointerDown, opts);
+                target.removeEventListener('pointerup', onPointerEnd, opts);
+                target.removeEventListener('pointercancel', onPointerEnd, opts);
+                target.removeEventListener('scroll', onScroll, opts);
+            };
+        },
+    };
+};
+
 const readStorage = (storage, key) => {
     try { return storage.getItem(key); } catch { return null; }
 };
