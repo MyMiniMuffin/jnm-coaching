@@ -1,4 +1,4 @@
-// Coach density: henvendelser live in a compact «Postkasse»; plan switching is chrome in the plan header.
+// Coach density: «Postkasse» is a header icon; the dashboard is slim (summary line, one-row toolbar, compact cards).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -7,31 +7,51 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf
 
 const mailbox = read('src/components/FormSubmissions.jsx');
 const dashboard = read('src/views/CoachDashboard.jsx');
+const header = read('src/components/Header.jsx');
+const account = read('src/components/AccountMenu.jsx');
+const app = read('src/App.jsx');
 const named = read('src/views/NamedPlansSection.jsx');
 const plan = read('src/views/PlanSection.jsx');
 
-const panelStart = mailbox.indexOf('{panelOpen && (');
-const rowBlock = mailbox.slice(mailbox.indexOf('data-testid="mailbox-row"'), panelStart);
+const panelStart = mailbox.indexOf('{panelOpen && createPortal(');
+const rowBlock = mailbox.slice(mailbox.indexOf('data-testid="mailbox-trigger"'), panelStart);
 const panelBlock = mailbox.slice(panelStart);
 
-test('mailbox is a compact row on the dashboard, without the full list', () => {
+test('mailbox is a header icon button with a badge only when something is open', () => {
     assert.ok(panelStart > 0);
     assert.match(rowBlock, /aria-haspopup="dialog"/);
-    assert.match(rowBlock, /min-h-11/);
+    assert.match(rowBlock, /aria-expanded=\{panelOpen\}/);
+    assert.match(rowBlock, /<Tray size=\{20\} aria-hidden="true"/);
     assert.match(rowBlock, /touch-manipulation/);
-    assert.match(rowBlock, /Postkasse/);
-    assert.doesNotMatch(rowBlock, /<SubmissionItem|visible\.map|<ul/);
-    assert.doesNotMatch(rowBlock, /<Badge/);
-    assert.doesNotMatch(mailbox, /aria-labelledby="form-submissions-title"/);
+    assert.match(rowBlock, /\{hasOpen && \(/);
+    assert.match(rowBlock, /tabular-nums/);
+    assert.match(rowBlock, /aria-hidden="true"\s+className="absolute/);
+    assert.doesNotMatch(rowBlock, /<SubmissionItem|visible\.map|<ul|<Badge/);
+    assert.doesNotMatch(mailbox, /data-testid="mailbox-row"|aria-labelledby="form-submissions-title"/);
 });
 
-test('mailbox row is quiet with zero new and only accent when there are new', () => {
-    assert.match(rowBlock, /open\.length > 0 \? 'font-medium text-accent' : 'text-ink-muted'/);
-    assert.match(mailbox, /'Ingen nye'/);
+test('mailbox accessible name carries the unread count, plain «Postkasse» when none', () => {
+    assert.match(mailbox, /'Postkasse, kunne ikke hente'/);
+    assert.match(mailbox, /`Postkasse, \$\{open\.length\} \$\{open\.length === 1 \? 'ny' : 'nye'\}`/);
+    assert.match(mailbox, /: 'Postkasse'/);
+    assert.match(rowBlock, /aria-label=\{label\}/);
+    assert.match(rowBlock, /fetchFailed \? ' text-error' : ''/);
 });
 
-test('mailbox renders nothing without submissions and without error', () => {
-    assert.match(mailbox, /if \(isEmpty\) return null;/);
+test('mailbox icon renders even when the inbox is empty', () => {
+    assert.doesNotMatch(mailbox, /return null/);
+    assert.doesNotMatch(mailbox, /if \(isEmpty\)/);
+});
+
+test('inbox lives in the header on coach home only and the dashboard no longer has a row', () => {
+    assert.match(header, /import FormSubmissions from '\.\/FormSubmissions'/);
+    assert.match(header, /\{coachHome && !isClientPreview && \(/);
+    // viewingClient branch ends before the coach-home branch; no inbox there
+    const viewingBranch = header.slice(header.indexOf('{viewingClient ? ('), header.indexOf(') : (', header.indexOf('{viewingClient ? (')));
+    assert.doesNotMatch(viewingBranch, /FormSubmissions/);
+    assert.match(app, /<Header\s+user=\{displayUser\}[^>]*?\bcoachHome\b/s);
+    assert.equal((app.match(/\bcoachHome\b/g) || []).length, 1);
+    assert.doesNotMatch(dashboard, /FormSubmissions|Postkasse/);
 });
 
 test('mailbox closes its panel when the last submission is gone', () => {
@@ -59,8 +79,7 @@ test('plan card does not clip the absolute menu and the header shrinks on narrow
     assert.match(plan, /<h2 className="truncate text-\[1\.05rem\] font-semibold"/);
 });
 
-test('mailbox hover is gated for touch', () => {
-    assert.match(mailbox, /\[@media\(hover:hover\)_and_\(pointer:fine\)\]:hover:/);
+test('mailbox trigger adds no ungated hover styles of its own', () => {
     assert.doesNotMatch(rowBlock.replace(/\[@media\(hover:hover\)_and_\(pointer:fine\)\]:hover:/g, ''), /hover:/);
 });
 
@@ -98,10 +117,125 @@ test('panel holds the list and all actions', () => {
     assert.match(mailbox, /api\.deleteFormSubmission/);
 });
 
-test('dashboard keeps one mailbox entry and still renders deletion requests unchanged', () => {
-    assert.match(dashboard, /<FormSubmissions \/>/);
+test('dashboard still renders deletion requests unchanged and never the mailbox list', () => {
     assert.match(dashboard, /<DeletionRequests allUsers=\{allUsers\} onSelectClient=\{onSelectClient\} \/>/);
     assert.doesNotMatch(dashboard, /Behandlede henvendelser|SubmissionItem/);
+});
+
+test('hero card is a slim one-line summary, unread highlighted only when > 0', () => {
+    assert.doesNotMatch(dashboard, /hero-tint|Oversikt|font-display leading-tight|grid-cols-3/);
+    assert.match(dashboard, /data-testid="coach-summary"/);
+    assert.match(dashboard, /'aktiv' : 'aktive'/);
+    assert.match(dashboard, /'ulest' : 'uleste'/);
+    assert.match(dashboard, /totalUnreadCheckins > 0 \? 'font-medium text-accent' : undefined/);
+    assert.match(dashboard, /tabular-nums/);
+    assert.match(dashboard, /\{' · '\}/);
+});
+
+test('push status moved out of the dashboard into the coach-only account menu', () => {
+    assert.doesNotMatch(dashboard, /Pushvarsler aktivert|Varsler blokkert|Slå på|BellRinging|onEnableNotifications|notificationPermission/);
+    assert.match(account, /notificationPermission = 'unsupported', onEnableNotifications/);
+    assert.match(account, /user\?\.role === 'coach' && <section/);
+    for (const text of ['Pushvarsler aktivert', 'Varsler blokkert', 'Varsler ikke støttet', 'Varsler ikke aktivert', 'Slå på']) {
+        assert.ok(account.includes(text), text);
+    }
+    assert.match(account, /onClick=\{onEnableNotifications\}/);
+    assert.match(account, /<BellRinging size=\{16\}[^>]*aria-hidden="true"/);
+    assert.match(header, /<AccountMenu user=\{isClientPreview \? null : user\} onLogout=\{isClientPreview \? undefined : onLogout\} notificationPermission=\{notificationPermission\} onEnableNotifications=\{onEnableNotifications\}/);
+    assert.match(app, /onEnableNotifications=\{requestCoachPushNotifications\}/);
+    assert.match(app, /Systemvarsler er blokkert i nettleseren/);
+});
+
+test('archived count lives on the segment label', () => {
+    assert.match(dashboard, /label: archivedClients\.length > 0 \? <>Arkivert <span className="tabular-nums">\{archivedClients\.length\}<\/span><\/> : 'Arkivert'/);
+});
+
+test('segments, search and sort share one row', () => {
+    const toolbar = dashboard.slice(dashboard.indexOf('{/* One-row toolbar'), dashboard.indexOf('{searchOpen && ('));
+    assert.match(toolbar, /<ToggleGroup/);
+    assert.match(toolbar, /aria-label="Søk etter utøver"/);
+    assert.match(toolbar, /aria-label="Sorter utøvere"/);
+    assert.doesNotMatch(toolbar, /<TextField|<SelectField|<Button/);
+    assert.doesNotMatch(dashboard, /SelectField/);
+    assert.match(toolbar, /className="flex items-center gap-1"/);
+});
+
+test('search is a disclosure: aria state, autofocus, Escape and focus return, 16px input', () => {
+    assert.match(dashboard, /aria-expanded=\{searchOpen\}/);
+    assert.match(dashboard, /aria-controls="coach-search"/);
+    assert.match(dashboard, /input\?\.focus\(\);\s*input\?\.scrollIntoView\(\{ block: 'nearest'/);
+    const close = dashboard.slice(dashboard.indexOf('const closeSearch'), dashboard.indexOf('const toggleSearch'));
+    assert.match(close, /setSearchTerm\(''\)/);
+    assert.match(close, /setSearchOpen\(false\)/);
+    assert.match(close, /searchButtonRef\.current\?\.focus\(\)/);
+    assert.match(dashboard, /e\.key === 'Escape'/);
+    // a live query keeps the field open instead of hiding the filter
+    assert.match(dashboard, /else if \(searchTerm\.trim\(\)\) searchInputRef\.current\?\.focus\(\);/);
+    const input = dashboard.slice(dashboard.indexOf('<input\n'), dashboard.indexOf('/>', dashboard.indexOf('<input\n')));
+    assert.match(input, /text-base/);
+    assert.doesNotMatch(input, /text-sm|text-xs/);
+    assert.match(input, /placeholder="Søk etter utøver"/);
+    assert.match(dashboard, /aria-label="Lukk søk"/);
+    assert.match(dashboard, /<IconButton\s+ref=\{searchButtonRef\}/);
+});
+
+test('sort is a labelled native select overlay with the same options and logic', () => {
+    const sort = dashboard.slice(dashboard.indexOf('<select'), dashboard.indexOf('</select>'));
+    assert.match(sort, /aria-label="Sorter utøvere"/);
+    assert.match(sort, /value=\{sortBy\}/);
+    assert.match(sort, /text-base/);
+    assert.match(sort, /<option value="unread">Uleste først<\/option>/);
+    assert.match(sort, /<option value="lastCheckin">Siste ukesrapport<\/option>/);
+    assert.match(sort, /<option value="name">Navn<\/option>/);
+    assert.match(dashboard, /sortBy === 'lastCheckin'/);
+    assert.match(dashboard, /sortBy === 'name'/);
+    assert.match(dashboard, /focus-within:ring-2 focus-within:ring-accent/);
+    assert.match(dashboard, /\[@media\(hover:hover\)_and_\(pointer:fine\)\]:hover:bg-surface-100/);
+});
+
+test('«Ny utøver» is a round plus icon button in the header, wired to the dashboard modal', () => {
+    assert.match(header, /aria-label="Ny utøver"\s+onClick=\{onNewAthlete\}/);
+    assert.match(header, /rounded-full bg-ink text-white/);
+    assert.match(header, /min-h-11 min-w-11/);
+    assert.match(header, /touch-manipulation/);
+    assert.match(header, /<Plus size=\{20\} weight="bold" aria-hidden="true"/);
+    assert.match(header, /\[@media\(hover:hover\)_and_\(pointer:fine\)\]:hover:bg-ink\/90/);
+    assert.match(app, /onNewAthlete=\{requestNewAthlete\}/);
+    assert.match(app, /newAthleteRequest=\{newAthleteRequest\}/);
+    assert.match(dashboard, /seenNewAthleteRequest = useRef\(newAthleteRequest\)/);
+    assert.match(dashboard, /if \(newAthleteRequest === seenNewAthleteRequest\.current\) return;/);
+    assert.match(dashboard, /setShowModal\(true\)/);
+    assert.doesNotMatch(dashboard, /if \(newAthleteRequest > 0\) setShowModal\(true\)/);
+    assert.doesNotMatch(dashboard, /<Plus|>\s*Ny\s*<|«Ny»/);
+    assert.match(dashboard, /Trykk på \+ øverst for å legge til en utøver\./);
+    assert.match(dashboard, /id="new-athlete-title"[^>]*>Ny utøver</);
+});
+
+test('athlete cards are compact but keep 44px targets and existing styling', () => {
+    const card = dashboard.slice(dashboard.indexOf('<Card\n                            key={client.id}'), dashboard.indexOf('<ClientActionsMenu\n                                    client'));
+    assert.match(card, /px-3 py-1\.5 sm:px-4 sm:py-2/);
+    assert.doesNotMatch(card, /\bp-3\b|sm:p-4/);
+    assert.match(card, /min-h-11 min-w-11 flex-1/);
+    assert.match(card, /w-10 h-10 shrink-0 rounded-xl/);
+    assert.match(card, /text-base font-semibold/);
+    assert.match(card, /<RecentActivityDot/);
+    assert.match(card, /border-accent\/30 bg-accent\/5/);
+    assert.match(card, /opacity-60/);
+    assert.match(card, /<CaretRight/);
+    assert.match(card, /block text-sm/);
+    assert.match(dashboard, /<IconButton\s+type="button"\s+aria-label=\{`Flere handlinger for/);
+    assert.match(dashboard, /duo:grid-cols-2/);
+});
+
+test('loading skeleton matches the compact card', () => {
+    const skeleton = dashboard.slice(dashboard.indexOf('aria-label="Laster utøvere"'), dashboard.indexOf('Ingen treff'));
+    assert.match(skeleton, /px-3 py-1\.5 sm:px-4 sm:py-2/);
+    assert.match(skeleton, /w-10 h-10 bg-surface-200 rounded-xl/);
+    assert.doesNotMatch(skeleton, /w-12 h-12|\bp-4\b/);
+});
+
+test('IconButton forwards refs for focus management', () => {
+    assert.match(read('src/components/ui.jsx'), /export const IconButton = React\.memo\(React\.forwardRef\(/);
 });
 
 test('collection card is gone', () => {

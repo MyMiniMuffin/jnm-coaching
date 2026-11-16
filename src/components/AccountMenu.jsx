@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Gear, X, CircleNotch } from '@phosphor-icons/react';
+import { Gear, X, CircleNotch, BellRinging, SignOut } from '@phosphor-icons/react';
 import { useEscapeKey, useFocusTrap } from '../hooks';
 import { Button, TextField } from './ui';
 import { api } from '../lib/api';
@@ -8,7 +8,15 @@ import { PrivacyContent, SupportContent } from '../legal/LegalContent';
 
 const dateLabel = (value) => new Date(value).toLocaleDateString('nb-NO');
 
-export default function AccountMenu({ user }) {
+const pushStatusLabel = (permission) => (
+    permission === 'granted' ? 'Pushvarsler aktivert'
+        : permission === 'denied' ? 'Varsler blokkert'
+            : permission === 'unsupported' ? 'Varsler ikke støttet'
+                : 'Varsler ikke aktivert'
+);
+
+// onLogout: «Logg ut» lives here (one tap from the gear) so the header row never crowds at 320px / closed Duo.
+export default function AccountMenu({ user, onLogout, notificationPermission = 'unsupported', onEnableNotifications }) {
     const [open, setOpen] = useState(false);
     const [tab, setTab] = useState('support');
     const [deleting, setDeleting] = useState(false);
@@ -54,23 +62,40 @@ export default function AccountMenu({ user }) {
     return <>
         <button type="button" onClick={() => { setTab('support'); setOpen(true); }}
             aria-label={user ? 'Konto, hjelp og personvern' : undefined}
-            className={user ? 'min-h-11 min-w-11 flex items-center justify-center rounded-lg text-ink-muted hover:bg-surface-100 focus-visible:ring-2 focus-visible:ring-accent' : 'min-h-11 px-3 text-sm text-accent underline underline-offset-4'}>
+            className={user ? 'min-h-11 min-w-11 shrink-0 flex items-center justify-center rounded-lg text-ink-muted transition-colors active:bg-surface-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent [@media(hover:hover)_and_(pointer:fine)]:hover:bg-surface-100' :'min-h-11 px-3 text-sm text-accent underline underline-offset-4'}>
             {user ? <Gear size={20} /> : 'Hjelp og personvern'}
         </button>
         {open && createPortal(
-            <div className="fixed inset-0 z-[150] flex items-center justify-center bg-ink/60 p-4" onClick={close}>
+            <div className="modal-backdrop fixed inset-0 z-[150] flex items-center justify-center bg-ink/60 p-4" onClick={close}>
                 <section ref={focusRef} role="dialog" aria-modal="true" aria-labelledby="account-menu-title"
-                    className="w-full max-w-xl max-h-[90dvh] overflow-y-auto rounded-2xl border border-surface-200 bg-white p-5 sm:p-8" onClick={e => e.stopPropagation()}>
+                    className="modal-scroll-panel w-full max-w-xl rounded-2xl border border-surface-200 bg-white p-5 sm:p-8" onClick={e => e.stopPropagation()}>
                     <div className="mb-4 flex items-center justify-between gap-3">
                         <h2 id="account-menu-title" className="font-display text-2xl text-ink">{tab === 'privacy' ? 'Personvern' : user ? 'Konto og hjelp' : 'Hjelp og kontakt'}</h2>
-                        <button type="button" disabled={busy} onClick={close} aria-label="Lukk" className="min-h-11 min-w-11 flex items-center justify-center rounded-lg hover:bg-surface-100"><X size={20} /></button>
+                        <button type="button" disabled={busy} onClick={close} aria-label="Lukk" className="min-h-11 min-w-11 flex items-center justify-center rounded-lg active:bg-surface-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent [@media(hover:hover)_and_(pointer:fine)]:hover:bg-surface-100"><X size={20} /></button>
                     </div>
                     <nav aria-label="Konto og informasjon" className="mb-6 flex gap-2 text-sm">
                         <Button variant={tab === 'support' ? 'primary' : 'secondary'} onClick={() => setTab('support')}>Hjelp og konto</Button>
                         <Button variant={tab === 'privacy' ? 'primary' : 'secondary'} onClick={() => setTab('privacy')}>Personvern</Button>
                     </nav>
                     {tab === 'privacy' ? <PrivacyContent /> : <>
+                        {user && onLogout && (
+                            <Button variant="secondary" className="mb-6 w-full" disabled={busy} aria-label="Logg ut" data-testid="account-logout" onClick={() => { setOpen(false); onLogout(); }}>
+                                <SignOut size={18} aria-hidden="true" /> Logg ut
+                            </Button>
+                        )}
                         <SupportContent />
+                        {user?.role === 'coach' && <section className="mt-6 border-t border-surface-200 pt-5" aria-labelledby="push-status-title">
+                            <h3 id="push-status-title" className="font-semibold text-ink">Varsler</h3>
+                            <div className="mt-2 flex flex-wrap items-center justify-between gap-3 text-sm text-ink-muted">
+                                <p className="flex items-center gap-2" role="status">
+                                    <BellRinging size={16} className="shrink-0" aria-hidden="true" />
+                                    <span>{pushStatusLabel(notificationPermission)}</span>
+                                </p>
+                                {(notificationPermission === 'default' || notificationPermission === 'prompt') && onEnableNotifications && (
+                                    <Button variant="secondary" size="sm" onClick={onEnableNotifications}>Slå på</Button>
+                                )}
+                            </div>
+                        </section>}
                         {user && <section className="mt-6 border-t border-surface-200 pt-5">
                             <h3 className="font-semibold text-ink">Slett konto og personopplysninger</h3>
                             {pending ? <div className="mt-3 space-y-2 text-sm text-ink-muted" role="status">

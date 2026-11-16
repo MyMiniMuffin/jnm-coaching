@@ -1,5 +1,6 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { CaretDown, CaretRight, Tray, X, EnvelopeSimple, Phone, InstagramLogo, Check, ArrowCounterClockwise, CircleNotch, Trash } from '@phosphor-icons/react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { CaretDown, Tray, X, EnvelopeSimple, Phone, InstagramLogo, Check, ArrowCounterClockwise, CircleNotch, Trash } from '@phosphor-icons/react';
 import { api } from '../lib/api';
 import { Badge, Button, Card, IconButton } from './ui';
 import { useConfirm } from './ConfirmDialog';
@@ -40,17 +41,17 @@ const SubmissionDetails = ({ submission }) => {
         <div className="mt-3 space-y-4 border-t border-surface-200 pt-4">
             <div className="flex flex-wrap gap-2">
                 {data.email && (
-                    <a href={`mailto:${data.email}`} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-surface-100 px-3 text-sm text-ink hover:bg-surface-200">
+                    <a href={`mailto:${data.email}`} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-surface-100 px-3 text-sm text-ink active:bg-surface-200 [@media(hover:hover)_and_(pointer:fine)]:hover:bg-surface-200">
                         <EnvelopeSimple size={16} /> {data.email}
                     </a>
                 )}
                 {data.phone && (
-                    <a href={`tel:${data.phone.replace(/\s+/g, '')}`} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-surface-100 px-3 text-sm text-ink hover:bg-surface-200">
+                    <a href={`tel:${data.phone.replace(/\s+/g, '')}`} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-surface-100 px-3 text-sm text-ink active:bg-surface-200 [@media(hover:hover)_and_(pointer:fine)]:hover:bg-surface-200">
                         <Phone size={16} /> {data.phone}
                     </a>
                 )}
                 {data.instagram && (
-                    <a href={instagramUrl(data.instagram)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-surface-100 px-3 text-sm text-ink hover:bg-surface-200">
+                    <a href={instagramUrl(data.instagram)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-surface-100 px-3 text-sm text-ink active:bg-surface-200 [@media(hover:hover)_and_(pointer:fine)]:hover:bg-surface-200">
                         <InstagramLogo size={16} /> {data.instagram}
                     </a>
                 )}
@@ -130,7 +131,7 @@ const SubmissionItem = ({ submission, open, onToggle, onSetHandled, onDelete, bu
     );
 };
 
-/** Compact «Postkasse» row for applications and onboarding forms; the full list opens in a panel. */
+/** «Postkasse» icon button for the coach header (applications and onboarding forms); the full list opens in a panel. */
 export default function FormSubmissions() {
     const [submissions, setSubmissions] = useState([]);
     const [error, setError] = useState('');
@@ -200,6 +201,15 @@ export default function FormSubmissions() {
     useEscapeKey(closePanel, panelOpen && !isConfirming);
     const panelRef = useFocusTrap(panelOpen);
 
+    // iOS Safari does not focus a button on tap, so useFocusTrap's "previously focused" is often <body>.
+    // Return focus to the mailbox trigger explicitly when the panel closes; the trigger stays mounted.
+    const triggerRef = useRef(null);
+    const wasPanelOpen = useRef(false);
+    useEffect(() => {
+        if (wasPanelOpen.current && !panelOpen) triggerRef.current?.focus();
+        wasPanelOpen.current = panelOpen;
+    }, [panelOpen]);
+
     const isEmpty = !submissions.length && !error;
     useEffect(() => {
         if (!isEmpty) return;
@@ -208,29 +218,37 @@ export default function FormSubmissions() {
         setShowHandled(false);
     }, [isEmpty]);
 
-    if (isEmpty) return null;
-
-    const summary = error && !submissions.length
-        ? 'Kunne ikke hente'
-        : open.length > 0
-            ? `${open.length} ${open.length === 1 ? 'ny' : 'nye'}`
-            : 'Ingen nye';
+    const hasOpen = open.length > 0;
+    const fetchFailed = Boolean(error && !submissions.length);
+    const label = fetchFailed
+        ? 'Postkasse, kunne ikke hente'
+        : hasOpen
+            ? `Postkasse, ${open.length} ${open.length === 1 ? 'ny' : 'nye'}`
+            : 'Postkasse';
 
     return (
         <>
-            <button
-                type="button"
-                data-testid="mailbox-row"
+            {/* Always rendered on coach home; the badge only shows when something is open. */}
+            <IconButton
+                ref={triggerRef}
+                data-testid="mailbox-trigger"
+                aria-label={label}
                 aria-haspopup="dialog"
+                aria-expanded={panelOpen}
                 onClick={() => setPanelOpen(true)}
-                className="flex min-h-11 w-full touch-manipulation items-center gap-2.5 rounded-xl border border-surface-200 bg-white px-4 py-2 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent active:bg-surface-100 [@media(hover:hover)_and_(pointer:fine)]:hover:bg-surface-50"
+                className={`relative shrink-0 touch-manipulation${fetchFailed ? ' text-error' : ''}`}
             >
-                <Tray size={18} className="shrink-0 text-ink-muted" aria-hidden="true" />
-                <span className="font-medium text-ink">Postkasse</span>
-                <span className={`ml-auto tabular-nums ${open.length > 0 ? 'font-medium text-accent' : 'text-ink-muted'}`}>{summary}</span>
-                <CaretRight size={16} className="shrink-0 text-ink-faint" aria-hidden="true" />
-            </button>
-            {panelOpen && (
+                <Tray size={20} aria-hidden="true" />
+                {hasOpen && (
+                    <span
+                        aria-hidden="true"
+                        className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[11px] font-medium leading-none tabular-nums text-white ring-2 ring-surface-50"
+                    >
+                        {open.length > 9 ? '9+' : open.length}
+                    </span>
+                )}
+            </IconButton>
+            {panelOpen && createPortal(
                 <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center bg-ink/60 p-4 backdrop-blur-sm animate-fade-in" onClick={closePanel}>
                     <Card
                         ref={panelRef}
@@ -274,7 +292,8 @@ export default function FormSubmissions() {
                             </ul>
                         )}
                     </Card>
-                </div>
+                </div>,
+                document.body
             )}
         </>
     );

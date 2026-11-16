@@ -346,6 +346,10 @@ const App = () => {
         }
     }, []);
 
+    // Header «Ny utøver» → CoachDashboard owns the modal and opens it when this counter changes.
+    const [newAthleteRequest, setNewAthleteRequest] = useState(0);
+    const requestNewAthlete = useCallback(() => setNewAthleteRequest((count) => count + 1), []);
+
     const requestCoachPushNotifications = useCallback(async () => {
         if (!supportsPushNotifications()) {
             toast('Denne enheten støtter ikke pushvarsler', 'error');
@@ -1499,15 +1503,24 @@ const App = () => {
             <div className="app-frame">
                 <div className="app-stage app-stage-wide">
                 {showReauthPrompt && <ReauthPrompt onReauth={handleReauth} />}
-                <Header user={displayUser} onLogout={handleLogout} isOffline={!isOnline} isClientPreview={isClientPreview} onToggleClientPreview={toggleClientPreview} />
+                <Header
+                    user={displayUser}
+                    onLogout={handleLogout}
+                    isOffline={!isOnline}
+                    isClientPreview={isClientPreview}
+                    onToggleClientPreview={toggleClientPreview}
+                    coachHome
+                    onNewAthlete={requestNewAthlete}
+                    notificationPermission={notificationPermission}
+                    onEnableNotifications={requestCoachPushNotifications}
+                />
                 <main className="app-content app-content-wide">
                     <ViewErrorBoundary><Suspense fallback={<ViewSkeleton />}>
                         <CoachDashboard
                             user={currentUser}
                             allUsers={allUsers}
                             isLoading={isUsersLoading}
-                            notificationPermission={notificationPermission}
-                            onEnableNotifications={requestCoachPushNotifications}
+                            newAthleteRequest={newAthleteRequest}
                             onSelectClient={handleSelectClient}
                             onAddClient={handleAddClient}
                             onDeleteClient={handleDeleteClient}
@@ -1551,6 +1564,8 @@ const App = () => {
                 onClearClient={handleClearClient}
                 hideClientBack={isRail}
                 isOffline={!isOnline}
+                notificationPermission={notificationPermission}
+                onEnableNotifications={requestCoachPushNotifications}
             />
             <main className={`app-content ${contentWide ? 'app-content-wide' : ''}`}>
                 {isClientLoading ? (

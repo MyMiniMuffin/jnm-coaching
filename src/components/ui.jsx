@@ -31,7 +31,7 @@ export const SegmentedControl = React.memo(({ label, hint, value, onChange, opti
                             className={`${wrap ? 'min-w-0' : 'flex-1'} min-h-[44px] py-2 rounded-lg text-sm font-semibold transition-[background-color,color,transform] duration-150 active:scale-[0.98] tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 ${
                                 isSelected
                                     ? 'bg-ink text-white shadow-sm'
-                                    : 'text-ink-muted hover:bg-white/70'
+                                    : 'text-ink-muted active:bg-white/70 [@media(hover:hover)_and_(pointer:fine)]:hover:bg-white/70'
                             }`}
                         >
                             {opt}
@@ -100,10 +100,10 @@ export const Badge = React.memo(({ children, variant = 'default', className = ''
 ));
 
 const BUTTON_VARIANTS = {
-    primary: 'bg-ink text-white shadow-sm hover:bg-ink/85',
-    secondary: 'bg-surface-100 text-ink hover:bg-surface-200',
-    ghost: 'text-ink-muted hover:text-ink hover:bg-surface-100',
-    danger: 'bg-error/10 text-error hover:bg-error/15',
+    primary: 'bg-ink text-white shadow-sm active:bg-ink/85 [@media(hover:hover)_and_(pointer:fine)]:hover:bg-ink/85',
+    secondary: 'bg-surface-100 text-ink active:bg-surface-200 [@media(hover:hover)_and_(pointer:fine)]:hover:bg-surface-200',
+    ghost: 'text-ink-muted active:bg-surface-100 [@media(hover:hover)_and_(pointer:fine)]:hover:text-ink [@media(hover:hover)_and_(pointer:fine)]:hover:bg-surface-100',
+    danger: 'bg-error/10 text-error active:bg-error/15 [@media(hover:hover)_and_(pointer:fine)]:hover:bg-error/15',
 };
 const BUTTON_SIZES = {
     sm: 'px-3 py-1.5 text-sm',
@@ -121,22 +121,23 @@ export const Button = React.memo(({ children, variant = 'primary', size = 'md', 
     </button>
 ));
 
-export const IconButton = React.memo(({ children, className = '', tone = 'neutral', ...props }) => {
+export const IconButton = React.memo(React.forwardRef(({ children, className = '', tone = 'neutral', ...props }, ref) => {
     const toneClass = tone === 'danger'
-        ? 'text-ink-faint hover:text-error'
+        ? 'text-ink-faint [@media(hover:hover)_and_(pointer:fine)]:hover:text-error'
         : tone === 'accent'
-            ? 'text-ink-faint hover:text-accent'
-            : 'text-ink-muted hover:text-ink';
+            ? 'text-ink-faint [@media(hover:hover)_and_(pointer:fine)]:hover:text-accent'
+            : 'text-ink-muted [@media(hover:hover)_and_(pointer:fine)]:hover:text-ink';
     return (
         <button
+            ref={ref}
             type="button"
-            className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-full p-2 transition-colors hover:bg-surface-100 active:bg-surface-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${toneClass} ${className}`}
+            className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-full p-2 transition-colors touch-manipulation active:bg-surface-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent [@media(hover:hover)_and_(pointer:fine)]:hover:bg-surface-100 ${toneClass} ${className}`}
             {...props}
         >
             {children}
         </button>
     );
-});
+}));
 
 export const Card = React.memo(React.forwardRef(({ children, className = "", interactive = false, onKeyDown, ...props }, ref) => (
     <div
@@ -150,7 +151,7 @@ export const Card = React.memo(React.forwardRef(({ children, className = "", int
             }
             onKeyDown?.(event);
         } : onKeyDown}
-        className={`surface-card rounded-xl border border-surface-200 ${interactive ? 'surface-card-interactive hover:border-surface-300 active:bg-surface-50 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent' : ''} ${className}`}
+        className={`surface-card rounded-xl border border-surface-200 ${interactive ? 'surface-card-interactive [@media(hover:hover)_and_(pointer:fine)]:hover:border-surface-300 active:bg-surface-50 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent' : ''} ${className}`}
         {...props}
     >
         {children}
@@ -248,7 +249,7 @@ export const ToggleGroup = React.memo(({ options, value, onChange, className = '
                         onChange(option.value);
                     }}
                     aria-pressed={isSelected}
-                    className={`flex-1 min-h-11 px-3 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 ${isSelected ? 'bg-ink text-white shadow-sm' : 'text-ink-muted hover:bg-white/70 hover:text-ink'}`}
+                    className={`flex-1 min-h-11 px-3 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 ${isSelected ? 'bg-ink text-white shadow-sm' : 'text-ink-muted active:bg-white/70 [@media(hover:hover)_and_(pointer:fine)]:hover:bg-white/70 [@media(hover:hover)_and_(pointer:fine)]:hover:text-ink'}`}
                 >
                     {option.label}
                 </button>
