@@ -121,7 +121,7 @@ export const Button = React.memo(({ children, variant = 'primary', size = 'md', 
     </button>
 ));
 
-export const IconButton = React.memo(({ children, className = '', tone = 'neutral', ...props }) => {
+export const IconButton = React.memo(React.forwardRef(({ children, className = '', tone = 'neutral', ...props }, ref) => {
     const toneClass = tone === 'danger'
         ? 'text-ink-faint hover:text-error'
         : tone === 'accent'
@@ -129,6 +129,7 @@ export const IconButton = React.memo(({ children, className = '', tone = 'neutra
             : 'text-ink-muted hover:text-ink';
     return (
         <button
+            ref={ref}
             type="button"
             className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-full p-2 transition-colors hover:bg-surface-100 active:bg-surface-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${toneClass} ${className}`}
             {...props}
@@ -136,7 +137,7 @@ export const IconButton = React.memo(({ children, className = '', tone = 'neutra
             {children}
         </button>
     );
-});
+}));
 
 export const Card = React.memo(React.forwardRef(({ children, className = "", interactive = false, onKeyDown, ...props }, ref) => (
     <div

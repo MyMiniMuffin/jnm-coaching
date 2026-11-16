@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Gear, X, CircleNotch } from '@phosphor-icons/react';
+import { Gear, X, CircleNotch, BellRinging } from '@phosphor-icons/react';
 import { useEscapeKey, useFocusTrap } from '../hooks';
 import { Button, TextField } from './ui';
 import { api } from '../lib/api';
@@ -8,7 +8,14 @@ import { PrivacyContent, SupportContent } from '../legal/LegalContent';
 
 const dateLabel = (value) => new Date(value).toLocaleDateString('nb-NO');
 
-export default function AccountMenu({ user }) {
+const pushStatusLabel = (permission) => (
+    permission === 'granted' ? 'Pushvarsler aktivert'
+        : permission === 'denied' ? 'Varsler blokkert'
+            : permission === 'unsupported' ? 'Varsler ikke støttet'
+                : 'Varsler ikke aktivert'
+);
+
+export default function AccountMenu({ user, notificationPermission = 'unsupported', onEnableNotifications }) {
     const [open, setOpen] = useState(false);
     const [tab, setTab] = useState('support');
     const [deleting, setDeleting] = useState(false);
@@ -71,6 +78,18 @@ export default function AccountMenu({ user }) {
                     </nav>
                     {tab === 'privacy' ? <PrivacyContent /> : <>
                         <SupportContent />
+                        {user?.role === 'coach' && <section className="mt-6 border-t border-surface-200 pt-5" aria-labelledby="push-status-title">
+                            <h3 id="push-status-title" className="font-semibold text-ink">Varsler</h3>
+                            <div className="mt-2 flex flex-wrap items-center justify-between gap-3 text-sm text-ink-muted">
+                                <p className="flex items-center gap-2" role="status">
+                                    <BellRinging size={16} className="shrink-0" aria-hidden="true" />
+                                    <span>{pushStatusLabel(notificationPermission)}</span>
+                                </p>
+                                {(notificationPermission === 'default' || notificationPermission === 'prompt') && onEnableNotifications && (
+                                    <Button variant="secondary" size="sm" onClick={onEnableNotifications}>Slå på</Button>
+                                )}
+                            </div>
+                        </section>}
                         {user && <section className="mt-6 border-t border-surface-200 pt-5">
                             <h3 className="font-semibold text-ink">Slett konto og personopplysninger</h3>
                             {pending ? <div className="mt-3 space-y-2 text-sm text-ink-muted" role="status">

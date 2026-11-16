@@ -1,8 +1,7 @@
 import DeletionRequests from '../components/DeletionRequests';
-import FormSubmissions from '../components/FormSubmissions';
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { Plus, X, Trash, User, CaretRight, CircleNotch, Key, BellRinging, MagnifyingGlass, ArrowsDownUp, DotsThree, TrayArrowUp, Archive } from '@phosphor-icons/react';
-import { Card, Button, EmptyState, IconButton, TextField, ToggleGroup, SelectField } from '../components/ui';
+import { X, Trash, User, CaretRight, CircleNotch, Key, MagnifyingGlass, ArrowsDownUp, DotsThree, TrayArrowUp, Archive } from '@phosphor-icons/react';
+import { Card, Button, EmptyState, IconButton, TextField, ToggleGroup } from '../components/ui';
 import { useEscapeKey } from '../hooks';
 import { useConfirm } from '../components/ConfirmDialog';
 import { haptic } from '../lib/haptic';
@@ -105,7 +104,7 @@ const ClientActionsMenu = ({ client, isPending, open, onOpenChange, onArchive, o
     );
 };
 
-const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermission = 'unsupported', onEnableNotifications, onSelectClient, onAddClient, onDeleteClient, onArchiveClient, onResetPassword }) => {
+const CoachDashboard = React.memo(({ allUsers = [], isLoading, newAthleteRequest = 0, onSelectClient, onAddClient, onDeleteClient, onArchiveClient, onResetPassword }) => {
     const [showModal, setShowModal] = useState(false);
     const [showArchived, setShowArchived] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
@@ -115,6 +114,9 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
     const [openMenuId, setOpenMenuId] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [sortBy, setSortBy] = useState('unread');
+    const [searchOpen, setSearchOpen] = useState(false);
+    const searchInputRef = useRef(null);
+    const searchButtonRef = useRef(null);
     const confirm = useConfirm();
 
     // Memoize filtrerte lister
@@ -154,7 +156,10 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
     }, [activeClients, archivedClients, searchTerm, showArchived, sortBy]);
 
     const closeModal = useCallback(() => setShowModal(false), []);
-    const openModal = useCallback(() => setShowModal(true), []);
+    // The header's «Ny utøver» button bumps newAthleteRequest; 0 is the initial value.
+    useEffect(() => {
+        if (newAthleteRequest > 0) setShowModal(true);
+    }, [newAthleteRequest]);
     useEscapeKey(closeModal, showModal);
 
     // Delay focus to after scale-in animation finishes for stable mobile focus
@@ -174,6 +179,27 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
     const showArchivedClients = useCallback(() => setShowArchived(true), []);
     const handleSearchChange = useCallback((e) => setSearchTerm(e.target.value), []);
     const handleSortChange = useCallback((e) => setSortBy(e.target.value), []);
+
+    // Search disclosure: focus moves into the field on open and back to the icon on close.
+    useEffect(() => {
+        if (searchOpen) searchInputRef.current?.focus();
+    }, [searchOpen]);
+    const closeSearch = useCallback(() => {
+        setSearchTerm('');
+        setSearchOpen(false);
+        searchButtonRef.current?.focus();
+    }, []);
+    const toggleSearch = useCallback(() => {
+        if (!searchOpen) setSearchOpen(true);
+        else if (searchTerm.trim()) searchInputRef.current?.focus(); // a live filter stays visible
+        else closeSearch();
+    }, [searchOpen, searchTerm, closeSearch]);
+    const handleSearchKeyDown = useCallback((e) => {
+        if (e.key === 'Escape') {
+            e.stopPropagation();
+            closeSearch();
+        }
+    }, [closeSearch]);
 
     const handleFormSubmit = useCallback(async (e) => {
         e.preventDefault();
@@ -250,7 +276,7 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
     }, [resetTarget, onResetPassword]);
 
     return (
-        <div className="space-y-5 pb-8 animate-slide-up">
+        <div className="space-y-3 pb-8 animate-slide-up">
             <DeletionRequests allUsers={allUsers} onSelectClient={onSelectClient} />
             {showModal && (
                 <div className="modal-backdrop fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in" onClick={closeModal}>
@@ -294,93 +320,83 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
                 </div>
             )}
 
-            {/* Hero Stats Card */}
-            <div className="px-5 py-4 duo:px-6 duo-lg:px-7 duo:py-5 duo-lg:py-6 hero-tint text-white rounded-xl relative overflow-hidden ring-1 ring-white/10">
-                <div className="relative z-10 space-y-4 duo:flex duo:items-center duo:justify-between duo:gap-6 duo:space-y-0">
-                    <div className="min-w-0">
-                        <p className="text-white/70 text-xs">Oversikt</p>
-                        <h2 className="text-2xl font-display leading-tight">Utøvere</h2>
-                        <div className="flex flex-wrap items-center gap-1.5 mt-1.5 text-xs text-white/75">
-                            <BellRinging size={12} className="shrink-0" />
-                            <span>
-                                {notificationPermission === 'granted'
-                                    ? (totalUnreadCheckins > 0 ? `${totalUnreadCheckins} uleste ukesrapporter` : 'Pushvarsler aktivert')
-                                    : notificationPermission === 'denied'
-                                        ? 'Varsler blokkert'
-                                        : notificationPermission === 'unsupported'
-                                            ? 'Varsler ikke støttet'
-                                            : 'Varsler ikke aktivert'}
-                            </span>
-                            {(notificationPermission === 'default' || notificationPermission === 'prompt') && (
-                                <button type="button" onClick={onEnableNotifications} className="underline underline-offset-2 text-white/80 hover:text-white">
-                                    Slå på
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2">
-                        <div className="text-center rounded-xl bg-white/7 px-2.5 py-2.5 ring-1 ring-white/10">
-                            <p className="text-2xl font-semibold leading-none tabular-nums">{activeClients.length}</p>
-                            <p className="text-white/75 text-xs mt-1">Aktive</p>
-                        </div>
-                        <div className="text-center rounded-xl bg-white/7 px-2.5 py-2.5 ring-1 ring-white/10">
-                            <p className="text-2xl font-semibold leading-none tabular-nums">{archivedClients.length}</p>
-                            <p className="text-white/75 text-xs mt-1">Arkivert</p>
-                        </div>
-                        <div className="text-center rounded-xl bg-white/7 px-2.5 py-2.5 ring-1 ring-white/10">
-                            <p className="text-2xl font-semibold leading-none tabular-nums">{totalUnreadCheckins}</p>
-                            <p className="text-white/75 text-xs mt-1">Uleste</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            {/* Slim summary: one calm line, the unread count is the only accent */}
+            <p className="px-1 text-sm tabular-nums text-ink-muted" data-testid="coach-summary">
+                {activeClients.length} {activeClients.length === 1 ? 'aktiv' : 'aktive'}
+                {' · '}
+                <span className={totalUnreadCheckins > 0 ? 'font-medium text-accent' : undefined}>
+                    {totalUnreadCheckins} {totalUnreadCheckins === 1 ? 'ulest' : 'uleste'}
+                </span>
+            </p>
 
-            <FormSubmissions />
-
-            {/* Toggle og Ny-knapp */}
-            <div className="flex justify-between items-center gap-3">
-                <div className="flex items-center gap-2 min-w-0">
+            {/* One-row toolbar: segments left, search and sort as icon buttons right */}
+            <div className="flex items-center gap-1" data-testid="coach-toolbar">
+                <div className="flex min-w-0 flex-1 items-center gap-2">
                     <ToggleGroup
+                        className="min-w-0"
                         value={showArchived ? 'archived' : 'active'}
                         onChange={(value) => value === 'archived' ? showArchivedClients() : showActive()}
                         options={[
                             { value: 'active', label: 'Aktive' },
-                            { value: 'archived', label: 'Arkivert' }
+                            { value: 'archived', label: archivedClients.length > 0 ? <>Arkivert <span className="tabular-nums">{archivedClients.length}</span></> : 'Arkivert' }
                         ]}
                     />
                     {isLoading && displayedClients.length > 0 && (
-                        <CircleNotch size={14} className="animate-spin text-ink-faint ml-1" aria-label="Oppdaterer" />
+                        <CircleNotch size={14} className="shrink-0 animate-spin text-ink-faint" role="img" aria-label="Oppdaterer" />
                     )}
                 </div>
-                <Button variant="primary" size="sm" onClick={openModal}>
-                    <Plus size={16} /> Ny
-                </Button>
+                {(activeClients.length > 0 || archivedClients.length > 0) && (
+                    <>
+                        <IconButton
+                            ref={searchButtonRef}
+                            aria-label="Søk etter utøver"
+                            aria-expanded={searchOpen}
+                            aria-controls="coach-search"
+                            onClick={toggleSearch}
+                            className={`shrink-0 touch-manipulation ${searchOpen || searchTerm ? 'bg-surface-200 text-ink' : ''}`}
+                        >
+                            <MagnifyingGlass size={20} aria-hidden="true" />
+                        </IconButton>
+                        <div className={`relative inline-flex min-h-11 min-w-11 shrink-0 touch-manipulation items-center justify-center rounded-full text-ink-muted transition-colors focus-within:ring-2 focus-within:ring-accent active:bg-surface-200 [@media(hover:hover)_and_(pointer:fine)]:hover:bg-surface-100 [@media(hover:hover)_and_(pointer:fine)]:hover:text-ink ${sortBy !== 'unread' ? 'bg-surface-200 text-ink' : ''}`}>
+                            <ArrowsDownUp size={20} aria-hidden="true" />
+                            {/* Native select overlay: keyboard, screen reader and OS picker for free */}
+                            <select
+                                value={sortBy}
+                                onChange={handleSortChange}
+                                aria-label="Sorter utøvere"
+                                className="absolute inset-0 h-full w-full cursor-pointer appearance-none rounded-full text-base opacity-0 focus:outline-none"
+                            >
+                                <option value="unread">Uleste først</option>
+                                <option value="lastCheckin">Siste ukesrapport</option>
+                                <option value="name">Navn</option>
+                            </select>
+                        </div>
+                    </>
+                )}
             </div>
 
-            {(activeClients.length > 0 || archivedClients.length > 0) && (
-                <div className="grid grid-cols-1 sm:grid-cols-[1fr_12rem] lg:grid-cols-[1fr_14rem] gap-3">
-                    <TextField
-                        icon={MagnifyingGlass}
+            {searchOpen && (
+                <div id="coach-search" role="search" className="relative">
+                    <MagnifyingGlass className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" size={18} aria-hidden="true" />
+                    <input
+                        ref={searchInputRef}
+                        type="search"
                         value={searchTerm}
                         onChange={handleSearchChange}
+                        onKeyDown={handleSearchKeyDown}
                         placeholder="Søk etter utøver"
                         aria-label="Søk etter utøver"
+                        autoComplete="off"
+                        enterKeyHint="search"
+                        className="min-h-11 w-full min-w-0 rounded-xl border border-surface-200 bg-surface-50 py-2 pl-12 pr-12 text-base font-medium outline-none transition-[border-color,box-shadow] placeholder:text-ink-faint focus:border-accent focus:ring-2 focus:ring-accent [&::-webkit-search-cancel-button]:appearance-none"
                     />
-                    <div className="relative">
-                        <ArrowsDownUp className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted z-10" size={18} />
-                        <SelectField
-                            value={sortBy}
-                            onChange={handleSortChange}
-                            options={['unread', 'lastCheckin', 'name']}
-                            aria-label="Sorter utøvere"
-                            displayLabels={{
-                                unread: 'Uleste først',
-                                lastCheckin: 'Siste ukesrapport',
-                                name: 'Navn'
-                            }}
-                            selectClassName="pl-12"
-                        />
-                    </div>
+                    <IconButton
+                        aria-label="Lukk søk"
+                        onClick={closeSearch}
+                        className="absolute right-0 top-1/2 -translate-y-1/2 touch-manipulation"
+                    >
+                        <X size={18} aria-hidden="true" />
+                    </IconButton>
                 </div>
             )}
 
@@ -389,9 +405,9 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
                 {displayedClients.length === 0 && isLoading ? (
                     <div className="space-y-2 animate-pulse duo:col-span-2 duo:grid duo:grid-cols-2 duo:gap-3 duo:space-y-0 duo-split-grid" aria-label="Laster utøvere" role="status">
                         {[1, 2, 3, 4].map(i => (
-                            <div key={i} className="p-4 flex items-center justify-between bg-white rounded-xl border border-surface-200">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-surface-200 rounded-xl" />
+                            <div key={i} className="px-3 py-1.5 sm:px-4 sm:py-2 flex min-h-[3.625rem] items-center justify-between bg-white rounded-xl border border-surface-200">
+                                <div className="flex items-center gap-2.5 sm:gap-4">
+                                    <div className="w-10 h-10 bg-surface-200 rounded-xl" />
                                     <div className="space-y-2">
                                         <div className="h-4 w-28 bg-surface-200 rounded" />
                                         <div className="h-3 w-40 bg-surface-100 rounded" />
@@ -406,7 +422,7 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
                     <EmptyState
                         icon={User}
                         title={searchTerm ? 'Ingen treff' : (showArchived ? 'Ingen arkiverte utøvere' : 'Ingen utøvere ennå')}
-                        description={searchTerm ? 'Prøv et annet navn eller brukernavn.' : (!showArchived ? 'Trykk «Ny» for å legge til en utøver.' : undefined)}
+                        description={searchTerm ? 'Prøv et annet navn eller brukernavn.' : (!showArchived ? 'Trykk på + øverst for å legge til en utøver.' : undefined)}
                     />
                     </div>
                 ) : (
@@ -416,7 +432,7 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
                         return (
                         <Card
                             key={client.id}
-                            className={`relative ${isMenuOpen ? 'z-30' : 'z-0'} p-3 sm:p-4 flex items-center justify-between gap-1 group ${showArchived ? (isMenuOpen ? '' : 'opacity-60') : client.unreadCheckins > 0 ? 'border-accent/30 bg-accent/5' : ''} ${isPending ? 'opacity-70' : 'hover:border-surface-300'}`}
+                            className={`relative ${isMenuOpen ? 'z-30' : 'z-0'} px-3 py-1.5 sm:px-4 sm:py-2 flex items-center justify-between gap-1 group ${showArchived ? (isMenuOpen ? '' : 'opacity-60') : client.unreadCheckins > 0 ? 'border-accent/30 bg-accent/5' : ''} ${isPending ? 'opacity-70' : 'hover:border-surface-300'}`}
                         >
                             <button
                                 type="button"
@@ -428,9 +444,9 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, notificationPermi
                                     }
                                     onSelectClient(client);
                                 }}
-                                className="flex min-h-12 min-w-0 flex-1 items-center gap-2.5 sm:gap-4 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:cursor-wait"
+                                className="flex min-h-11 min-w-11 flex-1 items-center gap-2.5 sm:gap-4 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:cursor-wait"
                             >
-                                <span className={`relative w-12 h-12 shrink-0 rounded-xl flex items-center justify-center text-lg font-semibold ${showArchived ? 'bg-surface-200 text-ink-muted' : client.unreadCheckins > 0 ? 'bg-accent/10 text-accent' : 'bg-surface-100 text-ink'}`}>
+                                <span className={`relative w-10 h-10 shrink-0 rounded-xl flex items-center justify-center text-base font-semibold ${showArchived ? 'bg-surface-200 text-ink-muted' : client.unreadCheckins > 0 ? 'bg-accent/10 text-accent' : 'bg-surface-100 text-ink'}`}>
                                     {client.name.charAt(0)}
                                     <RecentActivityDot lastActiveAt={client.lastActiveAt} />
                                 </span>

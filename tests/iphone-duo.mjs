@@ -376,7 +376,8 @@ test('views keep duo density classes without dead segment coupling', () => {
 
     assert.match(coach, /duo:grid duo:grid-cols-2/);
     assert.match(coach, /duo-split-grid/);
-    assert.match(coach, /duo:px-6 duo-lg:px-7/);
+    // The coach hero card is now a slim one-line summary without duo padding (see coach-density.mjs).
+    assert.match(coach, /data-testid="coach-summary"/);
     assert.match(dashboard, /pb-32 duo:pb-8/);
     assert.match(dashboard, /duo:px-6 duo-lg:px-7/);
     assert.doesNotMatch(dashboard, /duo:grid-cols-2 gap-5 items-start/);

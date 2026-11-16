@@ -1,9 +1,11 @@
 import React from 'react';
 import AccountMenu from './AccountMenu';
-import { SignOut, CaretLeft, WifiSlash, Eye } from '@phosphor-icons/react';
+import { SignOut, CaretLeft, WifiSlash, Eye, Plus } from '@phosphor-icons/react';
 import { IconButton } from './ui';
+import FormSubmissions from './FormSubmissions';
 
-const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOffline = false, isClientPreview = false, onToggleClientPreview, previewDisabled = false, hideClientBack = false }) => (
+// coachHome: inbox (Postkasse) and «Ny utøver» live here, only on the coach's athlete list.
+const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOffline = false, isClientPreview = false, onToggleClientPreview, previewDisabled = false, hideClientBack = false, coachHome = false, onNewAthlete, notificationPermission, onEnableNotifications }) => (
     <header className="app-header sticky top-0 z-40 border-b border-surface-200/80 bg-surface-50">
         <div className="app-header-top-inset" aria-hidden="true" />
         {isOffline && (
@@ -48,7 +50,7 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
                         <span className="hidden text-sm font-medium duo:inline">Vis som utøver</span>
                     </IconButton>
                 )}
-                <AccountMenu user={isClientPreview ? null : user} />
+                <AccountMenu user={isClientPreview ? null : user} notificationPermission={notificationPermission} onEnableNotifications={onEnableNotifications} />
                 <IconButton onClick={onLogout} aria-label="Logg ut" className="shrink-0">
                     <SignOut size={20} />
                 </IconButton>
@@ -57,7 +59,20 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
             <div className="header-inner flex justify-between items-center py-3 duo:py-3.5 duo-lg:py-4">
                 <p className="font-semibold text-ink truncate min-w-0">{user.name}</p>
                 <div className="flex items-center gap-1">
-                    <AccountMenu user={isClientPreview ? null : user} />
+                    {coachHome && !isClientPreview && (
+                        <>
+                            <FormSubmissions />
+                            <button
+                                type="button"
+                                aria-label="Ny utøver"
+                                onClick={onNewAthlete}
+                                className="inline-flex min-h-11 min-w-11 shrink-0 touch-manipulation select-none items-center justify-center rounded-full bg-ink text-white transition-colors active:bg-ink/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface-50 [@media(hover:hover)_and_(pointer:fine)]:hover:bg-ink/90"
+                            >
+                                <Plus size={20} weight="bold" aria-hidden="true" />
+                            </button>
+                        </>
+                    )}
+                    <AccountMenu user={isClientPreview ? null : user} notificationPermission={notificationPermission} onEnableNotifications={onEnableNotifications} />
                     <IconButton onClick={onLogout} aria-label="Logg ut" className="shrink-0">
                         <SignOut size={20} />
                     </IconButton>
