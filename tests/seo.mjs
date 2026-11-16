@@ -95,11 +95,13 @@ test('privacy section headings are h2 under the page h1', () => {
 
 test('built dist keeps robots, sitemap and SEO head tags when present', () => {
     const dist = path.join(root, 'dist');
-    if (!existsSync(dist)) return;
+    const home = path.join(dist, 'coaching/index.html');
+    // dist/ may exist mid-build (other tests start Vite); only assert a finished output.
+    if (!existsSync(home)) return;
     assert.equal(existsSync(path.join(dist, 'robots.txt')), true);
     assert.equal(existsSync(path.join(dist, 'sitemap.xml')), true);
-    const home = read('dist/coaching/index.html');
-    assert.match(home, /<link rel="canonical" href="https:\/\/jnmcoaching\.no\/">/);
+    const homeHtml = read('dist/coaching/index.html');
+    assert.match(homeHtml, /<link rel="canonical" href="https:\/\/jnmcoaching\.no\/">/);
     assert.match(home, /application\/ld\+json/);
     assert.match(read('dist/index.html'), /noindex, nofollow/);
     assert.match(read('dist/personvern/index.html'), /rel="canonical" href="https:\/\/jnmcoaching\.no\/personvern\/"/);
