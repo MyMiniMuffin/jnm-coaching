@@ -111,3 +111,37 @@ test('live-regionen står sist i containeren og teksten har mellomrom', () => {
 test('testene er med i test:unit', () => {
     assert.match(pkg, /"test:unit": "[^"]*tests\/wave-reveal\.mjs/);
 });
+
+test('bølgen er dempet: ingen fargeskille, ingen sidebilde og kort kantfarge', () => {
+    const style = wave.slice(wave.indexOf('export const JNM_WAVE_STYLE'), wave.indexOf('};', wave.indexOf('export const JNM_WAVE_STYLE')));
+    assert.match(style, /aberration: 0,/);
+    const number = (key) => Number(style.match(new RegExp(`${key}: ([\\d.]+)`))[1]);
+    assert.ok(number('rimFade') <= 1.5, 'kantfargen henger for lenge');
+    assert.ok(number('hairlineFade') <= 1.2, 'hårlinjen henger for lenge');
+    assert.ok(number('travel') <= 2.2, 'bølgen er for treg');
+    assert.equal(reveal.match(/waveStyle: JNM_WAVE_STYLE/g).length, 2);
+    assert.equal(reveal.match(/capture: false/g).length, 2);
+});
+
+test('kvitteringen dekker skjemaet og skjemaet tones ut i takt med den', () => {
+    assert.match(reveal, /LAYER_REVEALED = \{ \.\.\.LAYER_HIDDEN, background: 'inherit' \}/);
+    assert.match(reveal, /data-dw-layer="revealed"[^>]*style=\{LAYER_REVEALED\}/);
+    assert.match(reveal, /<div ref=\{contentInnerRef\}>\{children\}<\/div>/);
+    assert.match(reveal, /inner\.style\.opacity = String\(Math\.max\(0, 1 - shown \* FORM_FADE_RATIO\)\)/);
+    assert.match(reveal, /cancelAnimationFrame\(followFrame\)/);
+});
+
+test('send-linjen glir ut under bølgen og skjemaet hopper ikke før den', () => {
+    assert.match(indexCss, /\.wave-leaving-bar\.is-leaving \{[^}]*opacity: 0;[^}]*pointer-events: none;/);
+    assert.match(checkin, /wave-leaving-bar[^`]*\$\{phase === 'revealing' \? ' is-leaving' : ''\}/);
+    assert.match(onboarding, /onboarding-actions wave-leaving-bar\$\{status === 'revealing' \? ' is-leaving' : ''\}/);
+    assert.match(checkin, /setLastWeightAtSubmit\(lastWeight\)/);
+    assert.match(checkin, /lastWeight=\{phaseBusy \? lastWeightAtSubmit : lastWeight\}/);
+});
+
+test('oppstartskortet krymper til kvitteringen, men ikke ved Reduser bevegelse', () => {
+    assert.match(reveal, /onFinishRef\.current\?\.\(\{ top, height \}\)/);
+    assert.match(onboarding, /ref=\{successCardRef\} className="onboarding-card"/);
+    assert.match(onboarding, /prefers-reduced-motion: reduce/);
+    assert.match(onboarding, /minHeight: `\$\{from\}px`/);
+});

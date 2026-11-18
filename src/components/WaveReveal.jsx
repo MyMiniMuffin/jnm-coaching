@@ -1,14 +1,19 @@
 import React, { useEffect, useLayoutEffect, useRef } from 'react';
-import { JNM_WAVE_PALETTE, loadWaveController, preloadWaveController } from '../lib/wave';
+import { JNM_WAVE_PALETTE, JNM_WAVE_STYLE, loadWaveController, preloadWaveController } from '../lib/wave';
 
 // Stabil markup fra første render, så skjemaet aldri remountes når biblioteket lastes.
 // Stilobjektene er konstante: React skriver aldri over det kontrolleren setter.
 const ROOT = { display: 'grid', isolation: 'isolate', overflow: 'hidden' };
 const LAYER = { gridArea: '1 / 1', minWidth: 0, minHeight: 0, isolation: 'isolate' };
 const LAYER_HIDDEN = { ...LAYER, opacity: 0, pointerEvents: 'none' };
+// Kvitteringen dekker skjemaet under seg, så crossfaden (Reduser bevegelse) og
+// overleveringen etter bølgen aldri viser to tekstlag oppå hverandre.
+const LAYER_REVEALED = { ...LAYER_HIDDEN, background: 'inherit' };
 
 // rAF pauser i bakgrunnen; da må appen gå videre likevel.
 const SAFETY_MS = 6000;
+// Skjemaet er tonet helt ut når kvitteringslaget er 1 / 4 = 25 % synlig.
+const FORM_FADE_RATIO = 4;
 
 /**
  * Bølgeovergang fra `children` til `revealedContent`.
@@ -16,7 +21,8 @@ const SAFETY_MS = 6000;
  * - revealed: innsendingen lyktes. Bølgen kjøres (eller hoppes over uten bibliotek).
  * - getAnchorTop(): funksjon som gir viewport-y (px) der det nye innholdet skal starte.
  *   Kalles bare i det revealed blir true.
- * - onFinish({ top }): kalles én gang per kjøring; top er innholdets viewport-top.
+ * - onFinish({ top, height }): kalles én gang per kjøring; top er innholdets viewport-top,
+ *   height er bølgeflatens høyde rett før byttet.
  */
 const WaveReveal = ({
     revealed = false,
@@ -31,6 +37,7 @@ const WaveReveal = ({
 }) => {
     const rootRef = useRef(null);
     const contentLayerRef = useRef(null);
+    const contentInnerRef = useRef(null);
     const revealedLayerRef = useRef(null);
     const padRef = useRef(null);
     const measureRef = useRef(null);
@@ -54,6 +61,8 @@ const WaveReveal = ({
                     revealed: false,
                     source: sourceRef.current,
                     palette: JNM_WAVE_PALETTE,
+                    waveStyle: JNM_WAVE_STYLE,
+                    capture: false,
                     prewarm: false,
                     live: true,
                     reducedMotion: 'system',
@@ -95,7 +104,8 @@ const WaveReveal = ({
             finished = true;
             window.clearTimeout(timer);
             const top = measureRef.current ? measureRef.current.getBoundingClientRect().top : 0;
-            onFinishRef.current?.({ top });
+            const height = rootRef.current ? rootRef.current.getBoundingClientRect().height : 0;
+            onFinishRef.current?.({ top, height });
         };
 
         const controller = controllerRef.current;
@@ -104,11 +114,26 @@ const WaveReveal = ({
             return undefined;
         }
         timer = window.setTimeout(finish, SAFETY_MS);
+        // Biblioteket toner hele kvitteringslaget inn under fargen. Skjemaets innhold følger
+        // den toningen og er borte når kvitteringen er 25 % synlig, så tekstlagene aldri
+        // står oppå hverandre. Virker likt for bølgen og for crossfaden ved Reduser bevegelse.
+        const inner = contentInnerRef.current;
+        const layer = revealedLayerRef.current;
+        let followFrame = 0;
+        const follow = () => {
+            if (!inner || !layer) return;
+            const shown = layer.style.opacity === '' ? 1 : Number(layer.style.opacity) || 0;
+            inner.style.opacity = String(Math.max(0, 1 - shown * FORM_FADE_RATIO));
+            if (!finished) followFrame = window.requestAnimationFrame(follow);
+        };
+        followFrame = window.requestAnimationFrame(follow);
         try {
             controller.update({
                 revealed: true,
                 source: sourceRef.current,
                 palette: JNM_WAVE_PALETTE,
+                waveStyle: JNM_WAVE_STYLE,
+                capture: false,
                 prewarm: false,
                 live: true,
                 reducedMotion: 'system',
@@ -118,7 +143,11 @@ const WaveReveal = ({
             console.error('[WaveReveal] Bølgen feilet:', error);
             finish();
         }
-        return () => window.clearTimeout(timer);
+        return () => {
+            window.clearTimeout(timer);
+            window.cancelAnimationFrame(followFrame);
+            if (inner) inner.style.opacity = '';
+        };
         // getAnchorTop kalles bare i det revealed blir true.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [revealed]);
@@ -126,9 +155,9 @@ const WaveReveal = ({
     return (
         <div ref={rootRef} data-distortion-wave="" className={className} style={ROOT}>
             <div ref={contentLayerRef} data-dw-layer="content" className={layerClassName} style={LAYER}>
-                {children}
+                <div ref={contentInnerRef}>{children}</div>
             </div>
-            <div ref={revealedLayerRef} data-dw-layer="revealed" className={layerClassName} style={LAYER_HIDDEN}>
+            <div ref={revealedLayerRef} data-dw-layer="revealed" className={layerClassName} style={LAYER_REVEALED}>
                 <div ref={padRef}>
                     <div ref={measureRef}>{revealedContent}</div>
                 </div>

@@ -285,6 +285,8 @@ const CheckInView = React.memo(({
     const [phase, setPhase] = useState('idle');
     const [receipt, setReceipt] = useState(null);
     const [hadReportAtSubmit, setHadReportAtSubmit] = useState(false);
+    // Skjemaet viser forrige vekt slik den var da du trykket Send, så det ikke hopper rett før bølgen.
+    const [lastWeightAtSubmit, setLastWeightAtSubmit] = useState(null);
     const isSubmitting = phase === 'sending';
     const phaseBusy = phase === 'sending' || phase === 'revealing';
     const phaseRef = useRef(phase);
@@ -506,6 +508,7 @@ const CheckInView = React.memo(({
         haptic('save');
         submitGuardRef.current = true;
         setHadReportAtSubmit(Boolean(thisWeekReport));
+        setLastWeightAtSubmit(lastWeight);
         setReceipt(null);
         setPhase('sending');
         setErrorMessage('');
@@ -537,7 +540,7 @@ const CheckInView = React.memo(({
         } finally {
             submitGuardRef.current = false;
         }
-    }, [formData, onNewCheckin, finishSubmit, clearDraft, toast, isPreview, thisWeekReport]);
+    }, [formData, onNewCheckin, finishSubmit, clearDraft, toast, isPreview, thisWeekReport, lastWeight]);
 
     const [visibleReportCount, setVisibleReportCount] = useState(REPORT_BATCH_SIZE);
     const visibleCheckins = useMemo(
@@ -810,7 +813,7 @@ const CheckInView = React.memo(({
                         <CheckinFields
                             values={formData}
                             onField={updateField}
-                            lastWeight={lastWeight}
+                            lastWeight={phaseBusy ? lastWeightAtSubmit : lastWeight}
                             stepGoal={stepGoal}
                             weightError={weightFieldError}
                             weightInputRef={weightInputRef}
@@ -841,7 +844,7 @@ const CheckInView = React.memo(({
 
             {showForm && (
                 <div
-                    className="plan-save-bar fixed inset-x-0 z-40 border-t border-surface-200/80 bg-surface-50/94 backdrop-blur-xl"
+                    className={`plan-save-bar wave-leaving-bar fixed inset-x-0 z-40 border-t border-surface-200/80 bg-surface-50/94 backdrop-blur-xl${phase === 'revealing' ? ' is-leaving' : ''}`}
                     style={{ bottom: 'calc(4.35rem + env(safe-area-inset-bottom, 0px))' }}
                 >
                     <div className="header-inner mx-auto flex items-center gap-2 py-2.5">

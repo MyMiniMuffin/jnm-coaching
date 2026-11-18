@@ -30,6 +30,24 @@ export const JNM_WAVE_PALETTE = {
     behind: toRgb(TOKENS.accentHover),
 };
 
+// Roligere enn bibliotekets standard: ingen fargeskille på mørke knapper, mindre
+// uskarphet, kortere kantfarge og færre prikker, så overgangen er ferdig på rundt 1,3 s.
+export const JNM_WAVE_STYLE = {
+    anticipation: 0.2,
+    travel: 2.0,
+    linger: -0.3,
+    rimFade: 1.4,
+    hairlineLinger: 0.25,
+    hairlineFade: 1.0,
+    hairlineOpacity: 0.5,
+    rimStrength: 0.5,
+    strength: 0.8,
+    aberration: 0,
+    gatherGlow: 0.15,
+    particleCount: 24,
+    particleLife: 1.3,
+};
+
 let controllerPromise = null;
 
 // Henter kontrolleren én gang. Svarer null hvis chunken ikke lar seg laste,
