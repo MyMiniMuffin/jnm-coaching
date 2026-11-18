@@ -61,6 +61,7 @@ const buildCoachPushPayload = ({ athleteId, athleteName, unreadCount, unreadTota
     url: '/app/',
     tag: `coach-checkin-${athleteId}`,
     clientId: athleteId,
+    clientName: athleteName,
     icon: '/icon-192.png',
     badgeIcon: '/icon-192.png',
     unreadTotal: badge
@@ -137,6 +138,7 @@ const sendWebPushNotifications = async (sql, subscriptions, payload) => {
     url: payload.url,
     tag: payload.tag,
     clientId: payload.clientId,
+    clientName: payload.clientName,
     icon: payload.icon,
     badge: payload.badgeIcon,
     unreadTotal: payload.unreadTotal
@@ -185,6 +187,7 @@ const sendApnsNotifications = async (sql, subscriptions, payload) => {
     };
     note.payload = {
       clientId: payload.clientId,
+      clientName: payload.clientName,
       url: payload.url,
       tag: payload.tag,
       unreadTotal: payload.unreadTotal

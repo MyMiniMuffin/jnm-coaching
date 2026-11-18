@@ -50,8 +50,22 @@ test('buildCoachPushPayload keeps coach check-in copy and badge count', () => {
   assert.match(payload.body, /Ada/);
   assert.match(payload.body, /ukesrapport/);
   assert.equal(payload.clientId, 42);
+  assert.equal(payload.clientName, 'Ada');
   assert.equal(payload.unreadTotal, 5);
   assert.equal(payload.tag, 'coach-checkin-42');
+});
+
+test('clientName sendes videre i både APNs- og web push-payload', () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, '../netlify/functions/push-delivery.js'),
+    'utf8'
+  );
+  const webBody = source.match(/JSON\.stringify\(\{[\s\S]*?unreadTotal: payload\.unreadTotal[\s\S]*?\}\)/);
+  assert.ok(webBody, 'fant ikke web push-body');
+  assert.match(webBody[0], /clientName: payload\.clientName/);
+  const apnsPayload = source.match(/note\.payload = \{[\s\S]*?\};/);
+  assert.ok(apnsPayload, 'fant ikke APNs-payload');
+  assert.match(apnsPayload[0], /clientName: payload\.clientName/);
 });
 
 test('buildCoachBadgeSyncPayload syncs badge without alert copy', () => {
