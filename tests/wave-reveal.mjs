@@ -89,7 +89,7 @@ test('utkastet slettes med en gang serveren har lagret, ikke først etter bølge
     const finish = checkin.slice(checkin.indexOf('const finishSubmit'), checkin.indexOf('const handleWaveFinish'));
     assert.match(finish, /setComposing\(false\)/);
     assert.match(finish, /setFormData\(INITIAL_FORM_DATA\)/);
-    assert.match(checkin, /phase !== 'idle'\) return;/);
+    assert.match(checkin, /!showForm \|\| phaseBusy\) return;/);
 });
 
 test('innsending avvises mens fasen er sending eller revealing', () => {

@@ -350,7 +350,7 @@ const CheckInView = React.memo(({
     }, [storageKey, isReadOnly, hideForm, isPreview]);
 
     useEffect(() => {
-        if (isPreview || isReadOnly || hideForm || !showForm || phase !== 'idle') return;
+        if (isPreview || isReadOnly || hideForm || !showForm || phaseBusy) return;
 
         const timeoutId = setTimeout(() => {
             try {
@@ -365,7 +365,7 @@ const CheckInView = React.memo(({
         }, 350);
 
         return () => clearTimeout(timeoutId);
-    }, [formData, hasDraftContent, storageKey, isReadOnly, hideForm, showForm, isPreview, phase]);
+    }, [formData, hasDraftContent, storageKey, isReadOnly, hideForm, showForm, isPreview, phaseBusy]);
 
     const closeLightbox = useCallback(() => {
         setLightbox(prev => ({ ...prev, isOpen: false }));
