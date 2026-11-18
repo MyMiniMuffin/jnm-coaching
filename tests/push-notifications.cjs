@@ -60,12 +60,16 @@ test('clientName sendes videre i både APNs- og web push-payload', () => {
     path.join(__dirname, '../netlify/functions/push-delivery.js'),
     'utf8'
   );
-  const webBody = source.match(/JSON\.stringify\(\{[\s\S]*?unreadTotal: payload\.unreadTotal[\s\S]*?\}\)/);
-  assert.ok(webBody, 'fant ikke web push-body');
-  assert.match(webBody[0], /clientName: payload\.clientName/);
-  const apnsPayload = source.match(/note\.payload = \{[\s\S]*?\};/);
-  assert.ok(apnsPayload, 'fant ikke APNs-payload');
-  assert.match(apnsPayload[0], /clientName: payload\.clientName/);
+  const sliceFn = (start) => {
+    const from = source.indexOf(`const ${start} =`);
+    assert.ok(from >= 0, `fant ikke ${start}`);
+    const next = source.indexOf('\nconst send', from + 1);
+    return source.slice(from, next === -1 ? undefined : next);
+  };
+  const webFn = sliceFn('sendWebPushNotifications');
+  assert.match(webFn, /JSON\.stringify\(\{[\s\S]*?clientName: payload\.clientName[\s\S]*?\}\)/);
+  const apnsFn = sliceFn('sendApnsNotifications');
+  assert.match(apnsFn, /note\.payload = \{[\s\S]*?clientName: payload\.clientName[\s\S]*?\};/);
 });
 
 test('buildCoachBadgeSyncPayload syncs badge without alert copy', () => {

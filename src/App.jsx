@@ -327,6 +327,8 @@ const App = () => {
     const refreshUsersRef = useRef(null);
     // Utøver fra push-trykk som ikke fantes i lista; åpnes/droppes når serverlista kommer.
     const pendingPushClientRef = useRef(null);
+    const viewingClientRef = useRef(null);
+    const PENDING_PUSH_MAX_AGE_MS = 15000;
     const serverUsersCountRef = useRef(0);
 
     const ensureCoachPushSubscription = useCallback(async () => {
@@ -556,6 +558,7 @@ const App = () => {
                 // Ignorer utdaterte svar — en nyere mutasjon/poll eier listen.
                 if (isCancelled || generation !== usersFetchGenerationRef.current) return;
                 if (result.authError) {
+                    pendingPushClientRef.current = null;
                     setShowReauthPrompt(true);
                     return;
                 }
@@ -565,8 +568,13 @@ const App = () => {
 
                     // Push-trykk på utøver som ikke fantes i cachen: listen har fylt inn resten
                     // via merge av viewingClient. Finnes utøveren fortsatt ikke, dropp stille.
-                    const pending = pendingPushClientRef.current;
-                    if (pending && Array.isArray(result.data)) {
+                    let pending = pendingPushClientRef.current;
+                    if (pending && Date.now() - pending.at > PENDING_PUSH_MAX_AGE_MS) {
+                        pendingPushClientRef.current = null;
+                        pending = null;
+                    }
+                    // Ved nettverksfeil (tom/cachet liste) avgjør vi ikke om utøveren finnes.
+                    if (pending && Array.isArray(result.data) && !result.networkError && !result.fromCache) {
                         pendingPushClientRef.current = null;
                         const found = result.data.find(user => String(user?.id) === String(pending.id));
                         if (found && !pending.name) {
@@ -575,14 +583,15 @@ const App = () => {
                                 { ...found, is_archived: Boolean(found.is_archived), unreadCheckins: Math.max(1, Number(found.unreadCheckins) || 0) },
                                 { fresh: true }
                             );
-                        } else if (!found && pending.name) {
+                        } else if (!found && pending.name && String(viewingClientRef.current?.id) === String(pending.id)) {
                             selectClientRef.current += 1;
-                            setViewingClient(prev => (prev && String(prev.id) === String(pending.id) ? null : prev));
+                            setViewingClient(null);
                             setIsClientLoading(false);
                         }
                     }
                 }
             } catch (error) {
+                pendingPushClientRef.current = null;
                 if (!isCancelled && generation === usersFetchGenerationRef.current) {
                     console.error('[Coach Poll] Kunne ikke oppdatere brukerliste:', error);
                 }
@@ -946,7 +955,12 @@ const App = () => {
         }
     }, [viewingClient, toast]);
 
+    useEffect(() => {
+        viewingClientRef.current = viewingClient;
+    }, [viewingClient]);
+
     const handleClearClient = useCallback(() => {
+        pendingPushClientRef.current = null;
         setIsClientPreview(false);
         setViewingClient(null);
         setActiveTab('dashboard');
@@ -956,6 +970,10 @@ const App = () => {
         // fresh: cachen er kjent utdatert (åpnet fra push) – vis skjelett til ferske data kommer.
         const { preserveView = false, fresh = false } = options;
         const requestId = ++selectClientRef.current;
+        const pendingPush = pendingPushClientRef.current;
+        if (pendingPush && String(pendingPush.id) !== String(client.id)) {
+            pendingPushClientRef.current = null;
+        }
         const previousData = currentDataRef.current;
         const cachedData = cache.get(`user-data-${client.id}`, { allowStale: true });
         const restoreCachedOnFailure = () => {
@@ -979,29 +997,34 @@ const App = () => {
             setActiveTab('dashboard');
         }
 
+        // Ved fresh er cachen ikke vist ennå: bruk cache for denne utøveren, ellers tom state
+        // (aldri forrige utøvers data). Ikke-fresh beholder tidligere oppførsel.
+        const fallbackOnFailure = () => {
+            if (fresh) {
+                if (!restoreCachedOnFailure()) setCurrentData(INITIAL_DATA_STATE);
+            } else if (!isPlainObject(cache.get(`user-data-${client.id}`, { allowStale: true }))) {
+                setCurrentData(previousData);
+            }
+        };
+
         try {
             const result = await api.getUserData(client.id, false);
             if (requestId !== selectClientRef.current) return; // Avbrutt av nyere klikk
             if (result.authError) {
                 setShowReauthPrompt(true);
-                setCurrentData(previousData);
+                if (fresh) fallbackOnFailure(); else setCurrentData(previousData);
                 setIsClientLoading(false);
                 return;
             }
             if (result.data) {
                 setCurrentData(mergeUserData(INITIAL_DATA_STATE, result.data));
-            } else if (result.networkError) {
-                // Ved fresh er cachen ikke vist ennå, så den må settes som fallback.
-                if (!(fresh && restoreCachedOnFailure()) && !isPlainObject(cache.get(`user-data-${client.id}`, { allowStale: true }))) {
-                    setCurrentData(previousData);
-                }
+            } else if (fresh || result.networkError) {
+                fallbackOnFailure();
             }
         } catch (e) {
             if (requestId !== selectClientRef.current) return;
             console.error('Kunne ikke hente klientdata:', e);
-            if (!(fresh && restoreCachedOnFailure()) && !isPlainObject(cache.get(`user-data-${client.id}`, { allowStale: true }))) {
-                setCurrentData(previousData);
-            }
+            fallbackOnFailure();
         }
 
         setIsClientLoading(false);
@@ -1088,15 +1111,16 @@ const App = () => {
                     pendingPushClientRef.current = null;
                 } else if (hint.clientName) {
                     // Ukjent i cachen: åpne med navn nå, listen fyller inn resten og validerer.
-                    pendingPushClientRef.current = { id: hint.clientId, name: hint.clientName };
+                    pendingPushClientRef.current = { id: hint.clientId, name: hint.clientName, at: Date.now() };
                     refreshUsersRef.current?.(false);
                 } else {
                     // Uten navn venter vi på listen før klienten åpnes.
-                    pendingPushClientRef.current = { id: hint.clientId, name: '' };
+                    pendingPushClientRef.current = { id: hint.clientId, name: '', at: Date.now() };
                     refreshUsersRef.current?.(false);
                     return;
                 }
                 // Sørg for at mark-as-read kjører selv om poll ikke har oppdatert unread ennå.
+                // Gjelder også placeholder, slik at rapporten markeres som lest på serveren.
                 const base = client || { id: hint.clientId, name: hint.clientName, role: 'athlete' };
                 handleSelectClientRef.current(
                     { ...base, unreadCheckins: Math.max(1, Number(base.unreadCheckins) || 0) },

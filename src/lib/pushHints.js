@@ -2,12 +2,13 @@
 // slik at coach-oversikten kan markere utøvere før serveren har svart.
 
 const cleanId = (value) => {
-    if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+    // Bruker-id-er er heltall (serial); alt annet avvises.
+    if (typeof value === 'number') return Number.isSafeInteger(value) && value >= 0 ? value : null;
     if (typeof value === 'string') {
         const trimmed = value.trim();
-        if (!trimmed) return null;
+        if (!/^\d+$/.test(trimmed)) return null;
         const asNumber = Number(trimmed);
-        return Number.isFinite(asNumber) ? asNumber : trimmed;
+        return Number.isSafeInteger(asNumber) ? asNumber : null;
     }
     return null;
 };

@@ -12,7 +12,10 @@ test('extractPushHint leser clientId og clientName', () => {
 
 test('extractPushHint tåler strenger, tall og manglende felt', () => {
     assert.deepEqual(extractPushHint({ data: { clientId: '7' } }), { clientId: 7, clientName: '' });
-    assert.deepEqual(extractPushHint({ data: { clientId: 'abc-1', clientName: 5 } }), { clientId: 'abc-1', clientName: '' });
+    assert.deepEqual(extractPushHint({ data: { clientId: '7', clientName: 5 } }), { clientId: 7, clientName: '' });
+    for (const bad of ['abc-1', '007x', '1e5', '0x10', '-3', '1.5', ' ', 1.5, -1, Infinity, {}, [], true]) {
+        assert.equal(extractPushHint({ data: { clientId: bad } }), null, `skal avvise ${JSON.stringify(bad)}`);
+    }
     assert.equal(extractPushHint({ data: {} }), null);
     assert.equal(extractPushHint({ data: { clientId: '' } }), null);
     assert.equal(extractPushHint({ data: { clientId: NaN } }), null);
