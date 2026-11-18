@@ -591,8 +591,8 @@ const App = () => {
                     }
                 }
             } catch (error) {
-                pendingPushClientRef.current = null;
                 if (!isCancelled && generation === usersFetchGenerationRef.current) {
+                    pendingPushClientRef.current = null;
                     console.error('[Coach Poll] Kunne ikke oppdatere brukerliste:', error);
                 }
             } finally {
