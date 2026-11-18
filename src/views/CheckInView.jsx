@@ -1,5 +1,5 @@
 import ImageViewerLoading from '../components/ImageViewerLoading';
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useLayoutEffect, useRef } from 'react';
 import { Check, Camera, X, Trash, CircleNotch, Scales, Pulse, WarningCircle, FloppyDisk, PencilSimple, CaretDown, Plus } from '@phosphor-icons/react';
 import { Card, Button, EmptyState, IconButton, InputLabel, SegmentedControl, SessionStepper, TextArea } from '../components/ui';
 import ReportMetrics from '../components/ReportMetrics';
@@ -12,6 +12,8 @@ import { OPTIONS_1_TO_10, INITIAL_FORM_DATA } from '../lib/config';
 import { haptic } from '../lib/haptic';
 import { useRegisterRailBack } from '../lib/railBack';
 import { useShellRail } from '../hooks';
+import WaveReveal from '../components/WaveReveal';
+import { keepInPlace, stickyHeaderBottom } from '../lib/wave';
 
 const ImageModal = React.lazy(() => import('../components/ImageModal'));
 
@@ -243,6 +245,18 @@ const CheckinFields = ({
     </div>
 );
 
+const ReceiptNote = React.forwardRef((props, ref) => (
+    <div ref={ref} tabIndex={-1} className="flex items-center gap-3 px-1 outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-lg">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent">
+            <Check size={16} aria-hidden="true" />
+        </span>
+        <div className="min-w-0">
+            <p className="text-base font-semibold">Rapport sendt</p>
+            <p className="text-sm text-ink-muted">Coachen din har fått den. Du kan fortsatt redigere den.</p>
+        </div>
+    </div>
+));
+
 const CheckInView = React.memo(({
     checkins = [],
     onNewCheckin,
@@ -267,7 +281,17 @@ const CheckInView = React.memo(({
     const [isCompressing, setIsCompressing] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [weightFieldError, setWeightFieldError] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    // idle → sending (armed) → revealing (bølgen går) → done
+    const [phase, setPhase] = useState('idle');
+    const [receipt, setReceipt] = useState(null);
+    const [hadReportAtSubmit, setHadReportAtSubmit] = useState(false);
+    const isSubmitting = phase === 'sending';
+    const phaseBusy = phase === 'sending' || phase === 'revealing';
+    const submitGuardRef = useRef(false);
+    const sendButtonRef = useRef(null);
+    const noteRef = useRef(null);
+    const anchorBeforeRef = useRef(null);
+    const releaseHoldRef = useRef(null);
     const [formData, setFormData] = useState(INITIAL_FORM_DATA);
     const [restoredDraft, setRestoredDraft] = useState(false);
     const [editingId, setEditingId] = useState(null);
@@ -290,7 +314,9 @@ const CheckInView = React.memo(({
         () => featuredReport ? sortedCheckins.filter(entry => entry.id !== featuredReport.id) : sortedCheckins,
         [sortedCheckins, featuredReport]
     );
-    const showForm = !isPreview && !isReadOnly && !hideForm && (composing || !thisWeekReport);
+    const showForm = !isPreview && !isReadOnly && !hideForm && (composing || !thisWeekReport || phaseBusy);
+    // Skjemaet skal se likt ut mens bølgen går, selv om rapporten nå finnes.
+    const formHasReport = phaseBusy ? hadReportAtSubmit : Boolean(thisWeekReport);
     const planWeek = getPlanWeek(startDate, totalWeeks);
     const weekRange = formatWeekRange(featuredReport ? parseEntryDate(featuredReport) : new Date());
     const hasDraftContent = Boolean(
@@ -322,7 +348,7 @@ const CheckInView = React.memo(({
     }, [storageKey, isReadOnly, hideForm, isPreview]);
 
     useEffect(() => {
-        if (isPreview || isReadOnly || hideForm || !showForm) return;
+        if (isPreview || isReadOnly || hideForm || !showForm || phase !== 'idle') return;
 
         const timeoutId = setTimeout(() => {
             try {
@@ -337,7 +363,7 @@ const CheckInView = React.memo(({
         }, 350);
 
         return () => clearTimeout(timeoutId);
-    }, [formData, hasDraftContent, storageKey, isReadOnly, hideForm, showForm, isPreview]);
+    }, [formData, hasDraftContent, storageKey, isReadOnly, hideForm, showForm, isPreview, phase]);
 
     const closeLightbox = useCallback(() => {
         setLightbox(prev => ({ ...prev, isOpen: false }));
@@ -421,6 +447,8 @@ const CheckInView = React.memo(({
         setRestoredDraft(false);
         setErrorMessage('');
         setWeightFieldError('');
+        setPhase('idle');
+        setReceipt(null);
         setComposing(true);
     }, [isPreview]);
 
@@ -434,9 +462,34 @@ const CheckInView = React.memo(({
     // Duo rail back when composing over an existing weekly report.
     useRegisterRailBack('checkin-compose', Boolean(composing && thisWeekReport && !hideForm), cancelCompose);
 
+    const finishSubmit = useCallback(() => {
+        try { localStorage.removeItem(storageKey); } catch (e) {}
+        setRestoredDraft(false);
+        setComposing(false);
+        setFormData(INITIAL_FORM_DATA);
+    }, [storageKey]);
+
+    const handleWaveFinish = useCallback((snapshot) => {
+        anchorBeforeRef.current = snapshot;
+        finishSubmit();
+        setPhase('done');
+    }, [finishSubmit]);
+
+    // Bytte fra bølgens kvittering til den vanlige visningen uten at kvitteringen flytter seg.
+    useLayoutEffect(() => {
+        if (phase !== 'done') return;
+        const before = anchorBeforeRef.current;
+        anchorBeforeRef.current = null;
+        releaseHoldRef.current?.();
+        releaseHoldRef.current = keepInPlace(noteRef.current, before);
+        noteRef.current?.focus({ preventScroll: true });
+    }, [phase]);
+
+    useEffect(() => () => { releaseHoldRef.current?.(); }, []);
+
     const handleSubmit = useCallback(async (e) => {
         e.preventDefault();
-        if (isPreview) return;
+        if (isPreview || submitGuardRef.current) return;
         const weightNum = parseFloat(formData.weight);
         if (!formData.weight || isNaN(weightNum) || weightNum < 20 || weightNum > 500) {
             setWeightFieldError('Skriv inn en gyldig vekt mellom 20 og 500 kg.');
@@ -445,7 +498,10 @@ const CheckInView = React.memo(({
         }
         setWeightFieldError('');
         haptic('save');
-        setIsSubmitting(true);
+        submitGuardRef.current = true;
+        setHadReportAtSubmit(Boolean(thisWeekReport));
+        setReceipt(null);
+        setPhase('sending');
         setErrorMessage('');
         try {
             const newEntry = {
@@ -454,19 +510,26 @@ const CheckInView = React.memo(({
                 timestamp: Date.now(),
                 ...formData
             };
-            await onNewCheckin(newEntry);
-            try { localStorage.removeItem(storageKey); } catch (e) {}
-            setRestoredDraft(false);
-            setComposing(false);
-            setFormData(INITIAL_FORM_DATA);
-            toast('Rapport sendt');
+            const saved = await onNewCheckin(newEntry);
+            if (saved === null) {
+                // Ingenting ble lagret (utløpt innlogging): behold skjemaet og utkastet.
+                setPhase('idle');
+            } else if (saved && typeof saved === 'object') {
+                setReceipt(saved);
+                setPhase('revealing');
+            } else {
+                finishSubmit();
+                setPhase('idle');
+                toast('Rapport sendt');
+            }
         } catch (error) {
             console.error('Checkin-innsending feilet:', error);
             setErrorMessage('Kunne ikke sende rapporten. Prøv igjen.');
+            setPhase('idle');
         } finally {
-            setIsSubmitting(false);
+            submitGuardRef.current = false;
         }
-    }, [formData, onNewCheckin, storageKey, toast, isPreview]);
+    }, [formData, onNewCheckin, finishSubmit, toast, isPreview, thisWeekReport]);
 
     const [visibleReportCount, setVisibleReportCount] = useState(REPORT_BATCH_SIZE);
     const visibleCheckins = useMemo(
@@ -609,6 +672,62 @@ const CheckInView = React.memo(({
         </form>
     );
 
+    const renderFeaturedCard = (featuredReport) => (
+        <Card className="report-card p-5" data-report-tone={getReportTone(featuredReport)}>
+            {editingId === featuredReport.id && editForm ? (
+                renderEditForm(featuredReport)
+            ) : (
+                <>
+                    <div className="flex justify-between items-start gap-3 mb-6">
+                        <div className="min-w-0">
+                            <p className="flex flex-wrap items-baseline gap-x-2 tabular-nums">
+                                <span className="text-2xl font-semibold leading-8">
+                                    {formatWeight(featuredReport.weight)}
+                                    <span className="ml-1 text-sm font-normal text-ink-muted">kg</span>
+                                </span>
+                                {previousWeightFor(featuredReport) != null && (
+                                    <WeightDelta className="text-sm" current={featuredReport.weight} previous={previousWeightFor(featuredReport)} />
+                                )}
+                            </p>
+                            <p className="mt-1 text-sm text-ink-muted">
+                                {formatDateNO(featuredReport.date)}
+                                {' · '}
+                                {thisWeekReport ? 'Sendt denne uken' : 'Siste ukesrapport'}
+                            </p>
+                        </div>
+                        <div className="flex shrink-0 flex-wrap items-center gap-2">
+                            {canEdit && onUpdate && (
+                                <IconButton type="button" onClick={() => startEdit(featuredReport)} aria-label="Rediger rapport" tone="accent">
+                                    <PencilSimple size={16} />
+                                </IconButton>
+                            )}
+                            {canDelete && onDelete && (
+                                <IconButton
+                                    type="button"
+                                    onClick={async () => {
+                                        if (await confirmDialog('Slett denne rapporten?', { title: 'Slett rapport', confirmText: 'Slett', destructive: true })) {
+                                            onDelete(featuredReport.id);
+                                        }
+                                    }}
+                                    aria-label="Slett rapport"
+                                    tone="danger"
+                                >
+                                    <Trash size={16} />
+                                </IconButton>
+                            )}
+                        </div>
+                    </div>
+                    {renderReportBody(featuredReport)}
+                    {!isPreview && !isReadOnly && !hideForm && thisWeekReport && (
+                        <Button variant="secondary" size="sm" className="mt-5" onClick={startCompose}>
+                            <Plus size={16} /> Send ny rapport
+                        </Button>
+                    )}
+                </>
+            )}
+        </Card>
+    );
+
     return (
         <div className={`space-y-5 animate-slide-up ${showForm ? 'pb-52 duo:pb-24' : 'pb-32 duo:pb-8'}`}>
             {lightbox.isOpen && (
@@ -616,6 +735,8 @@ const CheckInView = React.memo(({
                     <ImageModal canDownload={canDownloadImages} images={lightbox.images} initialIndex={lightbox.index} onClose={closeLightbox} />
                 </React.Suspense>
             )}
+
+            <p className="sr-only" role="status" aria-live="polite">{phase === 'revealing' ? 'Rapport sendt' : ''}</p>
 
             <div className="px-1">
                 <p className="section-label">{isReadOnly ? 'Siste rapport' : 'Denne uken'}</p>
@@ -625,62 +746,28 @@ const CheckInView = React.memo(({
             </div>
 
             {featuredReport && !showForm && (
-                <Card className="report-card p-5" data-report-tone={getReportTone(featuredReport)}>
-                    {editingId === featuredReport.id && editForm ? (
-                        renderEditForm(featuredReport)
-                    ) : (
-                        <>
-                            <div className="flex justify-between items-start gap-3 mb-6">
-                                <div className="min-w-0">
-                                    <p className="flex flex-wrap items-baseline gap-x-2 tabular-nums">
-                                        <span className="text-2xl font-semibold leading-8">
-                                            {formatWeight(featuredReport.weight)}
-                                            <span className="ml-1 text-sm font-normal text-ink-muted">kg</span>
-                                        </span>
-                                        {previousWeightFor(featuredReport) != null && (
-                                            <WeightDelta className="text-sm" current={featuredReport.weight} previous={previousWeightFor(featuredReport)} />
-                                        )}
-                                    </p>
-                                    <p className="mt-1 text-sm text-ink-muted">
-                                        {formatDateNO(featuredReport.date)}
-                                        {' · '}
-                                        {thisWeekReport ? 'Sendt denne uken' : 'Siste ukesrapport'}
-                                    </p>
-                                </div>
-                                <div className="flex shrink-0 flex-wrap items-center gap-2">
-                                    {canEdit && onUpdate && (
-                                        <IconButton type="button" onClick={() => startEdit(featuredReport)} aria-label="Rediger rapport" tone="accent">
-                                            <PencilSimple size={16} />
-                                        </IconButton>
-                                    )}
-                                    {canDelete && onDelete && (
-                                        <IconButton
-                                            type="button"
-                                            onClick={async () => {
-                                                if (await confirmDialog('Slett denne rapporten?', { title: 'Slett rapport', confirmText: 'Slett', destructive: true })) {
-                                                    onDelete(featuredReport.id);
-                                                }
-                                            }}
-                                            aria-label="Slett rapport"
-                                            tone="danger"
-                                        >
-                                            <Trash size={16} />
-                                        </IconButton>
-                                    )}
-                                </div>
-                            </div>
-                            {renderReportBody(featuredReport)}
-                            {!isPreview && !isReadOnly && !hideForm && thisWeekReport && (
-                                <Button variant="secondary" size="sm" className="mt-5" onClick={startCompose}>
-                                    <Plus size={16} /> Send ny rapport
-                                </Button>
-                            )}
-                        </>
-                    )}
-                </Card>
+                <>
+                    {phase === 'done' && receipt && featuredReport.id === receipt.id && <ReceiptNote ref={noteRef} />}
+                    {renderFeaturedCard(featuredReport)}
+                </>
             )}
 
             {showForm && (
+                <WaveReveal
+                    armed={phaseBusy}
+                    revealed={phase === 'revealing'}
+                    source={sendButtonRef}
+                    getAnchorTop={() => stickyHeaderBottom('.app-header') + 16}
+                    onFinish={handleWaveFinish}
+                    className="bg-surface-50 -mx-[var(--app-gutter-x)]"
+                    layerClassName="px-[var(--app-gutter-x)]"
+                    revealedContent={receipt ? (
+                        <div className="space-y-5">
+                            <ReceiptNote />
+                            {renderFeaturedCard(receipt)}
+                        </div>
+                    ) : null}
+                >
                 <form id="weekly-checkin-form" onSubmit={handleSubmit}>
                     <fieldset disabled={isPreview} className="min-w-0 space-y-5">
                     {restoredDraft && (
@@ -703,9 +790,9 @@ const CheckInView = React.memo(({
                     <Card className="p-5 space-y-5">
                         <div className="flex items-start justify-between gap-3">
                             <div>
-                                <h3 className="section-title">{thisWeekReport ? 'Ny rapport' : 'Ukesrapport'}</h3>
+                                <h3 className="section-title">{formHasReport ? 'Ny rapport' : 'Ukesrapport'}</h3>
                                 <p className="text-sm text-ink-muted mt-1">
-                                    {thisWeekReport ? 'Denne sendes i tillegg til ukesrapporten du allerede har sendt.' : 'Fyll ut ukesrapporten. Du kan redigere etterpå.'}
+                                    {formHasReport ?'Denne sendes i tillegg til ukesrapporten du allerede har sendt.' : 'Fyll ut ukesrapporten. Du kan redigere etterpå.'}
                                 </p>
                             </div>
                             {hasDraftContent && (
@@ -736,13 +823,14 @@ const CheckInView = React.memo(({
                         </div>
                     )}
 
-                    {thisWeekReport && !isRail && (
-                        <Button type="button" variant="ghost" className="w-full duo:hidden" onClick={cancelCompose}>
+                    {formHasReport && !isRail && (
+                        <Button type="button" variant="ghost" className="w-full duo:hidden" onClick={cancelCompose} disabled={phaseBusy}>
                             Avbryt
                         </Button>
                     )}
                     </fieldset>
                 </form>
+                </WaveReveal>
             )}
 
             {showForm && (
@@ -751,9 +839,9 @@ const CheckInView = React.memo(({
                     style={{ bottom: 'calc(4.35rem + env(safe-area-inset-bottom, 0px))' }}
                 >
                     <div className="header-inner mx-auto flex items-center gap-2 py-2.5">
-                        {thisWeekReport ? (
+                        {formHasReport ? (
                             !isRail && (
-                            <Button type="button" variant="ghost" onClick={cancelCompose} disabled={isSubmitting} className="hidden duo:inline-flex">
+                            <Button type="button" variant="ghost" onClick={cancelCompose} disabled={phaseBusy} className="hidden duo:inline-flex">
                                 Avbryt
                             </Button>
                             )
@@ -761,13 +849,14 @@ const CheckInView = React.memo(({
                             <p className="min-w-0 flex-1 truncate text-sm text-ink-muted">Klar når vekten er fylt ut</p>
                         )}
                         <Button
+                            ref={sendButtonRef}
                             type="submit"
                             form="weekly-checkin-form"
                             className="flex-1 duo:flex-none"
-                            disabled={isPreview || isSubmitting || isCompressing}
+                            disabled={isPreview || phaseBusy || isCompressing}
                         >
-                            {isSubmitting ? <CircleNotch className="animate-spin" size={18} /> : <FloppyDisk size={18} />}
-                            {isSubmitting ? 'Sender…' : 'Send rapport'}
+                            {phase === 'revealing' ? <Check size={18} /> : isSubmitting ? <CircleNotch className="animate-spin" size={18} /> : <FloppyDisk size={18} />}
+                            {phase === 'revealing' ? 'Sendt' : isSubmitting ? 'Sender…' : 'Send rapport'}
                         </Button>
                     </div>
                 </div>

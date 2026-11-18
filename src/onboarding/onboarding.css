@@ -26,6 +26,17 @@
     box-shadow: 0 24px 70px rgba(23, 23, 23, 0.07);
 }
 
+/* Bølgens rot er selve kortet. Paddingen ligger i lagene så canvas dekker hele kortet. */
+.onboarding-card.onboarding-card-wave {
+    padding: 0;
+    background: #fff;
+}
+
+.onboarding-card-layer {
+    padding: 1.25rem;
+    padding-bottom: 6rem;
+}
+
 .onboarding-step-heading {
     margin-bottom: 1.35rem;
 }
@@ -255,6 +266,15 @@
 @media (min-width: 640px) {
     .onboarding-card {
         padding: 2rem;
+    }
+
+    .onboarding-card.onboarding-card-wave {
+        padding: 0;
+    }
+
+    .onboarding-card-layer {
+        padding: 2rem;
+        padding-bottom: 6rem;
     }
 
     .onboarding-actions {

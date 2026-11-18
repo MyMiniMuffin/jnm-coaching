@@ -724,7 +724,7 @@ const App = () => {
         const result = await api.submitCheckin(viewingClient.id, entry);
         if (result.authError) {
             setShowReauthPrompt(true);
-            return;
+            return null;
         }
         const savedCheckin = result.data?.checkin;
         if (!savedCheckin) {
@@ -734,6 +734,7 @@ const App = () => {
             ...prev,
             checkins: [savedCheckin, ...prev.checkins]
         }));
+        return savedCheckin;
     }, [viewingClient]);
 
     // Ref for å spore pågående lagring og hindre dobbelt-klikk
