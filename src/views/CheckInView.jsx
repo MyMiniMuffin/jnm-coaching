@@ -287,6 +287,8 @@ const CheckInView = React.memo(({
     const [hadReportAtSubmit, setHadReportAtSubmit] = useState(false);
     const isSubmitting = phase === 'sending';
     const phaseBusy = phase === 'sending' || phase === 'revealing';
+    const phaseRef = useRef(phase);
+    phaseRef.current = phase;
     const submitGuardRef = useRef(false);
     const sendButtonRef = useRef(null);
     const noteRef = useRef(null);
@@ -460,14 +462,18 @@ const CheckInView = React.memo(({
     }, [storageKey]);
 
     // Duo rail back when composing over an existing weekly report.
-    useRegisterRailBack('checkin-compose', Boolean(composing && thisWeekReport && !hideForm), cancelCompose);
+    useRegisterRailBack('checkin-compose', Boolean(composing && thisWeekReport && !hideForm && !phaseBusy), cancelCompose);
 
-    const finishSubmit = useCallback(() => {
+    const clearDraft = useCallback(() => {
         try { localStorage.removeItem(storageKey); } catch (e) {}
         setRestoredDraft(false);
+    }, [storageKey]);
+
+    const finishSubmit = useCallback(() => {
+        clearDraft();
         setComposing(false);
         setFormData(INITIAL_FORM_DATA);
-    }, [storageKey]);
+    }, [clearDraft]);
 
     const handleWaveFinish = useCallback((snapshot) => {
         anchorBeforeRef.current = snapshot;
@@ -489,7 +495,7 @@ const CheckInView = React.memo(({
 
     const handleSubmit = useCallback(async (e) => {
         e.preventDefault();
-        if (isPreview || submitGuardRef.current) return;
+        if (isPreview || submitGuardRef.current || phaseRef.current === 'sending' || phaseRef.current === 'revealing') return;
         const weightNum = parseFloat(formData.weight);
         if (!formData.weight || isNaN(weightNum) || weightNum < 20 || weightNum > 500) {
             setWeightFieldError('Skriv inn en gyldig vekt mellom 20 og 500 kg.');
@@ -515,6 +521,8 @@ const CheckInView = React.memo(({
                 // Ingenting ble lagret (utløpt innlogging): behold skjemaet og utkastet.
                 setPhase('idle');
             } else if (saved && typeof saved === 'object') {
+                // Serveren har lagret: utkastet må bort nå, ikke først når bølgen er ferdig.
+                clearDraft();
                 setReceipt(saved);
                 setPhase('revealing');
             } else {
@@ -529,7 +537,7 @@ const CheckInView = React.memo(({
         } finally {
             submitGuardRef.current = false;
         }
-    }, [formData, onNewCheckin, finishSubmit, toast, isPreview, thisWeekReport]);
+    }, [formData, onNewCheckin, finishSubmit, clearDraft, toast, isPreview, thisWeekReport]);
 
     const [visibleReportCount, setVisibleReportCount] = useState(REPORT_BATCH_SIZE);
     const visibleCheckins = useMemo(
@@ -736,8 +744,6 @@ const CheckInView = React.memo(({
                 </React.Suspense>
             )}
 
-            <p className="sr-only" role="status" aria-live="polite">{phase === 'revealing' ? 'Rapport sendt' : ''}</p>
-
             <div className="px-1">
                 <p className="section-label">{isReadOnly ? 'Siste rapport' : 'Denne uken'}</p>
                 <p className="text-sm text-ink-muted mt-1">
@@ -792,7 +798,7 @@ const CheckInView = React.memo(({
                             <div>
                                 <h3 className="section-title">{formHasReport ? 'Ny rapport' : 'Ukesrapport'}</h3>
                                 <p className="text-sm text-ink-muted mt-1">
-                                    {formHasReport ?'Denne sendes i tillegg til ukesrapporten du allerede har sendt.' : 'Fyll ut ukesrapporten. Du kan redigere etterpå.'}
+                                    {formHasReport ? 'Denne sendes i tillegg til ukesrapporten du allerede har sendt.' : 'Fyll ut ukesrapporten. Du kan redigere etterpå.'}
                                 </p>
                             </div>
                             {hasDraftContent && (
@@ -955,6 +961,8 @@ const CheckInView = React.memo(({
                     </div>
                 )}
             </div>
+
+            <p className="sr-only" role="status" aria-live="polite">{phase === 'revealing' ? 'Rapport sendt' : ''}</p>
         </div>
     );
 });

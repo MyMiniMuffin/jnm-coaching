@@ -63,6 +63,8 @@ const OnboardingForm = () => {
     const headingRef = useRef(null);
     const anchorBeforeRef = useRef(null);
     const releaseHoldRef = useRef(null);
+    const statusRef = useRef(status);
+    statusRef.current = status;
     const busy = status === 'submitting' || status === 'revealing';
 
     const handleWaveFinish = (snapshot) => {
@@ -152,6 +154,7 @@ const OnboardingForm = () => {
 
     const handleSubmit = async (event) => {
         event.preventDefault();
+        if (statusRef.current === 'submitting' || statusRef.current === 'revealing') return;
         if (!validateCurrentStep()) return;
 
         setStatus('submitting');

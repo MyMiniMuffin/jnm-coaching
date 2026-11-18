@@ -81,6 +81,33 @@ test('kvitteringen annonseres via vedvarende live-region og får fokus', () => {
     assert.match(onboarding, /headingRef\.current\?\.focus\(\{ preventScroll: true \}\)/);
 });
 
+test('utkastet slettes med en gang serveren har lagret, ikke først etter bølgen', () => {
+    const submit = checkin.slice(checkin.indexOf('const handleSubmit'));
+    const objectBranch = submit.slice(submit.indexOf("typeof saved === 'object'"), submit.indexOf("setPhase('revealing')"));
+    assert.match(objectBranch, /clearDraft\(\)/);
+    assert.match(checkin, /const clearDraft = useCallback\(\(\) => \{\s*try \{ localStorage\.removeItem\(storageKey\)[\s\S]*?setRestoredDraft\(false\)/);
+    const finish = checkin.slice(checkin.indexOf('const finishSubmit'), checkin.indexOf('const handleWaveFinish'));
+    assert.match(finish, /setComposing\(false\)/);
+    assert.match(finish, /setFormData\(INITIAL_FORM_DATA\)/);
+    assert.match(checkin, /phase !== 'idle'\) return;/);
+});
+
+test('innsending avvises mens fasen er sending eller revealing', () => {
+    assert.match(checkin, /phaseRef\.current = phase/);
+    assert.match(checkin, /phaseRef\.current === 'sending' \|\| phaseRef\.current === 'revealing'/);
+    assert.match(onboarding, /statusRef\.current = status/);
+    assert.match(onboarding, /statusRef\.current === 'submitting' \|\| statusRef\.current === 'revealing'/);
+});
+
+test('rail-tilbake er av under innsending og bølge', () => {
+    assert.match(checkin, /useRegisterRailBack\('checkin-compose', Boolean\(composing && thisWeekReport && !hideForm && !phaseBusy\)/);
+});
+
+test('live-regionen står sist i containeren og teksten har mellomrom', () => {
+    assert.match(checkin, /<\/div>\s*<p className="sr-only" role="status"[^\n]*\n\s*<\/div>\s*\);\s*\}\);/);
+    assert.match(checkin, /formHasReport \? 'Denne/);
+});
+
 test('testene er med i test:unit', () => {
     assert.match(pkg, /"test:unit": "[^"]*tests\/wave-reveal\.mjs/);
 });
