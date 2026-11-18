@@ -1,6 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, Image, CircleNotch, Lock } from '@phosphor-icons/react';
 import { uploadOnboardingImage, validateOnboardingImage } from './imageUpload';
+import WaveReveal from '../components/WaveReveal';
+import { keepInPlace, stickyHeaderBottom } from '../lib/wave';
 
 const stepCount = 3;
 
@@ -56,6 +58,31 @@ const OnboardingForm = () => {
     const [status, setStatus] = useState('idle');
     const [error, setError] = useState('');
     const sectionRef = useRef(null);
+    const sendButtonRef = useRef(null);
+    const successRef = useRef(null);
+    const headingRef = useRef(null);
+    const anchorBeforeRef = useRef(null);
+    const releaseHoldRef = useRef(null);
+    const statusRef = useRef(status);
+    statusRef.current = status;
+    const busy = status === 'submitting' || status === 'revealing';
+
+    const handleWaveFinish = (snapshot) => {
+        anchorBeforeRef.current = snapshot;
+        setStatus('success');
+    };
+
+    // Bytte fra bølgens suksessvisning til den vanlige uten at innholdet flytter seg.
+    useLayoutEffect(() => {
+        if (status !== 'success') return;
+        const before = anchorBeforeRef.current;
+        anchorBeforeRef.current = null;
+        releaseHoldRef.current?.();
+        releaseHoldRef.current = keepInPlace(successRef.current, before);
+        headingRef.current?.focus({ preventScroll: true });
+    }, [status]);
+
+    useEffect(() => () => { releaseHoldRef.current?.(); }, []);
 
     useEffect(() => {
         sectionRef.current?.focus({ preventScroll: true });
@@ -127,6 +154,7 @@ const OnboardingForm = () => {
 
     const handleSubmit = async (event) => {
         event.preventDefault();
+        if (statusRef.current === 'submitting' || statusRef.current === 'revealing') return;
         if (!validateCurrentStep()) return;
 
         setStatus('submitting');
@@ -169,8 +197,7 @@ const OnboardingForm = () => {
                 body: formData.toString(),
             });
             if (!response.ok) throw new Error('Submission failed');
-            setStatus('success');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            setStatus('revealing');
         } catch (submissionError) {
             setStatus('error');
             setError(submissionError?.message === 'Submission failed'
@@ -181,21 +208,36 @@ const OnboardingForm = () => {
         }
     };
 
+    const success = (
+        <div ref={successRef} className="onboarding-success">
+            <div className="onboarding-success-icon"><Check size={28} aria-hidden="true" /></div>
+            <h1 ref={headingRef} tabIndex={-1} className="outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-lg text-4xl font-semibold leading-tight tracking-[-0.045em] sm:text-5xl">Takk, {values.name.split(' ')[0]}.</h1>
+            <p className="mt-5 max-w-xl text-lg leading-8 text-black/60">
+                Jeg har mottatt svarene dine og bruker dem til å forberede oppstarten.
+            </p>
+            <a href="/" className="coaching-button mt-8">Til JNM Coaching</a>
+        </div>
+    );
+
     if (status === 'success') {
-        return (
-            <div className="onboarding-success" role="status">
-                <div className="onboarding-success-icon"><Check size={28} aria-hidden="true" /></div>
-                <h1 className="text-4xl font-semibold leading-tight tracking-[-0.045em] sm:text-5xl">Takk, {values.name.split(' ')[0]}.</h1>
-                <p className="mt-5 max-w-xl text-lg leading-8 text-black/60">
-                    Jeg har mottatt svarene dine og bruker dem til å forberede oppstarten.
-                </p>
-                <a href="/" className="coaching-button mt-8">Til JNM Coaching</a>
-            </div>
-        );
+        return <div className="onboarding-card">{success}</div>;
     }
 
     return (
+        <>
+        <p className="sr-only" role="status" aria-live="polite">{status === 'revealing' ? 'Svarene er sendt' : ''}</p>
+        <WaveReveal
+            armed={busy}
+            revealed={status === 'revealing'}
+            source={sendButtonRef}
+            getAnchorTop={() => stickyHeaderBottom('.onboarding-header') + 16}
+            onFinish={handleWaveFinish}
+            className="onboarding-card onboarding-card-wave"
+            layerClassName="onboarding-card-layer"
+            revealedContent={status === 'revealing' ? success : null}
+        >
         <form
+            id="kundeoppstart-form"
             name="kundeoppstart"
             method="POST"
             onSubmit={handleSubmit}
@@ -305,28 +347,34 @@ const OnboardingForm = () => {
 
             {error && <p className="mt-6 rounded-xl bg-red-50 px-4 py-3 text-sm text-error" role="alert">{error}</p>}
 
-            <div className="onboarding-actions">
-                <div className="onboarding-actions-inner flex items-center justify-between gap-3">
-                    {currentStep > 0 ? (
-                        <button type="button" onClick={previousStep} className="onboarding-secondary-button">
-                            <ArrowLeft size={17} aria-hidden="true" /> Tilbake
-                        </button>
-                    ) : <span />}
-
-                    {currentStep < stepCount - 1 ? (
-                        <button type="button" onClick={nextStep} className="coaching-button w-full sm:w-auto">
-                            Neste <ArrowRight size={17} aria-hidden="true" />
-                        </button>
-                    ) : (
-                        <button type="submit" disabled={status === 'submitting'} className="coaching-button">
-                            {status === 'submitting' ? (
-                                <><CircleNotch className="animate-spin" size={18} aria-hidden="true" /> {uploadStatus || 'Sender'}</>
-                            ) : <><Lock size={17} aria-hidden="true" /> Send svarene</>}
-                        </button>
-                    )}
-                </div>
-            </div>
         </form>
+        </WaveReveal>
+
+        {/* Utenfor bølgens lag: fast linje med spinner som er live under hele innsendingen. */}
+        <div className="onboarding-actions">
+            <div className="onboarding-actions-inner flex items-center justify-between gap-3">
+                {currentStep > 0 ? (
+                    <button type="button" onClick={previousStep} disabled={busy} className="onboarding-secondary-button">
+                        <ArrowLeft size={17} aria-hidden="true" /> Tilbake
+                    </button>
+                ) : <span />}
+
+                {currentStep < stepCount - 1 ? (
+                    <button type="button" onClick={nextStep} className="coaching-button w-full sm:w-auto">
+                        Neste <ArrowRight size={17} aria-hidden="true" />
+                    </button>
+                ) : (
+                    <button ref={sendButtonRef} type="submit" form="kundeoppstart-form" disabled={busy} className="coaching-button">
+                        {status === 'submitting' ? (
+                            <><CircleNotch className="animate-spin" size={18} aria-hidden="true" /> {uploadStatus || 'Sender'}</>
+                        ) : status === 'revealing' ? (
+                            <><Check size={17} aria-hidden="true" /> Sendt</>
+                        ) : <><Lock size={17} aria-hidden="true" /> Send svarene</>}
+                    </button>
+                )}
+            </div>
+        </div>
+        </>
     );
 };
 
@@ -356,9 +404,7 @@ const OnboardingPage = () => (
                 </div>
             </aside>
 
-            <div className="onboarding-card">
-                <OnboardingForm />
-            </div>
+            <OnboardingForm />
         </main>
 
         <footer className="border-t border-black/10">

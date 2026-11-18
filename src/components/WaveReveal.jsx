@@ -1,0 +1,140 @@
+import React, { useEffect, useLayoutEffect, useRef } from 'react';
+import { JNM_WAVE_PALETTE, loadWaveController, preloadWaveController } from '../lib/wave';
+
+// Stabil markup fra første render, så skjemaet aldri remountes når biblioteket lastes.
+// Stilobjektene er konstante: React skriver aldri over det kontrolleren setter.
+const ROOT = { display: 'grid', isolation: 'isolate', overflow: 'hidden' };
+const LAYER = { gridArea: '1 / 1', minWidth: 0, minHeight: 0, isolation: 'isolate' };
+const LAYER_HIDDEN = { ...LAYER, opacity: 0, pointerEvents: 'none' };
+
+// rAF pauser i bakgrunnen; da må appen gå videre likevel.
+const SAFETY_MS = 6000;
+
+/**
+ * Bølgeovergang fra `children` til `revealedContent`.
+ * - armed: innsending pågår. Kontrolleren opprettes og tar bilde av skjemaet.
+ * - revealed: innsendingen lyktes. Bølgen kjøres (eller hoppes over uten bibliotek).
+ * - getAnchorTop(): funksjon som gir viewport-y (px) der det nye innholdet skal starte.
+ *   Kalles bare i det revealed blir true.
+ * - onFinish({ top }): kalles én gang per kjøring; top er innholdets viewport-top.
+ */
+const WaveReveal = ({
+    revealed = false,
+    armed = false,
+    source,
+    revealedContent = null,
+    children,
+    onFinish,
+    getAnchorTop,
+    className = '',
+    layerClassName = '',
+}) => {
+    const rootRef = useRef(null);
+    const contentLayerRef = useRef(null);
+    const revealedLayerRef = useRef(null);
+    const padRef = useRef(null);
+    const measureRef = useRef(null);
+    const controllerRef = useRef(null);
+    const onFinishRef = useRef(onFinish);
+    onFinishRef.current = onFinish;
+    const sourceRef = useRef(source);
+    sourceRef.current = source;
+
+    useEffect(() => { preloadWaveController(); }, []);
+
+    useEffect(() => {
+        if (!armed) return undefined;
+        let cancelled = false;
+        let made = null;
+        loadWaveController().then((WaveController) => {
+            if (cancelled || !WaveController || !rootRef.current) return;
+            try {
+                made = new WaveController(rootRef.current, contentLayerRef.current, revealedLayerRef.current);
+                made.update({
+                    revealed: false,
+                    source: sourceRef.current,
+                    palette: JNM_WAVE_PALETTE,
+                    prewarm: false,
+                    live: true,
+                    reducedMotion: 'system',
+                });
+                controllerRef.current = made;
+                made.prepare().catch(() => {});
+            } catch (error) {
+                console.error('[WaveReveal] Kunne ikke opprette kontrolleren:', error);
+                try { made?.destroy(); } catch (e) { /* ingenting å rydde */ }
+                made = null;
+                controllerRef.current = null;
+            }
+        });
+        return () => {
+            cancelled = true;
+            if (made) {
+                try { made.reset(); made.destroy(); } catch (e) { /* allerede ryddet */ }
+            }
+            if (controllerRef.current === made) controllerRef.current = null;
+        };
+    }, [armed]);
+
+    useLayoutEffect(() => {
+        if (!revealed) return undefined;
+
+        // Kvitteringens topp ligger alltid på anchorTop; root vokser om laget blir høyere.
+        const pad = padRef.current;
+        const root = rootRef.current;
+        if (pad && root) {
+            pad.style.paddingTop = '0px';
+            const anchor = getAnchorTop ? getAnchorTop() : 0;
+            pad.style.paddingTop = `${Math.max(0, anchor - root.getBoundingClientRect().top)}px`;
+        }
+
+        let finished = false;
+        let timer = 0;
+        const finish = () => {
+            if (finished) return;
+            finished = true;
+            window.clearTimeout(timer);
+            const top = measureRef.current ? measureRef.current.getBoundingClientRect().top : 0;
+            onFinishRef.current?.({ top });
+        };
+
+        const controller = controllerRef.current;
+        if (!controller) {
+            finish();
+            return undefined;
+        }
+        timer = window.setTimeout(finish, SAFETY_MS);
+        try {
+            controller.update({
+                revealed: true,
+                source: sourceRef.current,
+                palette: JNM_WAVE_PALETTE,
+                prewarm: false,
+                live: true,
+                reducedMotion: 'system',
+                onFinish: (isRevealed) => { if (isRevealed) finish(); },
+            });
+        } catch (error) {
+            console.error('[WaveReveal] Bølgen feilet:', error);
+            finish();
+        }
+        return () => window.clearTimeout(timer);
+        // getAnchorTop kalles bare i det revealed blir true.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [revealed]);
+
+    return (
+        <div ref={rootRef} data-distortion-wave="" className={className} style={ROOT}>
+            <div ref={contentLayerRef} data-dw-layer="content" className={layerClassName} style={LAYER}>
+                {children}
+            </div>
+            <div ref={revealedLayerRef} data-dw-layer="revealed" className={layerClassName} style={LAYER_HIDDEN}>
+                <div ref={padRef}>
+                    <div ref={measureRef}>{revealedContent}</div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default WaveReveal;
