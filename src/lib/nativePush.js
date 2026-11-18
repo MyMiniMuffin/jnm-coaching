@@ -1,6 +1,7 @@
 import { PushNotifications } from '@capacitor/push-notifications';
 import { Capacitor } from '@capacitor/core';
 import { isNativeApp } from './platform';
+import { extractPushHint } from './pushHints';
 
 export const APNS_ENDPOINT_PREFIX = 'apns:';
 
@@ -86,6 +87,18 @@ export const clearNativeDeliveredNotifications = async () => {
         await PushNotifications.removeAllDeliveredNotifications();
     } catch (error) {
         console.warn('[Push] Kunne ikke tømme leverte varsler:', error);
+    }
+};
+
+/** Hint ({ clientId, clientName }) fra leverte coach-varsler i Notification Center. Kun native. */
+export const getDeliveredCoachHints = async () => {
+    if (!isNativeApp()) return [];
+    try {
+        const delivered = await PushNotifications.getDeliveredNotifications();
+        return (delivered?.notifications || []).map(extractPushHint).filter(Boolean);
+    } catch (error) {
+        console.warn('[Push] Kunne ikke lese leverte varsler:', error);
+        return [];
     }
 };
 

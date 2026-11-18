@@ -11,12 +11,14 @@ import { isNativeApp } from './lib/platform';
 import {
     checkNativeNotificationPermission,
     clearNativeDeliveredNotifications,
+    getDeliveredCoachHints,
     registerNativePush,
     registerNativePushListeners,
     removeNativeNotificationsForClient,
     requestNativeNotificationPermission,
     toApnsEndpoint
 } from './lib/nativePush';
+import { applyPushHintsToUsers, extractPushHint } from './lib/pushHints';
 import { setAppBadgeCount, unreadCheckinTotal } from './lib/appBadge';
 import { haptic } from './lib/haptic';
 import { todayLocalISODate } from './lib/formatters';
@@ -289,6 +291,20 @@ const App = () => {
         coachUnreadSnapshotRef.current = nextUnreadSnapshot;
     }, [deliverCoachCheckinAlert]);
 
+    // Bruk push-hint optimistisk på lista før serveren har svart. Skrives ikke til cachen;
+    // snapshot holdes i sync slik at påfølgende server-svar ikke gir dobbel toast.
+    const applyPushHints = useCallback((hints) => {
+        const nextUsers = applyPushHintsToUsers(allUsersRef.current, hints);
+        if (nextUsers === allUsersRef.current) return;
+        nextUsers.forEach((user, index) => {
+            if (user !== allUsersRef.current[index] && user?.role === 'athlete') {
+                coachUnreadSnapshotRef.current.set(user.id, Number(user.unreadCheckins) || 0);
+            }
+        });
+        allUsersRef.current = nextUsers;
+        setAllUsers(nextUsers);
+    }, []);
+
     const saveNativePushToken = useCallback(async (deviceToken) => {
         if (!deviceToken) throw new Error('Mangler enhetstoken for push');
         const result = await api.savePushSubscription({
@@ -308,6 +324,12 @@ const App = () => {
     }, [allUsers]);
 
     const handleSelectClientRef = useRef(null);
+    const refreshUsersRef = useRef(null);
+    // Utøver fra push-trykk som ikke fantes i lista; åpnes/droppes når serverlista kommer.
+    const pendingPushClientRef = useRef(null);
+    const viewingClientRef = useRef(null);
+    const PENDING_PUSH_MAX_AGE_MS = 15000;
+    const serverUsersCountRef = useRef(0);
 
     const ensureCoachPushSubscription = useCallback(async () => {
         if (isNativeApp()) {
@@ -536,14 +558,41 @@ const App = () => {
                 // Ignorer utdaterte svar — en nyere mutasjon/poll eier listen.
                 if (isCancelled || generation !== usersFetchGenerationRef.current) return;
                 if (result.authError) {
+                    pendingPushClientRef.current = null;
                     setShowReauthPrompt(true);
                     return;
                 }
                 if (result.data) {
                     applyUsersList(result.data, { notify });
+                    serverUsersCountRef.current += 1;
+
+                    // Push-trykk på utøver som ikke fantes i cachen: listen har fylt inn resten
+                    // via merge av viewingClient. Finnes utøveren fortsatt ikke, dropp stille.
+                    let pending = pendingPushClientRef.current;
+                    if (pending && Date.now() - pending.at > PENDING_PUSH_MAX_AGE_MS) {
+                        pendingPushClientRef.current = null;
+                        pending = null;
+                    }
+                    // Ved nettverksfeil (tom/cachet liste) avgjør vi ikke om utøveren finnes.
+                    if (pending && Array.isArray(result.data) && !result.networkError && !result.fromCache) {
+                        pendingPushClientRef.current = null;
+                        const found = result.data.find(user => String(user?.id) === String(pending.id));
+                        if (found && !pending.name) {
+                            // Trykket kom uten navn: åpne nå som listen er her.
+                            handleSelectClientRef.current?.(
+                                { ...found, is_archived: Boolean(found.is_archived), unreadCheckins: Math.max(1, Number(found.unreadCheckins) || 0) },
+                                { fresh: true }
+                            );
+                        } else if (!found && pending.name && String(viewingClientRef.current?.id) === String(pending.id)) {
+                            selectClientRef.current += 1;
+                            setViewingClient(null);
+                            setIsClientLoading(false);
+                        }
+                    }
                 }
             } catch (error) {
                 if (!isCancelled && generation === usersFetchGenerationRef.current) {
+                    pendingPushClientRef.current = null;
                     console.error('[Coach Poll] Kunne ikke oppdatere brukerliste:', error);
                 }
             } finally {
@@ -553,16 +602,29 @@ const App = () => {
             }
         };
 
+        refreshUsersRef.current = refreshUsers;
+
+        // Leverte varsler markerer utøvere umiddelbart. Hoppes over hvis serveren rakk å svare først.
+        const applyDeliveredHints = async () => {
+            if (!isNativeApp()) return;
+            const serverCount = serverUsersCountRef.current;
+            const hints = await getDeliveredCoachHints();
+            if (isCancelled || serverCount !== serverUsersCountRef.current) return;
+            applyPushHints(hints);
+        };
+
         // Ikke poll i bakgrunnen; visibilitychange henter ferske data ved retur.
         const intervalId = window.setInterval(() => {
             if (document.visibilityState === 'visible') refreshUsers(true);
         }, 60000);
 
         setIsUsersLoading(true);
+        applyDeliveredHints();
         refreshUsers(false);
 
         const handleVisibilityRefresh = () => {
             if (document.visibilityState === 'visible') {
+                applyDeliveredHints();
                 refreshUsers(true);
             }
         };
@@ -571,19 +633,29 @@ const App = () => {
 
         return () => {
             isCancelled = true;
+            refreshUsersRef.current = null;
             window.clearInterval(intervalId);
             document.removeEventListener('visibilitychange', handleVisibilityRefresh);
         };
-    }, [currentUser?.role, applyUsersList]);
+    }, [currentUser?.role, applyUsersList, applyPushHints]);
 
     useEffect(() => {
         if (currentUser?.role !== 'coach' || notificationPermission !== 'granted') {
-            return;
+            return undefined;
         }
 
-        ensureCoachPushSubscription().catch(error => {
-            console.error('[Push] Kunne ikke sikre coach-abonnement:', error);
-        });
+        // Ikke konkurrer med den kritiske brukerliste-henten ved oppstart.
+        const run = () => {
+            ensureCoachPushSubscription().catch(error => {
+                console.error('[Push] Kunne ikke sikre coach-abonnement:', error);
+            });
+        };
+        if (typeof window.requestIdleCallback === 'function') {
+            const idleId = window.requestIdleCallback(run, { timeout: 4000 });
+            return () => window.cancelIdleCallback?.(idleId);
+        }
+        const timeoutId = window.setTimeout(run, 2000);
+        return () => window.clearTimeout(timeoutId);
     }, [currentUser?.role, notificationPermission, ensureCoachPushSubscription]);
 
     useEffect(() => {
@@ -883,20 +955,38 @@ const App = () => {
         }
     }, [viewingClient, toast]);
 
+    useEffect(() => {
+        viewingClientRef.current = viewingClient;
+    }, [viewingClient]);
+
     const handleClearClient = useCallback(() => {
+        pendingPushClientRef.current = null;
         setIsClientPreview(false);
         setViewingClient(null);
         setActiveTab('dashboard');
     }, []);
 
     const handleSelectClient = useCallback(async (client, options = {}) => {
-        const { preserveView = false } = options;
+        // fresh: cachen er kjent utdatert (åpnet fra push) – vis skjelett til ferske data kommer.
+        const { preserveView = false, fresh = false } = options;
         const requestId = ++selectClientRef.current;
+        const pendingPush = pendingPushClientRef.current;
+        if (pendingPush && String(pendingPush.id) !== String(client.id)) {
+            pendingPushClientRef.current = null;
+        }
         const previousData = currentDataRef.current;
         const cachedData = cache.get(`user-data-${client.id}`, { allowStale: true });
+        const restoreCachedOnFailure = () => {
+            const staleData = cache.get(`user-data-${client.id}`, { allowStale: true });
+            if (isPlainObject(staleData)) {
+                setCurrentData(mergeUserData(INITIAL_DATA_STATE, staleData));
+                return true;
+            }
+            return false;
+        };
         setIsClientPreview(false);
         setViewingClient(client);
-        if (isPlainObject(cachedData)) {
+        if (isPlainObject(cachedData) && !fresh) {
             setCurrentData(mergeUserData(INITIAL_DATA_STATE, cachedData));
             setIsClientLoading(false);
         } else {
@@ -907,26 +997,34 @@ const App = () => {
             setActiveTab('dashboard');
         }
 
+        // Ved fresh er cachen ikke vist ennå: bruk cache for denne utøveren, ellers tom state
+        // (aldri forrige utøvers data). Ikke-fresh beholder tidligere oppførsel.
+        const fallbackOnFailure = () => {
+            if (fresh) {
+                if (!restoreCachedOnFailure()) setCurrentData(INITIAL_DATA_STATE);
+            } else if (!isPlainObject(cache.get(`user-data-${client.id}`, { allowStale: true }))) {
+                setCurrentData(previousData);
+            }
+        };
+
         try {
             const result = await api.getUserData(client.id, false);
             if (requestId !== selectClientRef.current) return; // Avbrutt av nyere klikk
             if (result.authError) {
                 setShowReauthPrompt(true);
-                setCurrentData(previousData);
+                if (fresh) fallbackOnFailure(); else setCurrentData(previousData);
                 setIsClientLoading(false);
                 return;
             }
             if (result.data) {
                 setCurrentData(mergeUserData(INITIAL_DATA_STATE, result.data));
-            } else if (result.networkError && !isPlainObject(cache.get(`user-data-${client.id}`, { allowStale: true }))) {
-                setCurrentData(previousData);
+            } else if (fresh || result.networkError) {
+                fallbackOnFailure();
             }
         } catch (e) {
             if (requestId !== selectClientRef.current) return;
             console.error('Kunne ikke hente klientdata:', e);
-            if (!isPlainObject(cache.get(`user-data-${client.id}`, { allowStale: true }))) {
-                setCurrentData(previousData);
-            }
+            fallbackOnFailure();
         }
 
         setIsClientLoading(false);
@@ -996,19 +1094,38 @@ const App = () => {
                 if (Number.isFinite(unreadTotal)) {
                     setAppBadgeCount(unreadTotal);
                 }
+                // Marker utøveren med en gang og hent ferske data uten alert (push-toasten over dekker det).
+                const hint = extractPushHint(notification);
+                if (hint) applyPushHints([hint]);
+                refreshUsersRef.current?.(false);
             },
             onNotificationAction: (action) => {
-                const clientId = action?.notification?.data?.clientId;
-                if (!clientId) return;
-                const client = allUsersRef.current.find((user) => String(user.id) === String(clientId));
-                if (client && handleSelectClientRef.current) {
-                    // Sørg for at mark-as-read kjører selv om poll ikke har oppdatert unread ennå.
-                    const clientWithUnread = {
-                        ...client,
-                        unreadCheckins: Math.max(1, Number(client.unreadCheckins) || 0)
-                    };
-                    handleSelectClientRef.current(clientWithUnread);
+                const hint = extractPushHint(action?.notification);
+                if (!hint || !handleSelectClientRef.current) return;
+                // Push-trykk vinner over gjenoppretting av lagret visning.
+                hasRestoredUiStateRef.current = true;
+                restoreScrollYRef.current = null;
+
+                const client = allUsersRef.current.find((user) => String(user.id) === String(hint.clientId));
+                if (client) {
+                    pendingPushClientRef.current = null;
+                } else if (hint.clientName) {
+                    // Ukjent i cachen: åpne med navn nå, listen fyller inn resten og validerer.
+                    pendingPushClientRef.current = { id: hint.clientId, name: hint.clientName, at: Date.now() };
+                    refreshUsersRef.current?.(false);
+                } else {
+                    // Uten navn venter vi på listen før klienten åpnes.
+                    pendingPushClientRef.current = { id: hint.clientId, name: '', at: Date.now() };
+                    refreshUsersRef.current?.(false);
+                    return;
                 }
+                // Sørg for at mark-as-read kjører selv om poll ikke har oppdatert unread ennå.
+                // Gjelder også placeholder, slik at rapporten markeres som lest på serveren.
+                const base = client || { id: hint.clientId, name: hint.clientName, role: 'athlete' };
+                handleSelectClientRef.current(
+                    { ...base, unreadCheckins: Math.max(1, Number(base.unreadCheckins) || 0) },
+                    { fresh: true }
+                );
             }
         }).then((cleanup) => {
             if (cancelled) {
@@ -1022,7 +1139,7 @@ const App = () => {
             cancelled = true;
             removeListeners();
         };
-    }, [currentUser?.role, currentUser?.id, saveNativePushToken, toast]);
+    }, [currentUser?.role, currentUser?.id, saveNativePushToken, toast, applyPushHints]);
 
     useEffect(() => {
         if (!currentUser || hasRestoredUiStateRef.current) return;
