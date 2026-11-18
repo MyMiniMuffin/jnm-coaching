@@ -60,6 +60,7 @@ const OnboardingForm = () => {
     const sectionRef = useRef(null);
     const sendButtonRef = useRef(null);
     const successRef = useRef(null);
+    const successCardRef = useRef(null);
     const headingRef = useRef(null);
     const anchorBeforeRef = useRef(null);
     const releaseHoldRef = useRef(null);
@@ -80,6 +81,13 @@ const OnboardingForm = () => {
         releaseHoldRef.current?.();
         releaseHoldRef.current = keepInPlace(successRef.current, before);
         headingRef.current?.focus({ preventScroll: true });
+        // Bølgekortet var like høyt som skjemaet. Krymp ned til kvitteringen i stedet for å hoppe.
+        const card = successCardRef.current;
+        const from = before?.height ?? 0;
+        const still = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+        if (card && !still && typeof card.animate === 'function' && from > card.offsetHeight + 1) {
+            card.animate([{ minHeight: `${from}px` }, { minHeight: '0px' }], { duration: 420, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' });
+        }
     }, [status]);
 
     useEffect(() => () => { releaseHoldRef.current?.(); }, []);
@@ -220,7 +228,7 @@ const OnboardingForm = () => {
     );
 
     if (status === 'success') {
-        return <div className="onboarding-card">{success}</div>;
+        return <div ref={successCardRef} className="onboarding-card">{success}</div>;
     }
 
     return (
@@ -351,7 +359,7 @@ const OnboardingForm = () => {
         </WaveReveal>
 
         {/* Utenfor bølgens lag: fast linje med spinner som er live under hele innsendingen. */}
-        <div className="onboarding-actions">
+        <div className={`onboarding-actions wave-leaving-bar${status === 'revealing' ? ' is-leaving' : ''}`}>
             <div className="onboarding-actions-inner flex items-center justify-between gap-3">
                 {currentStep > 0 ? (
                     <button type="button" onClick={previousStep} disabled={busy} className="onboarding-secondary-button">

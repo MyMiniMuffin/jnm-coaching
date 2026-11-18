@@ -527,6 +527,18 @@ input:focus, textarea:focus, select:focus, button:focus-visible {
     100% { transform: translateX(0); }
 }
 
+/* Den faste send-linjen glir ut mens bølgen går, så den ikke forsvinner brått når
+   kvitteringen tar over. «Sendt» rekker å vises først. */
+.wave-leaving-bar {
+    transition: opacity 280ms ease;
+}
+
+.wave-leaving-bar.is-leaving {
+    opacity: 0;
+    pointer-events: none;
+    transition-delay: 450ms;
+}
+
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
