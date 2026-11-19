@@ -7,11 +7,6 @@
     font-family: var(--font-sans);
 }
 
-.coaching-page .font-display,
-.coaching-title {
-    font-family: var(--font-sans);
-}
-
 .coaching-header {
     border-bottom: 1px solid rgba(36, 101, 104, 0.1);
     background: #f7f7f4;

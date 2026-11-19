@@ -43,10 +43,10 @@
 
 .onboarding-step-heading h2 {
     margin-top: 0.45rem;
+    font-family: var(--font-serif);
     font-size: clamp(1.75rem, 5vw, 2.35rem);
-    font-weight: 600;
+    font-weight: 400;
     line-height: 1.08;
-    letter-spacing: -0.045em;
 }
 
 .onboarding-step-heading > p:last-child {

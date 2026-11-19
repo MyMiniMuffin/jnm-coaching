@@ -105,7 +105,7 @@ const ApplicationForm = () => {
     if (status === 'success') {
         return (
             <div className="flex min-h-[360px] flex-col justify-center border-t border-black/10 py-16" role="status">
-                <h3 className="text-3xl font-semibold tracking-[-0.035em] text-ink sm:text-4xl">Søknaden er sendt</h3>
+                <h3 className="text-3xl font-display text-ink sm:text-4xl">Søknaden er sendt</h3>
                 <p className="mt-5 max-w-md text-lg leading-8 text-ink-muted">
                     Du hører fra JNM Coaching når søknaden er lest.
                 </p>
@@ -203,7 +203,7 @@ const CoachingLandingPage = () => {
             <section className="coaching-hero">
                 <div className="mx-auto grid w-full max-w-7xl items-center gap-12 px-5 py-20 sm:px-8 sm:py-28 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16 lg:px-12 lg:py-32">
                     <div data-reveal className="max-w-4xl">
-                        <h1 className="coaching-title text-5xl font-semibold leading-[1.02] tracking-[-0.04em] sm:text-6xl lg:text-7xl">
+                        <h1 className="coaching-title text-5xl font-display leading-[1.02] sm:text-6xl lg:text-7xl">
                             En plan du kan følge
                         </h1>
                         <p className="mt-6 max-w-2xl text-lg leading-8 text-black/60 sm:text-xl">
@@ -226,7 +226,7 @@ const CoachingLandingPage = () => {
 
             <section id="opplegget" className="scroll-mt-20 bg-surface-50 py-20 sm:py-28">
                 <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
-                    <h2 data-reveal className="text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">
+                    <h2 data-reveal className="text-3xl font-display sm:text-4xl">
                         Hva du får
                     </h2>
 
@@ -244,7 +244,7 @@ const CoachingLandingPage = () => {
             <section id="soknad" className="scroll-mt-16 bg-white py-20 sm:py-28">
                 <div className="mx-auto grid max-w-7xl gap-16 px-5 sm:px-8 lg:grid-cols-[0.8fr_1.2fr] lg:gap-24 lg:px-12">
                     <div data-reveal className="lg:flex lg:flex-col">
-                        <h2 className="max-w-lg text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">
+                        <h2 className="max-w-lg text-3xl font-display sm:text-4xl">
                             Klar for å starte?
                         </h2>
                         <p className="mt-6 max-w-md text-lg leading-8 text-black/60">
