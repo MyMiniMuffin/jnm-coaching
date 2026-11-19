@@ -1,5 +1,5 @@
 /**
- * Fraunces på overskrifter og Allo på resten, lastet fra appen selv på hver side.
+ * Literata på overskrifter og Allo på resten, lastet fra appen selv på hver side.
  * Kjører Vite lokalt og Chromium. Alt utenfor localhost blokkeres og registreres.
  */
 import { test, before, after } from 'node:test';
@@ -37,7 +37,7 @@ for (const [name, path, heading] of [
     ['landingsside', '/coaching/', 'En plan du kan følge'],
     ['personvern', '/personvern/', 'Personvern'],
 ]) {
-    test(`${name}: overskriften er Fraunces, teksten Allo, og begge lastes lokalt`, async () => {
+    test(`${name}: overskriften er Literata, teksten Allo, og begge lastes lokalt`, async () => {
         const context = await browser.newContext({ viewport: { width: 1265, height: 820 } });
         const external = [];
         await context.route((u) => !['127.0.0.1', 'localhost'].includes(u.hostname), (route) => {
@@ -58,7 +58,7 @@ for (const [name, path, heading] of [
                 const loaded = [...document.fonts].filter((f) => f.status === 'loaded').map((f) => f.family.replace(/["']/g, ''));
                 return { heading: first(h1), body: first(document.body), loaded: [...new Set(loaded)].sort() };
             }, heading);
-            assert.deepEqual(result, { heading: 'Fraunces', body: 'Allo', loaded: ['Allo', 'Fraunces'] });
+            assert.deepEqual(result, { heading: 'Literata', body: 'Allo', loaded: ['Allo', 'Literata'] });
             assert.deepEqual(fontResponses.filter(([, status]) => status !== 200), [], 'en font lastet ikke');
             assert.deepEqual(external.filter((u) => /fonts\.(googleapis|gstatic)\.com/.test(u)), [], 'siden henter fonter fra Google');
         } finally {

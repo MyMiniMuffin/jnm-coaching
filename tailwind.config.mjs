@@ -21,7 +21,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Allo', 'system-ui', 'sans-serif'],
-        display: ['Fraunces', 'Georgia', 'serif'],
+        display: ['Literata', 'Georgia', 'serif'],
       },
       colors: {
         surface: {
