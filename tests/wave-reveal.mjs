@@ -104,8 +104,8 @@ test('rail-tilbake er av under innsending og bølge', () => {
 });
 
 test('live-regionen står sist i containeren og teksten har mellomrom', () => {
-    assert.match(checkin, /<\/div>\s*<p className="sr-only" role="status"[^\n]*\n\s*<\/div>\s*\);\s*\}\);/);
-    assert.match(checkin, /formHasReport \? 'Denne/);
+    assert.match(checkin, /(?:<\/div>|\)\})\s*<p className="sr-only" role="status"[^\n]*\n\s*<\/div>\s*\);\s*\}\);/);
+    assert.match(checkin, />Denne sendes i tillegg til ukesrapporten du allerede har sendt\.</);
 });
 
 test('testene er med i test:unit', () => {
