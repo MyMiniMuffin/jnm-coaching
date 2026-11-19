@@ -293,6 +293,7 @@ const CheckInView = React.memo(({
     phaseRef.current = phase;
     const submitGuardRef = useRef(false);
     const sendButtonRef = useRef(null);
+    const sendBarRef = useRef(null);
     const noteRef = useRef(null);
     const anchorBeforeRef = useRef(null);
     const releaseHoldRef = useRef(null);
@@ -768,6 +769,7 @@ const CheckInView = React.memo(({
                     source={sendButtonRef}
                     getAnchorTop={() => stickyHeaderBottom('.app-header') + 16}
                     onFinish={handleWaveFinish}
+                    fadeWith={sendBarRef}
                     className="bg-surface-50 -mx-[var(--app-gutter-x)]"
                     layerClassName="px-[var(--app-gutter-x)]"
                     revealedContent={receipt ? (
@@ -844,6 +846,7 @@ const CheckInView = React.memo(({
 
             {showForm && (
                 <div
+                    ref={sendBarRef}
                     className={`plan-save-bar wave-leaving-bar fixed inset-x-0 z-40 border-t border-surface-200/80 bg-surface-50/94 backdrop-blur-xl${phase === 'revealing' ? ' is-leaving' : ''}`}
                     style={{ bottom: 'calc(4.35rem + env(safe-area-inset-bottom, 0px))' }}
                 >
