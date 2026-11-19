@@ -36,7 +36,7 @@ const Host = () => {
             onNewCheckin={onNewCheckin}
             onDelete={onDelete}
             canDelete
-            isReadOnly={false}
+            isReadOnly={new URLSearchParams(window.location.search).has('readonly')}
             draftKey="fixture"
         />
     );

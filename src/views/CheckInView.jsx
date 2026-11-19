@@ -868,16 +868,16 @@ const CheckInView = React.memo(({
                 </div>
             )}
 
-            {(olderReports.length > 0 || (!thisWeekReport && !showForm)) && (
+            {(olderReports.length > 0 || (!featuredReport && !showForm)) && (
                 <div className={showForm || thisWeekReport ? 'pt-4 border-t border-surface-200' : ''}>
-                    <div className="mb-4 px-1">
-                        <p className="section-label">Tidligere rapporter</p>
-                        {olderReports.length > 0 && (
+                    {olderReports.length > 0 && (
+                        <div className="mb-4 px-1">
+                            <p className="section-label">Tidligere rapporter</p>
                             <p className="text-sm text-ink-muted mt-1">
                                 {`${olderReports.length} rapport${olderReports.length > 1 ? 'er' : ''}`}
                             </p>
-                        )}
-                    </div>
+                        </div>
+                    )}
 
                     {olderReports.length === 0 ? (
                         <EmptyState icon={Pulse} title="Ingen ukesrapporter ennå" />
