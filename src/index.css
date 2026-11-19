@@ -527,16 +527,12 @@ input:focus, textarea:focus, select:focus, button:focus-visible {
     100% { transform: translateX(0); }
 }
 
-/* Den faste send-linjen glir ut mens bølgen går, så den ikke forsvinner brått når
-   kvitteringen tar over. «Sendt» rekker å vises først. */
-.wave-leaving-bar {
-    transition: opacity 280ms ease;
-}
-
+/* Den faste send-linjen tones ut i takt med kvitteringen. WaveReveal setter --wave-revealed
+   (0–1) mens overgangen går. Før kvitteringen vises, står «Sendt» fullt synlig. */
 .wave-leaving-bar.is-leaving {
-    opacity: 0;
+    opacity: calc(1 - var(--wave-revealed, 0));
     pointer-events: none;
-    transition-delay: 450ms;
+    transition-property: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
