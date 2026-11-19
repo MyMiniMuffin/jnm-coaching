@@ -3,9 +3,10 @@ import AccountMenu from './AccountMenu';
 import { CaretLeft, WifiSlash, Eye, Plus } from '@phosphor-icons/react';
 import { IconButton } from './ui';
 import FormSubmissions from './FormSubmissions';
+import { APP_ICON } from '../lib/config';
 
 // coachHome: inbox (Postkasse) and «Ny utøver» live here, only on the coach's athlete list.
-const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOffline = false, isClientPreview = false, onToggleClientPreview, previewDisabled = false, hideClientBack = false, coachHome = false, onNewAthlete, notificationPermission, onEnableNotifications }) => (
+const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOffline = false, isClientPreview = false, onToggleClientPreview, previewDisabled = false, hideClientBack = false, hideLogo = false, coachHome = false, onNewAthlete, notificationPermission, onEnableNotifications }) => (
     <header className="app-header sticky top-0 z-40 border-b border-surface-200/80 bg-surface-50">
         <div className="app-header-top-inset" aria-hidden="true" />
         {isOffline && (
@@ -54,7 +55,10 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
             </div>
         ) : (
             <div className="header-inner flex flex-nowrap items-center justify-between gap-2 py-3 duo:py-3.5 duo-lg:py-4">
-                <p className="min-w-0 flex-1 truncate font-semibold text-ink">{user.name}</p>
+                <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                    {!hideLogo && <img src={APP_ICON} alt="" data-testid="header-logo" className="h-8 w-8 shrink-0 rounded-lg" />}
+                    <p className="min-w-0 truncate font-semibold text-ink">{user.name}</p>
+                </div>
                 <div className="flex shrink-0 items-center gap-1">
                     {coachHome && !isClientPreview && (
                         <>
