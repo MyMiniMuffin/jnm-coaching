@@ -115,18 +115,16 @@ const WaveReveal = ({
         }
         timer = window.setTimeout(finish, SAFETY_MS);
         // Biblioteket toner hele kvitteringslaget inn under fargen. Skjemaets innhold følger
-        // den toningen og er borte når kvitteringen er 25 % synlig, så tekstlagene aldri
-        // står oppå hverandre. Virker likt for bølgen og for crossfaden ved Reduser bevegelse.
+        // hver skriving til laget før neste bilde tegnes, og er borte når kvitteringen er
+        // 25 % synlig. Virker likt for bølgen og for crossfaden ved Reduser bevegelse.
         const inner = contentInnerRef.current;
         const layer = revealedLayerRef.current;
-        let followFrame = 0;
         const follow = () => {
-            if (!inner || !layer) return;
             const shown = layer.style.opacity === '' ? 1 : Number(layer.style.opacity) || 0;
             inner.style.opacity = String(Math.max(0, 1 - shown * FORM_FADE_RATIO));
-            if (!finished) followFrame = window.requestAnimationFrame(follow);
         };
-        followFrame = window.requestAnimationFrame(follow);
+        const observer = inner && layer ? new MutationObserver(follow) : null;
+        observer?.observe(layer, { attributes: true, attributeFilter: ['style'] });
         try {
             controller.update({
                 revealed: true,
@@ -145,7 +143,7 @@ const WaveReveal = ({
         }
         return () => {
             window.clearTimeout(timer);
-            window.cancelAnimationFrame(followFrame);
+            observer?.disconnect();
             if (inner) inner.style.opacity = '';
         };
         // getAnchorTop kalles bare i det revealed blir true.
