@@ -179,7 +179,7 @@ exports.handler = async (event) => {
           return { statusCode: 400, body: JSON.stringify({ error: 'Passord må være minst 6 tegn' }) };
         }
         const hashedPassword = await bcrypt.hash(new_password, SALT_ROUNDS);
-        await sql`UPDATE users SET password = ${hashedPassword}, must_change_password = true WHERE id = ${userId}`;
+        await sql`UPDATE users SET password = ${hashedPassword}, must_change_password = true, password_changed_at = ${new Date().toISOString()} WHERE id = ${userId}`;
       }
 
       // Arkiver/gjenopprett trenger ikke hele coach-listen (unread + siste rapport).

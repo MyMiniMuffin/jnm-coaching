@@ -76,8 +76,22 @@ async function main() {
   `;
   if (coachApiColumns.length !== 10) throw new Error('Coach API tables verification failed');
   console.log('Database migrations 012/013: applied and verified.');
+  await sql.query(readFileSync(join(__dirname, '../migrations/014_checkins_idempotency_key.sql'), 'utf8'));
+  await sql.query(readFileSync(join(__dirname, '../migrations/015_checkins_idempotency_index.sql'), 'utf8'));
+  await sql.query(readFileSync(join(__dirname, '../migrations/016_users_password_changed_at.sql'), 'utf8'));
+  const idempotencyColumn = await sql`
+    SELECT column_name FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'checkins' AND column_name = 'idempotency_key'
+  `;
+  if (idempotencyColumn.length !== 1) throw new Error('Checkin idempotency_key verification failed');
+  const passwordChangedColumn = await sql`
+    SELECT column_name FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'users' AND column_name = 'password_changed_at'
+  `;
+  if (passwordChangedColumn.length !== 1) throw new Error('Users password_changed_at verification failed');
+  console.log('Database migrations 014/015/016: applied and verified.');
 }
 main().catch((error) => {
-  console.error('Database migration failed; deployment stopped. Check database configuration and migrations 003–013. SQLSTATE:', error.code || 'unknown');
+  console.error('Database migration failed; deployment stopped. Check database configuration and migrations 003–016. SQLSTATE:', error.code || 'unknown');
   process.exitCode = 1;
 });

@@ -19,6 +19,7 @@ import {
     toApnsEndpoint
 } from './lib/nativePush';
 import { applyPushHintsToUsers, extractPushHint } from './lib/pushHints';
+import { getReadBound } from './lib/readBound';
 import { setAppBadgeCount, unreadCheckinTotal } from './lib/appBadge';
 import { haptic } from './lib/haptic';
 import { todayLocalISODate } from './lib/formatters';
@@ -1008,6 +1009,7 @@ const App = () => {
             }
         };
 
+        let readBound = null;
         try {
             const result = await api.getUserData(client.id, false);
             if (requestId !== selectClientRef.current) return; // Avbrutt av nyere klikk
@@ -1019,6 +1021,7 @@ const App = () => {
             }
             if (result.data) {
                 setCurrentData(mergeUserData(INITIAL_DATA_STATE, result.data));
+                readBound = getReadBound(result);
             } else if (fresh || result.networkError) {
                 fallbackOnFailure();
             }
@@ -1030,8 +1033,9 @@ const App = () => {
 
         setIsClientLoading(false);
 
+        // Marker bare som lest det coach faktisk har fått se: ikke ved feil, cache eller uten rapporter.
         const previousUnread = Number(client.unreadCheckins) || 0;
-        if (previousUnread <= 0) return;
+        if (previousUnread <= 0 || !readBound) return;
 
         setAllUsers(prev => prev.map(u =>
             u.id === client.id ? { ...u, unreadCheckins: 0 } : u
@@ -1040,7 +1044,7 @@ const App = () => {
         coachUnreadSnapshotRef.current.set(client.id, 0);
         removeNativeNotificationsForClient(client.id);
 
-        api.markCheckinsRead(client.id).then(result => {
+        api.markCheckinsRead(client.id, readBound.upToId).then(result => {
             if (result.authError) {
                 setShowReauthPrompt(true);
                 setAllUsers(prev => prev.map(u =>
@@ -1069,6 +1073,59 @@ const App = () => {
     useEffect(() => {
         handleSelectClientRef.current = handleSelectClient;
     }, [handleSelectClient]);
+
+    // Åpner utøveren et push-varsel gjelder. Felles for iOS-trykk, web-varsel (service worker) og dyplenke.
+    const openClientFromHint = useCallback((hint) => {
+        if (!handleSelectClientRef.current) return;
+        // Push-trykk vinner over gjenoppretting av lagret visning.
+        hasRestoredUiStateRef.current = true;
+        restoreScrollYRef.current = null;
+
+        const client = allUsersRef.current.find((user) => String(user.id) === String(hint.clientId));
+        if (client) {
+            pendingPushClientRef.current = null;
+        } else if (hint.clientName) {
+            // Ukjent i cachen: åpne med navn nå, listen fyller inn resten og validerer.
+            pendingPushClientRef.current = { id: hint.clientId, name: hint.clientName, at: Date.now() };
+            refreshUsersRef.current?.(false);
+        } else {
+            // Uten navn venter vi på listen før klienten åpnes.
+            pendingPushClientRef.current = { id: hint.clientId, name: '', at: Date.now() };
+            refreshUsersRef.current?.(false);
+            return;
+        }
+        // Sørg for at mark-as-read kjører selv om poll ikke har oppdatert unread ennå.
+        // Gjelder også placeholder, slik at rapporten markeres som lest på serveren.
+        const base = client || { id: hint.clientId, name: hint.clientName, role: 'athlete' };
+        handleSelectClientRef.current(
+            { ...base, unreadCheckins: Math.max(1, Number(base.unreadCheckins) || 0) },
+            { fresh: true }
+        );
+    }, []);
+
+    useEffect(() => {
+        if (isNativeApp() || currentUser?.role !== 'coach' || !('serviceWorker' in navigator)) return undefined;
+
+        const onMessage = (event) => {
+            if (event.data?.type !== 'jnm-open-client') return;
+            const hint = extractPushHint({ data: event.data });
+            if (hint) openClientFromHint(hint);
+        };
+        navigator.serviceWorker.addEventListener('message', onMessage);
+
+        // Kaldstart fra varsel: service workeren åpner /app/?client=<id>&name=<navn>.
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('client')) {
+            const hint = extractPushHint({ data: { clientId: params.get('client'), clientName: params.get('name') || '' } });
+            params.delete('client');
+            params.delete('name');
+            const query = params.toString();
+            window.history.replaceState(window.history.state, '', `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`);
+            if (hint) openClientFromHint(hint);
+        }
+
+        return () => navigator.serviceWorker.removeEventListener('message', onMessage);
+    }, [currentUser?.role, openClientFromHint]);
 
     useEffect(() => {
         if (!isNativeApp() || currentUser?.role !== 'coach') return undefined;
@@ -1102,31 +1159,7 @@ const App = () => {
             },
             onNotificationAction: (action) => {
                 const hint = extractPushHint(action?.notification);
-                if (!hint || !handleSelectClientRef.current) return;
-                // Push-trykk vinner over gjenoppretting av lagret visning.
-                hasRestoredUiStateRef.current = true;
-                restoreScrollYRef.current = null;
-
-                const client = allUsersRef.current.find((user) => String(user.id) === String(hint.clientId));
-                if (client) {
-                    pendingPushClientRef.current = null;
-                } else if (hint.clientName) {
-                    // Ukjent i cachen: åpne med navn nå, listen fyller inn resten og validerer.
-                    pendingPushClientRef.current = { id: hint.clientId, name: hint.clientName, at: Date.now() };
-                    refreshUsersRef.current?.(false);
-                } else {
-                    // Uten navn venter vi på listen før klienten åpnes.
-                    pendingPushClientRef.current = { id: hint.clientId, name: '', at: Date.now() };
-                    refreshUsersRef.current?.(false);
-                    return;
-                }
-                // Sørg for at mark-as-read kjører selv om poll ikke har oppdatert unread ennå.
-                // Gjelder også placeholder, slik at rapporten markeres som lest på serveren.
-                const base = client || { id: hint.clientId, name: hint.clientName, role: 'athlete' };
-                handleSelectClientRef.current(
-                    { ...base, unreadCheckins: Math.max(1, Number(base.unreadCheckins) || 0) },
-                    { fresh: true }
-                );
+                if (hint) openClientFromHint(hint);
             }
         }).then((cleanup) => {
             if (cancelled) {
@@ -1140,7 +1173,7 @@ const App = () => {
             cancelled = true;
             removeListeners();
         };
-    }, [currentUser?.role, currentUser?.id, saveNativePushToken, toast, applyPushHints]);
+    }, [currentUser?.role, currentUser?.id, saveNativePushToken, toast, applyPushHints, openClientFromHint]);
 
     useEffect(() => {
         if (!currentUser || hasRestoredUiStateRef.current) return;

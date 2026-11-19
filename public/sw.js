@@ -56,7 +56,8 @@ self.addEventListener('push', (event) => {
     tag: data.tag || 'coach-checkin-alert',
     data: {
       url: data.url || '/app/',
-      clientId: data.clientId || null
+      clientId: data.clientId ?? null,
+      clientName: data.clientName || ''
     }
   };
 
@@ -91,15 +92,21 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
-  const targetUrl = event.notification.data?.url || '/app/';
+  const data = event.notification.data;
+  const { clientId = null, clientName = '' } = data || {};
+  const targetUrl = clientId === null || clientId === undefined
+    ? data?.url || '/app/'
+    : `/app/?client=${encodeURIComponent(clientId)}${clientName ? `&name=${encodeURIComponent(clientName)}` : ''}`;
 
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
-      for (const client of clients) {
-        if ('focus' in client) {
-          client.navigate(targetUrl);
-          return client.focus();
+      const appClient = clients.find((client) => new URL(client.url).pathname.startsWith('/app'));
+      if (appClient) {
+        // Gjenbruk det åpne vinduet: appen åpner utøveren selv, uten full omlasting.
+        if (clientId !== null && clientId !== undefined) {
+          appClient.postMessage({ type: 'jnm-open-client', clientId, clientName });
         }
+        return appClient.focus();
       }
 
       if (self.clients.openWindow) {

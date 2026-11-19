@@ -272,10 +272,10 @@ export const api = {
         { checkinId },
         'Kunne ikke slette'
     ),
-    markCheckinsRead: (userId) => mutateUserData(
+    markCheckinsRead: (userId, upToId) => mutateUserData(
         userId,
         'mark_checkins_read',
-        {},
+        { upToId },
         'Kunne ikke markere som lest'
     ),
     createPeriod: (userId, name, startingWeight, goalWeight = null) => mutateUserData(

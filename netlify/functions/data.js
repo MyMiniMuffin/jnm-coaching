@@ -1,5 +1,5 @@
 const { neon } = require('@neondatabase/serverless');
-const { requireOwnership } = require('./auth-middleware');
+const { requireOwnership, rejectStaleSession } = require('./auth-middleware');
 const { parseJsonBody } = require('./http-utils');
 const {
   sendCoachPushNotifications: deliverCoachPushNotifications,
@@ -28,6 +28,39 @@ const countUnreadCheckinsTotal = async () => {
   `;
   return unreadResult[0]?.total ?? 0;
 };
+
+const getUnreadCounts = async (userId) => {
+  const result = await sql`
+    SELECT
+      COUNT(*) FILTER (WHERE c.user_id = ${userId})::integer AS count,
+      COUNT(*)::integer AS total
+    FROM checkins c
+    INNER JOIN users u ON u.id = c.user_id
+    WHERE c.is_read = false
+      AND u.role = 'athlete'
+      AND COALESCE(u.is_archived, false) = false
+  `;
+  return { count: result[0]?.count ?? 0, total: result[0]?.total ?? 0 };
+};
+
+const PUSH_TIMEOUT_MS = 3500;
+
+// Push og badge er best effort: de skal aldri forsinke eller velte et svar som allerede er lagret.
+const runBounded = async (task) => {
+  let timer;
+  try {
+    await Promise.race([
+      Promise.resolve().then(task),
+      new Promise((resolve) => { timer = setTimeout(resolve, PUSH_TIMEOUT_MS); })
+    ]);
+  } catch (error) {
+    console.error('Push/badge-synk feilet:', error);
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
+const IDEMPOTENCY_KEY_PATTERN = /^[A-Za-z0-9_-]{8,100}$/;
 
 /** Avvis datoer som JS Date ruller framover (f.eks. 2023-02-29 → 2023-03-01). */
 const isValidCalendarDate = (dateStr) => {
@@ -138,7 +171,7 @@ const getTargetUserState = async (userId) => {
   // Hent alt POST-handlerne trenger om målbrukeren i én spørring (name og
   // current_period_id brukes av new_checkin) for å spare database-rundturer.
   const result = await sql`
-    SELECT role, is_archived, name, current_period_id
+    SELECT role, is_archived, name, current_period_id, password_changed_at
     FROM users
     WHERE id = ${userId}
     LIMIT 1
@@ -175,7 +208,7 @@ exports.handler = async (event) => {
       }
 
       // Kjør alle 4 queries parallelt for å minimere latens
-      const [periods, galleryImages, userResult, checkins] = await Promise.all([
+      const [periods, galleryImages, userResult, checkins, sessionUser] = await Promise.all([
         sql`
           SELECT id, name, start_date as "startDate", end_date as "endDate",
                  starting_weight as "startingWeight", goal_weight as "goalWeight",
@@ -214,9 +247,15 @@ exports.handler = async (event) => {
           FROM checkins
           WHERE user_id = ${userId}
           ORDER BY created_at DESC
-          LIMIT 150
-        `
+        `,
+        sql`SELECT password_changed_at FROM users WHERE id = ${authResult.userId}`
       ]);
+
+      // Gyldig JWT er ikke nok: brukeren kan være slettet eller ha fått nytt passord.
+      const staleSession = rejectStaleSession(authResult, sessionUser[0]);
+      if (staleSession) {
+        return { statusCode: staleSession.statusCode, body: staleSession.body };
+      }
 
       const user = userResult[0] || {};
       
@@ -280,6 +319,12 @@ exports.handler = async (event) => {
       }
 
       const targetUser = await getTargetUserState(userId);
+      if (parseInt(authResult.userId, 10) === parseInt(userId, 10)) {
+        const staleSession = rejectStaleSession(authResult, targetUser);
+        if (staleSession) {
+          return { statusCode: staleSession.statusCode, body: staleSession.body };
+        }
+      }
       if (!targetUser) {
         return { statusCode: 404, body: JSON.stringify({ error: 'Brukeren ble ikke funnet' }) };
       }
@@ -444,6 +489,12 @@ exports.handler = async (event) => {
           return { statusCode: 400, body: JSON.stringify({ error: 'Kommentar er for lang (maks 5 000 tegn)' }) };
         }
 
+        if (data.idempotencyKey !== undefined && data.idempotencyKey !== null
+          && !(typeof data.idempotencyKey === 'string' && IDEMPOTENCY_KEY_PATTERN.test(data.idempotencyKey))) {
+          return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig innsendingsnøkkel' }) };
+        }
+        const idempotencyKey = data.idempotencyKey || null;
+
         const cardio = parseInt(data.cardioSessions, 10) || 0;
         const strength = parseInt(data.strengthSessions, 10) || 0;
         const imagesJson = JSON.stringify(data.images || []);
@@ -454,7 +505,7 @@ exports.handler = async (event) => {
         const insertedCheckin = await sql`
           INSERT INTO checkins (
             user_id, date, weight, sleep, energy, accuracy, 
-            strength_sessions, cardio_sessions, steps_reached, taken_supplements, comment, images, period_id
+            strength_sessions, cardio_sessions, steps_reached, taken_supplements, comment, images, period_id, idempotency_key
           )
           VALUES (
             ${userId}, 
@@ -469,8 +520,10 @@ exports.handler = async (event) => {
             ${Boolean(data.takenSupplements)}, 
             ${data.comment || ''}, 
             ${imagesJson},
-            ${periodId}
+            ${periodId},
+            ${idempotencyKey}
           )
+          ON CONFLICT (user_id, idempotency_key) WHERE idempotency_key IS NOT NULL DO NOTHING
           RETURNING
             id, date, weight, sleep, energy, accuracy,
             strength_sessions as "strengthSessions",
@@ -481,26 +534,40 @@ exports.handler = async (event) => {
             period_id as "periodId", is_read as "isRead"
         `;
 
-        // Begge tellingene i én rundtur. Målbrukeren er en aktiv utøver (sjekket over),
-        // så egne uleste rapporter er alltid med i totalen.
-        const unreadResult = await sql`
-          SELECT
-            COUNT(*) FILTER (WHERE c.user_id = ${userId})::integer AS count,
-            COUNT(*)::integer AS total
-          FROM checkins c
-          INNER JOIN users u ON u.id = c.user_id
-          WHERE c.is_read = false
-            AND u.role = 'athlete'
-            AND COALESCE(u.is_archived, false) = false
-        `;
-        const unreadCount = unreadResult[0]?.count ?? 1;
-        const unreadTotal = unreadResult[0]?.total ?? unreadCount;
+        if (!insertedCheckin[0]) {
+          // Samme utkast sendt på nytt (retry etter tapt svar): returner den lagrede rapporten, uten ny push.
+          const existing = await sql`
+            SELECT
+              id, date, weight, sleep, energy, accuracy,
+              strength_sessions as "strengthSessions",
+              cardio_sessions as "cardioSessions",
+              steps_reached as "stepsReached",
+              taken_supplements as "takenSupplements",
+              comment, image_url, images, created_at as timestamp,
+              period_id as "periodId", is_read as "isRead"
+            FROM checkins
+            WHERE user_id = ${userId} AND idempotency_key = ${idempotencyKey}
+          `;
+          return {
+            statusCode: 200,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              success: true,
+              checkin: formatCheckinRecord(existing[0])
+            })
+          };
+        }
 
-        await sendCoachPushNotifications({
-          athleteId: userId,
-          athleteName: targetUser.name || 'En utøver',
-          unreadCount,
-          unreadTotal
+        await runBounded(async () => {
+          // Målbrukeren er en aktiv utøver (sjekket over), så egne uleste rapporter er med i totalen.
+          const counts = await getUnreadCounts(userId);
+          const unreadCount = counts.count || 1;
+          await sendCoachPushNotifications({
+            athleteId: userId,
+            athleteName: targetUser.name || 'En utøver',
+            unreadCount,
+            unreadTotal: counts.total || unreadCount
+          });
         });
 
         return {
@@ -541,7 +608,10 @@ exports.handler = async (event) => {
         const hasSupp = data.takenSupplements !== undefined;
         const hasComment = data.comment !== undefined;
 
+        const isAthlete = authResult.role === 'athlete';
+
         const updated = await sql`
+          WITH prev AS (SELECT is_read FROM checkins WHERE id = ${data.checkinId} AND user_id = ${userId})
           UPDATE checkins SET
             weight = CASE WHEN ${hasWeight} THEN ${hasWeight ? parseFloat(data.weight) : null} ELSE weight END,
             sleep = CASE WHEN ${hasSleep} THEN ${hasSleep ? parseInt(data.sleep) : null} ELSE sleep END,
@@ -551,7 +621,8 @@ exports.handler = async (event) => {
             cardio_sessions = CASE WHEN ${hasCardio} THEN ${hasCardio ? parseInt(data.cardioSessions, 10) || 0 : 0} ELSE cardio_sessions END,
             steps_reached = CASE WHEN ${hasSteps} THEN ${hasSteps ? Boolean(data.stepsReached) : false} ELSE steps_reached END,
             taken_supplements = CASE WHEN ${hasSupp} THEN ${hasSupp ? Boolean(data.takenSupplements) : false} ELSE taken_supplements END,
-            comment = CASE WHEN ${hasComment} THEN ${hasComment ? (data.comment || '') : ''} ELSE comment END
+            comment = CASE WHEN ${hasComment} THEN ${hasComment ? (data.comment || '') : ''} ELSE comment END,
+            is_read = CASE WHEN ${isAthlete} THEN false ELSE is_read END
           WHERE id = ${data.checkinId} AND user_id = ${userId}
           RETURNING
             id, date, weight, sleep, energy, accuracy,
@@ -560,7 +631,8 @@ exports.handler = async (event) => {
             steps_reached as "stepsReached",
             taken_supplements as "takenSupplements",
             comment, image_url, images, created_at as timestamp,
-            period_id as "periodId", is_read as "isRead"
+            period_id as "periodId", is_read as "isRead",
+            (SELECT is_read FROM prev) as "wasRead"
         `;
 
         // SIKKERHET: WHERE user_id begrenser oppdateringen til valgt bruker.
@@ -569,12 +641,28 @@ exports.handler = async (event) => {
           return { statusCode: 403, body: JSON.stringify({ error: 'Ingen tilgang til denne rapporten' }) };
         }
 
+        const { wasRead, ...updatedCheckin } = updated[0];
+
+        // En rettet rapport blir ulest igjen; coach får varsel og badge-tall bare når den var lest.
+        if (isAthlete && wasRead) {
+          await runBounded(async () => {
+            const counts = await getUnreadCounts(userId);
+            const unreadCount = counts.count || 1;
+            await sendCoachPushNotifications({
+              athleteId: userId,
+              athleteName: targetUser.name || 'En utøver',
+              unreadCount,
+              unreadTotal: counts.total || unreadCount
+            });
+          });
+        }
+
         return {
           statusCode: 200,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             success: true,
-            checkin: formatCheckinRecord(updated[0])
+            checkin: formatCheckinRecord(updatedCheckin)
           })
         };
       }
@@ -587,20 +675,37 @@ exports.handler = async (event) => {
         // SIKKERHET: WHERE user_id begrenser slettingen til valgt bruker.
         // Coach kan slette for en utøver de har åpnet, men ikke på tvers av brukere.
         const deleted = await sql`
-          DELETE FROM checkins WHERE id = ${data.checkinId} AND user_id = ${userId} RETURNING id
+          DELETE FROM checkins WHERE id = ${data.checkinId} AND user_id = ${userId} RETURNING id, is_read
         `;
 
         if (deleted.length === 0) {
           return { statusCode: 403, body: JSON.stringify({ error: 'Ingen tilgang til denne rapporten' }) };
         }
+
+        // Sletting av en ulest rapport endrer uleste-totalen, så badgen må synkes.
+        if (!deleted[0].is_read) {
+          await runBounded(async () => syncCoachAppBadge(await countUnreadCheckinsTotal()));
+        }
       }
 
       else if (type === 'mark_checkins_read') {
         // Coach-only sjekkes via COACH_ONLY_TYPES, target.role === 'athlete' sjekkes generelt
-        await sql`UPDATE checkins SET is_read = true WHERE user_id = ${userId} AND is_read = false`;
+        // Valgfri grense: kun rapporter coach faktisk har sett. Uten grense markeres alle (gammel klient).
+        const upToId = data.upToId === undefined || data.upToId === null ? null : parseInt(data.upToId, 10);
+        const upToDate = data.upToCreatedAt === undefined || data.upToCreatedAt === null ? null : new Date(data.upToCreatedAt);
+        if ((upToId !== null && !(upToId > 0)) || (upToDate !== null && isNaN(upToDate.getTime()))) {
+          return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig grense for lest-markering' }) };
+        }
+        const upToCreatedAt = upToDate ? upToDate.toISOString() : null;
+        await sql`
+          UPDATE checkins SET is_read = true
+          WHERE user_id = ${userId} AND is_read = false
+            AND (${upToId}::bigint IS NULL OR id <= ${upToId}::bigint)
+            AND (${upToCreatedAt}::timestamptz IS NULL OR created_at < ${upToCreatedAt}::timestamptz + INTERVAL '1 millisecond')
+        `;
         const unreadTotal = await countUnreadCheckinsTotal();
         // Synk iOS/web badge etter lesing — ellers blir den røde prikken hengende.
-        await syncCoachAppBadge(unreadTotal);
+        await runBounded(() => syncCoachAppBadge(unreadTotal));
         return {
           statusCode: 200,
           headers: { 'Content-Type': 'application/json' },

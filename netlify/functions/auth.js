@@ -123,7 +123,7 @@ exports.handler = async (event) => {
       const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
       // Bare én forespørsel kan bruke dette midlertidige passordet.
       const updated = await sql`
-        UPDATE users SET password = ${hashedPassword}, must_change_password = false
+        UPDATE users SET password = ${hashedPassword}, must_change_password = false, password_changed_at = ${new Date().toISOString()}
         WHERE id = ${user.id} AND password = ${storedPassword} AND must_change_password = true
         RETURNING id
       `;
