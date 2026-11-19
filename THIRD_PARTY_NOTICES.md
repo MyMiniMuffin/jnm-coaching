@@ -54,3 +54,22 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+## Allo by Josh Puckett
+
+`public/fonts/allo/AlloVariableFriendly.woff2` is Allo 1.0.3 from
+<https://allo.joshpuckett.me/>, unchanged.
+
+Copyright 2026 Josh Puckett. Copyright (c) 2016 The Inter Project Authors.
+
+SIL Open Font License 1.1. The full license is in `public/fonts/allo/OFL.txt`.
+
+## Fraunces by Undercase Type
+
+`public/fonts/fraunces/Fraunces-latin.woff2` and `Fraunces-latin-ext.woff2`
+are the Google Fonts subsets of Fraunces (opsz and wght axes), unchanged.
+Source: <https://github.com/undercasetype/Fraunces>.
+
+Copyright 2018 The Fraunces Project Authors.
+
+SIL Open Font License 1.1. The full license is in `public/fonts/fraunces/OFL.txt`.
