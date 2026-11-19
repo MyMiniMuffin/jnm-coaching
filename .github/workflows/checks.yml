@@ -18,7 +18,7 @@ jobs:
   tests-and-build:
     name: Tests and production build (Node 22)
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
         with:
@@ -30,7 +30,16 @@ jobs:
       - name: Node version
         run: node -v
       - run: npm ci --no-audit --no-fund
-      - run: npx playwright install --with-deps chromium
+      # No --with-deps: it installs system packages through apt, and the Ubuntu archive
+      # sometimes returns 503 or hangs. The ubuntu-24.04 image already has the libraries
+      # headless Chromium needs. The browser download from the Playwright CDN is retried.
+      - name: Install Chromium for Playwright
+        run: |
+          for attempt in 1 2 3; do
+            timeout -k 10 180 npx playwright install chromium && exit 0
+            echo "playwright install attempt $attempt failed or timed out"
+          done
+          exit 1
       - run: npm test
       - run: npm run build
       - name: Validate Xcode Cloud script
