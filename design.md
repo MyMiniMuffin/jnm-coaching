@@ -73,7 +73,7 @@ Brukes kun for vurderinger i ukesrapporter (`ReportMetrics`). Skala 1–10: 8+ e
 ### Skrifter
 
 - `font-sans`: Allo. Brukes til all funksjonell tekst, brødtekst, felt, knapper, tabeller og navigasjon.
-- `font-display`: Fraunces. Brukes kun til sidetitler, utvalgte hovedoverskrifter og enkelte tomtilstander.
+- `font-display`: Literata. Brukes kun til sidetitler, utvalgte hovedoverskrifter og enkelte tomtilstander.
 
 Serif er en aksent, ikke standardskriften for overskrifter. I kompakte eller datatunge komponenter skal også overskrifter bruke Allo.
 

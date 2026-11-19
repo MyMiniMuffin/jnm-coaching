@@ -64,12 +64,12 @@ Copyright 2026 Josh Puckett. Copyright (c) 2016 The Inter Project Authors.
 
 SIL Open Font License 1.1. The full license is in `public/fonts/allo/OFL.txt`.
 
-## Fraunces by Undercase Type
+## Literata by TypeTogether
 
-`public/fonts/fraunces/Fraunces-latin.woff2` and `Fraunces-latin-ext.woff2`
-are the Google Fonts subsets of Fraunces (opsz and wght axes), unchanged.
-Source: <https://github.com/undercasetype/Fraunces>.
+`public/fonts/literata/Literata-latin.woff2` and `Literata-latin-ext.woff2`
+are the Google Fonts subsets of Literata (opsz and wght axes), unchanged.
+Source: <https://github.com/googlefonts/literata>.
 
-Copyright 2018 The Fraunces Project Authors.
+Copyright 2017 The Literata Project Authors.
 
-SIL Open Font License 1.1. The full license is in `public/fonts/fraunces/OFL.txt`.
+SIL Open Font License 1.1. The full license is in `public/fonts/literata/OFL.txt`.
