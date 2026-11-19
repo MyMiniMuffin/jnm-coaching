@@ -28,7 +28,7 @@ test('logout lives in the account menu, not as a header icon', () => {
 test('header row never wraps: nowrap, truncating title, shrink-0 actions', () => {
     const coachRow = header.slice(header.indexOf('header-inner flex flex-nowrap items-center justify-between'));
     assert.match(coachRow, /^header-inner flex flex-nowrap/);
-    assert.match(coachRow, /<p className="min-w-0 flex-1 truncate font-semibold text-ink">\{user\.name\}<\/p>/);
+    assert.match(coachRow, /<div className="flex min-w-0 flex-1 items-center gap-2\.5">\s*\{!hideLogo && <img [^>]*className="h-8 w-8 shrink-0 rounded-lg" \/>\}\s*<p className="min-w-0 truncate font-semibold text-ink">\{user\.name\}<\/p>/);
     assert.match(coachRow, /<div className="flex shrink-0 items-center gap-1">/);
     assert.match(header, /header-inner flex flex-nowrap items-center py-3 gap-1/);
     assert.doesNotMatch(header, /header-inner flex flex-wrap items-center py-3/);
