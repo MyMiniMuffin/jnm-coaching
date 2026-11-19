@@ -193,7 +193,6 @@ const CheckinFields = ({
                 </div>
                 <div>
                     <p className="font-medium">Kosttilskudd tatt</p>
-                    <p className="text-sm text-ink-muted">Tatt jevnlig denne uken</p>
                 </div>
             </label>
         </div>
@@ -252,7 +251,6 @@ const ReceiptNote = React.forwardRef((props, ref) => (
         </span>
         <div className="min-w-0">
             <p className="text-base font-semibold">Rapport sendt</p>
-            <p className="text-sm text-ink-muted">Coachen din har fått den. Du kan fortsatt redigere den.</p>
         </div>
     </div>
 ));
@@ -802,9 +800,9 @@ const CheckInView = React.memo(({
                         <div className="flex items-start justify-between gap-3">
                             <div>
                                 <h3 className="section-title">{formHasReport ? 'Ny rapport' : 'Ukesrapport'}</h3>
-                                <p className="text-sm text-ink-muted mt-1">
-                                    {formHasReport ? 'Denne sendes i tillegg til ukesrapporten du allerede har sendt.' : 'Fyll ut ukesrapporten. Du kan redigere etterpå.'}
-                                </p>
+                                {formHasReport && (
+                                    <p className="text-sm text-ink-muted mt-1">Denne sendes i tillegg til ukesrapporten du allerede har sendt.</p>
+                                )}
                             </div>
                             {hasDraftContent && (
                                 <span className="shrink-0 text-xs font-medium text-ink-muted bg-surface-100 px-2 py-1 rounded-full">
@@ -858,7 +856,7 @@ const CheckInView = React.memo(({
                             </Button>
                             )
                         ) : (
-                            <p className="min-w-0 flex-1 truncate text-sm text-ink-muted">Klar når vekten er fylt ut</p>
+                            <span className="hidden flex-1 duo:block" aria-hidden="true" />
                         )}
                         <Button
                             ref={sendButtonRef}
@@ -874,99 +872,95 @@ const CheckInView = React.memo(({
                 </div>
             )}
 
-            <div className={showForm || thisWeekReport ? 'pt-4 border-t border-surface-200' : ''}>
-                <div className="mb-4 px-1">
-                    <p className="section-label">Tidligere rapporter</p>
-                    <p className="text-sm text-ink-muted mt-1">
-                        {olderReports.length === 0
-                            ? (thisWeekReport ? 'Ingen eldre ukesrapporter' : 'Ingen tidligere ukesrapporter ennå')
-                            : `${olderReports.length} rapport${olderReports.length > 1 ? 'er' : ''}`}
-                    </p>
-                </div>
-
-                {olderReports.length === 0 ? (
-                    !thisWeekReport && (
-                        <EmptyState
-                            icon={Pulse}
-                            title="Ingen ukesrapporter ennå"
-                            description={isReadOnly ? 'Når utøveren sender en rapport, vises den her.' : 'Send ukesrapporten for å starte historikken.'}
-                        />
-                    )
-                ) : (
-                    <div className="space-y-2">
-                        {visibleCheckins.map((entry) => {
-                            const isEditing = editingId === entry.id;
-                            const isExpanded = expandedIds.has(entry.id) || isEditing;
-                            const previousWeight = previousWeightFor(entry);
-
-                            if (isEditing && editForm) {
-                                return (
-                                    <Card key={entry.id} className="report-card p-5" data-report-tone={getReportTone(entry)}>
-                                        {renderEditForm(entry)}
-                                    </Card>
-                                );
-                            }
-
-                            return (
-                                <Card key={entry.id} className="report-card overflow-hidden" data-report-tone={getReportTone(entry)}>
-                                    <div className="flex items-center gap-2 px-4 py-3">
-                                        <button
-                                            type="button"
-                                            data-testid="checkin-history-row"
-                                            className="flex min-w-0 flex-1 items-center gap-3 text-left duo:min-h-11"
-                                            onClick={() => toggleExpanded(entry.id)}
-                                            aria-expanded={isExpanded}
-                                        >
-                                            <div className="min-w-0 flex-1">
-                                                <p className="font-medium truncate">{formatDateNO(entry.date)}</p>
-                                                <p className="text-sm text-ink-muted tabular-nums">
-                                                    {formatWeight(entry.weight)} kg
-                                                    {previousWeight != null && (
-                                                        <>
-                                                            {' · '}
-                                                            <WeightDelta current={entry.weight} previous={previousWeight} />
-                                                        </>
-                                                    )}
-                                                </p>
-                                            </div>
-                                            <CaretDown size={18} className={`shrink-0 text-ink-faint transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                                        </button>
-                                        {canEdit && onUpdate && (
-                                            <IconButton type="button" onClick={() => startEdit(entry)} aria-label="Rediger rapport" tone="accent">
-                                                <PencilSimple size={16} />
-                                            </IconButton>
-                                        )}
-                                        {canDelete && onDelete && (
-                                            <IconButton
-                                                type="button"
-                                                onClick={async () => {
-                                                    if (await confirmDialog('Slett denne rapporten?', { title: 'Slett rapport', confirmText: 'Slett', destructive: true })) {
-                                                        onDelete(entry.id);
-                                                    }
-                                                }}
-                                                aria-label="Slett rapport"
-                                                tone="danger"
-                                            >
-                                                <Trash size={16} />
-                                            </IconButton>
-                                        )}
-                                    </div>
-                                    {isExpanded && (
-                                        <div className="border-t border-surface-100 px-4 py-4">
-                                            {renderReportBody(entry)}
-                                        </div>
-                                    )}
-                                </Card>
-                            );
-                        })}
-                        {hasMoreReports && (
-                            <Button variant="secondary" size="md" className="w-full" onClick={handleShowMoreReports}>
-                                Vis flere rapporter ({Math.min(REPORT_BATCH_SIZE, olderReports.length - visibleReportCount)})
-                            </Button>
+            {(olderReports.length > 0 || (!thisWeekReport && !showForm)) && (
+                <div className={showForm || thisWeekReport ? 'pt-4 border-t border-surface-200' : ''}>
+                    <div className="mb-4 px-1">
+                        <p className="section-label">Tidligere rapporter</p>
+                        {olderReports.length > 0 && (
+                            <p className="text-sm text-ink-muted mt-1">
+                                {`${olderReports.length} rapport${olderReports.length > 1 ? 'er' : ''}`}
+                            </p>
                         )}
                     </div>
-                )}
-            </div>
+
+                    {olderReports.length === 0 ? (
+                        <EmptyState icon={Pulse} title="Ingen ukesrapporter ennå" />
+                    ) : (
+                        <div className="space-y-2">
+                            {visibleCheckins.map((entry) => {
+                                const isEditing = editingId === entry.id;
+                                const isExpanded = expandedIds.has(entry.id) || isEditing;
+                                const previousWeight = previousWeightFor(entry);
+
+                                if (isEditing && editForm) {
+                                    return (
+                                        <Card key={entry.id} className="report-card p-5" data-report-tone={getReportTone(entry)}>
+                                            {renderEditForm(entry)}
+                                        </Card>
+                                    );
+                                }
+
+                                return (
+                                    <Card key={entry.id} className="report-card overflow-hidden" data-report-tone={getReportTone(entry)}>
+                                        <div className="flex items-center gap-2 px-4 py-3">
+                                            <button
+                                                type="button"
+                                                data-testid="checkin-history-row"
+                                                className="flex min-w-0 flex-1 items-center gap-3 text-left duo:min-h-11"
+                                                onClick={() => toggleExpanded(entry.id)}
+                                                aria-expanded={isExpanded}
+                                            >
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="font-medium truncate">{formatDateNO(entry.date)}</p>
+                                                    <p className="text-sm text-ink-muted tabular-nums">
+                                                        {formatWeight(entry.weight)} kg
+                                                        {previousWeight != null && (
+                                                            <>
+                                                                {' · '}
+                                                                <WeightDelta current={entry.weight} previous={previousWeight} />
+                                                            </>
+                                                        )}
+                                                    </p>
+                                                </div>
+                                                <CaretDown size={18} className={`shrink-0 text-ink-faint transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                                            </button>
+                                            {canEdit && onUpdate && (
+                                                <IconButton type="button" onClick={() => startEdit(entry)} aria-label="Rediger rapport" tone="accent">
+                                                    <PencilSimple size={16} />
+                                                </IconButton>
+                                            )}
+                                            {canDelete && onDelete && (
+                                                <IconButton
+                                                    type="button"
+                                                    onClick={async () => {
+                                                        if (await confirmDialog('Slett denne rapporten?', { title: 'Slett rapport', confirmText: 'Slett', destructive: true })) {
+                                                            onDelete(entry.id);
+                                                        }
+                                                    }}
+                                                    aria-label="Slett rapport"
+                                                    tone="danger"
+                                                >
+                                                    <Trash size={16} />
+                                                </IconButton>
+                                            )}
+                                        </div>
+                                        {isExpanded && (
+                                            <div className="border-t border-surface-100 px-4 py-4">
+                                                {renderReportBody(entry)}
+                                            </div>
+                                        )}
+                                    </Card>
+                                );
+                            })}
+                            {hasMoreReports && (
+                                <Button variant="secondary" size="md" className="w-full" onClick={handleShowMoreReports}>
+                                    Vis flere rapporter ({Math.min(REPORT_BATCH_SIZE, olderReports.length - visibleReportCount)})
+                                </Button>
+                            )}
+                        </div>
+                    )}
+                </div>
+            )}
 
             <p className="sr-only" role="status" aria-live="polite">{phase === 'revealing' ? 'Rapport sendt' : ''}</p>
         </div>
