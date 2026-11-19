@@ -18,7 +18,7 @@ jobs:
   tests-and-build:
     name: Tests and production build (Node 22)
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
         with:
@@ -30,7 +30,17 @@ jobs:
       - name: Node version
         run: node -v
       - run: npm ci --no-audit --no-fund
-      - run: npx playwright install --with-deps chromium
+      # apt in --with-deps sometimes hangs on the runner mirror until the job times out.
+      # Give each attempt 3 minutes and try three times.
+      - name: Install Chromium for Playwright
+        run: |
+          for attempt in 1 2 3; do
+            # A killed attempt can leave dpkg half-configured, so repair it before retrying.
+            [ "$attempt" -gt 1 ] && { sudo dpkg --configure -a || true; }
+            timeout -k 10 180 npx playwright install --with-deps chromium && exit 0
+            echo "playwright install attempt $attempt failed or timed out"
+          done
+          exit 1
       - run: npm test
       - run: npm run build
       - name: Validate Xcode Cloud script
