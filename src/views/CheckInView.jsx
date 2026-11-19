@@ -699,11 +699,7 @@ const CheckInView = React.memo(({
                                     <WeightDelta className="text-sm" current={featuredReport.weight} previous={previousWeightFor(featuredReport)} />
                                 )}
                             </p>
-                            <p className="mt-1 text-sm text-ink-muted">
-                                {formatDateNO(featuredReport.date)}
-                                {' · '}
-                                {thisWeekReport ? 'Sendt denne uken' : 'Siste ukesrapport'}
-                            </p>
+                            <p className="mt-1 text-sm text-ink-muted">{formatDateNO(featuredReport.date)}</p>
                         </div>
                         <div className="flex shrink-0 flex-wrap items-center gap-2">
                             {canEdit && onUpdate && (
