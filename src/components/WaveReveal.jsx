@@ -24,6 +24,7 @@ const FORM_FADE_RATIO = 4;
  * - revealed: innsendingen lyktes. Bølgen kjøres (eller hoppes over uten bibliotek).
  * - getAnchorTop(): funksjon som gir viewport-y (px) der det nye innholdet skal starte.
  *   Kalles bare i det revealed blir true.
+ * - fadeWith: ref til et element utenfor bølgen (fast send-linje) som tones ut i takt med kvitteringen.
  * - onFinish({ top, height }): kalles én gang per kjøring; top er innholdets viewport-top,
  *   height er bølgeflatens høyde rett før byttet.
  */
@@ -35,6 +36,7 @@ const WaveReveal = ({
     children,
     onFinish,
     getAnchorTop,
+    fadeWith,
     className = '',
     layerClassName = '',
 }) => {
@@ -117,17 +119,17 @@ const WaveReveal = ({
             return undefined;
         }
         timer = window.setTimeout(finish, SAFETY_MS);
-        // Biblioteket toner kvitteringslaget inn under fargen. Skjemaet og den faste send-linjen
-        // følger hver skriving til laget før neste bilde tegnes: skjemaet er borte når kvitteringen
-        // er 25 % synlig, send-linjen i takt med kvitteringen (--wave-revealed i CSS). Det virker
-        // likt for bølgen og for crossfaden ved Reduser bevegelse, uansett hvor lang overgangen er.
+        // Biblioteket toner kvitteringslaget inn under fargen. Skjemaet og fadeWith følger hver
+        // skriving til laget før neste bilde tegnes: skjemaet er borte når kvitteringen er 25 %
+        // synlig, fadeWith i takt med kvitteringen. Det virker likt for bølgen og for crossfaden
+        // ved Reduser bevegelse, uansett hvor lang overgangen er.
         const inner = contentInnerRef.current;
         const layer = revealedLayerRef.current;
-        const page = document.documentElement;
+        const outside = fadeWith?.current ?? null;
         const follow = () => {
             const shown = layer.style.opacity === '' ? 1 : Number(layer.style.opacity) || 0;
             inner.style.opacity = String(Math.max(0, 1 - shown * FORM_FADE_RATIO));
-            page.style.setProperty('--wave-revealed', String(shown));
+            if (outside) outside.style.opacity = String(1 - shown);
         };
         const observer = inner && layer ? new MutationObserver(follow) : null;
         if (observer) {
@@ -154,7 +156,7 @@ const WaveReveal = ({
             window.clearTimeout(timer);
             observer?.disconnect();
             if (inner) inner.style.opacity = '';
-            page.style.removeProperty('--wave-revealed');
+            if (outside) outside.style.opacity = '';
         };
         // getAnchorTop kalles bare i det revealed blir true.
         // eslint-disable-next-line react-hooks/exhaustive-deps

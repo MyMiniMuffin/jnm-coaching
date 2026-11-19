@@ -527,12 +527,9 @@ input:focus, textarea:focus, select:focus, button:focus-visible {
     100% { transform: translateX(0); }
 }
 
-/* Den faste send-linjen tones ut i takt med kvitteringen. WaveReveal setter --wave-revealed
-   (0–1) mens overgangen går. Før kvitteringen vises, står «Sendt» fullt synlig. */
+/* Den faste send-linjen tones ut i takt med kvitteringen (WaveReveal fadeWith) og tar ikke klikk imens. */
 .wave-leaving-bar.is-leaving {
-    opacity: calc(1 - var(--wave-revealed, 0));
     pointer-events: none;
-    transition-property: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -59,6 +59,7 @@ const OnboardingForm = () => {
     const [error, setError] = useState('');
     const sectionRef = useRef(null);
     const sendButtonRef = useRef(null);
+    const sendBarRef = useRef(null);
     const successRef = useRef(null);
     const successCardRef = useRef(null);
     const headingRef = useRef(null);
@@ -240,6 +241,7 @@ const OnboardingForm = () => {
             source={sendButtonRef}
             getAnchorTop={() => stickyHeaderBottom('.onboarding-header') + 16}
             onFinish={handleWaveFinish}
+            fadeWith={sendBarRef}
             className="onboarding-card onboarding-card-wave"
             layerClassName="onboarding-card-layer"
             revealedContent={status === 'revealing' ? success : null}
@@ -359,7 +361,7 @@ const OnboardingForm = () => {
         </WaveReveal>
 
         {/* Utenfor bølgens lag: fast linje med spinner som er live under hele innsendingen. */}
-        <div className={`onboarding-actions wave-leaving-bar${status === 'revealing' ? ' is-leaving' : ''}`}>
+        <div ref={sendBarRef} className={`onboarding-actions wave-leaving-bar${status === 'revealing' ? ' is-leaving' : ''}`}>
             <div className="onboarding-actions-inner flex items-center justify-between gap-3">
                 {currentStep > 0 ? (
                     <button type="button" onClick={previousStep} disabled={busy} className="onboarding-secondary-button">
