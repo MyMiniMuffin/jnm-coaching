@@ -35,7 +35,9 @@ jobs:
       - name: Install Chromium for Playwright
         run: |
           for attempt in 1 2 3; do
-            timeout 180 npx playwright install --with-deps chromium && exit 0
+            # A killed attempt can leave dpkg half-configured, so repair it before retrying.
+            [ "$attempt" -gt 1 ] && { sudo dpkg --configure -a || true; }
+            timeout -k 10 180 npx playwright install --with-deps chromium && exit 0
             echo "playwright install attempt $attempt failed or timed out"
           done
           exit 1
