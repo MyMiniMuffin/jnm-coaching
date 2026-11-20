@@ -1,14 +1,5 @@
 import { isNativeApp } from './platform';
 
-const VIEW_PREFETCHERS = [
-    () => import('../views/DashboardView'),
-    () => import('../views/CheckInView'),
-    () => import('../views/DietPlansSection'),
-    () => import('../views/WorkoutPlansSection'),
-    () => import('../views/GalleryView'),
-    () => import('../views/WeightProgressView')
-];
-
 const shouldPrefetchViews = () => {
     if (typeof navigator === 'undefined') return true;
     const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
@@ -17,15 +8,13 @@ const shouldPrefetchViews = () => {
     return !['slow-2g', '2g'].includes(connection.effectiveType);
 };
 
-export const prefetchViews = (role) => {
+// Preload lazyView chunks one by one so a tap after load renders without a skeleton.
+export const prefetchViews = (views) => {
     if (!shouldPrefetchViews()) return;
-    const prefetchers = role === 'coach'
-        ? [() => import('../views/CoachDashboard'), ...VIEW_PREFETCHERS]
-        : VIEW_PREFETCHERS;
-    prefetchers.forEach((prefetch, index) => {
+    views.forEach((view, index) => {
         setTimeout(() => {
             if (typeof document !== 'undefined' && document.hidden) return;
-            prefetch();
+            view.preload().catch(() => {});
         }, index * 180);
     });
 };

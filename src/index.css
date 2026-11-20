@@ -579,6 +579,18 @@ input:focus, textarea:focus, select:focus, button:focus-visible {
         transition-duration: 0.01ms !important;
         animation-delay: 0s !important;
     }
+
+    /* Entrances start from opacity 0 and only begin on the next frame, so even a
+       0.01ms run leaves content invisible for a frame or two. Show it as-is. */
+    .stagger-children > *,
+    .view-enter,
+    .animate-fade-in,
+    .animate-slide-up,
+    .animate-scale-in,
+    .animate-sheet-up,
+    .animate-toast-in {
+        animation: none !important;
+    }
 }
 
 /* Installer-popup: holdes innenfor safe area (hull, hjemmeindikator, sidekanter) */
@@ -596,13 +608,10 @@ input:focus, textarea:focus, select:focus, button:focus-visible {
 .stagger-children > :not(.fixed) {
     @apply animate-slide-up;
 }
-.stagger-children > :not(.fixed):nth-child(2) { animation-delay: 35ms; }
-.stagger-children > :not(.fixed):nth-child(3) { animation-delay: 70ms; }
-.stagger-children > :not(.fixed):nth-child(4) { animation-delay: 105ms; }
-.stagger-children > :not(.fixed):nth-child(5) { animation-delay: 140ms; }
-.stagger-children > :not(.fixed):nth-child(6) { animation-delay: 175ms; }
-.stagger-children > :not(.fixed):nth-child(7) { animation-delay: 210ms; }
-.stagger-children > :not(.fixed):nth-child(n + 8) { animation-delay: 245ms; }
+.stagger-children > :not(.fixed):nth-child(2) { animation-delay: 25ms; }
+.stagger-children > :not(.fixed):nth-child(3) { animation-delay: 50ms; }
+.stagger-children > :not(.fixed):nth-child(4) { animation-delay: 75ms; }
+.stagger-children > :not(.fixed):nth-child(n + 5) { animation-delay: 100ms; }
 
 /* A swipe already slides the whole view in; one motion is enough. */
 .view-enter .stagger-children > :not(.fixed) {

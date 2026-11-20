@@ -40,18 +40,20 @@ import Header from './components/Header';
 import Navigation from './components/Navigation';
 import InstallPrompt from './components/InstallPrompt';
 import { ViewErrorBoundary, ViewSkeleton } from './components/ViewBoundary';
+import { lazyView } from './lib/lazyView';
 
 // Varsel-trykk som kom mens coach ikke var innlogget; åpnes etter innlogging.
 const PENDING_PUSH_HINT_KEY = 'jnm_pending_push_client';
 
 // Views (lazy loaded — each gets its own chunk)
-const CoachDashboard = React.lazy(() => import('./views/CoachDashboard'));
-const DashboardView = React.lazy(() => import('./views/DashboardView'));
-const WeightProgressView = React.lazy(() => import('./views/WeightProgressView'));
-const GalleryView = React.lazy(() => import('./views/GalleryView'));
-const DietPlansSection = React.lazy(() => import('./views/DietPlansSection'));
-const WorkoutPlansSection = React.lazy(() => import('./views/WorkoutPlansSection'));
-const CheckInView = React.lazy(() => import('./views/CheckInView'));
+const CoachDashboard = lazyView(() => import('./views/CoachDashboard'));
+const DashboardView = lazyView(() => import('./views/DashboardView'));
+const WeightProgressView = lazyView(() => import('./views/WeightProgressView'));
+const GalleryView = lazyView(() => import('./views/GalleryView'));
+const DietPlansSection = lazyView(() => import('./views/DietPlansSection'));
+const WorkoutPlansSection = lazyView(() => import('./views/WorkoutPlansSection'));
+const CheckInView = lazyView(() => import('./views/CheckInView'));
+const ATHLETE_VIEWS = [DashboardView, CheckInView, DietPlansSection, WorkoutPlansSection, GalleryView, WeightProgressView];
 
 const isPlainObject = (value) => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 
@@ -509,12 +511,13 @@ const App = () => {
     // Prefetch view-chunks når appen er lastet (gjør tab-bytte instant)
     useEffect(() => {
         if (!currentUser) return;
+        const views = currentUser.role === 'coach' ? [CoachDashboard, ...ATHLETE_VIEWS] : ATHLETE_VIEWS;
 
         if ('requestIdleCallback' in window) {
-            const idleId = requestIdleCallback(() => prefetchViews(currentUser.role), { timeout: 3000 });
+            const idleId = requestIdleCallback(() => prefetchViews(views), { timeout: 3000 });
             return () => cancelIdleCallback(idleId);
         } else {
-            const timeoutId = setTimeout(() => prefetchViews(currentUser.role), 2000);
+            const timeoutId = setTimeout(() => prefetchViews(views), 2000);
             return () => clearTimeout(timeoutId);
         }
     }, [currentUser?.role]);

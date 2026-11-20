@@ -66,7 +66,7 @@ export default {
       // element afterwards (a lingering transform would trap position: fixed).
       animation: {
         'fade-in': 'fadeIn var(--dur-base) var(--ease-out-expo) backwards',
-        'slide-up': 'slideUp var(--dur-slow) var(--ease-spring) backwards',
+        'slide-up': 'slideUp var(--dur-base) var(--ease-spring) backwards',
         'scale-in': 'scaleIn var(--dur-slow) var(--ease-spring) backwards',
         'sheet-up': 'sheetUp var(--dur-slow) var(--ease-out-expo) backwards',
         'toast-in': 'toastIn var(--dur-slow) var(--ease-spring) backwards',
