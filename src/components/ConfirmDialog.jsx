@@ -58,7 +58,7 @@ export const ConfirmProvider = ({ children }) => {
                             <Button variant="secondary" size="md" className="flex-1" onClick={handleCancel}>
                                 {state.cancelText || 'Avbryt'}
                             </Button>
-                            <Button variant={state.destructive ? 'danger' : 'primary'} size="md" className="flex-1" onClick={handleConfirm} autoFocus>
+                            <Button variant={state.destructive ? 'danger' : 'primary'} size="md" className="flex-1" onClick={handleConfirm} data-autofocus>
                                 {state.confirmText || 'Bekreft'}
                             </Button>
                         </div>
