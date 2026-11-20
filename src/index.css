@@ -827,6 +827,12 @@ html[data-shell="wide"] .toast-stack {
     bottom: 2rem;
 }
 
+/* With the sidebar, content sits left-aligned beside it: centre toasts on that
+   column, not the window. Sidebar width and content max-width mirror the rules above. */
+html[data-shell="wide"]:has(.app-frame-nav) .toast-stack {
+    left: calc(12.5rem + min(100% - 12.5rem, 68rem) / 2);
+}
+
 @media (min-width: 1024px) {
     html[data-shell="wide"] {
         --app-gutter-x: 2rem;
@@ -843,6 +849,10 @@ html[data-shell="wide"] .toast-stack {
 
     html[data-shell="wide"] .app-frame-nav .plan-save-bar {
         left: 15.5rem;
+    }
+
+    html[data-shell="wide"]:has(.app-frame-nav) .toast-stack {
+        left: calc(15.5rem + min(100% - 15.5rem, 56rem) / 2);
     }
 }
 
