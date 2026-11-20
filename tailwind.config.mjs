@@ -69,9 +69,11 @@ export default {
         'slide-up': 'slideUp var(--dur-slow) var(--ease-spring) backwards',
         'scale-in': 'scaleIn var(--dur-slow) var(--ease-spring) backwards',
         'sheet-up': 'sheetUp var(--dur-slow) var(--ease-out-expo) backwards',
+        'toast-in': 'toastIn var(--dur-slow) var(--ease-spring) backwards',
         // Exits are quicker than entrances and hold their end state until unmount.
         'fade-out': 'fadeOut var(--dur-fast) var(--ease-out-expo) forwards',
         'scale-out': 'scaleOut var(--dur-fast) var(--ease-out-expo) forwards',
+        'toast-out': 'toastOut var(--dur-fast) var(--ease-out-expo) forwards',
       },
       keyframes: {
         fadeIn: {
@@ -91,6 +93,12 @@ export default {
         },
         scaleOut: {
           to: { opacity: '0', transform: 'scale(0.97)', filter: 'blur(4px)' },
+        },
+        toastIn: {
+          from: { opacity: '0', transform: 'translateY(12px) scale(0.96)', filter: 'blur(4px)' },
+        },
+        toastOut: {
+          to: { opacity: '0', transform: 'translateY(4px) scale(0.96)', filter: 'blur(4px)' },
         },
       },
       typography: (theme) => ({
