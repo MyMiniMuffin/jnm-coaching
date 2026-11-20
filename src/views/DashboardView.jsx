@@ -464,7 +464,7 @@ const PlanSettingsModal = React.memo(({ userData, onClose, onUpdateData, onOpenP
 
     return (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/60 backdrop-blur-sm sm:items-center sm:p-4 animate-fade-in">
-            <Card ref={modalRef} className="flex w-full max-w-lg max-h-[92dvh] flex-col overflow-hidden rounded-b-none sm:max-h-[90dvh] sm:rounded-b-xl animate-scale-in" role="dialog" aria-modal="true" aria-labelledby="plan-settings-title" onKeyDown={(event) => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); handleClose(); } }}>
+            <Card ref={modalRef} className="flex w-full max-w-lg max-h-[92dvh] flex-col overflow-hidden rounded-b-none sm:max-h-[90dvh] sm:rounded-b-xl animate-sheet-up sm:animate-scale-in" role="dialog" aria-modal="true" aria-labelledby="plan-settings-title" onKeyDown={(event) => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); handleClose(); } }}>
                 <div className="flex shrink-0 items-start justify-between gap-3 border-b border-surface-200 px-5 py-4 sm:px-6">
                     <div>
                         <h2 id="plan-settings-title" className="text-xl font-display">Planinnstillinger</h2>
@@ -720,7 +720,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
     }, [onUpdateData, toast]);
 
     return (
-        <div className="space-y-5 pb-32 duo:pb-8 animate-slide-up">
+        <div className="space-y-5 pb-32 duo:pb-8 stagger-children">
             {/* Period Management Modal */}
             {showPeriodModal && (
                 <PeriodManagementModal
@@ -790,7 +790,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                             </div>
                             <div className="h-2 bg-white/20 rounded-full overflow-hidden">
                                 <div
-                                    className="h-full bg-white rounded-full transition-[width] duration-500"
+                                    className="h-full bg-white rounded-full transition-[width] duration-slow ease-out-expo"
                                     style={{ width: `${progress}%` }}
                                 />
                             </div>

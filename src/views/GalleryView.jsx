@@ -588,7 +588,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
     }
 
     return (
-        <div className={`space-y-5 pb-32 duo:pb-8 animate-slide-up ${viewMode === 'compare' ? 'w-full duo:max-w-3xl duo:mx-auto' : ''}`}>
+        <div className={`space-y-5 pb-32 duo:pb-8 stagger-children ${viewMode === 'compare' ? 'w-full duo:max-w-3xl duo:mx-auto' : ''}`}>
             {uploadModal}
 
             {lightbox.isOpen && (

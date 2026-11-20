@@ -285,7 +285,7 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, newAthleteRequest
     }, [resetTarget, onResetPassword]);
 
     return (
-        <div className="space-y-3 pb-8 animate-slide-up">
+        <div className="space-y-3 pb-8 stagger-children">
             <DeletionRequests allUsers={allUsers} onSelectClient={onSelectClient} />
             {showModal && (
                 <div className="modal-backdrop fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in" onClick={closeModal}>

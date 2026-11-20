@@ -157,7 +157,7 @@ const WeightProgressView = React.memo(({ checkins = EMPTY_LIST, periods = EMPTY_
     const activePoint = chartPoints[activeIndex];
 
     return (
-        <div className="space-y-6 animate-slide-up pb-32 duo:pb-8" data-testid="weight-progress-view">
+        <div className="space-y-6 stagger-children pb-32 duo:pb-8" data-testid="weight-progress-view">
             <div className="flex items-center gap-2">
                 {!isRail && (
                     <IconButton onClick={onBack} aria-label="Tilbake til oversikten" className="-ml-2" data-testid="weight-progress-back">

@@ -2,6 +2,8 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 
 // --- Toast Notification System ---
 const ToastContext = React.createContext();
+const TOAST_MS = 3000;
+const EXIT_MS = 160; // --dur-fast
 
 export const ToastProvider = ({ children }) => {
     const [toasts, setToasts] = useState([]);
@@ -15,9 +17,8 @@ export const ToastProvider = ({ children }) => {
     const show = useCallback((message, type = 'success') => {
         const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
         setToasts(prev => [...prev.slice(-2), { id, message, type, exiting: false }]);
-        // Start fade-out 2.5s in, remove at 3s
-        const fadeTimer = setTimeout(() => setToasts(prev => prev.map(t => t.id === id ? { ...t, exiting: true } : t)), 2500);
-        const removeTimer = setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000);
+        const fadeTimer = setTimeout(() => setToasts(prev => prev.map(t => t.id === id ? { ...t, exiting: true } : t)), TOAST_MS - EXIT_MS);
+        const removeTimer = setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), TOAST_MS);
         timersRef.current.push(fadeTimer, removeTimer);
     }, []);
     return (
@@ -29,9 +30,7 @@ export const ToastProvider = ({ children }) => {
                         <div
                             key={t.id}
                             role={t.type === 'error' ? 'alert' : undefined}
-                            className={`px-4 py-3 rounded-xl shadow-lg text-sm font-medium animate-slide-up text-center transition-opacity duration-500 ${
-                                t.exiting ? 'opacity-0' : 'opacity-100'
-                            } ${
+                            className={`px-4 py-3 rounded-xl shadow-lg text-sm font-medium text-center ${t.exiting ? 'animate-toast-out' : 'animate-toast-in'} ${
                                 t.type === 'success' ? 'bg-success text-white' :
                                 t.type === 'error' ? 'bg-error text-white' : 'bg-ink text-white'
                             }`}

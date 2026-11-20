@@ -1544,7 +1544,7 @@ const App = () => {
         swipeEdgeTimeoutRef.current = window.setTimeout(() => {
             setSwipeEdge(null);
             swipeEdgeTimeoutRef.current = null;
-        }, 220);
+        }, 240);
     }, []);
 
     useEffect(() => () => {

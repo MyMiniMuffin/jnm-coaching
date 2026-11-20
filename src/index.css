@@ -117,6 +117,21 @@ select {
     /* Shared content column: frame owns max-width; header + main share gutter. */
     --app-column-max: 28rem;
     --app-gutter-x: 1rem;
+    /* Motion tokens. Springs fall back to out-expo where linear() is missing. */
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-spring: var(--ease-out-expo);
+    --ease-spring-snappy: var(--ease-out-expo);
+    --dur-fast: 160ms;
+    --dur-base: 240ms;
+    --dur-slow: 320ms;
+}
+
+@supports (transition-timing-function: linear(0, 1)) {
+    :root {
+        /* Damped springs: ~6% and ~1.5% overshoot. */
+        --ease-spring: linear(0, 0.068, 0.223, 0.41, 0.592, 0.749, 0.871, 0.958, 1.014, 1.045, 1.057, 1.058, 1.05, 1.04, 1.029, 1.019, 1.011, 1.005, 1.001, 0.998, 0.997, 0.997, 0.997, 0.997, 1);
+        --ease-spring-snappy: linear(0, 0.047, 0.156, 0.292, 0.432, 0.563, 0.678, 0.772, 0.847, 0.904, 0.946, 0.975, 0.994, 1.006, 1.012, 1.015, 1.015, 1.014, 1.012, 1.01, 1.008, 1.006, 1.004, 1.003, 1);
+    }
 }
 
 .duo-split-grid {
@@ -507,42 +522,36 @@ input:focus, textarea:focus, select:focus, button:focus-visible {
     @apply ring-white;
 }
 
-/* View transition — subtil fade ved tab-bytte */
+/* View transition — subtil fade ved tab-bytte.
+   No will-change: it would make this wrapper the containing block for
+   fixed modals inside the view for as long as the class stays on. */
 .view-enter {
-    animation: viewEnter 0.2s ease-out;
-    will-change: opacity, transform;
+    animation: viewEnter var(--dur-base) var(--ease-spring) backwards;
 }
 
 .view-enter-left {
     animation-name: viewEnterLeft;
-    animation-duration: 0.24s;
-    animation-timing-function: cubic-bezier(0.2, 0.85, 0.25, 1);
 }
 
 .view-enter-right {
     animation-name: viewEnterRight;
-    animation-duration: 0.24s;
-    animation-timing-function: cubic-bezier(0.2, 0.85, 0.25, 1);
 }
 
 .view-edge-left {
-    animation: viewEdgeLeft 0.22s cubic-bezier(0.2, 0.85, 0.25, 1);
+    animation: viewEdgeLeft var(--dur-base) var(--ease-out-expo);
 }
 
 .view-edge-right {
-    animation: viewEdgeRight 0.22s cubic-bezier(0.2, 0.85, 0.25, 1);
+    animation: viewEdgeRight var(--dur-base) var(--ease-out-expo);
 }
 @keyframes viewEnter {
-    from { opacity: 0; transform: translateY(6px); }
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(6px); filter: blur(3px); }
 }
 @keyframes viewEnterLeft {
-    from { opacity: 0; transform: translateX(22px); }
-    to { opacity: 1; transform: translateX(0); }
+    from { opacity: 0; transform: translateX(22px); filter: blur(3px); }
 }
 @keyframes viewEnterRight {
-    from { opacity: 0; transform: translateX(-22px); }
-    to { opacity: 1; transform: translateX(0); }
+    from { opacity: 0; transform: translateX(-22px); filter: blur(3px); }
 }
 @keyframes viewEdgeLeft {
     0% { transform: translateX(0); }
@@ -568,6 +577,7 @@ input:focus, textarea:focus, select:focus, button:focus-visible {
         animation-iteration-count: 1 !important;
         scroll-behavior: auto !important;
         transition-duration: 0.01ms !important;
+        animation-delay: 0s !important;
     }
 }
 
@@ -581,9 +591,36 @@ input:focus, textarea:focus, select:focus, button:focus-visible {
     overscroll-behavior: contain;
 }
 
+/* Children rise in one after another. Fixed children (modals) keep their own
+   entrance. Fill backwards only, so nothing keeps a transform afterwards. */
+.stagger-children > :not(.fixed) {
+    @apply animate-slide-up;
+}
+.stagger-children > :not(.fixed):nth-child(2) { animation-delay: 35ms; }
+.stagger-children > :not(.fixed):nth-child(3) { animation-delay: 70ms; }
+.stagger-children > :not(.fixed):nth-child(4) { animation-delay: 105ms; }
+.stagger-children > :not(.fixed):nth-child(5) { animation-delay: 140ms; }
+.stagger-children > :not(.fixed):nth-child(6) { animation-delay: 175ms; }
+.stagger-children > :not(.fixed):nth-child(7) { animation-delay: 210ms; }
+.stagger-children > :not(.fixed):nth-child(n + 8) { animation-delay: 245ms; }
+
+/* A swipe already slides the whole view in; one motion is enough. */
+.view-enter .stagger-children > :not(.fixed) {
+    animation-name: none;
+}
+
+/* Active bottom-nav icon pops once when its tab becomes active. */
+.nav-icon-pop {
+    animation: navIconPop var(--dur-base) var(--ease-out-expo);
+    transform-origin: center;
+}
+@keyframes navIconPop {
+    40% { transform: scale(1.08); }
+}
+
 /* Nav pill indicator */
 .nav-pill {
-    transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.2s ease;
+    transition: transform var(--dur-slow) var(--ease-spring-snappy), box-shadow var(--dur-base) var(--ease-out-expo);
     background: rgba(255, 255, 255, 0.92);
     box-shadow: 0 4px 14px rgba(23, 23, 23, 0.08);
 }
@@ -609,7 +646,9 @@ input:focus, textarea:focus, select:focus, button:focus-visible {
 }
 
 .surface-card-interactive {
-    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+    transition-property: transform, box-shadow, border-color, background-color;
+    transition-duration: var(--dur-base);
+    transition-timing-function: var(--ease-spring);
 }
 
 .surface-card.report-card {
@@ -633,6 +672,12 @@ input:focus, textarea:focus, select:focus, button:focus-visible {
     box-shadow:
         0 2px 4px rgba(23, 23, 23, 0.05),
         0 12px 28px rgba(23, 23, 23, 0.07);
+}
+
+.surface-card-interactive:active {
+    transform: scale(0.99);
+    transition-duration: 100ms;
+    transition-timing-function: var(--ease-out-expo);
 }
 
 .app-shell,

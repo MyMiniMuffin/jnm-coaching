@@ -233,6 +233,22 @@ export const useDesktop = () => useShellWide();
 
 export { useShellMode, useShellWide, useShellRail };
 
+// --- Presence: hold et element montert mens utgangsanimasjonen spiller ---
+export const usePresence = (open, durationMs) => {
+    const [mounted, setMounted] = useState(open);
+
+    useEffect(() => {
+        if (open) {
+            setMounted(true);
+            return undefined;
+        }
+        const timer = setTimeout(() => setMounted(false), durationMs);
+        return () => clearTimeout(timer);
+    }, [open, durationMs]);
+
+    return { mounted: open || mounted, closing: !open && mounted };
+};
+
 // --- Fokus-trapping hook for modaler ---
 export const useFocusTrap = (active = true) => {
     const ref = React.useRef(null);
@@ -241,10 +257,13 @@ export const useFocusTrap = (active = true) => {
         if (!active || !ref.current) return;
         const element = ref.current;
 
-        // Flytt fokus til modal
+        // Flytt fokus til modal. Fellen eier startfokus via data-autofocus:
+        // Reacts autoFocus flytter fokus før denne effekten kjører, og da ville
+        // fellen lagre et element i modalen som «forrige fokus».
         const previouslyFocused = document.activeElement;
-        const focusable = element.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-        if (focusable.length > 0) focusable[0].focus();
+        const initial = element.querySelector('[data-autofocus]')
+            || element.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        initial?.focus();
 
         const handleKeyDown = (e) => {
             if (e.key !== 'Tab') return;
