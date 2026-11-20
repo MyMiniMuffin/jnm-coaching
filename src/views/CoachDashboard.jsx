@@ -125,10 +125,6 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, newAthleteRequest
         activeClients: (Array.isArray(allUsers) ? allUsers : []).filter(u => u.role === 'athlete' && !u.is_archived),
         archivedClients: (Array.isArray(allUsers) ? allUsers : []).filter(u => u.role === 'athlete' && u.is_archived)
     }), [allUsers]);
-    const totalUnreadCheckins = useMemo(
-        () => activeClients.reduce((sum, client) => sum + (Number(client.unreadCheckins) || 0), 0),
-        [activeClients]
-    );
 
     const displayedClients = useMemo(() => {
         const source = showArchived ? archivedClients : activeClients;
@@ -333,15 +329,6 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, newAthleteRequest
                 </div>
             )}
 
-            {/* Slim summary: one calm line, the unread count is the only accent */}
-            <p className="px-1 text-sm tabular-nums text-ink-muted" data-testid="coach-summary">
-                {activeClients.length} {activeClients.length === 1 ? 'aktiv' : 'aktive'}
-                {' · '}
-                <span className={totalUnreadCheckins > 0 ? 'font-medium text-accent' : undefined}>
-                    {totalUnreadCheckins} {totalUnreadCheckins === 1 ? 'ulest' : 'uleste'}
-                </span>
-            </p>
-
             {/* One-row toolbar: segments left, search and sort as icon buttons right */}
             <div className="flex items-center gap-1" data-testid="coach-toolbar">
                 <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -351,7 +338,7 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, newAthleteRequest
                         onChange={(value) => value === 'archived' ? showArchivedClients() : showActive()}
                         options={[
                             { value: 'active', label: 'Aktive' },
-                            { value: 'archived', label: archivedClients.length > 0 ? <>Arkivert <span className="tabular-nums">{archivedClients.length}</span></> : 'Arkivert' }
+                            { value: 'archived', label: 'Arkivert' }
                         ]}
                     />
                     {isLoading && displayedClients.length > 0 && (
