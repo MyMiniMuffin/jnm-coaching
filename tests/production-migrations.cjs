@@ -20,6 +20,7 @@ function createNeon1Mock() {
       if (text.includes('coach_api_keys')) return Array.from({ length: 10 }, () => ({}));
       if (text.includes('account_deletion_requests')) return Array.from({ length: 4 }, () => ({}));
       if (text.includes('handled_at')) return [{}];
+      if (text.includes('idempotency_key') || text.includes('password_changed_at')) return [{}];
       if (text.includes('form_submissions')) return Array.from({ length: 3 }, () => ({}));
       if (text.includes('push_subscriptions')) {
         return [
@@ -71,15 +72,15 @@ test('production migrations send separate SQL statements and verify the resultin
   assert.ok(queries.some(query => query.includes('ALTER COLUMN auth DROP NOT NULL')));
 });
 
-test('migration script runs every migration file 003-013 through sql.query', async () => {
+test('migration script runs every migration file 003-016 through sql.query', async () => {
   const { sql, queryCalls } = createNeon1Mock();
   const { failures } = await runScript(source, sql);
   assert.deepEqual(failures, []);
   const migrationsDirectory = path.join(__dirname, '../migrations');
   const files = fs.readdirSync(migrationsDirectory)
-    .filter(name => /^0(0[3-9]|1[0-3])_.*\.sql$/.test(name))
+    .filter(name => /^0(0[3-9]|1[0-6])_.*\.sql$/.test(name))
     .sort();
-  assert.equal(files.length, 11);
+  assert.equal(files.length, 14);
   const expected = files.map(name => fs.readFileSync(path.join(migrationsDirectory, name), 'utf8'));
   assert.deepEqual(queryCalls, expected);
 });

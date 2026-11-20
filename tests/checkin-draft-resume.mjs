@@ -73,3 +73,50 @@ test('autolagring gjenopptas etter send → bølge ferdig → slett → skriv �
         await server.close();
     }
 });
+
+test('forkastet utkast etter tapt svar får ny innsendingsnøkkel', async () => {
+    const server = await createServer({
+        root: ROOT,
+        configFile: join(ROOT, 'vite.config.js'),
+        logLevel: 'error',
+        server: { host: '127.0.0.1', port: 0, strictPort: false },
+    });
+    await server.listen();
+    const base = server.resolvedUrls.local[0].replace(/\/$/, '');
+    let browser;
+    try {
+        browser = await chromium.launch();
+        const context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+        await context.route((u) => !['127.0.0.1', 'localhost'].includes(u.hostname), (route) => route.abort());
+        const page = await context.newPage();
+        await page.addInitScript(() => {
+            if (sessionStorage.getItem('fixture_reports')) return;
+            const d = new Date();
+            const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            sessionStorage.setItem('fixture_reports', JSON.stringify([{ id: 'srv-1', date: today, timestamp: Date.now(), weight: 80 }]));
+        });
+        await page.goto(`${base}/tests/fixtures/checkin-draft/index.html`);
+        const weight = page.locator('#checkin-weight');
+        const compose = async (value) => {
+            await page.getByRole('button', { name: /Send ny rapport/ }).click();
+            await weight.waitFor();
+            await weight.fill(value);
+        };
+
+        await compose('79');
+        await page.evaluate(() => { window.__failNext = true; });
+        await page.getByRole('button', { name: /Send rapport/ }).click();
+        await page.getByText('Kunne ikke sende rapporten').first().waitFor();
+        await page.getByRole('button', { name: 'Avbryt' }).filter({ visible: true }).first().click();
+
+        await compose('78');
+        await page.getByRole('button', { name: /Send rapport/ }).click();
+        await page.waitForFunction(() => (window.__keys || []).length === 2);
+        const [first, second] = await page.evaluate(() => window.__keys);
+        assert.ok(first && second);
+        assert.notEqual(second, first, 'ny rapport skal ikke gjenbruke nøkkelen til det forkastede utkastet');
+    } finally {
+        await browser?.close();
+        await server.close();
+    }
+});

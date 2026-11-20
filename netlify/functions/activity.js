@@ -1,5 +1,5 @@
 const { neon } = require('@neondatabase/serverless');
-const { requireAuth } = require('./auth-middleware');
+const { requireAuth, rejectStaleSession } = require('./auth-middleware');
 const { jsonResponse } = require('./http-utils');
 
 const sql = neon(process.env.NETLIFY_DATABASE_URL);
@@ -22,13 +22,16 @@ exports.handler = async (event) => {
           AND (last_active_at IS NULL OR last_active_at < NOW() - INTERVAL '1 minute')
         RETURNING id
       )
-      SELECT COALESCE(is_archived, false) AS is_archived
+      SELECT COALESCE(is_archived, false) AS is_archived, password_changed_at
       FROM users
       WHERE id = ${auth.userId}
     `;
 
+    const stale = rejectStaleSession(auth, rows[0]);
+    if (stale) return { statusCode: stale.statusCode, body: stale.body };
+
     return jsonResponse(200, {
-      isArchived: Boolean(rows[0]?.is_archived)
+      isArchived: Boolean(rows[0].is_archived)
     }, { 'Cache-Control': 'no-store' });
   } catch (error) {
     console.error('Kunne ikke registrere aktivitet:', error);

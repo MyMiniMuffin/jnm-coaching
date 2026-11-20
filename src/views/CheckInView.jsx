@@ -14,6 +14,7 @@ import { useRegisterRailBack } from '../lib/railBack';
 import { useShellRail } from '../hooks';
 import WaveReveal from '../components/WaveReveal';
 import { keepInPlace, stickyHeaderBottom } from '../lib/wave';
+import { getSubmissionKey, clearSubmissionKey } from '../lib/submissionKey';
 
 const ImageModal = React.lazy(() => import('../components/ImageModal'));
 
@@ -359,6 +360,8 @@ const CheckInView = React.memo(({
                     localStorage.setItem(storageKey, JSON.stringify(formData));
                 } else {
                     localStorage.removeItem(storageKey);
+                    // Tømt skjema er et nytt utkast: neste innhold får ny nøkkel.
+                    clearSubmissionKey(storageKey);
                 }
             } catch (e) {
                 console.error('[CheckIn] Kunne ikke lagre utkast:', e);
@@ -460,6 +463,8 @@ const CheckInView = React.memo(({
         setFormData(INITIAL_FORM_DATA);
         setRestoredDraft(false);
         try { localStorage.removeItem(storageKey); } catch (e) {}
+        // Et forkastet utkast skal ikke dele nøkkel med neste rapport.
+        clearSubmissionKey(storageKey);
     }, [storageKey]);
 
     // Duo rail back when composing over an existing weekly report.
@@ -467,6 +472,7 @@ const CheckInView = React.memo(({
 
     const clearDraft = useCallback(() => {
         try { localStorage.removeItem(storageKey); } catch (e) {}
+        clearSubmissionKey(storageKey);
         setRestoredDraft(false);
     }, [storageKey]);
 
@@ -516,7 +522,8 @@ const CheckInView = React.memo(({
                 id: Date.now(),
                 date: todayLocalISODate(),
                 timestamp: Date.now(),
-                ...formData
+                ...formData,
+                idempotencyKey: getSubmissionKey(storageKey)
             };
             const saved = await onNewCheckin(newEntry);
             if (saved === null) {
@@ -539,7 +546,7 @@ const CheckInView = React.memo(({
         } finally {
             submitGuardRef.current = false;
         }
-    }, [formData, onNewCheckin, finishSubmit, clearDraft, toast, isPreview, thisWeekReport, lastWeight]);
+    }, [formData, onNewCheckin, finishSubmit, clearDraft, toast, isPreview, thisWeekReport, lastWeight, storageKey]);
 
     const [visibleReportCount, setVisibleReportCount] = useState(REPORT_BATCH_SIZE);
     const visibleCheckins = useMemo(

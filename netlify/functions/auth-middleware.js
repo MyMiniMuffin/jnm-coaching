@@ -44,7 +44,8 @@ const verifyToken = (event) => {
       success: true,
       userId: decoded.userId,
       username: decoded.username,
-      role: decoded.role
+      role: decoded.role,
+      iat: decoded.iat
     };
   } catch (error) {
     console.error('Auth middleware: Token verification feilet:', error.name, error.message);
@@ -102,7 +103,22 @@ const requireOwnership = (event, requestedUserId) => {
   return authResult;
 };
 
+// Token alene sier ikke at brukeren fortsatt finnes eller at passordet er uendret.
+// Kalles med brukerraden (id-oppslag) fra token-eieren; null betyr gyldig sesjon.
+const rejectStaleSession = (auth, userRow) => {
+  const changedSeconds = userRow?.password_changed_at
+    ? Math.floor(new Date(userRow.password_changed_at).getTime() / 1000)
+    : 0;
+  if (userRow && !(auth.iat < changedSeconds)) return null;
+  return {
+    success: false,
+    statusCode: 401,
+    body: JSON.stringify({ error: 'Sesjonen er ikke lenger gyldig. Vennligst logg inn på nytt.' })
+  };
+};
+
 module.exports = {
+  rejectStaleSession,
   verifyToken,
   requireAuth,
   requireOwnership
