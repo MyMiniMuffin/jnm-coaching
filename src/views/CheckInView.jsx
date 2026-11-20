@@ -742,7 +742,7 @@ const CheckInView = React.memo(({
     );
 
     return (
-        <div className={`space-y-5 animate-slide-up ${showForm ? 'pb-52 duo:pb-24' : 'pb-32 duo:pb-8'}`}>
+        <div className={`space-y-5 stagger-children ${showForm ? 'pb-52 duo:pb-24' : 'pb-32 duo:pb-8'}`}>
             {lightbox.isOpen && (
                 <React.Suspense fallback={<ImageViewerLoading onClose={closeLightbox} />}>
                     <ImageModal canDownload={canDownloadImages} images={lightbox.images} initialIndex={lightbox.index} onClose={closeLightbox} />

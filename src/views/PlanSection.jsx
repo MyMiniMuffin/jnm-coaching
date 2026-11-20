@@ -428,7 +428,7 @@ const PlanSection = React.memo(({ type, content, onSave, isReadOnly, isArchived 
     const displayPlan = isEditing ? draft : parsedPlan;
 
     return (
-        <div className={`space-y-5 animate-slide-up ${isEditing && !isReadOnly ? 'pb-52 duo:pb-24' : 'pb-32 duo:pb-8'}`}>
+        <div className={`space-y-5 stagger-children ${isEditing && !isReadOnly ? 'pb-52 duo:pb-24' : 'pb-32 duo:pb-8'}`}>
             {isArchived && (
                 <p role="status" className="rounded-xl border border-surface-200 bg-surface-100 px-4 py-3 text-sm text-ink-muted">
                     Utøveren er arkivert. Gjenopprett utøveren fra utøverlisten før du endrer planen.

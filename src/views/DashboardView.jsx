@@ -720,7 +720,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
     }, [onUpdateData, toast]);
 
     return (
-        <div className="space-y-5 pb-32 duo:pb-8 animate-slide-up">
+        <div className="space-y-5 pb-32 duo:pb-8 stagger-children">
             {/* Period Management Modal */}
             {showPeriodModal && (
                 <PeriodManagementModal

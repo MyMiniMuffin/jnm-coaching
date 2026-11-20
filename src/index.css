@@ -522,22 +522,19 @@ input:focus, textarea:focus, select:focus, button:focus-visible {
     @apply ring-white;
 }
 
-/* View transition — subtil fade ved tab-bytte */
+/* View transition — subtil fade ved tab-bytte.
+   No will-change: it would make this wrapper the containing block for
+   fixed modals inside the view for as long as the class stays on. */
 .view-enter {
-    animation: viewEnter 0.2s ease-out;
-    will-change: opacity, transform;
+    animation: viewEnter var(--dur-base) var(--ease-spring) backwards;
 }
 
 .view-enter-left {
     animation-name: viewEnterLeft;
-    animation-duration: var(--dur-base);
-    animation-timing-function: var(--ease-out-expo);
 }
 
 .view-enter-right {
     animation-name: viewEnterRight;
-    animation-duration: var(--dur-base);
-    animation-timing-function: var(--ease-out-expo);
 }
 
 .view-edge-left {
@@ -548,16 +545,13 @@ input:focus, textarea:focus, select:focus, button:focus-visible {
     animation: viewEdgeRight var(--dur-base) var(--ease-out-expo);
 }
 @keyframes viewEnter {
-    from { opacity: 0; transform: translateY(6px); }
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(6px); filter: blur(3px); }
 }
 @keyframes viewEnterLeft {
-    from { opacity: 0; transform: translateX(22px); }
-    to { opacity: 1; transform: translateX(0); }
+    from { opacity: 0; transform: translateX(22px); filter: blur(3px); }
 }
 @keyframes viewEnterRight {
-    from { opacity: 0; transform: translateX(-22px); }
-    to { opacity: 1; transform: translateX(0); }
+    from { opacity: 0; transform: translateX(-22px); filter: blur(3px); }
 }
 @keyframes viewEdgeLeft {
     0% { transform: translateX(0); }
@@ -583,6 +577,7 @@ input:focus, textarea:focus, select:focus, button:focus-visible {
         animation-iteration-count: 1 !important;
         scroll-behavior: auto !important;
         transition-duration: 0.01ms !important;
+        animation-delay: 0s !important;
     }
 }
 
@@ -594,6 +589,24 @@ input:focus, textarea:focus, select:focus, button:focus-visible {
         max(1rem, env(safe-area-inset-bottom, 0px))
         max(1rem, env(safe-area-inset-left, 0px));
     overscroll-behavior: contain;
+}
+
+/* Children rise in one after another. Fixed children (modals) keep their own
+   entrance. Fill backwards only, so nothing keeps a transform afterwards. */
+.stagger-children > :not(.fixed) {
+    @apply animate-slide-up;
+}
+.stagger-children > :not(.fixed):nth-child(2) { animation-delay: 35ms; }
+.stagger-children > :not(.fixed):nth-child(3) { animation-delay: 70ms; }
+.stagger-children > :not(.fixed):nth-child(4) { animation-delay: 105ms; }
+.stagger-children > :not(.fixed):nth-child(5) { animation-delay: 140ms; }
+.stagger-children > :not(.fixed):nth-child(6) { animation-delay: 175ms; }
+.stagger-children > :not(.fixed):nth-child(7) { animation-delay: 210ms; }
+.stagger-children > :not(.fixed):nth-child(n + 8) { animation-delay: 245ms; }
+
+/* A swipe already slides the whole view in; one motion is enough. */
+.view-enter .stagger-children > :not(.fixed) {
+    animation-name: none;
 }
 
 /* Nav pill indicator */
