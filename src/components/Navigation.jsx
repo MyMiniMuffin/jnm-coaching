@@ -17,7 +17,7 @@ const NavButton = React.memo(({ item, isActive, onClick, variant }) => {
                 type="button"
                 onClick={() => onClick(item.id)}
                 aria-current={isActive ? 'page' : undefined}
-                className={`flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                className={`flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-[background-color,color,box-shadow] duration-base ease-out-expo focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                     isActive
                         ? 'bg-white text-accent-hover font-semibold shadow-sm ring-1 ring-surface-200'
                         : 'text-ink-muted font-medium hover:bg-white/70 hover:text-ink'
@@ -36,7 +36,7 @@ const NavButton = React.memo(({ item, isActive, onClick, variant }) => {
                 onClick={() => onClick(item.id)}
                 aria-label={item.label}
                 aria-current={isActive ? 'page' : undefined}
-                className={`app-rail-btn rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                className={`app-rail-btn rounded-full transition-[background-color,color,box-shadow] duration-base ease-out-expo focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                     isActive
                         ? 'bg-white text-accent-hover shadow-sm ring-1 ring-surface-200/70'
                         : 'text-ink-muted hover:bg-white/60 hover:text-ink'
@@ -53,9 +53,9 @@ const NavButton = React.memo(({ item, isActive, onClick, variant }) => {
             onClick={() => onClick(item.id)}
             aria-label={item.label}
             aria-current={isActive ? 'page' : undefined}
-            className={`relative z-10 flex flex-col items-center justify-center gap-1 min-h-[48px] min-w-[44px] rounded-xl transition-transform duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${isActive ? 'text-accent-hover' : 'text-ink-muted'}`}
+            className={`relative z-10 flex flex-col items-center justify-center gap-1 min-h-[48px] min-w-[44px] rounded-xl transition-transform duration-base ease-spring active:scale-[0.98] active:duration-100 active:ease-out-expo focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${isActive ? 'text-accent-hover' : 'text-ink-muted'}`}
         >
-            <Icon size={22} weight={isActive ? 'fill' : 'regular'} />
+            <Icon size={22} weight={isActive ? 'fill' : 'regular'} className={isActive ? 'nav-icon-pop' : undefined} />
             <span className={`text-[11px] ${isActive ? 'font-semibold' : 'font-medium'}`}>{item.label}</span>
         </button>
     );

@@ -609,9 +609,18 @@ input:focus, textarea:focus, select:focus, button:focus-visible {
     animation-name: none;
 }
 
+/* Active bottom-nav icon pops once when its tab becomes active. */
+.nav-icon-pop {
+    animation: navIconPop var(--dur-base) var(--ease-out-expo);
+    transform-origin: center;
+}
+@keyframes navIconPop {
+    40% { transform: scale(1.08); }
+}
+
 /* Nav pill indicator */
 .nav-pill {
-    transition: transform var(--dur-base) var(--ease-out-expo), box-shadow var(--dur-base) var(--ease-out-expo);
+    transition: transform var(--dur-slow) var(--ease-spring-snappy), box-shadow var(--dur-base) var(--ease-out-expo);
     background: rgba(255, 255, 255, 0.92);
     box-shadow: 0 4px 14px rgba(23, 23, 23, 0.08);
 }
