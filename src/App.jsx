@@ -1738,6 +1738,7 @@ const App = () => {
                 onLogout={handleLogout}
                 onClearClient={handleClearClient}
                 hideClientBack={isRail}
+                hideLogo={isWide}
                 isOffline={!isOnline}
                 notificationPermission={notificationPermission}
                 onEnableNotifications={requestCoachPushNotifications}
