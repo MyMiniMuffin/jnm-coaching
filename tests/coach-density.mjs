@@ -122,14 +122,9 @@ test('dashboard still renders deletion requests unchanged and never the mailbox 
     assert.doesNotMatch(dashboard, /Behandlede henvendelser|SubmissionItem/);
 });
 
-test('hero card is a slim one-line summary, unread highlighted only when > 0', () => {
+test('dashboard has no hero card and no active/unread summary line', () => {
     assert.doesNotMatch(dashboard, /hero-tint|Oversikt|font-display leading-tight|grid-cols-3/);
-    assert.match(dashboard, /data-testid="coach-summary"/);
-    assert.match(dashboard, /'aktiv' : 'aktive'/);
-    assert.match(dashboard, /'ulest' : 'uleste'/);
-    assert.match(dashboard, /totalUnreadCheckins > 0 \? 'font-medium text-accent' : undefined/);
-    assert.match(dashboard, /tabular-nums/);
-    assert.match(dashboard, /\{' · '\}/);
+    assert.doesNotMatch(dashboard, /coach-summary|totalUnreadCheckins|'aktiv' : 'aktive'|'ulest' : 'uleste'|\{' · '\}/);
 });
 
 test('push status moved out of the dashboard into the coach-only account menu', () => {
@@ -146,8 +141,9 @@ test('push status moved out of the dashboard into the coach-only account menu', 
     assert.match(app, /Systemvarsler er blokkert i nettleseren/);
 });
 
-test('archived count lives on the segment label', () => {
-    assert.match(dashboard, /label: archivedClients\.length > 0 \? <>Arkivert <span className="tabular-nums">\{archivedClients\.length\}<\/span><\/> : 'Arkivert'/);
+test('archived segment label is plain, without a count', () => {
+    assert.match(dashboard, /\{ value: 'archived', label: 'Arkivert' \}/);
+    assert.doesNotMatch(dashboard, /Arkivert <span/);
 });
 
 test('segments, search and sort share one row', () => {
