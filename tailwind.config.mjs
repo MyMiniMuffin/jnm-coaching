@@ -68,6 +68,10 @@ export default {
         'fade-in': 'fadeIn var(--dur-base) var(--ease-out-expo) backwards',
         'slide-up': 'slideUp var(--dur-slow) var(--ease-spring) backwards',
         'scale-in': 'scaleIn var(--dur-slow) var(--ease-spring) backwards',
+        'sheet-up': 'sheetUp var(--dur-slow) var(--ease-out-expo) backwards',
+        // Exits are quicker than entrances and hold their end state until unmount.
+        'fade-out': 'fadeOut var(--dur-fast) var(--ease-out-expo) forwards',
+        'scale-out': 'scaleOut var(--dur-fast) var(--ease-out-expo) forwards',
       },
       keyframes: {
         fadeIn: {
@@ -78,6 +82,15 @@ export default {
         },
         scaleIn: {
           from: { opacity: '0', transform: 'scale(0.96)', filter: 'blur(4px)' },
+        },
+        sheetUp: {
+          from: { transform: 'translateY(100%)' },
+        },
+        fadeOut: {
+          to: { opacity: '0' },
+        },
+        scaleOut: {
+          to: { opacity: '0', transform: 'scale(0.97)', filter: 'blur(4px)' },
         },
       },
       typography: (theme) => ({

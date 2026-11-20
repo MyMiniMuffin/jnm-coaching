@@ -233,6 +233,22 @@ export const useDesktop = () => useShellWide();
 
 export { useShellMode, useShellWide, useShellRail };
 
+// --- Presence: hold et element montert mens utgangsanimasjonen spiller ---
+export const usePresence = (open, durationMs) => {
+    const [mounted, setMounted] = useState(open);
+
+    useEffect(() => {
+        if (open) {
+            setMounted(true);
+            return undefined;
+        }
+        const timer = setTimeout(() => setMounted(false), durationMs);
+        return () => clearTimeout(timer);
+    }, [open, durationMs]);
+
+    return { mounted: open || mounted, closing: !open && mounted };
+};
+
 // --- Fokus-trapping hook for modaler ---
 export const useFocusTrap = (active = true) => {
     const ref = React.useRef(null);

@@ -1,45 +1,48 @@
 import React, { useState, useCallback } from 'react';
 import { Card, Button } from './ui';
 import { Warning } from '@phosphor-icons/react';
-import { useFocusTrap } from '../hooks';
+import { useFocusTrap, usePresence } from '../hooks';
 import { haptic } from '../lib/haptic';
 
 const ConfirmContext = React.createContext();
+const EXIT_MS = 160; // --dur-fast
 
 export const ConfirmProvider = ({ children }) => {
     const [state, setState] = useState(null);
 
     const confirm = useCallback((message, options = {}) => {
         return new Promise((resolve) => {
-            setState({ message, ...options, resolve });
+            setState({ message, ...options, resolve, open: true });
         });
     }, []);
 
     const handleConfirm = useCallback(() => {
         if (state?.destructive) haptic('confirm');
         state?.resolve(true);
-        setState(null);
+        setState(prev => prev && { ...prev, open: false });
     }, [state]);
 
     const handleCancel = useCallback(() => {
         state?.resolve(false);
-        setState(null);
+        setState(prev => prev && { ...prev, open: false });
     }, [state]);
 
-    const focusTrapRef = useFocusTrap(!!state);
+    const open = Boolean(state?.open);
+    const { mounted, closing } = usePresence(open, EXIT_MS);
+    const focusTrapRef = useFocusTrap(open);
 
     return (
         <ConfirmContext.Provider value={confirm}>
             {children}
-            {state && (
-                <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-fade-in" onClick={handleCancel}>
+            {mounted && state && (
+                <div className={`fixed inset-0 bg-ink/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 ${closing ? 'pointer-events-none animate-fade-out' : 'animate-fade-in'}`} inert={closing} onClick={handleCancel}>
                     <Card
                         ref={focusTrapRef}
                         role="dialog"
                         aria-modal="true"
                         {...(state.title ? { 'aria-labelledby': 'confirm-dialog-title' } : { 'aria-label': 'Bekreftelse' })}
                         aria-describedby="confirm-dialog-message"
-                        className="w-full max-w-sm p-6 animate-scale-in"
+                        className={`w-full max-w-sm p-6 ${closing ? 'animate-scale-out' : 'animate-scale-in'}`}
                         onClick={e => e.stopPropagation()}
                     >
                         <div className="flex items-start gap-4 mb-5">
