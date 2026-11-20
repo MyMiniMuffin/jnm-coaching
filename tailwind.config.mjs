@@ -52,23 +52,32 @@ export default {
         },
         error: '#DC2626',
       },
+      transitionTimingFunction: {
+        spring: 'var(--ease-spring)',
+        'spring-snappy': 'var(--ease-spring-snappy)',
+        'out-expo': 'var(--ease-out-expo)',
+      },
+      transitionDuration: {
+        fast: 'var(--dur-fast)',
+        base: 'var(--dur-base)',
+        slow: 'var(--dur-slow)',
+      },
+      // Entrances fill backwards only, so no transform or filter stays on the
+      // element afterwards (a lingering transform would trap position: fixed).
       animation: {
-        'fade-in': 'fadeIn 0.4s ease-out',
-        'slide-up': 'slideUp 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
-        'scale-in': 'scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+        'fade-in': 'fadeIn var(--dur-base) var(--ease-out-expo) backwards',
+        'slide-up': 'slideUp var(--dur-slow) var(--ease-spring) backwards',
+        'scale-in': 'scaleIn var(--dur-slow) var(--ease-spring) backwards',
       },
       keyframes: {
         fadeIn: {
           from: { opacity: '0' },
-          to: { opacity: '1' },
         },
         slideUp: {
-          from: { opacity: '0', transform: 'translateY(8px)' },
-          to: { opacity: '1', transform: 'translateY(0)' },
+          from: { opacity: '0', transform: 'translateY(8px)', filter: 'blur(4px)' },
         },
         scaleIn: {
-          from: { opacity: '0', transform: 'scale(0.96)' },
-          to: { opacity: '1', transform: 'scale(1)' },
+          from: { opacity: '0', transform: 'scale(0.96)', filter: 'blur(4px)' },
         },
       },
       typography: (theme) => ({
