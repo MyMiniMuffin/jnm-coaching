@@ -2,6 +2,9 @@ import React from 'react';
 import { CaretDown } from '@phosphor-icons/react';
 import { haptic } from '../lib/haptic';
 
+// Press: fast ease in while held, spring back on release.
+const PRESS = 'transition-[background-color,color,box-shadow,transform] duration-base ease-spring active:duration-100 active:ease-out-expo active:scale-[0.98]';
+
 export const SegmentedControl = React.memo(({ label, hint, value, onChange, options }) => {
     const wrap = options.length > 7;
     return (
@@ -28,7 +31,7 @@ export const SegmentedControl = React.memo(({ label, hint, value, onChange, opti
                                 haptic('toggle');
                                 onChange(opt);
                             }}
-                            className={`${wrap ? 'min-w-0' : 'flex-1'} min-h-[44px] py-2 rounded-lg text-sm font-semibold transition-[background-color,color,transform] duration-150 active:scale-[0.98] tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 ${
+                            className={`${wrap ? 'min-w-0' : 'flex-1'} min-h-[44px] py-2 rounded-lg text-sm font-semibold ${PRESS} tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 ${
                                 isSelected
                                     ? 'bg-ink text-white shadow-sm'
                                     : 'text-ink-muted active:bg-white/70 [@media(hover:hover)_and_(pointer:fine)]:hover:bg-white/70'
@@ -59,7 +62,7 @@ export const SessionStepper = React.memo(({ label, value, onChange, min = 0, max
                     aria-label={`Reduser ${label.toLowerCase()}`}
                     disabled={numeric <= min}
                     onClick={() => step(numeric - 1)}
-                    className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-surface-200 bg-surface-50 text-lg font-semibold text-ink transition-transform active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30"
+                    className={`inline-flex h-11 w-11 items-center justify-center rounded-xl border border-surface-200 bg-surface-50 text-lg font-semibold text-ink ${PRESS} disabled:cursor-not-allowed disabled:opacity-30`}
                 >
                     −
                 </button>
@@ -69,7 +72,7 @@ export const SessionStepper = React.memo(({ label, value, onChange, min = 0, max
                     aria-label={`Øk ${label.toLowerCase()}`}
                     disabled={numeric >= max}
                     onClick={() => step(numeric + 1)}
-                    className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-surface-200 bg-surface-50 text-lg font-semibold text-ink transition-transform active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30"
+                    className={`inline-flex h-11 w-11 items-center justify-center rounded-xl border border-surface-200 bg-surface-50 text-lg font-semibold text-ink ${PRESS} disabled:cursor-not-allowed disabled:opacity-30`}
                 >
                     +
                 </button>
@@ -114,7 +117,7 @@ const BUTTON_SIZES = {
 export const Button = React.memo(({ children, variant = 'primary', size = 'md', className = '', ...props }) => (
     <button
         type="button"
-        className={`min-h-11 min-w-11 font-medium rounded-full transition-[background-color,color,transform] duration-200 flex items-center justify-center gap-2 [&>svg]:shrink-0 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${BUTTON_VARIANTS[variant]} ${BUTTON_SIZES[size]} ${className}`}
+        className={`min-h-11 min-w-11 font-medium rounded-full ${PRESS} flex items-center justify-center gap-2 [&>svg]:shrink-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${BUTTON_VARIANTS[variant]} ${BUTTON_SIZES[size]} ${className}`}
         {...props}
     >
         {children}
@@ -249,7 +252,7 @@ export const ToggleGroup = React.memo(({ options, value, onChange, className = '
                         onChange(option.value);
                     }}
                     aria-pressed={isSelected}
-                    className={`flex-1 min-h-11 px-3 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 ${isSelected ? 'bg-ink text-white shadow-sm' : 'text-ink-muted active:bg-white/70 [@media(hover:hover)_and_(pointer:fine)]:hover:bg-white/70 [@media(hover:hover)_and_(pointer:fine)]:hover:text-ink'}`}
+                    className={`flex-1 min-h-11 px-3 py-2 text-sm font-medium rounded-lg ${PRESS} whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 ${isSelected ? 'bg-ink text-white shadow-sm' : 'text-ink-muted active:bg-white/70 [@media(hover:hover)_and_(pointer:fine)]:hover:bg-white/70 [@media(hover:hover)_and_(pointer:fine)]:hover:text-ink'}`}
                 >
                     {option.label}
                 </button>
