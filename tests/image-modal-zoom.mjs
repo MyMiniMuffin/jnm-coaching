@@ -305,13 +305,14 @@ test('Playwright: ImageModal zoom inn/ut/reset/lukk uten console-feil', { timeou
 
     const consoleErrors = [];
     const pageErrors = [];
+    let page;
 
     try {
         const context = await browser.newContext({
             viewport: { width: 1280, height: 800 },
             deviceScaleFactor: 1,
         });
-        const page = await context.newPage();
+        page = await context.newPage();
         page.on('console', (msg) => {
             if (msg.type() === 'error') consoleErrors.push(msg.text());
         });
@@ -393,6 +394,11 @@ test('Playwright: ImageModal zoom inn/ut/reset/lukk uten console-feil', { timeou
         assert.equal(consoleErrors.length, 0, `console errors: ${consoleErrors.join(' | ')}`);
 
         await context.close();
+    } catch (error) {
+        // Skjermtekst og konsollfeil gjør en CI-feil lesbar uten skjermbilde.
+        const state = await page?.evaluate(() => `${location.href}\n${document.body.innerText.slice(0, 600)}`).catch(() => '');
+        error.message += `\nside: ${state}\nkonsoll: ${consoleErrors.join(' | ')}\nsidefeil: ${pageErrors.join(' | ')}`;
+        throw error;
     } finally {
         await browser.close();
         await preview.stop();
