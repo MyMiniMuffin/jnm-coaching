@@ -242,7 +242,7 @@ Tokenene ligger på `:root` i `src/index.css` og finnes i Tailwind som `ease-*` 
 Fjærene er `linear()`-kurver. Der nettleseren mangler `linear()`, faller de tilbake til out-expo.
 
 - Innganger stiger inn med `opacity`, en liten forskyvning og `blur(4px)`. Bruk `animate-slide-up`, `animate-scale-in` eller `stagger-children`.
-- `stagger-children` på en visningsrot lar barna komme 35 ms etter hverandre, med tak etter åtte. Barn med `fixed` (modaler) får ikke stagger.
+- `stagger-children` på en visningsrot lar barna komme 25 ms etter hverandre, med tak etter fire (maks 100 ms forsinkelse). Hele visningen skal være på plass innen ~350 ms. Barn med `fixed` (modaler) får ikke stagger.
 - Innganger fyller bare bakover (`backwards`). En transform eller et filter som blir liggende på en forelder, gjør at `position: fixed` inne i den ikke lenger dekker skjermen. Av samme grunn skal visningsrøtter ikke ha `will-change: transform`.
 - Utganger er kortere enn innganger og bruker `duration-fast`. Bruk `usePresence(open, ms)` i `src/hooks.jsx` for å holde et element montert til utgangen er ferdig. Gjør det inert mens det lukkes.
 - Trykk: rask ease-out ned (`active:duration-100 active:ease-out-expo`) og fjær tilbake ved slipp.
