@@ -20,6 +20,12 @@ const Host = () => {
 
     const onNewCheckin = useCallback(async (entry) => {
         await new Promise((resolve) => setTimeout(resolve, 20));
+        window.__keys = [...(window.__keys || []), entry.idempotencyKey];
+        if (window.__failNext) {
+            // Lagret på serveren, men svaret gikk tapt.
+            window.__failNext = false;
+            throw new Error('svar tapt');
+        }
         const saved = { ...entry, id: `srv-${entry.id}` };
         window.__submitted = (window.__submitted || 0) + 1;
         setCheckins((prev) => persist([saved, ...prev]));

@@ -19,6 +19,7 @@ import {
     toApnsEndpoint
 } from './lib/nativePush';
 import { applyPushHintsToUsers, extractPushHint } from './lib/pushHints';
+
 import { getReadBound } from './lib/readBound';
 import { setAppBadgeCount, unreadCheckinTotal } from './lib/appBadge';
 import { haptic } from './lib/haptic';
@@ -39,6 +40,9 @@ import Header from './components/Header';
 import Navigation from './components/Navigation';
 import InstallPrompt from './components/InstallPrompt';
 import { ViewErrorBoundary, ViewSkeleton } from './components/ViewBoundary';
+
+// Varsel-trykk som kom mens coach ikke var innlogget; åpnes etter innlogging.
+const PENDING_PUSH_HINT_KEY = 'jnm_pending_push_client';
 
 // Views (lazy loaded — each gets its own chunk)
 const CoachDashboard = React.lazy(() => import('./views/CoachDashboard'));
@@ -1103,15 +1107,37 @@ const App = () => {
         );
     }, []);
 
+    const isCoachRef = useRef(false);
+    isCoachRef.current = currentUser?.role === 'coach';
+
+    // Lytter uansett innloggingsstatus: trykk mens innloggingsskjermen vises lagres til coach er inne.
     useEffect(() => {
-        if (isNativeApp() || currentUser?.role !== 'coach' || !('serviceWorker' in navigator)) return undefined;
+        if (isNativeApp() || !('serviceWorker' in navigator)) return undefined;
 
         const onMessage = (event) => {
             if (event.data?.type !== 'jnm-open-client') return;
             const hint = extractPushHint({ data: event.data });
-            if (hint) openClientFromHint(hint);
+            if (!hint) return;
+            if (isCoachRef.current) {
+                openClientFromHint(hint);
+            } else {
+                try { sessionStorage.setItem(PENDING_PUSH_HINT_KEY, JSON.stringify(hint)); } catch (e) {}
+            }
         };
         navigator.serviceWorker.addEventListener('message', onMessage);
+        return () => navigator.serviceWorker.removeEventListener('message', onMessage);
+    }, [openClientFromHint]);
+
+    useEffect(() => {
+        if (isNativeApp() || currentUser?.role !== 'coach') return;
+
+        let stored = null;
+        try {
+            stored = JSON.parse(sessionStorage.getItem(PENDING_PUSH_HINT_KEY) || 'null');
+            sessionStorage.removeItem(PENDING_PUSH_HINT_KEY);
+        } catch (e) {}
+        const storedHint = stored && extractPushHint({ data: stored });
+        if (storedHint) openClientFromHint(storedHint);
 
         // Kaldstart fra varsel: service workeren åpner /app/?client=<id>&name=<navn>.
         const params = new URLSearchParams(window.location.search);
@@ -1123,8 +1149,6 @@ const App = () => {
             window.history.replaceState(window.history.state, '', `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`);
             if (hint) openClientFromHint(hint);
         }
-
-        return () => navigator.serviceWorker.removeEventListener('message', onMessage);
     }, [currentUser?.role, openClientFromHint]);
 
     useEffect(() => {

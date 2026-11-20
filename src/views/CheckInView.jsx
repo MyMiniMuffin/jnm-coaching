@@ -360,6 +360,8 @@ const CheckInView = React.memo(({
                     localStorage.setItem(storageKey, JSON.stringify(formData));
                 } else {
                     localStorage.removeItem(storageKey);
+                    // Tømt skjema er et nytt utkast: neste innhold får ny nøkkel.
+                    clearSubmissionKey(storageKey);
                 }
             } catch (e) {
                 console.error('[CheckIn] Kunne ikke lagre utkast:', e);
@@ -461,6 +463,8 @@ const CheckInView = React.memo(({
         setFormData(INITIAL_FORM_DATA);
         setRestoredDraft(false);
         try { localStorage.removeItem(storageKey); } catch (e) {}
+        // Et forkastet utkast skal ikke dele nøkkel med neste rapport.
+        clearSubmissionKey(storageKey);
     }, [storageKey]);
 
     // Duo rail back when composing over an existing weekly report.

@@ -33,19 +33,19 @@ after(async () => {
 
 const json = (route, body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 
-const openCoachApp = async ({ path = '/', dataStatus = 200 } = {}) => {
+const COACH_SESSION = () => JSON.stringify({
+    user: { id: 1, username: 'coach', name: 'Coach', role: 'coach', is_archived: false },
+    token: 'test-token',
+    expiresAt: Date.now() + 86400000,
+    savedAt: Date.now(),
+});
+
+const openCoachApp = async ({ path = '/', dataStatus = 200, loggedIn = true } = {}) => {
     const context = await browser.newContext();
     const page = await context.newPage();
     const dataGets = [];
     const marks = [];
-    await page.addInitScript(() => {
-        localStorage.setItem('jnm_session', JSON.stringify({
-            user: { id: 1, username: 'coach', name: 'Coach', role: 'coach', is_archived: false },
-            token: 'test-token',
-            expiresAt: Date.now() + 86400000,
-            savedAt: Date.now(),
-        }));
-    });
+    if (loggedIn) await page.addInitScript((session) => localStorage.setItem('jnm_session', session), COACH_SESSION());
     await page.route('**/.netlify/functions/**', (route) => {
         const request = route.request();
         const url = new URL(request.url());
@@ -99,5 +99,20 @@ test('a failed fresh load does not mark the reports as read', async () => {
     await new Promise((resolve) => setTimeout(resolve, 1500));
     assert.ok(openedAthlete(dataGets));
     assert.deepEqual(marks, []);
+    await context.close();
+});
+
+test('a notification tapped on the login screen opens the athlete after the coach logs in', async () => {
+    const { context, page, dataGets } = await openCoachApp({ loggedIn: false });
+    await page.waitForLoadState('networkidle');
+    await page.evaluate(() => navigator.serviceWorker.dispatchEvent(
+        new MessageEvent('message', { data: { type: 'jnm-open-client', clientId: 7, clientName: 'Ada Lovelace' } })
+    ));
+    assert.ok(await page.evaluate(() => sessionStorage.getItem('jnm_pending_push_client')), 'målet skal huskes til innlogging');
+    await page.evaluate((session) => localStorage.setItem('jnm_session', session), COACH_SESSION());
+    await page.reload();
+    await page.waitForFunction(() => !sessionStorage.getItem('jnm_pending_push_client'));
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    assert.ok(openedAthlete(dataGets), 'GET /data?id=7 skal være kalt');
     await context.close();
 });
