@@ -180,7 +180,7 @@ const CheckinFields = ({
             <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-colors ${values.stepsReached ? 'bg-accent/10 border-accent/20' : 'bg-surface-50 border-surface-200'}`}>
                 <input type="checkbox" checked={values.stepsReached} onChange={(event) => { haptic('toggle'); onField('stepsReached', event.target.checked); }} className="sr-only" />
                 <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${values.stepsReached ? 'bg-accent text-white border-2 border-accent' : 'border-2 border-surface-300 bg-white text-transparent'}`}>
-                    <Check size={14} />
+                    <Check size={14} className={`transition-transform duration-base ease-spring ${values.stepsReached ? 'scale-100' : 'scale-[0.6]'}`} />
                 </div>
                 <div>
                     <p className="font-medium">Skrittmål nådd</p>
@@ -190,7 +190,7 @@ const CheckinFields = ({
             <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer border transition-colors ${values.takenSupplements ? 'bg-accent/10 border-accent/20' : 'bg-surface-50 border-surface-200'}`}>
                 <input type="checkbox" checked={values.takenSupplements} onChange={(event) => { haptic('toggle'); onField('takenSupplements', event.target.checked); }} className="sr-only" />
                 <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${values.takenSupplements ? 'bg-accent text-white border-2 border-accent' : 'border-2 border-surface-300 bg-white text-transparent'}`}>
-                    <Check size={14} />
+                    <Check size={14} className={`transition-transform duration-base ease-spring ${values.takenSupplements ? 'scale-100' : 'scale-[0.6]'}`} />
                 </div>
                 <div>
                     <p className="font-medium">Kosttilskudd tatt</p>
@@ -925,7 +925,7 @@ const CheckInView = React.memo(({
                                                         )}
                                                     </p>
                                                 </div>
-                                                <CaretDown size={18} className={`shrink-0 text-ink-faint transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                                                <CaretDown size={18} className={`shrink-0 text-ink-faint transition-transform duration-slow ease-spring-snappy ${isExpanded ? 'rotate-180' : ''}`} />
                                             </button>
                                             {canEdit && onUpdate && (
                                                 <IconButton type="button" onClick={() => startEdit(entry)} aria-label="Rediger rapport" tone="accent">

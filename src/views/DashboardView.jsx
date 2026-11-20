@@ -790,7 +790,7 @@ const DashboardView = React.memo(({ userData, isCoach, onUpdateData, onOpenWeigh
                             </div>
                             <div className="h-2 bg-white/20 rounded-full overflow-hidden">
                                 <div
-                                    className="h-full bg-white rounded-full transition-[width] duration-500"
+                                    className="h-full bg-white rounded-full transition-[width] duration-slow ease-out-expo"
                                     style={{ width: `${progress}%` }}
                                 />
                             </div>
