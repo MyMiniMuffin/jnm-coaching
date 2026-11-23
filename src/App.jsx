@@ -1411,10 +1411,11 @@ const App = () => {
         const tempId = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
             ? `temp_${crypto.randomUUID()}`
             : `temp_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+        const normalizedLabel = typeof label === 'string' ? label.trim().slice(0, 200) : '';
         const optimisticImage = {
             id: tempId,
             url: imageUrl,
-            label: label || 'Startbilde',
+            label: normalizedLabel,
             date: date || todayLocalISODate(),
             weight: weight ? parseFloat(weight) : null,
             timestamp: Date.now()
@@ -1424,7 +1425,7 @@ const App = () => {
             galleryImages: [...(prev.galleryImages || []), optimisticImage]
         }));
         try {
-            const result = await api.addGalleryImage(viewingClient.id, imageUrl, label, date, weight);
+            const result = await api.addGalleryImage(viewingClient.id, imageUrl, normalizedLabel, date, weight);
             if (result.authError) {
                 setShowReauthPrompt(true);
                 setCurrentData(prev => ({

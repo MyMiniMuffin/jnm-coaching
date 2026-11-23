@@ -148,6 +148,8 @@ const FullscreenCompareModal = React.memo(({ before, after, daysDiff, weightDiff
     );
 });
 
+const createInitialUploadForm = () => ({ label: '', date: todayLocalISODate(), weight: '' });
+
 // GalleryView - samler alle bilder fra checkins for lett sammenligning
 const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = false, uploadUserId, onAddGalleryImage, onDeleteGalleryImage }) => {
     const toast = useToast();
@@ -159,7 +161,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
     const [fullscreenCompare, setFullscreenCompare] = useState(false);
     const [showUploadModal, setShowUploadModal] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
-    const [uploadForm, setUploadForm] = useState({ label: 'Startbilde', date: todayLocalISODate(), weight: '' });
+    const [uploadForm, setUploadForm] = useState(createInitialUploadForm);
     const [selectedUploadFiles, setSelectedUploadFiles] = useState([]);
     const [visibleImageCount, setVisibleImageCount] = useState(IMAGE_BATCH_SIZE);
     const [deletingImageId, setDeletingImageId] = useState(null);
@@ -446,7 +448,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
 
             setShowUploadModal(false);
             setSelectedUploadFiles([]);
-            setUploadForm({ label: 'Startbilde', date: todayLocalISODate(), weight: '' });
+            setUploadForm(createInitialUploadForm());
         } catch (err) {
             console.error(err);
             toast(err.message || 'Bildeopplastingen feilet. Prøv igjen.', 'error');
@@ -502,7 +504,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
         setShowUploadModal(false);
         setSelectedUploadFiles([]);
         setUploadProgress('');
-        setUploadForm({ label: 'Startbilde', date: todayLocalISODate(), weight: '' });
+        setUploadForm(createInitialUploadForm());
     }, [isUploading]);
 
     const closeFullscreenCompare = useCallback(() => {
