@@ -424,6 +424,109 @@ test('Playwright: coach gallery upload respects empty, whitespace, and custom la
         await uploadDialog.waitFor({ timeout: 10_000 });
         assert.equal(await labelInput.inputValue(), '', 'reopening upload modal should reset label to empty');
 
+        for (const viewport of [
+            { width: 390, height: 844 },
+            { width: 320, height: 568 },
+        ]) {
+            await page.setViewportSize(viewport);
+            await uploadDialog.locator('#gallery-upload-files').setInputFiles([
+                {
+                    name: 'IMG_20261123_very_long_filename_without_spaces_from_iphone_camera_roll_0001.heic',
+                    mimeType: 'image/png',
+                    buffer: PROGRESS_PNG,
+                },
+                {
+                    name: 'IMG_20261123_second_very_long_filename_without_spaces_0002.heic',
+                    mimeType: 'image/png',
+                    buffer: PROGRESS_PNG,
+                },
+            ]);
+            await page.waitForTimeout(250);
+
+            const layout = await page.evaluate(() => {
+                const dialog = document.querySelector('[role="dialog"][aria-labelledby="upload-images-title"]');
+                const backdrop = dialog.parentElement;
+                const form = dialog.querySelector('form');
+                const dropzone = dialog.querySelector('label[for="gallery-upload-files"]');
+                const labelEl = dialog.querySelector('#gallery-upload-label');
+                const dateEl = dialog.querySelector('#gallery-upload-date');
+                const weightEl = dialog.querySelector('#gallery-upload-weight');
+                const buttons = [...form.querySelectorAll('button')];
+
+                const dialogRect = dialog.getBoundingClientRect();
+                const formStyle = getComputedStyle(form);
+                const dropzoneStyle = getComputedStyle(dropzone);
+                const dateStyle = getComputedStyle(dateEl);
+                const boxRects = [dropzone, labelEl, dateEl, weightEl, ...buttons].map((el) => {
+                    const rect = el.getBoundingClientRect();
+                    return {
+                        id: el.id || el.textContent?.trim(),
+                        left: rect.left,
+                        right: rect.right,
+                        width: rect.width,
+                    };
+                });
+
+                form.scrollTop = form.scrollHeight;
+                const submitRect = buttons[buttons.length - 1].getBoundingClientRect();
+
+                return {
+                    portaledToBody: backdrop?.parentElement === document.body,
+                    viewportWidth: window.innerWidth,
+                    viewportHeight: window.innerHeight,
+                    dialogRect: {
+                        left: dialogRect.left,
+                        right: dialogRect.right,
+                        top: dialogRect.top,
+                        bottom: dialogRect.bottom,
+                    },
+                    formOverflowX: formStyle.overflowX,
+                    formOverscrollY: formStyle.overscrollBehaviorY,
+                    formScrollWidth: form.scrollWidth,
+                    formClientWidth: form.clientWidth,
+                    dropzonePosition: dropzoneStyle.position,
+                    dropzoneOverflowX: dropzoneStyle.overflowX,
+                    dateAppearance: dateStyle.appearance,
+                    dateDisplay: dateStyle.display,
+                    dateMaxWidth: dateStyle.maxWidth,
+                    dateMinWidth: dateStyle.minWidth,
+                    dateBoxSizing: dateStyle.boxSizing,
+                    labelWidth: labelEl.getBoundingClientRect().width,
+                    dateWidth: dateEl.getBoundingClientRect().width,
+                    weightWidth: weightEl.getBoundingClientRect().width,
+                    boxRects,
+                    submitBottomAfterScroll: submitRect.bottom,
+                };
+            });
+
+            assert.equal(layout.portaledToBody, true, 'upload dialog should portal to document.body');
+            assert.ok(layout.dialogRect.left >= 0 && layout.dialogRect.right <= layout.viewportWidth + 0.5);
+            assert.ok(layout.dialogRect.top >= 0 && layout.dialogRect.bottom <= layout.viewportHeight + 0.5);
+            assert.equal(layout.formOverflowX, 'hidden', 'upload form should clip horizontal overflow');
+            assert.equal(layout.formOverscrollY, 'contain', 'upload form should contain overscroll');
+            assert.ok(layout.formScrollWidth <= layout.formClientWidth + 1, 'upload form must not overflow horizontally');
+            assert.equal(layout.dropzonePosition, 'relative', 'dropzone should anchor hidden file input');
+            assert.equal(layout.dropzoneOverflowX, 'hidden', 'dropzone should clip wide filenames');
+            assert.equal(layout.dateAppearance, 'none', 'date input should disable native WebKit appearance');
+            assert.equal(layout.dateDisplay, 'block', 'date input should render as block');
+            assert.equal(layout.dateMaxWidth, '100%', 'date input should cap max-width at 100%');
+            assert.equal(layout.dateMinWidth, '0px', 'date input should allow shrinking to 0');
+            assert.equal(layout.dateBoxSizing, 'border-box');
+            assert.ok(Math.abs(layout.dateWidth - layout.labelWidth) <= 0.5, 'date input width must match text input');
+            assert.ok(Math.abs(layout.weightWidth - layout.labelWidth) <= 0.5, 'weight input width must match text input');
+
+            for (const box of layout.boxRects) {
+                assert.ok(
+                    box.left >= layout.dialogRect.left - 0.5 && box.right <= layout.dialogRect.right + 0.5,
+                    `${box.id} overflowed dialog horizontally at ${viewport.width}px`
+                );
+            }
+            assert.ok(
+                layout.submitBottomAfterScroll <= layout.dialogRect.bottom + 0.5,
+                `submit button remained below dialog after scrolling at ${viewport.width}x${viewport.height}`
+            );
+        }
+
         assert.equal(pageErrors.length, 0, `uncaught page errors: ${pageErrors.join(' | ')}`);
         assert.equal(consoleErrors.length, 0, `console errors: ${consoleErrors.join(' | ')}`);
 
