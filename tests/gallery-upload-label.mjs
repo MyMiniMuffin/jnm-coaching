@@ -1,8 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { access, readdir, stat } from 'node:fs/promises';
+import { mkdtemp, rm } from 'node:fs/promises';
 import { createServer } from 'node:net';
+import { tmpdir } from 'node:os';
 import { deflateSync } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -86,32 +87,6 @@ const BASE_ATHLETE_DATA = {
     galleryImages: [],
 };
 
-async function newestMtime(dir) {
-    let newest = 0;
-    const entries = await readdir(dir, { withFileTypes: true });
-    for (const entry of entries) {
-        const full = join(dir, entry.name);
-        if (entry.isDirectory()) {
-            newest = Math.max(newest, await newestMtime(full));
-        } else {
-            newest = Math.max(newest, (await stat(full)).mtimeMs);
-        }
-    }
-    return newest;
-}
-
-async function needsRebuild() {
-    try {
-        const distIndex = join(ROOT, 'dist/index.html');
-        await access(distIndex);
-        const distTime = (await stat(distIndex)).mtimeMs;
-        const srcTime = await newestMtime(join(ROOT, 'src'));
-        return srcTime > distTime;
-    } catch {
-        return true;
-    }
-}
-
 function getFreePort() {
     return new Promise((resolve, reject) => {
         const server = createServer();
@@ -140,9 +115,10 @@ async function waitForUrl(url, timeoutMs = 60_000) {
 }
 
 async function ensurePreview() {
-    if (await needsRebuild()) {
+    const outDir = await mkdtemp(join(tmpdir(), 'jnm-gallery-preview-'));
+    try {
         await new Promise((resolve, reject) => {
-            const child = spawn('npm', ['run', 'build'], {
+            const child = spawn('npx', ['vite', 'build', '--outDir', outDir, '--emptyOutDir'], {
                 cwd: ROOT,
                 stdio: ['ignore', 'ignore', 'pipe'],
             });
@@ -150,16 +126,19 @@ async function ensurePreview() {
             child.stderr.on('data', (chunk) => { stderr += chunk; });
             child.on('exit', (code) => {
                 if (code === 0) resolve();
-                else reject(new Error(`npm run build failed (${code}): ${stderr}`));
+                else reject(new Error(`vite build failed (${code}): ${stderr}`));
             });
         });
+    } catch (error) {
+        await rm(outDir, { recursive: true, force: true }).catch(() => {});
+        throw error;
     }
 
     const port = await getFreePort();
     const base = `http://127.0.0.1:${port}`;
     const child = spawn(
         'npx',
-        ['vite', 'preview', '--host', '127.0.0.1', '--port', String(port), '--strictPort'],
+        ['vite', 'preview', '--outDir', outDir, '--host', '127.0.0.1', '--port', String(port), '--strictPort'],
         { cwd: ROOT, stdio: ['ignore', 'ignore', 'pipe'], detached: true }
     );
 
@@ -168,21 +147,23 @@ async function ensurePreview() {
     child.unref();
 
     const stop = async () => {
-        if (!child.pid) return;
-        try {
-            process.kill(-child.pid, 'SIGTERM');
-        } catch {
-            try { child.kill('SIGTERM'); } catch {}
+        if (child.pid) {
+            try {
+                process.kill(-child.pid, 'SIGTERM');
+            } catch {
+                try { child.kill('SIGTERM'); } catch {}
+            }
+            await Promise.race([
+                new Promise((resolve) => child.once('exit', resolve)),
+                new Promise((resolve) => setTimeout(resolve, 2000)),
+            ]);
+            try {
+                process.kill(-child.pid, 'SIGKILL');
+            } catch {
+                try { child.kill('SIGKILL'); } catch {}
+            }
         }
-        await Promise.race([
-            new Promise((resolve) => child.once('exit', resolve)),
-            new Promise((resolve) => setTimeout(resolve, 2000)),
-        ]);
-        try {
-            process.kill(-child.pid, 'SIGKILL');
-        } catch {
-            try { child.kill('SIGKILL'); } catch {}
-        }
+        await rm(outDir, { recursive: true, force: true }).catch(() => {});
     };
 
     try {
