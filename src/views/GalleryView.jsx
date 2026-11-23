@@ -515,9 +515,9 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
     const uploadModalRef = useFocusTrap(showUploadModal);
 
     // Felles upload-modal (brukes i både tom- og normal-visning)
-    const uploadModal = showUploadModal && (
-        <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-            <Card ref={uploadModalRef} className="flex max-h-[calc(100dvh-2rem)] w-full max-w-sm flex-col overflow-hidden animate-scale-in" role="dialog" aria-modal="true" aria-labelledby="upload-images-title">
+    const uploadModal = showUploadModal && createPortal(
+        <div className="modal-backdrop fixed inset-0 z-[60] flex items-center justify-center bg-ink/60 backdrop-blur-sm animate-fade-in">
+            <Card ref={uploadModalRef} className="flex max-h-full w-full max-w-sm min-w-0 flex-col overflow-hidden animate-scale-in" role="dialog" aria-modal="true" aria-labelledby="upload-images-title">
                 <div className="flex shrink-0 items-center justify-between px-6 pb-4 pt-6">
                     <h2 id="upload-images-title" className="section-title text-[1.05rem]">Last opp bilder</h2>
                     <IconButton onClick={closeUploadModal} aria-label="Lukk" disabled={isUploading}>
@@ -525,8 +525,8 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                     </IconButton>
                 </div>
 
-                <form className="min-h-0 space-y-4 overflow-y-auto px-6 pb-6" onSubmit={handleImageUpload}>
-                    <label htmlFor="gallery-upload-files" className={`flex min-h-[132px] flex-col items-center justify-center rounded-xl border-2 border-dashed border-surface-200 p-5 text-center transition-colors hover:border-surface-300 hover:bg-surface-50 focus-within:border-accent focus-within:ring-2 focus-within:ring-accent ${isUploading ? 'pointer-events-none opacity-60' : 'cursor-pointer'}`}>
+                <form className="min-h-0 min-w-0 space-y-4 overflow-y-auto overflow-x-hidden overscroll-contain px-6 pb-6 pt-1" onSubmit={handleImageUpload}>
+                    <label htmlFor="gallery-upload-files" className={`relative flex min-h-[132px] w-full min-w-0 flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-surface-200 p-5 text-center transition-colors hover:border-surface-300 hover:bg-surface-50 focus-within:border-accent focus-within:ring-2 focus-within:ring-accent ${isUploading ? 'pointer-events-none opacity-60' : 'cursor-pointer'}`}>
                         {isUploading ? (
                             <>
                                 <CircleNotch className="animate-spin text-ink-muted" size={24} />
@@ -536,7 +536,7 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                             <>
                                 <Camera size={24} className="mb-2 text-ink-muted" />
                                 <span className="font-medium text-ink">{selectedUploadFiles.length} bilde{selectedUploadFiles.length > 1 ? 'r' : ''} valgt</span>
-                                <span className="mt-1 max-w-full truncate text-xs text-ink-muted">
+                                <span className="mt-1 block w-full max-w-full truncate text-xs text-ink-muted">
                                     {selectedUploadFiles.map(file => file.name).join(', ')}
                                 </span>
                                 <span className="mt-2 text-xs font-medium text-accent">Trykk for å velge på nytt</span>
@@ -551,24 +551,25 @@ const GalleryView = React.memo(({ checkins = [], galleryImages = [], isCoach = f
                         <input id="gallery-upload-files" type="file" accept="image/*" multiple className="sr-only" onChange={handleImageSelection} disabled={isUploading} />
                     </label>
 
-                    <div className="space-y-4">
+                    <div className="min-w-0 space-y-4">
                         <TextField id="gallery-upload-label" label="Bildetekst" type="text" value={uploadForm.label} onChange={handleLabelChange} placeholder="For eksempel Startbilde" disabled={isUploading} />
                         <TextField id="gallery-upload-date" label="Dato" type="date" value={uploadForm.date} onChange={handleDateChange} disabled={isUploading} />
                         <TextField id="gallery-upload-weight" label="Vekt (kg, valgfritt)" type="number" inputMode="decimal" step="0.1" value={uploadForm.weight} onChange={handleWeightChange} placeholder="0,0" disabled={isUploading} />
                     </div>
 
-                    <div className="flex gap-3 pt-1">
-                        <Button variant="secondary" size="md" className="flex-1" onClick={closeUploadModal} disabled={isUploading}>
+                    <div className="flex flex-wrap gap-3 pt-1">
+                        <Button variant="secondary" size="md" className="min-w-0 flex-1" onClick={closeUploadModal} disabled={isUploading}>
                             Avbryt
                         </Button>
-                        <Button type="submit" variant="primary" size="md" className="flex-1" disabled={selectedUploadFiles.length === 0 || isUploading}>
+                        <Button type="submit" variant="primary" size="md" className="min-w-0 flex-1" disabled={selectedUploadFiles.length === 0 || isUploading}>
                             {isUploading ? <CircleNotch size={18} className="animate-spin" /> : <Camera size={18} />}
                             {isUploading ? 'Laster opp' : 'Last opp'}
                         </Button>
                     </div>
                 </form>
             </Card>
-        </div>
+        </div>,
+        document.body
     );
 
     if (allImages.length === 0) {
