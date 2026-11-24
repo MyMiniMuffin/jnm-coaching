@@ -409,8 +409,13 @@ export class WaveController {
 
   /** Takes the pictures now, so the next wave starts with its lens. */
   async prepare(): Promise<void> {
-    if (this.destroyed || this.opts.capture === false || this.motionless() || !this.ensureRenderer()) return;
+    if (this.destroyed || this.motionless() || !this.ensureRenderer()) return;
     this.flush();
+    if (this.opts.capture === false) {
+      this.measure();
+      this.prime();
+      return;
+    }
     await Promise.all(this.needed().map((which) => (this.fresh(which) ? undefined : this.capture(which))));
   }
 
@@ -711,6 +716,7 @@ export class WaveController {
       }
       this.lensAt = all ? -Infinity : null;
     }
+    this.prime();
     this.canvas!.style.display = "block";
     this.raf = requestAnimationFrame(this.tick);
   }
@@ -1152,8 +1158,11 @@ export class WaveController {
     const r = this.renderer;
     const g = this.geom;
     if (this.primed || !r || r.lost || !g) return;
-    const views = this.needed();
-    for (let i = 0; i < views.length; i++) if (!this.slots[views[i]].ready) return;
+    const capturing = this.opts.capture !== false;
+    if (capturing) {
+      const views = this.needed();
+      for (let i = 0; i < views.length; i++) if (!this.slots[views[i]].ready) return;
+    }
     this.primed = true;
     const s = this.style;
     // Any wave will do: one from the middle, just after it has left, with
@@ -1170,7 +1179,7 @@ export class WaveController {
     }
     r.setSize(g.vw, g.vh);
     r.setBlur(s.blur);
-    r.prime(front, s, rimLumps(0, g.vw, g.vh, s.cornerRadius, s.rimPulse), dots, { floor: 0, gain: 1, round: true, same: !this.b });
+    r.prime(front, s, rimLumps(0, g.vw, g.vh, s.cornerRadius, s.rimPulse), dots, { floor: 0, gain: capturing ? 1 : 0, round: true, same: !this.b });
     if (dots) dots.count = 0;
   }
 
