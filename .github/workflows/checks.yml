@@ -41,7 +41,15 @@ jobs:
           done
           exit 1
       - run: npm run build
-      - run: npm test
+      - name: Run tests
+        run: |
+          shopt -s nullglob
+          non_wave=()
+          for f in tests/*.cjs tests/*.mjs; do
+            [ "$f" = "tests/wave-behavior.mjs" ] || non_wave+=("$f")
+          done
+          node --test "${non_wave[@]}"
+          node --test tests/wave-behavior.mjs
       - name: Validate Xcode Cloud script
         run: sh -n ios/App/ci_scripts/ci_post_clone.sh
 
