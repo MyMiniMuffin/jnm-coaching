@@ -947,7 +947,7 @@ exports.handler = async (event) => {
         if (typeof data.imageUrl !== 'string' || !data.imageUrl.startsWith('https://res.cloudinary.com/')) {
           return { statusCode: 400, body: JSON.stringify({ error: 'Ugyldig bilde-URL — kun Cloudinary-URLer er tillatt' }) };
         }
-        const label = (data.label && typeof data.label === 'string') ? data.label.substring(0, 200) : 'Startbilde';
+        const label = typeof data.label === 'string' ? data.label.trim().slice(0, 200) : '';
         // Valider dato (samme kalenderregel som new_checkin); krev gyldig dato fra klient
         const date = data.date;
         if (!isValidCalendarDate(date)) {

@@ -166,7 +166,7 @@ export const InputLabel = React.memo(({ children }) => (
 ));
 
 // Felles utseende for tekstfelt, tekstområder og nedtrekkslister.
-const FIELD_BASE = 'min-w-0 w-full bg-surface-50 border rounded-xl outline-none transition-[border-color,box-shadow] focus:ring-2 focus:ring-accent focus:border-accent text-base font-medium placeholder-ink-faint disabled:opacity-50';
+const FIELD_BASE = 'block min-w-0 w-full max-w-full bg-surface-50 border rounded-xl outline-none transition-[border-color,box-shadow] focus:ring-2 focus:ring-accent focus:border-accent text-base font-medium placeholder-ink-faint disabled:opacity-50';
 
 const FieldMessage = ({ id, error, hint }) => {
     const messageId = id ? `${id}-message` : undefined;
@@ -187,12 +187,12 @@ export const TextField = React.memo(React.forwardRef(({
 }, ref) => (
     <div className={`min-w-0 ${className}`}>
         {label && <label htmlFor={id} className="block text-sm font-medium text-ink-muted mb-2">{label}</label>}
-        <div className="relative">
+        <div className="relative min-w-0">
             {Icon && <Icon className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" size={18} />}
             <input
                 id={id}
                 ref={ref}
-                className={`${FIELD_BASE} ${Icon ? 'pl-12' : 'px-4'} pr-4 py-3.5 ${error ? 'border-error/40' : 'border-surface-200'} ${inputClassName}`}
+                className={`${FIELD_BASE} ${Icon ? 'pl-12 pr-4' : 'px-4'} py-3.5 ${error ? 'border-error/40' : 'border-surface-200'} ${inputClassName}`}
                 aria-invalid={error ? true : undefined}
                 aria-describedby={id && (error || hint) ? `${id}-message` : undefined}
                 {...props}
