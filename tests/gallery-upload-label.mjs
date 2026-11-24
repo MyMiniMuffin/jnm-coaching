@@ -1,13 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
-import { mkdtemp, rm, readFile } from 'node:fs/promises';
-import { createServer } from 'node:net';
-import { tmpdir } from 'node:os';
+import { readFile } from 'node:fs/promises';
 import { deflateSync } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { chromium } from 'playwright';
+import { ensurePreview } from './helpers/preview.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -103,95 +101,6 @@ const BASE_ATHLETE_DATA = {
     checkins: [],
     galleryImages: [],
 };
-
-function getFreePort() {
-    return new Promise((resolve, reject) => {
-        const server = createServer();
-        server.listen(0, '127.0.0.1', () => {
-            const { port } = server.address();
-            server.close((error) => (error ? reject(error) : resolve(port)));
-        });
-        server.on('error', reject);
-    });
-}
-
-async function waitForUrl(url, timeoutMs = 60_000) {
-    const start = Date.now();
-    let lastError;
-    while (Date.now() - start < timeoutMs) {
-        try {
-            const response = await fetch(url);
-            if (response.ok) return;
-            lastError = new Error(`HTTP ${response.status}`);
-        } catch (error) {
-            lastError = error;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 250));
-    }
-    throw new Error(`Server not ready at ${url}: ${lastError?.message || lastError}`);
-}
-
-async function ensurePreview() {
-    const outDir = await mkdtemp(join(tmpdir(), 'jnm-gallery-preview-'));
-    try {
-        await new Promise((resolve, reject) => {
-            const child = spawn('npx', ['vite', 'build', '--outDir', outDir, '--emptyOutDir'], {
-                cwd: ROOT,
-                stdio: ['ignore', 'ignore', 'pipe'],
-            });
-            let stderr = '';
-            child.stderr.on('data', (chunk) => { stderr += chunk; });
-            child.on('exit', (code) => {
-                if (code === 0) resolve();
-                else reject(new Error(`vite build failed (${code}): ${stderr}`));
-            });
-        });
-    } catch (error) {
-        await rm(outDir, { recursive: true, force: true }).catch(() => {});
-        throw error;
-    }
-
-    const port = await getFreePort();
-    const base = `http://127.0.0.1:${port}`;
-    const child = spawn(
-        'npx',
-        ['vite', 'preview', '--outDir', outDir, '--host', '127.0.0.1', '--port', String(port), '--strictPort'],
-        { cwd: ROOT, stdio: ['ignore', 'ignore', 'pipe'], detached: true }
-    );
-
-    let stderr = '';
-    child.stderr.on('data', (chunk) => { stderr += chunk; });
-    child.unref();
-
-    const stop = async () => {
-        if (child.pid) {
-            try {
-                process.kill(-child.pid, 'SIGTERM');
-            } catch {
-                try { child.kill('SIGTERM'); } catch {}
-            }
-            await Promise.race([
-                new Promise((resolve) => child.once('exit', resolve)),
-                new Promise((resolve) => setTimeout(resolve, 2000)),
-            ]);
-            try {
-                process.kill(-child.pid, 'SIGKILL');
-            } catch {
-                try { child.kill('SIGKILL'); } catch {}
-            }
-        }
-        await rm(outDir, { recursive: true, force: true }).catch(() => {});
-    };
-
-    try {
-        await waitForUrl(base);
-    } catch (error) {
-        await stop();
-        throw new Error(`${error.message}\npreview stderr: ${stderr}`);
-    }
-
-    return { base, stop };
-}
 
 async function installMocks(page) {
     const addGalleryRequests = [];
@@ -305,7 +214,7 @@ test('Playwright: coach gallery upload respects empty, whitespace, and custom la
     let browser;
     let preview;
     try {
-        preview = await ensurePreview();
+        preview = await ensurePreview({ prefix: 'jnm-gallery-preview-' });
     } catch (error) {
         if (process.env.CI) throw error;
         t.skip(`Could not start preview server: ${error.message}`);

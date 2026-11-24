@@ -40,8 +40,8 @@ jobs:
             echo "playwright install attempt $attempt failed or timed out"
           done
           exit 1
-      - run: npm test
       - run: npm run build
+      - run: npm test
       - name: Validate Xcode Cloud script
         run: sh -n ios/App/ci_scripts/ci_post_clone.sh
 
