@@ -744,7 +744,12 @@ input:focus, textarea:focus, select:focus, button:focus-visible {
     padding-right: max(1rem, env(safe-area-inset-right, 0px));
 }
 
-html[data-shell="rail"] .modal-backdrop {
+html[data-device="duo"] .modal-backdrop {
+    padding-right: max(1rem, env(safe-area-inset-right, 0px));
+}
+
+html[data-shell="rail"] .modal-backdrop,
+html[data-native-rail="true"] .modal-backdrop {
     padding-right: max(1rem, var(--app-rail-reserve));
 }
 
@@ -1162,7 +1167,18 @@ input[type="number"]::-webkit-outer-spin-button {
     margin: 0;
 }
 
+/* Keep the label and validation message outside the date paint guard. */
+.text-field:has(input[type="date"]),
+.text-field > div:has(> input[type="date"]) {
+    min-inline-size: 0;
+}
+
+.text-field > div:has(> input[type="date"]) {
+    overflow: hidden;
+}
+
 input[type="date"] {
+    min-inline-size: 0;
     display: block;
     width: 100%;
     max-width: 100%;
@@ -1175,6 +1191,7 @@ input[type="date"] {
 
 input[type="date"]::-webkit-datetime-edit,
 input[type="date"]::-webkit-date-and-time-value {
+    margin: 0;
     min-width: 0;
     width: 100%;
     max-width: 100%;

@@ -185,7 +185,7 @@ export const TextField = React.memo(React.forwardRef(({
     id,
     ...props
 }, ref) => (
-    <div className={`min-w-0 ${className}`}>
+    <div className={`text-field min-w-0 ${className}`}>
         {label && <label htmlFor={id} className="block text-sm font-medium text-ink-muted mb-2">{label}</label>}
         <div className="relative min-w-0">
             {Icon && <Icon className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" size={18} />}

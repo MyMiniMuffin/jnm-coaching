@@ -17,7 +17,7 @@ export const DUO_MIN_HEIGHT_PX = 600;
 export const DESKTOP_MIN_WIDTH_PX = 1024;
 
 /** Width floor that separates folded cover (~390–440) from unfolded (~700+). */
-export const DUO_UNFOLDED_MIN_WIDTH_PX = 600;
+export const DUO_UNFOLDED_MIN_WIDTH_PX = 700;
 
 export const DUO_MEDIA_QUERY =
     `(min-width: ${DUO_MIN_WIDTH_PX}px) and (min-height: ${DUO_MIN_HEIGHT_PX}px), ` +
@@ -25,11 +25,11 @@ export const DUO_MEDIA_QUERY =
 
 /**
  * Duo bottom nav (unfolded held upright / square only):
- *   (min-width: 600px) and (max-aspect-ratio: 1/1)
+ *   (min-width: 700px) and (max-aspect-ratio: 1/1)
  *
- * - Folded portrait 390×844: width < 600 → no match → rail
+ * - Folded portrait 390×844: width < 700 → no match → rail
  * - Folded landscape 844×390: aspect > 1 → no match → rail
- * - Unfolded portrait 760×900: width ≥ 600 and aspect ≤ 1 → match → bottom nav
+ * - Unfolded portrait 760×900: width ≥ 700 and aspect ≤ 1 → match → bottom nav
  * - Unfolded landscape 900×760: aspect > 1 → no match → rail
  * - Square unfolded: aspect = 1 → match → bottom nav
  */
@@ -39,7 +39,7 @@ export const DUO_BOTTOM_NAV_MEDIA_QUERY =
 /**
  * Duo rail space = NOT bottom-nav space.
  * Equivalent OR form for matchMedia (De Morgan):
- *   (max-width: 599px), (aspect-ratio > 1/1)
+ *   (max-width: 699px), (aspect-ratio > 1/1)
  */
 export const DUO_RAIL_MEDIA_QUERY =
     `(max-width: ${DUO_UNFOLDED_MIN_WIDTH_PX - 1}px), (aspect-ratio > 1/1)`;

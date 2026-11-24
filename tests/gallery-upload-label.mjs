@@ -13,11 +13,16 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 test('modal clearance and iOS date intrinsic sizing CSS', async () => {
     const css = await readFile(join(ROOT, 'src/index.css'), 'utf8');
-    assert.match(css, /html\[data-shell="rail"\] \.modal-backdrop\s*\{[^}]*padding-right: max\(1rem, var\(--app-rail-reserve\)\)/);
+    assert.match(css, /html\[data-shell="rail"\] \.modal-backdrop,[^{]*\{[^}]*padding-right: max\(1rem, var\(--app-rail-reserve\)\)/);
     assert.match(css, /html\[data-shell="narrow"\] \.modal-backdrop\s*\{[^}]*padding-bottom: max\(1rem, var\(--app-bottom-nav-reserve\)\)/);
+    assert.match(css, /html\[data-native-rail="true"\] \.modal-backdrop/);
+    assert.match(css, /html\[data-device="duo"\] \.modal-backdrop\s*\{[^}]*safe-area-inset-right/);
+    assert.match(css, /\.text-field:has\(input\[type="date"\]\)[^{]*\{[^}]*min-inline-size: 0/);
+    assert.match(css, /\.text-field > div:has\(> input\[type="date"\]\)\s*\{[^}]*overflow: hidden/);
     for (const pseudo of ['-webkit-datetime-edit', '-webkit-date-and-time-value']) {
         const block = css.slice(css.indexOf('input[type="date"]::' + pseudo)).split('}')[0];
         assert.match(block, /min-width: 0/);
+        assert.match(block, /margin: 0/);
         assert.match(block, /text-align: left/);
         assert.match(block, /max-width: 100%/);
     }
@@ -429,6 +434,19 @@ test('Playwright: coach gallery upload respects empty, whitespace, and custom la
             await page.goto(`${preview.base}/?device=${viewport.device}`, { waitUntil: 'networkidle' });
             await page.getByRole('button', { name: /Last opp/ }).first().click();
             await uploadDialog.waitFor();
+            if (viewport.native) {
+                await page.evaluate(() => document.documentElement.setAttribute('data-duo-rail-space', 'true'));
+                await page.waitForFunction(() => document.documentElement.dataset.shell === 'rail');
+                await page.evaluate(() => document.documentElement.setAttribute('data-duo-rail-space', 'false'));
+                await page.waitForFunction(() => document.documentElement.dataset.shell === 'narrow');
+                await page.evaluate(() => {
+                    document.documentElement.setAttribute('data-native-rail', 'true');
+                    const rail = document.createElement('div');
+                    rail.className = 'native-rail-stand-in';
+                    rail.style.cssText = 'position:fixed;right:0;top:0;width:70px;height:100vh';
+                    document.body.append(rail);
+                });
+            }
             await uploadDialog.locator('#gallery-upload-files').setInputFiles([
                 {
                     name: 'IMG_20261123_very_long_filename_without_spaces_from_iphone_camera_roll_0001.heic',
@@ -467,13 +485,20 @@ test('Playwright: coach gallery upload respects empty, whitespace, and custom la
                     };
                 });
 
+                const controls = [dateEl, dialog.querySelector('button'), buttons[buttons.length - 1]];
+                const controlRects = controls.map(el => {
+                    el.scrollIntoView({ block: 'nearest' });
+                    const r = el.getBoundingClientRect();
+                    return { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+                });
                 form.scrollTop = form.scrollHeight;
                 const submitRect = buttons[buttons.length - 1].getBoundingClientRect();
 
                 return {
-                    chrome: [...document.querySelectorAll('.app-rail, .mobile-bottom-nav')]
+                    chrome: [...document.querySelectorAll('.app-rail, .mobile-bottom-nav, .native-rail-stand-in')]
                         .filter(el => getComputedStyle(el).display !== 'none')
                         .map(el => { const r = el.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom }; }),
+                    controlRects,
                     portaledToBody: backdrop?.parentElement === document.body,
                     viewportWidth: window.innerWidth,
                     viewportHeight: window.innerHeight,
@@ -503,10 +528,11 @@ test('Playwright: coach gallery upload respects empty, whitespace, and custom la
             });
 
             for (const chrome of layout.chrome) {
-                const r = layout.dialogRect;
+                for (const r of [layout.dialogRect, ...layout.controlRects]) {
                 assert.ok(r.right <= chrome.left + 0.5 || r.left >= chrome.right - 0.5 ||
                     r.bottom <= chrome.top + 0.5 || r.top >= chrome.bottom - 0.5,
-                    `dialog overlaps app chrome at ${viewport.width}x${viewport.height}`);
+                    `dialog/control overlaps app chrome at ${viewport.width}x${viewport.height}`);
+                }
             }
             assert.equal(layout.portaledToBody, true, 'upload dialog should portal to document.body');
             assert.ok(layout.dialogRect.left >= 0 && layout.dialogRect.right <= layout.viewportWidth + 0.5);

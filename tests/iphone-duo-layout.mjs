@@ -329,8 +329,8 @@ async function shellState(page) {
 
 /**
  * True when DUO_RAIL_MEDIA_QUERY would match this CSS viewport.
- * Rail: width ≤ 599 OR aspect-ratio > 1/1.
- * Bottom nav (Duo only): width ≥ 600 AND aspect ≤ 1 (unfolded upright/square).
+ * Rail: width ≤ 699 OR aspect-ratio > 1/1.
+ * Bottom nav (Duo only): width ≥ 700 AND aspect ≤ 1 (unfolded upright/square).
  */
 function expectDuoRail(width, height) {
     return width < DUO_UNFOLDED_MIN_WIDTH_PX || width > height;
@@ -1129,7 +1129,7 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
                         ).then(() => page.evaluate(() => ({
                             width: window.innerWidth,
                             shell: document.documentElement.getAttribute('data-shell'),
-                            railMq: window.matchMedia('(max-width: 599px), (aspect-ratio > 1/1)').matches,
+                            railMq: window.matchMedia('(max-width: 699px), (aspect-ratio > 1/1)').matches,
                         }))),
                         new Promise((resolve) => setTimeout(() => resolve(null), 3500)),
                     ]);
