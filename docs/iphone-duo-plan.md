@@ -50,7 +50,7 @@ Nativt i `DuoDevice.swift` via `utsname.machine`. Listen og den rene beslutnings
 - **Inn i wide (ikke-Duo):** `DUO_MEDIA_QUERY` matcher.
 - **Ut av wide:** bredde &lt; 700, eller kald start uten media-match.
 - **Sticky:** allerede wide + høyde krymper (tastatur) mens bredde ≥ 700 → forblir wide. Sticky gjelder **ikke** Duo.
-- **Duo bunnmeny:** kun utfoldet oppreist — `DUO_BOTTOM_NAV_MEDIA_QUERY`. Foldet skilles fra utfoldet via kortside/bredde (~390–440 vs ~700+); terskel `600px`.
+- **Duo bunnmeny:** kun utfoldet oppreist — `DUO_BOTTOM_NAV_MEDIA_QUERY`. Foldet skilles fra utfoldet via kortside/bredde (~390–440 vs ~700+); terskel `700px`.
 - **Duo rail:** `DUO_RAIL_MEDIA_QUERY` (negasjon av bunnmeny-rommet). Ingen venstre sidebar på Duo.
 
 `duo:`-density: `wide` alltid; `rail` kun ved bredde ≥ 700 (lukket Duo 390 beholder telefon-tetthet). Swipe-tilbake beholdes på rail (rail er til høyre; `.app-rail-inner` stopper touch-propagering).
@@ -60,13 +60,13 @@ DUO_MEDIA_QUERY =
   (min-width: 700px) and (min-height: 600px),
   (min-width: 1024px)
 
-DUO_UNFOLDED_MIN_WIDTH_PX = 600
+DUO_UNFOLDED_MIN_WIDTH_PX = 700
 
 DUO_BOTTOM_NAV_MEDIA_QUERY =
-  (min-width: 600px) and (max-aspect-ratio: 1/1)
+  (min-width: 700px) and (max-aspect-ratio: 1/1)
 
 DUO_RAIL_MEDIA_QUERY =
-  (max-width: 599px), (aspect-ratio > 1/1)
+  (max-width: 699px), (aspect-ratio > 1/1)
 ```
 
 Ved modul-load (før første React-render) settes `html[data-shell]`. Samme attributt driver:
@@ -109,7 +109,7 @@ Ved modul-load (før første React-render) settes `html[data-shell]`. Samme attr
 
 Kilder: [Designing for iPhone Duo](https://developer.apple.com/design/human-interface-guidelines/designing-for-iphone-duo); HIG Layout + WWDC25/26 (size classes).
 
-- **Beslutning fra live viewport (ikke orientation API):** foldet vs utfoldet via kortside (`DUO_UNFOLDED_MIN_WIDTH_PX = 600`). Bunnmeny *kun* utfoldet oppreist/kvadrat (`DUO_BOTTOM_NAV_MEDIA_QUERY`). Foldet portrett + foldet landskap + utfoldet landskap → rail.
+- **Beslutning fra live viewport (ikke orientation API):** foldet vs utfoldet via kortside (`DUO_UNFOLDED_MIN_WIDTH_PX = 700`). Bunnmeny *kun* utfoldet oppreist/kvadrat (`DUO_BOTTOM_NAV_MEDIA_QUERY`). Foldet portrett + foldet landskap + utfoldet landskap → rail.
 - **Side-kontroller (rail):** høyre kolonne; back øverst, faner nederst. Kun symboler. Foldet landskap (~390 høyde) komprimerer clearance/gaps så 44pt-mål passer uten rail-scroll.
 - **Samme funksjonalitet** i rail og bunnmeny; bytte er ikke-destruktivt.
 - **Kompakt rail:** kapsel 52px (44pt knapp + 4px), kant 6px → `--app-rail-reserve` ≈ 66px.

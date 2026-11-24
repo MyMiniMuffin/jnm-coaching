@@ -20,7 +20,7 @@ const resolveShell = ({ isDuo, isDuoRailSpace, wideSticky }) => {
 };
 
 /** Mirrors DUO_RAIL_MEDIA_QUERY for viewport facts in tests. */
-const duoRailSpace = (width, height) => width <= 599 || width > height;
+const duoRailSpace = (width, height) => width <= 699 || width > height;
 
 test('Duo machine id list includes known iPhone19,4 and rejects others', () => {
     assert.ok(DUO_MACHINE_IDS.includes('iPhone19,4'));
@@ -270,7 +270,7 @@ test('shellMode uses sessionStorage override and clears phone data-device', () =
 
 test('duoBreakpoint exports Duo bottom-nav and rail media queries', () => {
     const bp = read('src/lib/duoBreakpoint.js');
-    assert.match(bp, /export const DUO_UNFOLDED_MIN_WIDTH_PX\s*=\s*600/);
+    assert.match(bp, /export const DUO_UNFOLDED_MIN_WIDTH_PX\s*=\s*700/);
     assert.match(bp, /export const DUO_BOTTOM_NAV_MEDIA_QUERY/);
     assert.match(bp, /export const DUO_RAIL_MEDIA_QUERY/);
     assert.match(bp, /min-width: \$\{DUO_UNFOLDED_MIN_WIDTH_PX\}px\) and \(max-aspect-ratio: 1\/1\)/);
@@ -283,4 +283,17 @@ test('railBack stores onBack in a ref (no register loop on unstable callbacks)',
     assert.match(rail, /useLayoutEffect/);
     assert.match(rail, /handlersRef/);
     assert.match(rail, /useRegisterRailBack/);
+});
+
+test('Duo unfolded floor agrees with native 700pt geometry', () => {
+    assert.equal(duoRailSpace(699, 1024), true);
+    assert.equal(duoRailSpace(704, 1024), false);
+    assert.equal(duoRailSpace(720, 1024), false);
+    const shell = read('src/lib/shellMode.js');
+    assert.match(shell, /data-duo-rail-space/);
+    assert.match(shell, /nativeSpace === 'true'/);
+    assert.match(shell, /attributeFilter: \[DEVICE_ATTR, RAIL_SPACE_ATTR\]/);
+    const native = read('ios/App/App/DuoRail.swift');
+    assert.match(native, /data-native-rail/);
+    assert.match(native, /data-duo-rail-space/);
 });

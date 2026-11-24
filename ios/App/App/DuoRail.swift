@@ -440,6 +440,22 @@ final class DuoRailController: NSObject, WKScriptMessageHandler {
         )
         container.isHidden = !model.isShown
         view.bringSubviewToFront(container)
+
+        // Publish native geometry independently of the web-requested visibility.
+        let railSpace = bounds.width < DuoRailMetrics.unfoldedMinWidth || bounds.width > bounds.height
+        webView?.evaluateJavaScript("""
+            (() => {
+                const root = document.documentElement;
+                if (!root) return;
+                if (\(model.isShown)) {
+                    if (root.getAttribute('data-native-rail') !== 'true') root.setAttribute('data-native-rail', 'true');
+                } else {
+                    root.removeAttribute('data-native-rail');
+                }
+                const space = '\(railSpace)';
+                if (root.getAttribute('data-duo-rail-space') !== space) root.setAttribute('data-duo-rail-space', space);
+            })();
+            """, completionHandler: nil)
     }
 
     // MARK: keyboard

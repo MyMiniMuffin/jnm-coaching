@@ -124,14 +124,14 @@ test('duoBreakpoint is the single source for Duo media query', () => {
         DUO_MEDIA_QUERY,
         '(min-width: 700px) and (min-height: 600px), (min-width: 1024px)'
     );
-    assert.equal(DUO_UNFOLDED_MIN_WIDTH_PX, 600);
+    assert.equal(DUO_UNFOLDED_MIN_WIDTH_PX, 700);
     assert.equal(
         DUO_BOTTOM_NAV_MEDIA_QUERY,
-        '(min-width: 600px) and (max-aspect-ratio: 1/1)'
+        '(min-width: 700px) and (max-aspect-ratio: 1/1)'
     );
     assert.equal(
         DUO_RAIL_MEDIA_QUERY,
-        '(max-width: 599px), (aspect-ratio > 1/1)'
+        '(max-width: 699px), (aspect-ratio > 1/1)'
     );
     assert.equal(existsSync(join(root, 'src/lib/duoBreakpoint.cjs')), false);
     assert.equal(existsSync(join(root, 'tailwind.config.js')), false);
@@ -409,7 +409,7 @@ test('docs plan records WebKit segment preview status and Duo rail', () => {
     assert.match(plan, /DUO_MEDIA_QUERY/);
     assert.match(plan, /DUO_RAIL_MEDIA_QUERY/);
     assert.match(plan, /DUO_BOTTOM_NAV_MEDIA_QUERY/);
-    assert.match(plan, /DUO_UNFOLDED_MIN_WIDTH_PX\s*=\s*600/);
+    assert.match(plan, /DUO_UNFOLDED_MIN_WIDTH_PX\s*=\s*700/);
     assert.match(plan, /max-aspect-ratio:\s*1\/1/);
     assert.match(plan, /aspect-ratio > 1\/1/);
     assert.match(plan, /min-height: 600px/);

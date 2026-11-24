@@ -35,7 +35,7 @@ export const ConfirmProvider = ({ children }) => {
         <ConfirmContext.Provider value={confirm}>
             {children}
             {mounted && state && (
-                <div className={`fixed inset-0 bg-ink/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 ${closing ? 'pointer-events-none animate-fade-out' : 'animate-fade-in'}`} inert={closing} onClick={handleCancel}>
+                <div className={`modal-backdrop fixed inset-0 bg-ink/60 backdrop-blur-sm z-[200] flex items-center justify-center ${closing ? 'pointer-events-none animate-fade-out' : 'animate-fade-in'}`} inert={closing} onClick={handleCancel}>
                     <Card
                         ref={focusTrapRef}
                         role="dialog"

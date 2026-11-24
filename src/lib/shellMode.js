@@ -24,6 +24,7 @@ import {
 
 const ATTR = 'data-shell';
 const DEVICE_ATTR = 'data-device';
+const RAIL_SPACE_ATTR = 'data-duo-rail-space';
 const DEVICE_STORAGE_KEY = 'jnm_device_override';
 
 export const SHELL_NARROW = 'narrow';
@@ -38,9 +39,12 @@ const mediaMatches = () => (
     typeof window !== 'undefined' && window.matchMedia(DUO_MEDIA_QUERY).matches
 );
 
-const railSpaceMatches = () => (
-    typeof window !== 'undefined' && window.matchMedia(DUO_RAIL_MEDIA_QUERY).matches
-);
+const railSpaceMatches = () => {
+    const nativeSpace = typeof document !== 'undefined'
+        ? document.documentElement.getAttribute(RAIL_SPACE_ATTR) : null;
+    if (isDuoDevice() && nativeSpace !== null) return nativeSpace === 'true';
+    return typeof window !== 'undefined' && window.matchMedia(DUO_RAIL_MEDIA_QUERY).matches;
+};
 
 /**
  * Dev/test override: `?device=duo|phone` writes sessionStorage for the tab only.
@@ -178,13 +182,13 @@ if (typeof window !== 'undefined') {
     // Native WKUserScript (or late injection) may set data-device after module load.
     const mo = new MutationObserver((mutations) => {
         for (const mutation of mutations) {
-            if (mutation.type === 'attributes' && mutation.attributeName === DEVICE_ATTR) {
+            if (mutation.type === 'attributes' && [DEVICE_ATTR, RAIL_SPACE_ATTR].includes(mutation.attributeName)) {
                 recompute();
                 break;
             }
         }
     });
-    mo.observe(document.documentElement, { attributes: true, attributeFilter: [DEVICE_ATTR] });
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: [DEVICE_ATTR, RAIL_SPACE_ATTR] });
 
     import.meta.hot?.dispose(() => {
         media.removeEventListener('change', onChange);

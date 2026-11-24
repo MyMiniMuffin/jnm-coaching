@@ -3,7 +3,7 @@ import { WarningCircle } from '@phosphor-icons/react';
 import { Card, Button } from './ui';
 
 const ReauthPrompt = React.memo(({ onReauth }) => (
-    <div className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-fade-in">
+    <div className="modal-backdrop fixed inset-0 bg-ink/60 backdrop-blur-sm z-[200] flex items-center justify-center animate-fade-in">
         <Card className="w-full max-w-sm p-6 animate-scale-in text-center" role="dialog" aria-modal="true" aria-labelledby="reauth-title">
             <div className="w-16 h-16 bg-warning/10 rounded-xl flex items-center justify-center text-warning-ink mx-auto mb-4">
                 <WarningCircle size={32} />
