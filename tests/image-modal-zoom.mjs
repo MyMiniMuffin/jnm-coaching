@@ -1,18 +1,11 @@
-/**
- * Headless Playwright-sjekk av ImageModal / react-zoom-pan-pinch v4.
- * Starter vite preview (bygger ved behov) med mock-økt og galleribilde.
- */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
-import { access, mkdir, readdir, stat } from 'node:fs/promises';
-import { createServer } from 'node:net';
+import { mkdir } from 'node:fs/promises';
 import { deflateSync } from 'node:zlib';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 import { chromium } from 'playwright';
+import { ensurePreview } from './helpers/preview.mjs';
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const ARTIFACTS = '/opt/cursor/artifacts';
 const EXTERNAL_BASE = process.env.AUDIT_BASE || '';
 const IMAGE_URL = 'https://cdn.example.test/gallery/progress.png';
@@ -102,120 +95,6 @@ const ATHLETE_DATA = {
     }],
 };
 
-async function newestMtime(dir) {
-    let newest = 0;
-    const entries = await readdir(dir, { withFileTypes: true });
-    for (const entry of entries) {
-        const full = join(dir, entry.name);
-        if (entry.isDirectory()) {
-            newest = Math.max(newest, await newestMtime(full));
-        } else {
-            newest = Math.max(newest, (await stat(full)).mtimeMs);
-        }
-    }
-    return newest;
-}
-
-async function needsRebuild() {
-    try {
-        const distIndex = join(ROOT, 'dist/index.html');
-        await access(distIndex);
-        const distTime = (await stat(distIndex)).mtimeMs;
-        const srcTime = await newestMtime(join(ROOT, 'src'));
-        return srcTime > distTime;
-    } catch {
-        return true;
-    }
-}
-
-function getFreePort() {
-    return new Promise((resolve, reject) => {
-        const server = createServer();
-        server.listen(0, '127.0.0.1', () => {
-            const { port } = server.address();
-            server.close((error) => (error ? reject(error) : resolve(port)));
-        });
-        server.on('error', reject);
-    });
-}
-
-async function waitForUrl(url, timeoutMs = 60_000) {
-    const start = Date.now();
-    let lastError;
-    while (Date.now() - start < timeoutMs) {
-        try {
-            const response = await fetch(url);
-            if (response.ok) return;
-            lastError = new Error(`HTTP ${response.status}`);
-        } catch (error) {
-            lastError = error;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 250));
-    }
-    throw new Error(`Server not ready at ${url}: ${lastError?.message || lastError}`);
-}
-
-async function ensurePreview() {
-    if (EXTERNAL_BASE) {
-        await waitForUrl(EXTERNAL_BASE);
-        return { base: EXTERNAL_BASE, stop: async () => {} };
-    }
-
-    if (await needsRebuild()) {
-        await new Promise((resolve, reject) => {
-            const child = spawn('npm', ['run', 'build'], {
-                cwd: ROOT,
-                stdio: ['ignore', 'ignore', 'pipe'],
-            });
-            let stderr = '';
-            child.stderr.on('data', (chunk) => { stderr += chunk; });
-            child.on('exit', (code) => {
-                if (code === 0) resolve();
-                else reject(new Error(`npm run build failed (${code}): ${stderr}`));
-            });
-        });
-    }
-
-    const port = await getFreePort();
-    const base = `http://127.0.0.1:${port}`;
-    const child = spawn(
-        'npx',
-        ['vite', 'preview', '--host', '127.0.0.1', '--port', String(port), '--strictPort'],
-        { cwd: ROOT, stdio: ['ignore', 'ignore', 'pipe'], detached: true }
-    );
-
-    let stderr = '';
-    child.stderr.on('data', (chunk) => { stderr += chunk; });
-    child.unref();
-
-    const stop = async () => {
-        if (!child.pid) return;
-        try {
-            process.kill(-child.pid, 'SIGTERM');
-        } catch {
-            try { child.kill('SIGTERM'); } catch { /* gone */ }
-        }
-        await Promise.race([
-            new Promise((resolve) => child.once('exit', resolve)),
-            new Promise((resolve) => setTimeout(resolve, 2000)),
-        ]);
-        try {
-            process.kill(-child.pid, 'SIGKILL');
-        } catch {
-            try { child.kill('SIGKILL'); } catch { /* gone */ }
-        }
-    };
-
-    try {
-        await waitForUrl(base);
-    } catch (error) {
-        await stop();
-        throw new Error(`${error.message}\npreview stderr: ${stderr}`);
-    }
-
-    return { base, stop };
-}
-
 async function installMocks(page) {
     await page.route('**/gallery/progress.png', async (route) => {
         await route.fulfill({
@@ -286,7 +165,7 @@ test('Playwright: ImageModal zoom inn/ut/reset/lukk uten console-feil', { timeou
     let browser;
     let preview;
     try {
-        preview = await ensurePreview();
+        preview = await ensurePreview({ externalBase: EXTERNAL_BASE, prefix: 'jnm-zoom-preview-' });
     } catch (error) {
         if (process.env.CI) throw error;
         t.skip(`Could not start preview server: ${error.message}`);
