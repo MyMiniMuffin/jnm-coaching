@@ -1,18 +1,7 @@
-/**
- * Playwright layout checks for Duo / phone / tablet / desktop viewports.
- *
- * Starts `vite preview` automatically (builds if dist/ is missing) unless
- * AUDIT_BASE points at an already-running server.
- * Requires Chromium: `npx playwright install chromium`
- */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
-import { access, readdir, stat } from 'node:fs/promises';
-import { createServer } from 'node:net';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
 import { chromium } from 'playwright';
+import { ensurePreview } from './helpers/preview.mjs';
 import {
     DUO_MEDIA_QUERY,
     DUO_RAIL_MEDIA_QUERY,
@@ -23,43 +12,7 @@ import {
     DUO_UNFOLDED_MIN_WIDTH_PX,
 } from '../src/lib/duoBreakpoint.js';
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const EXTERNAL_BASE = process.env.AUDIT_BASE || '';
-
-async function newestMtime(dir) {
-    let newest = 0;
-    const entries = await readdir(dir, { withFileTypes: true });
-    for (const entry of entries) {
-        const full = join(dir, entry.name);
-        if (entry.isDirectory()) {
-            newest = Math.max(newest, await newestMtime(full));
-        } else {
-            newest = Math.max(newest, (await stat(full)).mtimeMs);
-        }
-    }
-    return newest;
-}
-
-async function needsRebuild() {
-    try {
-        const distIndex = join(ROOT, 'dist/index.html');
-        await access(distIndex);
-        const distTime = (await stat(distIndex)).mtimeMs;
-        const srcTime = await newestMtime(join(ROOT, 'src'));
-        const configFiles = ['tailwind.config.mjs', 'vite.config.js', 'vite.config.mjs', 'index.html'];
-        let configTime = 0;
-        for (const file of configFiles) {
-            try {
-                configTime = Math.max(configTime, (await stat(join(ROOT, file))).mtimeMs);
-            } catch {
-                /* optional */
-            }
-        }
-        return srcTime > distTime || configTime > distTime;
-    } catch {
-        return true;
-    }
-}
 
 const ATHLETE = {
     id: 'athlete-1',
@@ -163,94 +116,6 @@ const VIEWPORTS = [
     { id: '1280x550', width: 1280, height: 550, expectSidebar: true },
     { id: '1440x900', width: 1440, height: 900, expectSidebar: true },
 ];
-
-function getFreePort() {
-    return new Promise((resolve, reject) => {
-        const server = createServer();
-        server.listen(0, '127.0.0.1', () => {
-            const { port } = server.address();
-            server.close((error) => (error ? reject(error) : resolve(port)));
-        });
-        server.on('error', reject);
-    });
-}
-
-async function waitForUrl(url, timeoutMs = 60_000) {
-    const start = Date.now();
-    let lastError;
-    while (Date.now() - start < timeoutMs) {
-        try {
-            const response = await fetch(url);
-            if (response.ok) return;
-            lastError = new Error(`HTTP ${response.status}`);
-        } catch (error) {
-            lastError = error;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 250));
-    }
-    throw new Error(`Server not ready at ${url}: ${lastError?.message || lastError}`);
-}
-
-async function ensurePreview() {
-    if (EXTERNAL_BASE) {
-        await waitForUrl(EXTERNAL_BASE);
-        return { base: EXTERNAL_BASE, stop: async () => {} };
-    }
-
-    if (await needsRebuild()) {
-        await new Promise((resolve, reject) => {
-            const child = spawn('npm', ['run', 'build'], {
-                cwd: ROOT,
-                stdio: ['ignore', 'ignore', 'pipe'],
-            });
-            let stderr = '';
-            child.stderr.on('data', (chunk) => { stderr += chunk; });
-            child.on('exit', (code) => {
-                if (code === 0) resolve();
-                else reject(new Error(`npm run build failed (${code}): ${stderr}`));
-            });
-        });
-    }
-
-    const port = await getFreePort();
-    const base = `http://127.0.0.1:${port}`;
-    const child = spawn(
-        'npx',
-        ['vite', 'preview', '--host', '127.0.0.1', '--port', String(port), '--strictPort'],
-        { cwd: ROOT, stdio: ['ignore', 'ignore', 'pipe'], detached: true }
-    );
-
-    let stderr = '';
-    child.stderr.on('data', (chunk) => { stderr += chunk; });
-    child.unref();
-
-    const stop = async () => {
-        if (!child.pid) return;
-        try {
-            process.kill(-child.pid, 'SIGTERM');
-        } catch {
-            try { child.kill('SIGTERM'); } catch { /* gone */ }
-        }
-        await Promise.race([
-            new Promise((resolve) => child.once('exit', resolve)),
-            new Promise((resolve) => setTimeout(resolve, 2000)),
-        ]);
-        try {
-            process.kill(-child.pid, 'SIGKILL');
-        } catch {
-            try { child.kill('SIGKILL'); } catch { /* gone */ }
-        }
-    };
-
-    try {
-        await waitForUrl(base);
-    } catch (error) {
-        await stop();
-        throw new Error(`${error.message}\npreview stderr: ${stderr}`);
-    }
-
-    return { base, stop };
-}
 
 async function installMocks(page) {
     await page.route('**/.netlify/functions/**', async (route) => {
@@ -393,7 +258,7 @@ test('Playwright: Duo layout across viewports', { timeout: 300_000 }, async (t) 
     let browser;
     let preview;
     try {
-        preview = await ensurePreview();
+        preview = await ensurePreview({ externalBase: EXTERNAL_BASE, prefix: 'jnm-duo-preview-' });
     } catch (error) {
         if (process.env.CI) throw error;
         t.skip(`Could not start preview server: ${error.message}`);
