@@ -126,7 +126,7 @@ const InstallPrompt = ({ engaged, guardMs }) => {
 
     return (
         <div
-            className="install-prompt-overlay fixed inset-0 z-[190] flex items-center justify-center bg-ink/60 backdrop-blur-sm animate-fade-in"
+            className="install-prompt-overlay modal-backdrop fixed inset-0 z-[190] flex items-center justify-center bg-ink/60 backdrop-blur-sm animate-fade-in"
             data-testid="install-prompt"
         >
             <Card

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, readFile } from 'node:fs/promises';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { deflateSync } from 'node:zlib';
@@ -10,6 +10,18 @@ import { dirname, join } from 'node:path';
 import { chromium } from 'playwright';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+
+test('modal clearance and iOS date intrinsic sizing CSS', async () => {
+    const css = await readFile(join(ROOT, 'src/index.css'), 'utf8');
+    assert.match(css, /html\[data-shell="rail"\] \.modal-backdrop\s*\{[^}]*padding-right: max\(1rem, var\(--app-rail-reserve\)\)/);
+    assert.match(css, /html\[data-shell="narrow"\] \.modal-backdrop\s*\{[^}]*padding-bottom: max\(1rem, var\(--app-bottom-nav-reserve\)\)/);
+    for (const pseudo of ['-webkit-datetime-edit', '-webkit-date-and-time-value']) {
+        const block = css.slice(css.indexOf('input[type="date"]::' + pseudo)).split('}')[0];
+        assert.match(block, /min-width: 0/);
+        assert.match(block, /text-align: left/);
+        assert.match(block, /max-width: 100%/);
+    }
+});
 
 function crc32(buf) {
     let crc = 0xffffffff;
@@ -313,6 +325,7 @@ test('Playwright: coach gallery upload respects empty, whitespace, and custom la
         const context = await browser.newContext({
             viewport: { width: 1280, height: 800 },
             deviceScaleFactor: 1,
+            locale: 'nb-NO',
         });
         page = await context.newPage();
         page.on('console', (msg) => {
@@ -406,10 +419,16 @@ test('Playwright: coach gallery upload respects empty, whitespace, and custom la
         assert.equal(await labelInput.inputValue(), '', 'reopening upload modal should reset label to empty');
 
         for (const viewport of [
-            { width: 390, height: 844 },
-            { width: 320, height: 568 },
+            { width: 720, height: 1024, device: 'duo' },
+            { width: 1024, height: 720, device: 'duo' },
+            { width: 704, height: 1024, device: 'duo' },
+            { width: 390, height: 844, device: 'duo' },
+            { width: 320, height: 568, device: 'phone' },
         ]) {
             await page.setViewportSize(viewport);
+            await page.goto(`${preview.base}/?device=${viewport.device}`, { waitUntil: 'networkidle' });
+            await page.getByRole('button', { name: /Last opp/ }).first().click();
+            await uploadDialog.waitFor();
             await uploadDialog.locator('#gallery-upload-files').setInputFiles([
                 {
                     name: 'IMG_20261123_very_long_filename_without_spaces_from_iphone_camera_roll_0001.heic',
@@ -452,6 +471,9 @@ test('Playwright: coach gallery upload respects empty, whitespace, and custom la
                 const submitRect = buttons[buttons.length - 1].getBoundingClientRect();
 
                 return {
+                    chrome: [...document.querySelectorAll('.app-rail, .mobile-bottom-nav')]
+                        .filter(el => getComputedStyle(el).display !== 'none')
+                        .map(el => { const r = el.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom }; }),
                     portaledToBody: backdrop?.parentElement === document.body,
                     viewportWidth: window.innerWidth,
                     viewportHeight: window.innerHeight,
@@ -480,6 +502,12 @@ test('Playwright: coach gallery upload respects empty, whitespace, and custom la
                 };
             });
 
+            for (const chrome of layout.chrome) {
+                const r = layout.dialogRect;
+                assert.ok(r.right <= chrome.left + 0.5 || r.left >= chrome.right - 0.5 ||
+                    r.bottom <= chrome.top + 0.5 || r.top >= chrome.bottom - 0.5,
+                    `dialog overlaps app chrome at ${viewport.width}x${viewport.height}`);
+            }
             assert.equal(layout.portaledToBody, true, 'upload dialog should portal to document.body');
             assert.ok(layout.dialogRect.left >= 0 && layout.dialogRect.right <= layout.viewportWidth + 0.5);
             assert.ok(layout.dialogRect.top >= 0 && layout.dialogRect.bottom <= layout.viewportHeight + 0.5);
