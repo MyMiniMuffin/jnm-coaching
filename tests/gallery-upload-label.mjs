@@ -427,6 +427,7 @@ test('Playwright: coach gallery upload respects empty, whitespace, and custom la
             { width: 720, height: 1024, device: 'duo' },
             { width: 1024, height: 720, device: 'duo' },
             { width: 704, height: 1024, device: 'duo' },
+            { width: 704, height: 1024, device: 'duo', native: true },
             { width: 390, height: 844, device: 'duo' },
             { width: 320, height: 568, device: 'phone' },
         ]) {
@@ -529,10 +530,14 @@ test('Playwright: coach gallery upload respects empty, whitespace, and custom la
 
             for (const chrome of layout.chrome) {
                 for (const r of [layout.dialogRect, ...layout.controlRects]) {
-                assert.ok(r.right <= chrome.left + 0.5 || r.left >= chrome.right - 0.5 ||
-                    r.bottom <= chrome.top + 0.5 || r.top >= chrome.bottom - 0.5,
-                    `dialog/control overlaps app chrome at ${viewport.width}x${viewport.height}`);
+                    assert.ok(r.right <= chrome.left + 0.5 || r.left >= chrome.right - 0.5 ||
+                        r.bottom <= chrome.top + 0.5 || r.top >= chrome.bottom - 0.5,
+                        `dialog/control overlaps app chrome at ${viewport.width}x${viewport.height}${viewport.native ? ' (native rail)' : ''}`);
                 }
+            }
+            if (viewport.native) {
+                assert.ok(layout.dialogRect.right <= layout.viewportWidth - 70 + 0.5,
+                    'dialog must clear the 70px native rail stand-in at 704x1024');
             }
             assert.equal(layout.portaledToBody, true, 'upload dialog should portal to document.body');
             assert.ok(layout.dialogRect.left >= 0 && layout.dialogRect.right <= layout.viewportWidth + 0.5);
