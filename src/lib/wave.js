@@ -3,12 +3,12 @@
 
 // Fargene er appens egne tokens (tailwind.config.mjs og :root i src/index.css).
 const TOKENS = {
-    accent: '#246568',
-    accentMuted: '#83AFAC',
+    accent: '#0E72B5',
+    accentMuted: '#7CB3D9',
     reportGood: '#527062',
     reportTraining: '#526B85',
     success: '#546B3E',
-    accentHover: '#1B5053',
+    accentHover: '#0A578A',
 };
 
 const toRgb = (hex) => {

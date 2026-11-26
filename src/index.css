@@ -111,7 +111,7 @@ select {
     --font-sans: 'Allo', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     --font-serif: 'Literata', 'Iowan Old Style', 'Times New Roman', serif;
     --accent-soft: theme('colors.accent.DEFAULT');
-    --accent-muted: #83afac;
+    --accent-muted: #7cb3d9;
     /* Fallback only — WebKit does not expose viewport-segment env vars in production
        (Safari 27.1 Preview is behind a feature flag; see docs/iphone-duo-plan.md). */
     --fold-gap: 1.25rem;

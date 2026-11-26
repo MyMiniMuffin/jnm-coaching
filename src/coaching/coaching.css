@@ -1,14 +1,14 @@
 .coaching-page {
     --coaching-black: #171717;
-    --coaching-accent: #246568;
-    --coaching-accent-dark: #1b5053;
+    --coaching-accent: #0e72b5;
+    --coaching-accent-dark: #0a578a;
     background: #fff;
     color: var(--coaching-black);
     font-family: var(--font-sans);
 }
 
 .coaching-header {
-    border-bottom: 1px solid rgba(36, 101, 104, 0.1);
+    border-bottom: 1px solid rgba(14, 114, 181, 0.1);
     background: #f7f7f4;
 }
 
@@ -18,7 +18,7 @@
 
 .coaching-hero {
     background:
-        radial-gradient(circle at 90% 0%, rgba(36, 101, 104, 0.07), transparent 28rem),
+        radial-gradient(circle at 90% 0%, rgba(14, 114, 181, 0.07), transparent 28rem),
         #fff;
 }
 
@@ -226,7 +226,7 @@
 .coaching-field:focus {
     border-color: var(--coaching-accent);
     background: #fff;
-    box-shadow: 0 0 0 3px rgba(36, 101, 104, 0.14);
+    box-shadow: 0 0 0 3px rgba(14, 114, 181, 0.14);
 }
 
 

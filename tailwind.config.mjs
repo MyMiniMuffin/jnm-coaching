@@ -36,8 +36,8 @@ export default {
           faint: '#8A847A',
         },
         accent: {
-          DEFAULT: '#246568',
-          hover: '#1B5053',
+          DEFAULT: '#0E72B5',
+          hover: '#0A578A',
         },
         report: {
           good: '#527062',
