@@ -224,7 +224,7 @@ private struct RailSelectionLens: View {
 private enum DuoRailPalette {
     /// tailwind: surface.50, accent.hover, ink.muted, ink.DEFAULT
     static let surface = Color(red: 247 / 255, green: 247 / 255, blue: 244 / 255)
-    static let accent = Color(red: 27 / 255, green: 80 / 255, blue: 83 / 255)
+    static let accent = Color(red: 10 / 255, green: 87 / 255, blue: 138 / 255)
     static let inkMuted = Color(red: 82 / 255, green: 82 / 255, blue: 82 / 255)
     static let ink = Color(red: 23 / 255, green: 23 / 255, blue: 23 / 255)
 }

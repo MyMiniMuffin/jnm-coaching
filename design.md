@@ -40,8 +40,8 @@ Fargepaletten er definert i `tailwind.config.js`.
 | Primær tekst | `ink` | `#171717` | Overskrifter, innhold og primærknapper |
 | Sekundær tekst | `ink-muted` | `#525252` | Beskrivelser og etiketter |
 | Svak tekst | `ink-faint` | `#8A847A` | Metadata og inaktive ikoner |
-| Aksent | `accent` | `#246568` | Fokus, lenker, ulest og utvalgte handlinger |
-| Aksent hover | `accent-hover` | `#1B5053` | Hover på aksentfarge |
+| Aksent | `accent` | `#0E72B5` | Fokus, lenker, ulest og utvalgte handlinger |
+| Aksent hover | `accent-hover` | `#0A578A` | Hover på aksentfarge |
 | Suksess | `success` | `#546B3E` | Bekreftet eller positiv status |
 | Advarsel | `warning` | `#CA8A04` | Bakgrunn for advarsler (`bg-warning`, `bg-warning/10`) |
 | Advarselstekst | `warning-ink` | `#854D0E` | Tekst og ikon på lys advarselsbakgrunn |

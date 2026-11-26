@@ -18,7 +18,7 @@ const RecentActivityDot = ({ lastActiveAt }) => {
     if (!Number.isFinite(lastActive) || now - lastActive >= 5 * 60000) return null;
     return (
         <span
-            className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-green-500 ring-2 ring-white"
+            className="inline-block h-2 w-2 shrink-0 rounded-full bg-green-500"
             role="img"
             aria-label="Aktiv siste 5 minutter"
             title="Aktiv siste 5 minutter"
@@ -407,12 +407,9 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, newAthleteRequest
                     <div className="space-y-2 animate-pulse duo:col-span-2 duo:grid duo:grid-cols-2 duo:gap-3 duo:space-y-0 duo-split-grid" aria-label="Laster utøvere" role="status">
                         {[1, 2, 3, 4].map(i => (
                             <div key={i} className="px-3 py-1.5 sm:px-4 sm:py-2 flex min-h-[3.625rem] items-center justify-between bg-white rounded-xl border border-surface-200">
-                                <div className="flex items-center gap-2.5 sm:gap-4">
-                                    <div className="w-10 h-10 bg-surface-200 rounded-xl" />
-                                    <div className="space-y-2">
-                                        <div className="h-4 w-28 bg-surface-200 rounded" />
-                                        <div className="h-3 w-40 bg-surface-100 rounded" />
-                                    </div>
+                                <div className="space-y-2 pl-0.5">
+                                    <div className="h-4 w-28 bg-surface-200 rounded" />
+                                    <div className="h-3 w-40 bg-surface-100 rounded" />
                                 </div>
                                 <div className="w-4 h-4 bg-surface-100 rounded" />
                             </div>
@@ -447,12 +444,11 @@ const CoachDashboard = React.memo(({ allUsers = [], isLoading, newAthleteRequest
                                 }}
                                 className="flex min-h-11 min-w-11 flex-1 items-center gap-2.5 sm:gap-4 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:cursor-wait"
                             >
-                                <span className={`relative w-10 h-10 shrink-0 rounded-xl flex items-center justify-center text-base font-semibold ${showArchived ? 'bg-surface-200 text-ink-muted' : client.unreadCheckins > 0 ? 'bg-accent/10 text-accent' : 'bg-surface-100 text-ink'}`}>
-                                    {client.name.charAt(0)}
-                                    <RecentActivityDot lastActiveAt={client.lastActiveAt} />
-                                </span>
-                                <span className="min-w-0 flex-1">
-                                    <span className="block font-medium truncate">{client.name}</span>
+                                <span className="min-w-0 flex-1 pl-0.5">
+                                    <span className="flex items-center gap-2">
+                                        <span className="font-medium truncate">{client.name}</span>
+                                        <RecentActivityDot lastActiveAt={client.lastActiveAt} />
+                                    </span>
                                     <span className={`block text-sm ${client.unreadCheckins > 0 ? 'text-accent font-medium' : 'text-ink-muted'}`}>
                                         {client.unreadCheckins > 0
                                             ? `${client.unreadCheckins} ny${client.unreadCheckins > 1 ? 'e' : ''} ukesrapport${client.unreadCheckins > 1 ? 'er' : ''}`

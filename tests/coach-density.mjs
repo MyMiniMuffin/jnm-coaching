@@ -207,13 +207,12 @@ test('«Ny utøver» is a round plus icon button in the header, wired to the das
     assert.match(dashboard, /id="new-athlete-title"[^>]*>Ny utøver</);
 });
 
-test('athlete cards are compact but keep 44px targets and existing styling', () => {
+test('athlete cards are compact, text-only, and keep 44px targets and existing styling', () => {
     const card = dashboard.slice(dashboard.indexOf('<Card\n                            key={client.id}'), dashboard.indexOf('<ClientActionsMenu\n                                    client'));
     assert.match(card, /px-3 py-1\.5 sm:px-4 sm:py-2/);
     assert.doesNotMatch(card, /\bp-3\b|sm:p-4/);
     assert.match(card, /min-h-11 min-w-11 flex-1/);
-    assert.match(card, /w-10 h-10 shrink-0 rounded-xl/);
-    assert.match(card, /text-base font-semibold/);
+    assert.doesNotMatch(card, /w-10 h-10|charAt\(0\)/);
     assert.match(card, /<RecentActivityDot/);
     assert.match(card, /border-accent\/30 bg-accent\/5/);
     assert.match(card, /opacity-60/);
@@ -223,11 +222,10 @@ test('athlete cards are compact but keep 44px targets and existing styling', () 
     assert.match(dashboard, /duo:grid-cols-2/);
 });
 
-test('loading skeleton matches the compact card', () => {
+test('loading skeleton matches the compact text-only card', () => {
     const skeleton = dashboard.slice(dashboard.indexOf('aria-label="Laster utøvere"'), dashboard.indexOf('Ingen treff'));
     assert.match(skeleton, /px-3 py-1\.5 sm:px-4 sm:py-2/);
-    assert.match(skeleton, /w-10 h-10 bg-surface-200 rounded-xl/);
-    assert.doesNotMatch(skeleton, /w-12 h-12|\bp-4\b/);
+    assert.doesNotMatch(skeleton, /w-10 h-10|w-12 h-12|\bp-4\b/);
 });
 
 test('IconButton forwards refs for focus management', () => {
