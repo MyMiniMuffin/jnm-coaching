@@ -1,6 +1,6 @@
 import React from 'react';
 import AccountMenu from './AccountMenu';
-import { CaretLeft, WifiSlash, Eye, Plus } from '@phosphor-icons/react';
+import { ArrowLeft, WifiSlash, Eye, Plus } from '@phosphor-icons/react';
 import { IconButton } from './ui';
 import FormSubmissions from './FormSubmissions';
 import { APP_ICON } from '../lib/config';
@@ -30,18 +30,17 @@ const Header = React.memo(({ user, viewingClient, onLogout, onClearClient, isOff
         {viewingClient ? (
             <div className="header-inner flex flex-nowrap items-center py-3 gap-1 lg:gap-2 duo:py-3.5 duo-lg:py-4">
                 {!hideClientBack && onClearClient && (
-                <button
-                    type="button"
-                    onClick={onClearClient}
-                    aria-label="Tilbake til utøverlisten"
-                    data-testid="header-client-back"
-                    className="flex min-h-11 items-center gap-0.5 rounded-lg px-2.5 py-2 text-accent transition-colors active:bg-surface-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent shrink-0 [@media(hover:hover)_and_(pointer:fine)]:hover:bg-surface-100"
-                >
-                    <CaretLeft size={20} />
-                    <span className="text-sm font-medium">Utøvere</span>
-                </button>
+                    <IconButton
+                        onClick={onClearClient}
+                        aria-label="Tilbake til utøverlisten"
+                        title="Tilbake til utøverlisten"
+                        data-testid="header-client-back"
+                        className="-ml-2 shrink-0"
+                    >
+                        <ArrowLeft size={20} aria-hidden="true" />
+                    </IconButton>
                 )}
-                <div className={`flex-1 min-w-0 duo:text-left ${hideClientBack ? 'text-left' : 'text-center'}`}>
+                <div className="flex-1 min-w-0 text-left">
                     <p className="font-semibold text-ink truncate leading-6">{viewingClient.name}</p>
                     <p className="truncate text-xs leading-4 text-ink-muted">@{viewingClient.username}</p>
                 </div>

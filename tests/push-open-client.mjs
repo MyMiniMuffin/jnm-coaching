@@ -116,3 +116,19 @@ test('a notification tapped on the login screen opens the athlete after the coac
     assert.ok(openedAthlete(dataGets), 'GET /data?id=7 skal være kalt');
     await context.close();
 });
+
+test('the client-view header back button is icon-only and returns to the athlete list', async () => {
+    const { context, page } = await openCoachApp();
+    await page.getByText('Ada Lovelace').first().click();
+
+    const backButton = page.getByTestId('header-client-back');
+    await backButton.waitFor({ state: 'visible' });
+    assert.equal(await backButton.getAttribute('aria-label'), 'Tilbake til utøverlisten');
+    assert.equal((await backButton.innerText()).trim(), '');
+
+    await backButton.click();
+    await backButton.waitFor({ state: 'detached' });
+    await page.getByRole('button', { name: 'Ny utøver' }).waitFor({ state: 'visible' });
+    await page.getByText('Ada Lovelace').first().waitFor({ state: 'visible' });
+    await context.close();
+});
